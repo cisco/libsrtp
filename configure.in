@@ -1,0 +1,115 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(srtp)
+
+dnl Checks for programs.
+AC_PROG_RANLIB
+AC_PROG_CC
+
+dnl Checks for libraries.
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(srtp, srtp_init)
+
+
+dnl Check for /dev/urandom
+AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=1, DEV_URANDOM=0) 
+if test $DEV_URANDOM = 1; then 
+   AC_DEFINE(DEV_URANDOM)
+   RNG_OBJS=crypto/rng/rand_source.c
+   AC_SUBST(RNG_OBJS)                              
+fi
+
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(stdlib.h)
+AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(stdint.h)
+AC_CHECK_HEADERS(sys/uio.h)
+AC_CHECK_HEADERS(machine/types.h)
+AC_CHECK_HEADERS(sys/int_types.h)
+
+AC_CHECK_HEADERS(syslog.h)
+
+AC_CHECK_TYPE(uint16_t)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_SIZE_T
+
+dnl Checks for library functions.
+AC_FUNC_MEMCMP
+AC_CHECK_FUNCS(socket strerror inet_aton)
+
+dnl Check the byte order
+AC_C_BIGENDIAN
+
+AC_CANONICAL_HOST
+
+if test $host_cpu = x86; then	
+   echo "x86 cpu found" # should use inline assembly
+fi
+
+dnl check host_cpu type, set defines appropriately
+case $host_cpu in
+     i*86 )
+	AC_DEFINE(CPU_CISC);;
+	* )
+	AC_DEFINE(CPU_RISC);;
+esac	
+
+dnl Check if we're on a cygwin (GNU on MSWin) platform, set HAVE_MS_TYPES
+
+case $host_os in
+  *cygwin* ) 
+	      AC_DEFINE(HAVE_MS_TYPES, 1)
+	      EXE=.exe;;
+         * )  EXE="";;
+esac
+
+AC_SUBST(EXE)   # define executable suffix; this is needed for `make clean'
+
+AC_ARG_ENABLE(debug, debug (compile in dynamic debugging system), USE_DEBUG=0, USE_DEBUG=1)
+
+if test $USE_DEBUG = 1; then
+   AC_DEFINE(ENABLE_DEBUGGING)
+fi
+
+AC_ARG_ENABLE(generic-aesicm, generic-aesicm (compile in changes for ismacryp), GENERIC_AESICM=0, GENERIC_AESICM=1)
+
+if test $GENERIC_AESICM = 1; then
+   AC_DEFINE(GENERIC_AESICM)
+fi
+
+AC_ARG_ENABLE(syslog, syslog (use syslog for error reporting), USE_SYSLOG=1, USE_SYSLOG=0)
+
+if test $USE_SYSLOG = 1; then
+   AC_DEFINE(USE_SYSLOG)
+fi
+
+AC_ARG_ENABLE(stdout, stdout (use stdout for error reporting), ERR_STDOUT=0, ERR_STDOUT=1)
+
+if test $ERR_STDOUT = 1; then
+   AC_DEFINE(ERR_REPORTING_STDOUT, 1)
+fi
+
+AC_ARG_ENABLE(console, console (use /dev/console for error reporting), ERR_FILE=1, ERR_FILE=0)
+
+if test $ERR_FILE = 1; then
+   AC_DEFINE(ERR_REPORTING_FILE, "/dev/console")
+fi
+AC_ARG_ENABLE(gdoi, gdoi (GDOI key management), GDOI=1, GDOI=0)
+
+if test $GDOI = 1; then 
+   AC_MSG_CHECKING(for GDOI key management)
+   AC_MSG_RESULT(?)
+   AC_DEFINE(SRTP_GDOI)
+   GDOI_OBJS=gdoi/srtp+gdoi.o
+   AC_SUBST(GDOI_OBJS)                              
+fi
+
+AC_CONFIG_HEADER(include/config.h:config_in.h)
+
+AC_OUTPUT(Makefile)
+
+

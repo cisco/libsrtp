@@ -1,0 +1,66 @@
+TODO List
+
+  - add tests for key_limit_t datatype 
+
+  - move octet_get_weight() from datatypes.c to math.c (any other
+    funcs?)
+
+Changes and additions planned
+
+  Make cipher and auth dealloc() functions zeroize the key-storage
+  areas before calling free().
+
+  Fix UST
+    - implement scatter/gather API
+    - SRTP using UST
+    - possibly add legacy SHA1 usage
+
+  Eliminate key_len from auth_init()
+
+  Doucument internal APIs (cipher, auth, srtp_protect, ...)
+
+
+SRTP options not (yet) included in this libaray:
+
+ - the aes-f8-mode cipher
+ - HMAC-SHA-1
+ - the Master Key Index
+ - re-keying using the key derivation function (only the initial
+   use of the PRF has been implemented, as it's sufficient
+   for most uses)
+
+INCOMPLETE ADDITIONS
+
+   Added DES and 3DES ICM.
+
+
+PLANNED CHANGES
+
+   strip out test/lfsr.c
+
+   Write new documentation!!!
+
+   Fix the x86 assembly code in aes.c.
+
+   Eliminate /* DAM */ - there's one in srtp.c
+
+   Change debugging so that it can print more than one line.  Or perhaps
+   just change it so that a single check of the debug-enabled flag is
+   needed.
+
+   Improve interface between cipher and rdbx - perhaps generalize rdbx
+   into 'nonce' datatype.
+
+   Make rijndael_icm accept variable sized keys.
+
+   Add rdbx functions that allow different-sized explicit sequence
+   numbers to be used.
+
+   Write uniform byte-buffering code for PRFs, preferably as macros.
+
+   Consider eliminating low-level alloc functions in favor of len()
+   functions, so that there need not be multiple allocations within a
+   particular alloc() function.
+
+   Update test/stat-driver.c so that it tests the rand_source API.
+   Add a pseudorandom rand_source.

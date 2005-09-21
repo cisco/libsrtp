@@ -1,0 +1,210 @@
+# Makefile for secure rtp 
+#
+# David A. McGrew
+# Cisco Systems, Inc.
+
+# targets:
+#
+# runtest       runs test applications 
+# test		builds test applications
+# libcrypt.a	static library implementing crypto engine
+# libsrtp.a	static library implementing srtp
+# clean		removes objects, libs, and executables
+# distribution	cleans and builds a .tgz
+# tags		builds etags file from all .c and .h files
+
+.PHONY: test all runtest
+
+runtest: test
+	@echo "running libsrtp test applications..."
+	test/cipher_driver$(EXE) -v >/dev/null
+	test/rdbx_driver$(EXE) -v >/dev/null
+	test/srtp_driver$(EXE) -v >/dev/null
+	test/roc_driver$(EXE) -v >/dev/null
+	test/kernel_driver$(EXE) -v >/dev/null
+	@echo "libsrtp test applications passed."
+
+all: test tables
+
+# makefile variables
+
+CC     = @CC@
+CFLAGS = -Wall -O4 -fexpensive-optimizations -funroll-loops
+CDEFS  = -DHAVE_CONFIG_H
+INCDIR = -I./include/ -I./crypto/include
+LIBS   = @LIBS@ -lsrtp 
+LIBDIR = -L.
+
+
+# implicit rules for object files and test apps
+
+%.o: %.c
+	$(CC) $(CDEFS) -c $(CFLAGS) $(INCDIR) $< -o $@
+
+%: %.c libsrtp.a 
+	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ $(LIBDIR) $(LIBS)
+
+
+# libcrypt.a (the crypto engine) 
+
+ciphers = crypto/cipher/cipher.o crypto/cipher/null_cipher.o      \
+          crypto/cipher/aes.o crypto/cipher/aes_icm.o             \
+          crypto/cipher/aes_cbc.o
+
+hashes  = crypto/hash/null_auth.o crypto/hash/sha1.o \
+          crypto/hash/hmac.o crypto/hash/auth.o # crypto/hash/tmmhv2.o 
+
+replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
+          crypto/replay/ut_sim.o 
+
+math    = crypto/math/datatypes.o crypto/math/stat.o
+
+ust     = crypto/ust/ust.o 
+
+rng     = crypto/rng/rand_source.o crypto/rng/prng.o crypto/rng/ctr_prng.o
+
+err     = crypto/kernel/err.o
+
+kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
+          crypto/kernel/key.o $(rng) $(err) # $(ust) 
+
+cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
+
+aesicmobj = $(aesicm)  $(rng)
+
+# gdoi is the group domain of interpretation for isakmp, a group key
+# management system which can provide keys for srtp
+
+gdoi	= @GDOI_OBJS@
+
+# libsrtp.a (implements srtp processing)
+
+srtpobj = srtp/srtp.o 
+
+libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
+	ar cr libsrtp.a $(srtpobj) $(cryptobj) $(gdoi)
+	ranlib libsrtp.a
+
+# libaesicm.a provides an icm implementation used by mpeg4ip
+
+libaesicm.a: $(aesicmobj)
+	ar cr libaesicm.a $(aesicmobj)
+	ranlib libaesicm.a
+
+# libcryptomath.a contains general-purpose routines that are used to
+# generate tables and verify cryptoalgorithm implementations - this
+# library is not meant to be included in production code
+
+cryptomath = crypto/math/math.o crypto/math/gf2_8.o crypto/math/gf2_128.o
+
+libcryptomath.a: $(cryptomath)
+	ar cr libcryptomath.a $(cryptomath)
+	ranlib libcryptomath.a
+
+
+# test applications 
+
+testapp = test/cipher_driver test/datatypes_driver test/srtp_driver \
+          test/replay_driver test/roc_driver test/rdbx_driver       \
+          test/stat_driver test/sha1_driver test/kernel_driver      \
+          test/aes_calc test/rand_gen # test/ust_driver @GDOI_APPS@
+#          test/auth_driver test/rtpw                 \
+
+test/rtpw: test/rtpw.c test/rtp.c
+	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) -o test/rtpw test/rtpw.c test/rtp.c $(LIBDIR) $(LIBS)
+
+test: $(testapp)
+
+memtest: test/srtp_driver
+	@test/srtp_driver -v -d "alloc" > tmp
+	@grep freed tmp | wc -l > freed
+	@grep allocated tmp | wc -l > allocated
+	@echo "checking for memory leaks (only works with --enable-stdout)"
+	cmp -s allocated freed
+	@echo "passed (same number of alloc() and dealloc() calls found)"
+	@rm freed allocated tmp
+
+# tables_apps are used to generate the tables used in the crypto
+# implementations; these need only be generated during porting, not
+# for building libsrtp or the test applications
+
+table_apps = tables/aes_tables tables/gf_128_tables
+
+# in the tables/ subdirectory, we use libcryptomath instead of libsrtp
+
+tables/%: tables/%.c libcryptomath.a 
+	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ $(LIBDIR) libcryptomath.a
+
+# the target 'plot' runs the timing test (test/srtp_driver -t) then
+# uses gnuplot to produce plots of the results - see the script file
+# 'timing'
+
+plot:	test/srtp_driver
+	test/srtp_driver -t > timing.dat
+
+
+# bookkeeping: tags, clean, and distribution
+
+tags:
+	etags */*.[ch] */*/*.[ch] 
+
+
+# documentation - the target libsrtpdoc builds a PDF file documenting
+# libsrtp
+
+libsrtpdoc:
+	cd doc; make
+
+# EXE defines the suffix on executables - it's .exe for cygwin, and
+# null on linux, bsd, and OS X and other OSes.  we define this so that
+# `make clean` will work on the cygwin platform
+
+EXE = @EXE@
+
+.PHONY: clean superclean install
+
+install:
+	if [ -d /usr/local/include/srtp ]; then \
+	   echo "you should run 'make uninstall' first"; exit 1;  \
+	fi
+	mkdir /usr/local/include/srtp
+	cp include/*.h /usr/local/include/srtp  
+	cp crypto/include/*.h /usr/local/include/srtp
+	cp libsrtp.a /usr/local/lib/
+	if [ -f libaesicm.a ]; then cp libaesicm.a /usr/local/lib/; fi 
+
+uninstall:
+	rm -rf /usr/local/include/srtp
+	rm -rf /usr/local/lib/libsrtp.a
+	if [ -f libaesicm.a ]; then rm -rf /usr/local/lib/libaesicm.a; fi
+
+clean:
+	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) $(table_apps) TAGS \
+        libcryptomath.a libsrtp.a libaesicm.a core *.core test/core
+	for a in * */* */*/*; do			\
+              if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
+        done;
+	for a in $(testapp) $(table_apps); do rm -rf $$a$(EXE); done
+	rm -rf *.pict *.jpg *.dat 
+	rm -rf freed allocated tmp
+	cd doc; make clean
+	cd crypto; make clean
+
+
+superclean: clean
+	rm -rf include/config.h config.log config.cache config.status \
+               Makefile .gdb_history test/.gdb_history .DS_Store
+	rm -rf autom4te.cache
+
+distname = srtp-$(shell cat VERSION)
+
+distribution: superclean
+	if ! [ -f VERSION ]; then exit 1; fi
+	if [ -f ../$(distname).tgz ]; then               \
+           mv ../$(distname).tgz ../$(distname).tgz.bak; \
+        fi
+	cd ..; tar cvzf $(distname).tgz srtp
+
+# EOF 
+
+

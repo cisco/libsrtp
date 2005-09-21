@@ -1,0 +1,119 @@
+# Makefile for libcryptokernel.a
+#
+# David A. McGrew
+# Cisco Systems, Inc.
+
+CFLAGS = -Wall -g
+INCDIR = -I. -I./include  
+LIBS   = -lcryptomodule
+LIBDIR = -L. 
+
+ifdef ARCH
+  CDEFS += -D$(ARCH)=1
+endif
+
+ifdef sysname
+  CDEFS += -D$(sysname)=1
+endif
+
+.PHONY: dummy all runtest clean superclean
+
+dummy : all runtest 
+
+# data values used to test the aes_calc application
+
+k=000102030405060708090a0b0c0d0e0f
+p=00112233445566778899aabbccddeeff
+c=69c4e0d86a7b0430d8cdb78070b4c55a
+
+runtest: $(testapp)
+	@echo "running libcryptomodule test applications..."
+	test `test/aes_calc $k $p` = $c
+	test/cipher_driver -v >/dev/null
+	test/datatypes_driver -v >/dev/null
+	test/stat_driver >/dev/null
+	test/sha1_driver -v >/dev/null
+	test/kernel_driver -v >/dev/null
+	test/rand_gen -n 256 >/dev/null
+	@echo "libcryptomodule test applications passed."
+
+# libcryptomodule.a (the crypto engine) 
+
+ciphers = cipher/cipher.o cipher/null_cipher.o      \
+          cipher/aes.o cipher/aes_icm.o             \
+          cipher/aes_cbc.o
+
+hashes  = hash/null_auth.o hash/sha1.o \
+          hash/hmac.o hash/auth.o
+
+math    = math/datatypes.o math/stat.o
+
+rng     = rng/rand_source.o rng/prng.o rng/ctr_prng.o
+
+err     = kernel/err.o
+
+kernel  = kernel/crypto_kernel.o  kernel/alloc.o   \
+          kernel/key.o $(rng) $(err)
+
+xfm     = ae_xfm/xfm.o
+
+cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(xfm)
+
+# the rule for making object files and test apps
+
+%.o: %.c
+	$(CC) -c $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ 
+
+%: %.c libcryptomodule.a 
+	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ $(LIBDIR) $(LIBS)
+
+ifndef AR
+  AR=ar
+endif
+
+ifndef RANLIB
+  RANLIB=ranlib
+endif
+
+# and the crypto module library itself
+
+libcryptomodule.a: $(cryptobj) 
+	$(AR) cr libcryptomodule.a $(cryptobj) 
+	$(RANLIB) libcryptomodule.a
+
+# test applications 
+
+testapp = test/cipher_driver test/datatypes_driver \
+          test/stat_driver test/sha1_driver test/kernel_driver      \
+          test/aes_calc test/rand_gen 
+
+all: libcryptomodule.a $(testapp)
+
+test: libcryptomodule.a $(testapp)
+	@echo "running libcryptomodule test applications..."
+	test/kernel_driver$(EXE) -v >/dev/null
+	test/cipher_driver$(EXE) -v >/dev/null
+	@echo "libcryptomodule test applications passed." 
+
+# housekeeping functions
+
+clean:
+	rm -f libcryptomodule.a
+	rm -f $(testapp) *.o */*.o 
+	for a in * .* */*; do if [ -f "$$a~" ] ; then rm $$a~; fi; done;
+	rm -f `find . -name "*.[ch]~*~"`
+	rm -rf latex
+
+superclean: clean
+	rm -f *core TAGS ktrace.out
+
+
+# the target 'package' builds a compressed tar archive of the source code
+
+distname = crypto-$(shell cat VERSION)
+
+package: superclean
+	cd ..; tar cvzf $(distname).tgz crypto/
+
+
+# EOF
