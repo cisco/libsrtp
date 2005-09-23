@@ -229,20 +229,32 @@ v128_right_shift(v128_t *x, int index);
    (x)->v32[3] = ~(x)->v32[3]      \
 )
 
+/* ok for NO_64BIT_MATH if it can compare uint64_t's (even as structures) */
 #define _v128_is_eq(x, y)                                        \
   (((x)->v64[0] == (y)->v64[0]) && ((x)->v64[1] == (y)->v64[1]))
 
 
+#if (HAVE_U_LONG_LONG == 0)
+#define _v128_xor_eq(z, x)         \
+(                                  \
+   (z)->v32[0] ^= (x)->v32[0],     \
+   (z)->v32[1] ^= (x)->v32[1],     \
+   (z)->v32[2] ^= (x)->v32[2],     \
+   (z)->v32[3] ^= (x)->v32[3]      \
+)
+#else
 #define _v128_xor_eq(z, x)         \
 (                                  \
    (z)->v64[0] ^= (x)->v64[0],     \
    (z)->v64[1] ^= (x)->v64[1]      \
 )
+#endif
 
 
+#if 0
 #define _v128_get_bit(x, bit)                     \
 (                                                 \
-   (x->v32[3-((bit) >> 5)] >> ((bit) & 31)) & 1       \
+   (((x)->v32[3-((bit) >> 5)] >> ((bit) & 31)) & 1)       \
 )
 
 #define _v128_set_bit(x, bit)                                    \
@@ -252,8 +264,9 @@ v128_right_shift(v128_t *x, int index);
 
 #define _v128_clear_bit(x, bit)                                   \
 (                                                                 \
-  (((x)->v32[(bit) >> 5]) &= ~((unsigned long)1 << ((bit) & 31))) \
+  (((x)->v32[3-((bit) >> 5])) &= ~((uint32_t)1 << ((bit) & 31))) \
 )
+#endif
 
 #define _v128_set_bit_to(x, bit, value)   \
 (                                         \
@@ -287,6 +300,7 @@ v128_right_shift(v128_t *x, int index);
 
 #endif /* OLD */
 
+#if 0
 #if WORDS_BIGENDIAN
 
 #define _v128_add(z, x, y) {                    \
@@ -327,7 +341,7 @@ v128_right_shift(v128_t *x, int index);
 }
 						
 #endif /* WORDS_BIGENDIAN */                      
-
+#endif
 
 #ifdef DATATYPES_USE_MACROS  /* little functions are really macros */
 

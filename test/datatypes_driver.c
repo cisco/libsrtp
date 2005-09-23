@@ -55,7 +55,7 @@ void
 test_hex_string_funcs();
 
 void
-print_string(octet_t *s);
+print_string(char *s);
 
 void
 test_bswap();
@@ -71,12 +71,12 @@ main () {
 
   int i, j;
   v128_t x;
-  octet_t *r = 
+  char *r = 
     "The Moving Finger writes; and, having writ,\n"
     "Moves on: nor all thy Piety nor Wit\n"
     "Shall lure it back to cancel half a Line,\n"
     "Nor all thy Tears wash out a Word of it.";
-  octet_t *s = "incomplet"; 
+  char *s = "incomplet"; 
  
   print_string(r);
   print_string(s);
@@ -84,6 +84,7 @@ main () {
   byte_order();
   test_hex_string_funcs();
 
+  printf("-----bits 0 to 127 set/clr -----------------------------------------\n");
   for (j=0; j < 128; j++) {
     v128_set_to_zero(&x);
     /*      x.v32[0] = (1 << j); */
@@ -94,41 +95,41 @@ main () {
     
   }
 
-  printf("----------------------------------------------\n");
+  printf("-----bits 0 to 127 all set -----------------------------------------\n");
   v128_set_to_zero(&x);
   for (i=0; i < 128; i++) {
     v128_set_bit(&x, i);
   }
   printf("%s\n", v128_bit_string(&x)); 
 
-  printf("----------------------------------------------\n");
+  printf("-----bit 0 set, right shift 1 128 times-----------------------------------------\n");
   v128_set_to_zero(&x);
   v128_set_bit(&x, 0);
   for (i=0; i < 128; i++) {
       printf("%s\n", v128_bit_string(&x)); 
     v128_right_shift(&x, 1);
   }
-  printf("----------------------------------------------\n");
+  printf("-----bit 127 set, left shift 1 128 times-----------------------------------------\n");
   v128_set_to_zero(&x);
   v128_set_bit(&x, 127);
   for (i=0; i < 128; i++) {
       printf("%s\n", v128_bit_string(&x)); 
     v128_left_shift(&x, 1);
   }
-  printf("----------------------------------------------\n");
+  printf("-----bit 127 set, left shift 0 to 128 bits-----------------------------------------\n");
   for (i=0; i < 128; i++) {
     v128_set_to_zero(&x);
     v128_set_bit(&x, 127);
     v128_left_shift(&x, i);
       printf("%s\n", v128_bit_string(&x)); 
   }
-  printf("----------------------------------------------\n");
+  printf("-----set all even bits-----------------------------------------\n");
   v128_set_to_zero(&x);
   for (i=0; i < 128; i+=2) {
     v128_set_bit(&x, i);
   }
   printf("bit_string: { %s }\n", v128_bit_string(&x)); 
-  printf("get_bit:    { ");   
+  printf("get_bit 0-127:    { ");   
   for (i=0; i < 128; i++) {
     if (v128_get_bit(&x, i) == 1)
       printf("1");
@@ -186,9 +187,9 @@ byte_order() {
 
 void
 test_hex_string_funcs() {
-  octet_t hex1[] = "abadcafe";
-  octet_t hex2[] = "0123456789abcdefqqqqq";
-  octet_t raw[10];
+  char hex1[] = "abadcafe";
+  char hex2[] = "0123456789abcdefqqqqq";
+  char raw[10];
   int len;
 
   len = hex_string_to_octet_string(raw, hex1, strlen(hex1));
@@ -204,7 +205,7 @@ test_hex_string_funcs() {
 }
 
 void
-print_string(octet_t *s) {
+print_string(char *s) {
   int i;  
   printf("%s\n", s);
   printf("strlen(s) = %u\n", (unsigned)strlen(s));
@@ -220,12 +221,20 @@ print_string(octet_t *s) {
 void
 test_bswap() {
   uint32_t x = 0x11223344;
+#if (HAVE_U_LONG_LONG == 0)
+  uint64_t y = make64(0x11223344,55667788);
+#else
   uint64_t y = 0x1122334455667788LL;
+#endif
 
   printf("before: %0x\nafter:  %0x\n", x, bswap_32(x));
   printf("before: %0llx\nafter:  %0llx\n", y, bswap_64(y));
 
+#if (HAVE_U_LONG_LONG == 0)
+  y = make64(0,1234);
+#else
   y = 1234;
+#endif
 
   printf("1234: %0llx\n", y);
   printf("as octet string: %s\n", 

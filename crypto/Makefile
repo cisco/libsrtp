@@ -1,4 +1,4 @@
-# Makefile for libcryptokernel.a
+# Makefile for libcryptomodule.a
 #
 # David A. McGrew
 # Cisco Systems, Inc.
@@ -27,6 +27,7 @@ p=00112233445566778899aabbccddeeff
 c=69c4e0d86a7b0430d8cdb78070b4c55a
 
 runtest: $(testapp)
+	test/env # print out information on the build environment
 	@echo "running libcryptomodule test applications..."
 	test `test/aes_calc $k $p` = $c
 	test/cipher_driver -v >/dev/null
@@ -85,7 +86,7 @@ libcryptomodule.a: $(cryptobj)
 
 testapp = test/cipher_driver test/datatypes_driver \
           test/stat_driver test/sha1_driver test/kernel_driver      \
-          test/aes_calc test/rand_gen 
+          test/aes_calc test/rand_gen test/env
 
 all: libcryptomodule.a $(testapp)
 

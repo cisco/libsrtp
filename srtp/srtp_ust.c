@@ -45,10 +45,10 @@
 
 #include "alloc.h"           /* for crypto_alloc() */
 #include "srtp.h"
-#include "rijndael-icm.h"    /* for rijndael_icm   */
+#include "aes_icm.h"    /* for rijndael_icm   */
 
 
-extern cipher_type_t rijndael_icm;
+extern cipher_type_t aes_icm;
 extern auth_type_t   tmmhv2;
 
 /* the debug module for srtp */
@@ -121,7 +121,7 @@ typedef enum {
 err_status_t
 srtp_init_aes_128_prf(srtp_ctx_t *srtp, const octet_t key[30]) {
   err_status_t stat;
-  rijndael_icm_context c;
+  aes_icm_context c;
   xtd_seq_num_t idx = 0;               /* for setting icm to zero-index   */   
   octet_t *buffer;                     /* temporary storage for keystream */
   octet_t *enc_key_buf, *enc_salt_buf, *auth_key_buf; 
@@ -135,8 +135,8 @@ srtp_init_aes_128_prf(srtp_ctx_t *srtp, const octet_t key[30]) {
   buffer_size = cipher_get_key_length(srtp->ust.c)
     + auth_get_key_length(srtp->ust.h);
 
-  /* if we're using rijndael_icm, we need to allocate room for the salt */
-  if (srtp->ust.c->type == &rijndael_icm)
+  /* if we're using aes_icm, we need to allocate room for the salt */
+  if (srtp->ust.c->type == &aes_icm)
     buffer_size += 16;
   buffer = crypto_alloc(buffer_size);
   if (buffer == NULL)
@@ -150,11 +150,11 @@ srtp_init_aes_128_prf(srtp_ctx_t *srtp, const octet_t key[30]) {
 
   /* note that we assume that index DIV t == 0 in this implementation */
   
-  rijndael_icm_context_init(&c, key);
+  aes_icm_context_init(&c, key);
 
   /* exor <label> into the eigth octet of the state */
-  rijndael_icm_set_div_param(&c, (uint64_t) label_encryption);
-  rijndael_icm_set_segment(&c, idx);
+  aes_icm_set_div_param(&c, (uint64_t) label_encryption);
+  aes_icm_set_segment(&c, idx);
 
   debug_print(mod_srtp, "master key: %s", 
 	      octet_string_hex_string((octet_t *)&c.expanded_key[0], 60));
@@ -162,34 +162,34 @@ srtp_init_aes_128_prf(srtp_ctx_t *srtp, const octet_t key[30]) {
   debug_print(mod_srtp, "cipher ctr: %s", 
 	      octet_string_hex_string((octet_t *)&c.counter, 32));  
 
-  rijndael_icm_encrypt(&c, enc_key_buf, 
+  aes_icm_encrypt(&c, enc_key_buf, 
 		       cipher_get_key_length(srtp->ust.c));
 
   debug_print(mod_srtp, "cipher key: %s", 
 	      octet_string_hex_string(enc_key_buf, 32));  
 
   /* generate encryption salt, putting it into enc_salt_buf */
-  rijndael_icm_context_init(&c, key);
+  aes_icm_context_init(&c, key);
 
 
   /* 
-   * if the cipher in the srtp context is rijndael_icm, then we need
+   * if the cipher in the srtp context is aes_icm, then we need
    * to generate the salt value
    */
 
-  if (srtp->ust.c->type == &rijndael_icm) {
+  if (srtp->ust.c->type == &aes_icm) {
 
-/*     printf("found rijndael_icm, generating salt\n"); */
+/*     printf("found aes_icm, generating salt\n"); */
 
     /* exor <label> into the eigth octet of the state */
-    rijndael_icm_set_div_param(&c, (uint64_t) label_salt); 
-    rijndael_icm_set_segment(&c, idx);
+    aes_icm_set_div_param(&c, (uint64_t) label_salt); 
+    aes_icm_set_segment(&c, idx);
     
     debug_print(mod_srtp, "generating cipher salt", NULL);
     debug_print(mod_srtp, "cr slt ctr: %s", 
 		octet_string_hex_string((octet_t *)&c.counter, 32));  
 
-    rijndael_icm_encrypt(&c, enc_salt_buf, 14);
+    aes_icm_encrypt(&c, enc_salt_buf, 14);
 
     debug_print(mod_srtp, "cipher slt: %s", 
 		octet_string_hex_string(enc_salt_buf, 32));  
@@ -202,17 +202,17 @@ srtp_init_aes_128_prf(srtp_ctx_t *srtp, const octet_t key[30]) {
   
   /* generate authentication key, putting it into auth_key_buf */
 
-  rijndael_icm_context_init(&c, key);
+  aes_icm_context_init(&c, key);
 
   /* exor <label> into the eigth octet of the state */
-  rijndael_icm_set_div_param(&c, (uint64_t) label_message_authentication);
-  rijndael_icm_set_segment(&c, idx);
+  aes_icm_set_div_param(&c, (uint64_t) label_message_authentication);
+  aes_icm_set_segment(&c, idx);
 
   debug_print(mod_srtp, "generating auth key", NULL);
   debug_print(mod_srtp, "auth ctr:   %s",
 	      octet_string_hex_string((octet_t *)&c.counter, 32));  
 
-  rijndael_icm_encrypt(&c, auth_key_buf,
+  aes_icm_encrypt(&c, auth_key_buf,
 		       auth_get_key_length(srtp->ust.h));
   
   debug_print(mod_srtp, "auth key:   %s",
@@ -244,10 +244,10 @@ srtp_protect(srtp_ctx_t *ctx, srtp_hdr_t *hdr, int *pkt_octet_len) {
   int tag_len = ust_get_tag_len(&ctx->ust); 
  
   /* if we're using rindael counter mode, exor the ssrc into the salt */
-  if (ctx->ust.c->type == &rijndael_icm) {
+  if (ctx->ust.c->type == &aes_icm) {
     uint32_t ssrc = ntohl(hdr->ssrc);
-    rijndael_icm_context *cipher 
-      = (rijndael_icm_context *)ctx->ust.c->state;
+    aes_icm_context *cipher 
+      = (aes_icm_context *)ctx->ust.c->state;
 
     /* exor the ssrc into bytes four through seven of the salt */
     cipher->offset.octet[4] ^= (ssrc >> 24);

@@ -171,13 +171,13 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
    */
 
   /* deallocate cipher, if it is not the same as that in template */
-  if (session->stream_template 
+  if (session->stream_template
       && stream->rtp_cipher == session->stream_template->rtp_cipher) {
     /* do nothing */
   } else {
     status = cipher_dealloc(stream->rtp_cipher); 
     if (status) 
-      return status;    
+      return status;
   }
 
   /* deallocate auth function, if it is not the same as that in template */
@@ -190,10 +190,13 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
       return status;
   }
 
-  /* if the key usage limit strucutre is present, deallocate it */
-  if (stream->limit != NULL
-      && (session->stream_template == NULL || stream->next == NULL))
+  /* deallocate key usage limit, if it is not the same as that in template */
+  if (session->stream_template
+      && stream->limit == session->stream_template->limit) {
+    /* do nothing */
+  } else {
     crypto_free(stream->limit);
+  }   
 
   /* 
    * deallocate rtcp cipher, if it is not the same as that in
@@ -373,7 +376,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    rdbx_init(&srtp->rtp_rdbx);
 
    /* initialize key limit to maximum value */
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
 {
 	uint64_t temp;
 	temp = make64(UINT_MAX,UINT_MAX);
@@ -597,7 +600,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 
        /* allocate and initialize a new stream */
        status = srtp_stream_clone(ctx->stream_template, 
-				  ntohl(hdr->ssrc), &new_stream); 
+				  hdr->ssrc, &new_stream); 
        if (status)
 	 return status;
 
@@ -643,7 +646,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     break; 
   case key_event_hard_limit:
     srtp_handle_event(ctx, stream, event_key_hard_limit);
-    return err_status_key_expired;
+	return err_status_key_expired;
   default:
     break;
   }
@@ -691,7 +694,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      return status;  /* we've been asked to reuse an index */
    rdbx_add_index(&stream->rtp_rdbx, delta);
 
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
    debug_print2(mod_srtp, "estimated packet index: %08x%08x", 
 		high32(est),low32(est));
 #else
@@ -706,9 +709,9 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 
      iv.v32[0] = 0;
      iv.v32[1] = hdr->ssrc;
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
      iv.v64[1] = bswap_64(make64((high32(est) << 16) | (low32(est) >> 16),
-			  low32(est) << 16));
+								 low32(est) << 16));
 #else
      iv.v64[1] = bswap_64(est << 16);
 #endif
@@ -718,7 +721,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      v128_t iv;
 
      /* otherwise, set the index to est */  
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
      iv.v32[0] = 0;
      iv.v32[1] = 0;
 #else
@@ -731,7 +734,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      return err_status_cipher_fail;
 
    /* shift est, put into network byte order */
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
    est = bswap_64(make64((high32(est) << 16) |
 						 (low32(est) >> 16),
 						 lo32(est) << 16));
@@ -838,7 +841,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
        * set estimated packet index to sequence number from header,
        * and set delta equal to the same value
        */
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
       est = (xtd_seq_num_t) make64(0,ntohs(hdr->seq));
       delta = low32(est);
 #else
@@ -864,7 +867,11 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
       return status;
   }
 
-  debug_print(mod_srtp, "estimated packet index: %016llx", est);
+#if (HAVE_U_LONG_LONG == 0)
+  debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),low32(est));
+#else
+  debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
+#endif
 
   /* 
    * update the key usage limit, and check it to make sure that we
@@ -896,7 +903,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     /* aes counter mode */
     iv.v32[0] = 0;
     iv.v32[1] = hdr->ssrc;  /* still in network order */
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
     iv.v64[1] = bswap_64(make64((high32(est) << 16) | (low32(est) >> 16),
 			         low32(est) << 16));
 #else
@@ -906,7 +913,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   } else {  
     
     /* no particular format - set the iv to the pakcet index */  
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
     iv.v32[0] = 0;
     iv.v32[1] = 0;
 #else
@@ -919,7 +926,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     return err_status_cipher_fail;
 
   /* shift est, put into network byte order */
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   est = bswap_64(make64((high32(est) << 16) |
 					    (low32(est) >> 16),
 					    low32(est) << 16));
@@ -984,7 +991,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     /* initialize auth func context */
     status = auth_start(stream->rtp_auth);
     if (status) return status;
-
+ 
     /* now compute auth function over packet */
     status = auth_update(stream->rtp_auth, (octet_t *)auth_start,  
 			 *pkt_octet_len - tag_len);
@@ -1150,6 +1157,13 @@ srtp_dealloc(srtp_t session) {
   
   /* deallocate stream template, if there is one */
   if (session->stream_template != NULL) {
+    status = auth_dealloc(session->stream_template->rtcp_auth); 
+    if (status) 
+      return status; 
+    status = cipher_dealloc(session->stream_template->rtcp_cipher); 
+    if (status) 
+      return status; 
+    crypto_free(session->stream_template->limit);
     status = cipher_dealloc(session->stream_template->rtp_cipher); 
     if (status) 
       return status; 

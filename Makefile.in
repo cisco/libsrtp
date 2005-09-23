@@ -70,6 +70,10 @@ kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
 
 cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
 
+aesicm	= crypto/cipher/cipher.o crypto/cipher/aes.o crypto/cipher/aes_icm.o \
+          crypto/hash/auth.o crypto/kernel/alloc.o crypto/kernel/err.o \
+          crypto/math/datatypes.o crypto/replay/rdbx.o
+
 aesicmobj = $(aesicm)  $(rng)
 
 # gdoi is the group domain of interpretation for isakmp, a group key
@@ -176,7 +180,7 @@ install:
 uninstall:
 	rm -rf /usr/local/include/srtp
 	rm -rf /usr/local/lib/libsrtp.a
-	if [ -f libaesicm.a ]; then rm -rf /usr/local/lib/libaesicm.a; fi
+	rm -rf /usr/local/lib/libaesicm.a
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) $(table_apps) TAGS \

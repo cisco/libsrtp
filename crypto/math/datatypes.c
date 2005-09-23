@@ -413,25 +413,33 @@ octet_string_set_to_zero(octet_t *s, int len) {
 
 inline uint32_t
 bswap_32(uint32_t v) {
+#ifdef WORDS_BIGENDIAN
+  /* assume that we're on a big-endian machine */
+  /* htonl() does nothing */
+#else
 #if CPU_CISC                     
-#ifndef MIPSEL  /* MIPSEL stands for MIPS Endian Little, but it's not x86,
-		 * so ignore the assembly language */
   /* assume that we're on an Intel x86 with x > 3 */
   asm("bswap %0" : "=r" (v) : "0" (v));
+#else
+  /* little-endian; we can use htonl() */
+  v = htonl(v);
 #endif
 #endif
-  /* assume that we're on a big-endian or non-intel machine */
   return v;
 }
 
 inline uint64_t
 bswap_64(uint64_t v) {
+#ifdef WORDS_BIGENDIAN
+  /* assume that we're on a big-endian machine */
+  /* FIX? */
+#else
 #if CPU_CISC  /* assume that we're on an Intel x86 with x > 3 */
-#ifndef MIPSEL  /* MIPSEL stands for MIPS Endian Little, but it's not x86,
-		 * so ignore the assembly language */
   v= (bswap_32(v >> 32)) | ((uint64_t)bswap_32((uint32_t)v)) << 32 ;
+#else
+  v = make64(htonl(low32(v)),htonl(high32(v)));
 #endif
-#endif        /* assume that we're on a big-endian or non-intel machine */
+#endif
   return v;
 }
 

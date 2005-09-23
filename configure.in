@@ -30,7 +30,13 @@ AC_CHECK_HEADERS(sys/int_types.h)
 
 AC_CHECK_HEADERS(syslog.h)
 
-AC_CHECK_TYPE(uint16_t)
+AC_CHECK_TYPES([int8,uint8,int16,uint16,int32,uint32,unit64])
+
+AC_CHECK_TYPE(unsigned long long, HAVE_U_LONG_LONG=1, HAVE_U_LONG_LONG=0)
+
+if test $HAVE_U_LONG_LONG = 1; then
+   AC_DEFINE(HAVE_U_LONG_LONG)
+fi
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -108,7 +114,7 @@ if test $GDOI = 1; then
    AC_SUBST(GDOI_OBJS)                              
 fi
 
-AC_CONFIG_HEADER(include/config.h:config_in.h)
+AC_CONFIG_HEADER(crypto/include/config.h:config_in.h)
 
 AC_OUTPUT(Makefile)
 

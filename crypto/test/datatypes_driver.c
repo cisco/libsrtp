@@ -55,7 +55,7 @@ void
 test_hex_string_funcs();
 
 void
-print_string(octet_t *s);
+print_string(char *s);
 
 void
 test_bswap();
@@ -71,12 +71,12 @@ main () {
 
   int i, j;
   v128_t x;
-  octet_t *r = 
+  char *r = 
     "The Moving Finger writes; and, having writ,\n"
     "Moves on: nor all thy Piety nor Wit\n"
     "Shall lure it back to cancel half a Line,\n"
     "Nor all thy Tears wash out a Word of it.";
-  octet_t *s = "incomplet"; 
+  char *s = "incomplet"; 
  
   print_string(r);
   print_string(s);
@@ -186,9 +186,9 @@ byte_order() {
 
 void
 test_hex_string_funcs() {
-  octet_t hex1[] = "abadcafe";
-  octet_t hex2[] = "0123456789abcdefqqqqq";
-  octet_t raw[10];
+  char hex1[] = "abadcafe";
+  char hex2[] = "0123456789abcdefqqqqq";
+  char raw[10];
   int len;
 
   len = hex_string_to_octet_string(raw, hex1, strlen(hex1));
@@ -204,7 +204,7 @@ test_hex_string_funcs() {
 }
 
 void
-print_string(octet_t *s) {
+print_string(char *s) {
   int i;  
   printf("%s\n", s);
   printf("strlen(s) = %u\n", (unsigned)strlen(s));

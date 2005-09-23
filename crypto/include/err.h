@@ -48,7 +48,9 @@
 
 #include "config.h"             /* check for ERR_REPORTING_SYSLOG */
 
+#ifdef ERR_REPORTING_FILE
 #include <stdio.h>
+#endif
 
 #include <stdarg.h>
 
@@ -163,8 +165,8 @@ err_report(int priority, char *format, ...);
  */
 
 typedef struct { 
-  unsigned int   on;          /* 1 if debugging is on, 0 if it is off */
-  char *name;                 /* printable name for debug module      */
+  int   on;          /* 1 if debugging is on, 0 if it is off */
+  char *name;        /* printable name for debug module      */
 } debug_module_t;
 
 #if ENABLE_DEBUGGING 

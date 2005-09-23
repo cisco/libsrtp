@@ -86,9 +86,9 @@ x917_prng_get_octet_string(octet_t *dest, uint32_t len) {
   /* 
    * if we need to re-initialize the prng, do so now 
    *
-   * we cast to a 64-bit integer in order to avoid overflows
+   * avoid overflows by subtracting instead of adding
    */
-  if ((uint64_t) x917_prng.octet_count + len > MAX_PRNG_OUT_LEN) {
+  if (x917_prng.octet_count > MAX_PRNG_OUT_LEN - len) {
     status = x917_prng_init(x917_prng.rand);    
     if (status)
       return status;

@@ -69,14 +69,6 @@ aes_encrypt(v128_t *plaintext, const aes_expanded_key_t exp_key);
 void
 aes_decrypt(v128_t *plaintext, const aes_expanded_key_t exp_key);
 
-/*
- * gf2_8_shift(x) returns the next gf2_8 value in the cyclic
- * representation of that field
- */
-
-gf2_8
-gf2_8_shift(octet_t input);
-
 #if 0
 /*
  * internal functions 

@@ -1,5 +1,18 @@
 TODO List
 
+1.4.1
+
+  - document which fields are in NBO/HBO, and check for consistency.
+
+  - move HAVE_U_LONG_LONG inside of datatypes.c, or some other
+    separate file
+
+  - re-write configure.in to make cross-compilation easier
+
+  - eliminate GENERIC_AESICM by generalizing the code a bit
+
+Older comments
+
   - add tests for key_limit_t datatype 
 
   - move octet_get_weight() from datatypes.c to math.c (any other
@@ -10,11 +23,6 @@ Changes and additions planned
   Make cipher and auth dealloc() functions zeroize the key-storage
   areas before calling free().
 
-  Fix UST
-    - implement scatter/gather API
-    - SRTP using UST
-    - possibly add legacy SHA1 usage
-
   Eliminate key_len from auth_init()
 
   Doucument internal APIs (cipher, auth, srtp_protect, ...)
@@ -23,18 +31,13 @@ Changes and additions planned
 SRTP options not (yet) included in this libaray:
 
  - the aes-f8-mode cipher
- - HMAC-SHA-1
  - the Master Key Index
  - re-keying using the key derivation function (only the initial
    use of the PRF has been implemented, as it's sufficient
    for most uses)
 
-INCOMPLETE ADDITIONS
 
-   Added DES and 3DES ICM.
-
-
-PLANNED CHANGES
+(OLD) PLANNED CHANGES
 
    strip out test/lfsr.c
 
@@ -61,6 +64,3 @@ PLANNED CHANGES
    Consider eliminating low-level alloc functions in favor of len()
    functions, so that there need not be multiple allocations within a
    particular alloc() function.
-
-   Update test/stat-driver.c so that it tests the rand_source API.
-   Add a pseudorandom rand_source.

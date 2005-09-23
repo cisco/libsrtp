@@ -198,13 +198,27 @@ err_status_t
 aes_icm_set_octet(aes_icm_ctx_t *c,
 		  uint64_t octet_num) {
 
+#if (HAVE_U_LONG_LONG == 0)
+  int tail_num       = low32(octet_num) & 0x0f;
+  /* 64-bit right-shift 4 */
+  uint64_t block_num = make64(high32(octet_num) >> 4,
+							  ((high32(octet_num) & 0x0f)<<(32-4)) |
+							   (low32(octet_num) >> 4));
+#else
   int tail_num       = octet_num % 16;
   uint64_t block_num = octet_num / 16;
+#endif
   
 
   /* set counter value */
+  /* FIX - There's no way this is correct */
   c->counter.v64[0] = c->offset.v64[0];
+#if (HAVE_U_LONG_LONG == 0)
+  c->counter.v64[0] = make64(high32(c->offset.v64[0]) ^ high32(block_num),
+							 low32(c->offset.v64[0])  ^ low32(block_num));
+#else
   c->counter.v64[0] = c->offset.v64[0] ^ block_num;
+#endif
 
   debug_print(mod_aes_icm, 
 	      "set_octet: %s", v128_hex_string(&c->counter)); 
@@ -213,7 +227,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
   if (tail_num) {
     v128_copy(&c->keystream_buffer, &c->counter);
     aes_encrypt(&c->keystream_buffer, c->expanded_key);
-    c->bytes_in_buffer = 16;
+    c->bytes_in_buffer = sizeof(v128_t);
 
     debug_print(mod_aes_icm, "counter:    %s", 
 	      v128_hex_string(&c->counter));
@@ -274,7 +288,7 @@ aes_icm_advance(aes_icm_ctx_t *c) {
   /* fill buffer with new keystream */
   v128_copy(&c->keystream_buffer, &c->counter);
   aes_encrypt(&c->keystream_buffer, c->expanded_key);
-  c->bytes_in_buffer = 16;
+  c->bytes_in_buffer = sizeof(v128_t);
 
   debug_print(mod_aes_icm, "counter:    %s", 
 	      v128_hex_string(&c->counter));
@@ -323,9 +337,11 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   if (bytes_to_encr <= c->bytes_in_buffer) {
     
     /* deal with odd case of small bytes_to_encr */
-    for (i = (16 - c->bytes_in_buffer);
-	 i < (16 - c->bytes_in_buffer + bytes_to_encr); i++) 
+    for (i = (sizeof(v128_t) - c->bytes_in_buffer);
+		 i < (sizeof(v128_t) - c->bytes_in_buffer + bytes_to_encr); i++) 
+	{
       *buf++ ^= c->keystream_buffer.octet[i];
+	}
 
     c->bytes_in_buffer -= bytes_to_encr;
 
@@ -335,7 +351,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   } else {
     
     /* encrypt bytes until the remaining data is 16-byte aligned */    
-    for (i=(16 - c->bytes_in_buffer); i < 16; i++) 
+    for (i=(sizeof(v128_t) - c->bytes_in_buffer); i < sizeof(v128_t); i++) 
       *buf++ ^= c->keystream_buffer.octet[i];
 
     bytes_to_encr -= c->bytes_in_buffer;
@@ -344,7 +360,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   }
   
   /* now loop over entire 16-byte blocks of keystream */
-  for (i=0; i < (bytes_to_encr/16); i++) {
+  for (i=0; i < (bytes_to_encr/sizeof(v128_t)); i++) {
 
     /* fill buffer with new keystream */
     aes_icm_advance(c);
@@ -401,7 +417,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
       *buf++ ^= c->keystream_buffer.octet[i];
     
     /* reset the keystream buffer size to right value */
-    c->bytes_in_buffer = 16 - i;  
+    c->bytes_in_buffer = sizeof(v128_t) - i;  
   } else {
 
     /* no tail, so just reset the keystream buffer size to zero */
@@ -464,7 +480,7 @@ cipher_test_case_t aes_icm_test_case_0 = {
   NULL                                   /* pointer to next testcase */
 };
 
- 
+
 /*
  * note: the encrypt function is identical to the decrypt function
  */

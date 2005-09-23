@@ -93,7 +93,7 @@ cipher_type_self_test(const cipher_type_t *ct) {
 
   debug_print(mod_cipher, "running self-test for cipher %s", 
 	      ct->description);
-
+  
   /*
    * check to make sure that we have at least one test case, and
    * return an error if we don't - we need to be paranoid here
@@ -123,7 +123,7 @@ cipher_type_self_test(const cipher_type_t *ct) {
       cipher_dealloc(c);
       return status;
     }
-
+    
     /* copy plaintext into test buffer */
     if (test_case->ciphertext_length_octets > SELF_TEST_BUF_OCTETS) {
       cipher_dealloc(c);    
@@ -178,7 +178,7 @@ cipher_type_self_test(const cipher_type_t *ct) {
       cipher_dealloc(c);
       return err_status_algo_fail;
     }
-    
+
     /*
      * test the decrypt function
      */
@@ -257,7 +257,7 @@ cipher_type_self_test(const cipher_type_t *ct) {
     test_case = test_case->next_test_case;
     ++case_num;
   }
-
+  
   /* now run some random invertibility tests */
 
   /* allocate cipher, using paramaters from the first test case */
@@ -269,7 +269,8 @@ cipher_type_self_test(const cipher_type_t *ct) {
   rand_source_init();
   
   for (j=0; j < NUM_RAND_TESTS; j++) {
-    int length, plaintext_len;
+    unsigned length;
+    int plaintext_len;
     octet_t key[MAX_KEY_LEN];
     octet_t  iv[MAX_KEY_LEN];
 

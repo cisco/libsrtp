@@ -220,13 +220,13 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
 
   debug_print(mod_aes_cbc, "iv: %s", 
 	      v128_hex_string(&previous));
-
+  
   /*
    * loop over ciphertext blocks, decrypting then exoring with state
    * then writing plaintext to output
    */
   while (bytes_to_encr > 0) {
-        
+    
     /* set state to ciphertext input block */
     for (i=0; i < 16; i++) {
      state.octet[i] = *input++;
@@ -234,7 +234,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
 
     debug_print(mod_aes_cbc, "inblock:  %s", 
 	      v128_hex_string(&state));
-
+    
     /* decrypt state */
     aes_decrypt(&state, c->expanded_key);
 
@@ -268,7 +268,7 @@ aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
   int num_pad_bytes;
   err_status_t status;
 
-  /*
+  /* 
    * determine the number of padding bytes that we need to add - 
    * this value is always between 1 and 16, inclusive.
    */
@@ -320,7 +320,7 @@ aes_cbc_nist_decrypt(aes_cbc_ctx_t *c,
     pad_end--;
     num_pad_bytes++;
   }
-
+  
   /* decrement data size */
   *bytes_in_data -= num_pad_bytes;  
 

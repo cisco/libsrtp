@@ -209,7 +209,7 @@ v128_right_shift(v128_t *x, int index);
   (((x)->v64[0] == (y)->v64[0]) && ((x)->v64[1] == (y)->v64[1]))
 
 
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
 #define _v128_xor_eq(z, x)         \
 (                                  \
    (z)->v32[0] ^= (x)->v32[0],     \

@@ -171,7 +171,7 @@ hmac_update(hmac_ctx_t *state, const octet_t *message, int msg_octets) {
 }
 
 err_status_t
-hmac_compute(hmac_ctx_t *state, const octet_t *message,
+hmac_compute(hmac_ctx_t *state, const void *message,
 	     int msg_octets, int tag_len, octet_t *result) {
   uint32_t hash_value[5];
   uint32_t H[5];

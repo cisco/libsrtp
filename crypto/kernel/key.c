@@ -48,7 +48,7 @@
 
 err_status_t
 key_limit_set(key_limit_t key, const xtd_seq_num_t s) {
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   if (high32(s) == 0 && low32(s) < soft_limit)
     return err_status_bad_param;
 #else
@@ -77,7 +77,7 @@ key_limit_check(const key_limit_t key) {
 
 key_event_t
 key_limit_update(key_limit_t key) {
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   if (low32(key->num_left) == 0)
   {
 	  // carry
@@ -101,7 +101,7 @@ key_limit_update(key_limit_t key) {
     /* we just passed the soft limit, so change the state */
     key->state = key_state_past_soft_limit;
   }
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   if (low32(key->num_left) == 0 && high32(key->num_left == 0))
 #else
   if (key->num_left < 1)

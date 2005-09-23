@@ -11,7 +11,7 @@
 
 debug_module_t mod_stat = {
   0,                 /* debugging is off by default */
-  "stat test"        /* printable module name       */
+  (char *)"stat test"        /* printable module name       */
 };
 
 /*
@@ -334,7 +334,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
   debug_print(mod_stat, "stat: poker test: %f", poker);
     
   if ((poker < 2.16) || (poker > 46.17)) {
-      debug_print(mod_stat, "stat: failed poker test", NULL);
+    debug_print(mod_stat, "stat: failed poker test", NULL);
     return err_status_algo_fail;
   }
 

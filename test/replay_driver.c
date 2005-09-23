@@ -70,8 +70,7 @@ main () {
 
 void
 print_rdb(rdb_t *rdb) {
-  printf("rdb: {%u, %s}\n", rdb->window_start, 
-	 v128_bit_string(&rdb->bitmask));
+  printf("rdb: {%u, %s}\n", rdb->window_start, v128_bit_string(&rdb->bitmask));
 }
 
 void

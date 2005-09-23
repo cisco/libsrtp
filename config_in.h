@@ -1,7 +1,7 @@
 /*
  * config_in.h
  *
- * template for header config file for Secure RTP and UST implementation
+ * template for header config file for Secure RTP and libcryptomodule
  *
  * David A. McGrew
  * Cisco Systems, Inc.
@@ -20,6 +20,10 @@
 #define HAVE_STDINT_H        0
 #define HAVE_MACHINE_TYPES_H 0
 #define HAVE_SYS_INT_TYPES_H 0
+
+/* check if an unsigned 64-bit integer is supported natively */
+
+#define HAVE_U_LONG_LONG 0
 
 /* check for microsoft integer definitions (e.g., cygwin) */
 
@@ -82,15 +86,15 @@
 #define CPU_ALTIVEC  0
 
 /*
- * if /dev/random is available, then DEV_RANDOM == 1
+ * if /dev/urandom is available, then DEV_URANDOM == 1
  *
- * /dev/random is a (true) random number generator which is
+ * /dev/urandom is a (true) random number generator which is
  * implemented in many modern operating systems
  */
 
-#define DEV_RANDOM 0
+#define DEV_URANDOM 0
 
-/* check for stdlib.h - we use it for xalloc() and free() */
+/* check for stdlib.h - we use it for alloc() and free() */
 
 #define HAVE_STDLIB_H 0
 

@@ -82,7 +82,7 @@ cipher_array_test_throughput(cipher_t *ca[], int num_cipher);
 
 double
 cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher, 
-			     int octets_in_buffer, int num_trials);
+			     unsigned octets_in_buffer, int num_trials);
 
 err_status_t
 cipher_array_delete(cipher_t *cipher_array[], int num_cipher);
@@ -258,8 +258,8 @@ cipher_driver_self_test(cipher_type_t *ct) {
 
 err_status_t
 cipher_driver_test_buffering(cipher_t *c) {
-  int i, j, len, num_trials = 1000;
-  int buflen = 1024;
+  int i, j, num_trials = 1000;
+  unsigned len, buflen = 1024;
   octet_t buffer0[buflen], buffer1[buflen], *current, *end;
   octet_t idx[16] = { 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
@@ -420,7 +420,7 @@ cipher_array_delete(cipher_t *cipher_array[], int num_cipher) {
 
 double
 cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher, 
-			     int octets_in_buffer, int num_trials) {
+			     unsigned octets_in_buffer, int num_trials) {
   int i;
   v128_t nonce;
   clock_t timer;

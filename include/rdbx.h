@@ -18,13 +18,13 @@
 
 #ifndef ROC_TEST
 
-typedef unsigned short int sequence_number_t;   /* 16 bit sequence number  */
-typedef unsigned long int rollover_counter_t;   /* 32 bit rollover counter */
+typedef uint16_t sequence_number_t;   /* 16 bit sequence number  */
+typedef uint32_t rollover_counter_t;  /* 32 bit rollover counter */
 
 #else  /* use small seq_num and roc datatypes for testing purposes */
 
 typedef unsigned char sequence_number_t;         /* 8 bit sequence number   */
-typedef unsigned short int rollover_counter_t;   /* 16 bit rollover counter */
+typedef uint16_t rollover_counter_t;             /* 16 bit rollover counter */
 
 #endif
 

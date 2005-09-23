@@ -18,8 +18,8 @@ typedef struct {
   v128_t   counter;                /* holds the counter value          */
   v128_t   offset;                 /* initial offset value             */
   v128_t   keystream_buffer;       /* buffers bytes of keystream       */
-  int      bytes_in_buffer;        /* number of unused bytes in buffer */
   aes_expanded_key_t expanded_key; /* the cipher key                   */
+  int      bytes_in_buffer;        /* number of unused bytes in buffer */
 } aes_icm_ctx_t;
 
 

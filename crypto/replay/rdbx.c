@@ -89,7 +89,7 @@
 
 void
 index_init(xtd_seq_num_t *pi) {
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   *pi = make64(0,0);
 #else
   *pi = 0;
@@ -98,7 +98,7 @@ index_init(xtd_seq_num_t *pi) {
 
 void
 index_advance(xtd_seq_num_t *pi, sequence_number_t s) {
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   /* a > ~b means a+b will generate a carry */
   /* s is uint16 here */
   *pi = make64(high32(*pi) + (s > ~low32(*pi) ? 1 : 0),low32(*pi) + s);
@@ -125,7 +125,7 @@ int
 index_guess(const xtd_seq_num_t *local,
 		   xtd_seq_num_t *guess,
 		   sequence_number_t s) {
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   uint32_t local_roc = ((high32(*local) << 16) |
 						(low32(*local) >> 16));
   uint16_t local_seq = (uint16_t) (low32(*local));
@@ -133,7 +133,7 @@ index_guess(const xtd_seq_num_t *local,
   uint32_t local_roc = (uint32_t)(*local >> 16);
   uint16_t local_seq = (uint16_t) *local;
 #endif
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   uint32_t guess_roc = ((high32(*guess) << 16) |
 						(low32(*guess) >> 16));
   uint16_t guess_seq = (uint16_t) (low32(*guess));
@@ -163,7 +163,7 @@ index_guess(const xtd_seq_num_t *local,
   guess_seq = s;
   
   /* Note: guess_roc is 32 bits, so this generates a 48-bit result! */
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
   *guess = make64(guess_roc >> 16,
 				  (guess_roc << 16) | guess_seq);
 #else
@@ -274,7 +274,7 @@ rdbx_estimate_index(const rdbx_t *rdbx,
   if (rdbx->index > seq_num_median)
 #endif
     return index_guess(&rdbx->index, guess, s);
-
+  
 #if NO_64BIT_MATH
   *guess = make64(0,(uint32_t) s);
 #else  

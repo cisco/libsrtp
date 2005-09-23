@@ -51,6 +51,10 @@
 
 #include <stdlib.h>       /* standard integers should be referenced here */
 
+#ifndef HAVE_U_LONG_LONG
+/* Used instead of #ifndef HAVE_UINT64 since we're going to define uint64_t */
+#define NO_64BIT_MATH 1
+#endif
 
 /* use standard integer definitions, if they're available  */
 #if HAVE_STDINT_H 
@@ -74,7 +78,7 @@
 
 typedef unsigned short int     uint16_t;
 typedef unsigned int           uint32_t;
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
 typedef double uint64_t;
 /* assert that sizeof(double) == 8 */
 #else
@@ -90,7 +94,7 @@ typedef unsigned long long int uint64_t;
 
 typedef short int     int16_t;
 typedef int           int32_t;
-#ifdef NO_64BIT_MATH
+#if (HAVE_U_LONG_LONG == 0)
 typedef double int64_t;
 /* assert that sizeof(double) == 8 */
 #else

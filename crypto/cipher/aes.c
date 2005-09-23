@@ -1353,19 +1353,7 @@ uint32_t U4[256] = {
 
 /* aes internals */
 
-/*
- * gf2_8_shift(x) returns the result of the GF(2^8) 'multiply by x' 
- * operation, using the field representation from AES.  This function
- * is used in the AES key expansion routine.
- */
-
-inline gf2_8
-gf2_8_shift(gf2_8 input) {
-  if ((input & 128) == 0)
-    return input << 1;
-  else
-    return (input << 1) ^ gf2_8_field_polynomial; 
-}
+extern debug_module_t mod_aes_icm;
 
 inline void
 aes_expand_encryption_key(const v128_t key, 
@@ -1380,6 +1368,11 @@ aes_expand_encryption_key(const v128_t key,
   expanded_key[0].v32[1] = key.v32[1];
   expanded_key[0].v32[2] = key.v32[2];
   expanded_key[0].v32[3] = key.v32[3];
+
+#if 0
+  debug_print(mod_aes_icm, 
+	      "expanded key[0]:  %s", v128_hex_string(&expanded_key[0])); 
+#endif
 
   /* loop over round keys */
   for (i=1; i < 11; i++) {
@@ -1400,9 +1393,14 @@ aes_expand_encryption_key(const v128_t key,
     
     expanded_key[i].v32[2] =
       expanded_key[i].v32[1] ^ expanded_key[i-1].v32[2];
-    
+
     expanded_key[i].v32[3] =
       expanded_key[i].v32[2] ^ expanded_key[i-1].v32[3];
+
+#if 0
+	debug_print2(mod_aes_icm, 
+				"expanded key[%d]:  %s", i,v128_hex_string(&expanded_key[i])); 
+#endif
 
     /* modify round constant */
     rc = gf2_8_shift(rc);
@@ -1467,7 +1465,7 @@ aes_expand_decryption_key(const v128_t key,
 #else /* assume CPU_CISC */
 
     uint32_t c0, c1, c2, c3;
-
+     
     c0 = U0[aes_sbox[expanded_key[i].octet[0]]] 
        ^ U1[aes_sbox[expanded_key[i].octet[1]]] 
        ^ U2[aes_sbox[expanded_key[i].octet[2]]] 
@@ -1628,17 +1626,13 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
 
 #elif CPU_RISC
 
-#if !WORDS_BIGENDIAN
-#error "only big-endian RISC is supported, please choose CPU_CISC in config.h"
-#endif
-
 inline void
 aes_round(v128_t *state, const v128_t round_key) {
   uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
      of state, using the tables T0, T1, T2, T3 */
-
+#if WORDS_BIGENDIAN
   column0 = T0[state->v32[0] >> 24] ^ T1[(state->v32[1] >> 16) & 0xff]
     ^ T2[(state->v32[2] >> 8) & 0xff] ^ T3[state->v32[3] & 0xff];
   
@@ -1650,6 +1644,19 @@ aes_round(v128_t *state, const v128_t round_key) {
 
   column3 = T0[state->v32[3] >> 24] ^ T1[(state->v32[0] >> 16) & 0xff]
     ^ T2[(state->v32[1] >> 8) & 0xff] ^ T3[state->v32[2] & 0xff];
+#elif !WORDS_BIGENDIAN
+  column0 = T0[state->v32[0] & 0xff] ^ T1[(state->v32[1] >> 8) & 0xff]
+	^ T2[(state->v32[2] >> 16) & 0xff] ^ T3[state->v32[3] >> 24];
+  
+  column1 = T0[state->v32[1] & 0xff] ^ T1[(state->v32[2] >> 8) & 0xff]
+	^ T2[(state->v32[3] >> 16) & 0xff] ^ T3[state->v32[0] >> 24];
+
+  column2 = T0[state->v32[2] & 0xff] ^ T1[(state->v32[3] >> 8) & 0xff]
+	^ T2[(state->v32[0] >> 16) & 0xff] ^ T3[state->v32[1] >> 24];
+
+  column3 = T0[state->v32[3] & 0xff] ^ T1[(state->v32[0] >> 8) & 0xff]
+	^ T2[(state->v32[1] >> 16) & 0xff] ^ T3[state->v32[2] >> 24];
+#endif /* WORDS_BIGENDIAN */
 
   state->v32[0] = column0 ^ round_key.v32[0];
   state->v32[1] = column1 ^ round_key.v32[1];
@@ -1660,11 +1667,13 @@ aes_round(v128_t *state, const v128_t round_key) {
 
 inline void
 aes_inv_round(v128_t *state, const v128_t round_key) {
-  unsigned long column0, column1, column2, column3;
+  uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
      of state, using the tables U0, U1, U2, U3 */
 
+#if WORDS_BIGENDIAN
+  /* FIX!  WRong indexes */
   column0 = U0[state->v32[0] >> 24] ^ U1[(state->v32[3] >> 16) & 0xff]
     ^ U2[(state->v32[2] >> 8) & 0xff] ^ U3[state->v32[1] & 0xff];
   
@@ -1676,6 +1685,19 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 
   column3 = U0[state->v32[3] >> 24] ^ U1[(state->v32[2] >> 16) & 0xff]
     ^ U2[(state->v32[1] >> 8) & 0xff] ^ U3[state->v32[0] & 0xff];
+#elif !WORDS_BIGENDIAN
+  column0 = U0[state->v32[0] & 0xff] ^ U1[(state->v32[1] >> 8) & 0xff]
+	^ U2[(state->v32[2] >> 16) & 0xff] ^ U3[state->v32[3] >> 24];
+  
+  column1 = U0[state->v32[1] & 0xff] ^ U1[(state->v32[2] >> 8) & 0xff]
+	^ U2[(state->v32[3] >> 16) & 0xff] ^ U3[state->v32[0] >> 24];
+
+  column2 = U0[state->v32[2] & 0xff] ^ U1[(state->v32[3] >> 8) & 0xff]
+	^ U2[(state->v32[0] >> 16) & 0xff] ^ U3[state->v32[1] >> 24];
+
+  column3 = U0[state->v32[3] & 0xff] ^ U1[(state->v32[0] >> 8) & 0xff]
+	^ U2[(state->v32[1] >> 16) & 0xff] ^ U3[state->v32[2] >> 24];
+#endif /* WORDS_BIGENDIAN */
 
   state->v32[0] = column0 ^ round_key.v32[0];
   state->v32[1] = column1 ^ round_key.v32[1];
@@ -1785,7 +1807,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 
 inline void
 aes_inv_round(v128_t *state, const v128_t round_key) {
-  unsigned long column0, column1, column2, column3;
+  uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
      of state, using the tables U0, U1, U2, U3 */
@@ -1892,233 +1914,6 @@ aes_add_in_subkey(v128_t *state, v128_t round_key) {
 }
 
 
-#if THIS_ASM_CODE_WORKS /* DAM - fix this! */
-
-/*
- *     T0      starts at 0x804e600
- *     T1      starts at 0x804ea00
- *     T2      starts at 0x804ee00
- *     T3      starts at 0x804f200
- *
- * Interface:
- *
- *     ebp     pointer to the stack
- *		0x8(%ebp)	pointer to message
- *		0xc(%ebp)	pointer to key
- *	eax	pointer to data (loaded with 0x8(%ebp))
- *	ebx 	temp used for address computation
- *	ecx	column0
- *	edx	column1
- *	esi	column2
- *	edi	column3
- */
-
-#define ROUND(ADD0,ADD1,ADD2,ADD3)      \
-asm ("mov    (%eax),%eax");             \
-asm ("movzx  %al, %ebx");               \
-asm ("mov    T0(,%ebx,4),%ecx");        \
-asm ("movzx  %ah,%ebx");		\
-asm ("mov    T1(,%ebx,4),%edi");        \
-asm ("bswap  %eax");			\
-asm ("movzx  %ah,%ebx");                \
-asm ("mov    T2(,%ebx,4),%esi");        \
-asm ("movzx  %al,%ebx");                \
-asm ("mov    T3(,%ebx,4),%edx");        \
-asm ("mov    0x8(%ebp),%eax");          \
-asm ("mov    0x4(%eax),%eax");          \
-asm ("movzx  %al, %ebx");               \
-asm ("xor    T0(,%ebx,4),%edx");        \
-asm ("movzx  %ah,%ebx");                \
-asm ("xor    T1(,%ebx,4),%ecx");        \
-asm ("bswap  %eax");                    \
-asm ("movzx  %ah,%ebx");                \
-asm ("xor    T2(,%ebx,4),%edi");        \
-asm ("movzx  %al,%ebx");                \
-asm ("xor    T3(,%ebx,4),%esi");        \
-asm ("mov    0x8(%ebp),%eax");          \
-asm ("mov    0x8(%eax),%eax");          \
-asm ("movzx  %al, %ebx");               \
-asm ("xor    T0(,%ebx,4),%esi");        \
-asm ("movzx  %ah,%ebx");                \
-asm ("xor    T1(,%ebx,4),%edx");        \
-asm ("bswap  %eax");                    \
-asm ("movzx  %ah,%ebx");                \
-asm ("xor    T2(,%ebx,4),%ecx");        \
-asm ("movzx  %al,%ebx");                \
-asm ("xor    T3(,%ebx,4),%edi");        \
-asm ("mov    0x8(%ebp),%eax");          \
-asm ("mov    0xc(%eax),%eax");          \
-asm ("movzx  %al, %ebx");               \
-asm ("xor    T0(,%ebx,4),%edi");        \
-asm ("movzx  %ah,%ebx");                \
-asm ("xor    T1(,%ebx,4),%esi");        \
-asm ("bswap  %eax");                    \
-asm ("movzx  %ah,%ebx");                \
-asm ("xor    T2(,%ebx,4),%edx");        \
-asm ("movzx  %al,%ebx");                \
-asm ("xor    T3(,%ebx,4),%ecx");        \
-asm ("mov    0x8(%ebp),%eax");          \
-asm ("mov    0xc(%ebp),%ebx");          \
-asm ("xor    "#ADD0"(%ebx),%ecx");      \
-asm ("mov    %ecx,(%eax)");             \
-asm ("xor    "#ADD1"(%ebx),%edx");      \
-asm ("mov    %edx,0x4(%eax)");          \
-asm ("xor    "#ADD2"(%ebx),%esi");      \
-asm ("mov    %esi,0x8(%eax)");          \
-asm ("xor    "#ADD3"(%ebx),%edi");      \
-asm ("mov    %edi,0xc(%eax)");
-
-void
-aes_encrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
-  extern uint32_t T0[256], T1[256], T2[256], T3[256], T4[256]; 
-
-  
-  asm ("sub    $0x5c,%esp");
-  asm ("push   %edi");
-  asm ("push   %esi");
-  asm ("push   %ebx");
-  asm ("mov    0x8(%ebp),%ecx");
-  asm ("mov    (%ecx),%eax");
-  asm ("mov    0x4(%ecx),%edx");
-  asm ("mov    0xc(%ebp),%ecx");
-  asm ("xor    (%ecx),%eax");
-  asm ("xor    0x4(%ecx),%edx");
-  asm ("mov    0x8(%ebp),%ecx");
-  asm ("mov    %eax,(%ecx)");
-  asm ("mov    %edx,0x4(%ecx)");
-  asm ("mov    0x8(%ebp),%eax");
-  asm ("mov    0x8(%eax),%ebx");
-  asm ("mov    0xc(%eax),%esi");
-  asm ("mov    0xc(%ebp),%eax");
-  asm ("xor    0x8(%eax),%ebx");
-  asm ("xor    0xc(%eax),%esi");
-  asm ("mov    0x8(%ebp),%eax");
-  asm ("mov    %ebx,0x8(%eax)");
-  asm ("mov    %esi,0xc(%eax)");
-  // Initialize column0, 1, 2, & 3 (ROUND assumes them loaded)
-  asm ("mov    (%eax),%ecx");
-  asm ("mov    0x4(%eax),%edx");
-  asm ("mov    0x8(%eax),%esi");
-  asm ("mov    0xc(%eax),%edi");
-  //
-  // ROUND 1
-  //
-  ROUND(0x10,0x14,0x18,0x1c)
-    //
-    // ROUND 2
-    //
-    ROUND(0x20,0x24,0x28,0x2c)
-    //
-    // ROUND 3
-    //
-    ROUND(0x30,0x34,0x38,0x3c)
-    //
-    // ROUND 4
-    //
-    ROUND(0x40,0x44,0x48,0x4c)
-    //
-    // ROUND 5
-    //
-    ROUND(0x50,0x54,0x58,0x5c)
-    //
-    // ROUND 6
-    //
-    ROUND(0x60,0x64,0x68,0x6c)
-    //
-    // ROUND 7
-    //
-    ROUND(0x70,0x74,0x78,0x7c)
-    // 
-    // ROUND 8
-    //
-    ROUND(0x80,0x84,0x88,0x8c)
-    //
-    // ROUND 9
-    //
-    ROUND(0x90,0x94,0x98,0x9c)
-    asm ("mov    0xc(%ebp),%eax");
-  asm ("mov    0x8(%ebp),%esi");
-  //
-  // LAST ROUND (10)
-  //
-  asm ("mov    0xa0(%eax),%edx");
-  asm ("mov    %edx,0xfffffff0(%ebp)");
-  asm ("mov    0xa4(%eax),%edx");
-  asm ("mov    %edx,0xfffffff4(%ebp)");
-  asm ("mov    0xa8(%eax),%edx");
-  asm ("mov    %edx,0xfffffff8(%ebp)");
-  asm ("mov    0xac(%eax),%edx");
-  asm ("mov    %edx,0xfffffffc(%ebp)");
-  asm ("movzbl (%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,(%esi)");
-  asm ("movzbl 0x4(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0x4(%esi)");
-  asm ("movzbl 0x8(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0x8(%esi)");
-  asm ("movzbl 0xc(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0xc(%esi)");
-  asm ("movzbl 0x1(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%cl");
-  asm ("movzbl 0x5(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0x1(%esi)");
-  asm ("movzbl 0x9(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0x5(%esi)");
-  asm ("movzbl 0xd(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0x9(%esi)");
-  asm ("mov    %cl,0xd(%esi)");
-  asm ("movzbl 0xa(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%cl");
-  asm ("movzbl 0x2(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0xa(%esi)");
-  asm ("mov    %cl,0x2(%esi)");
-  asm ("movzbl 0xe(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%cl");
-  asm ("movzbl 0x6(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0xe(%esi)");
-  asm ("mov    %cl,0x6(%esi)");
-  asm ("movzbl 0xf(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%cl");
-  asm ("movzbl 0xb(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0xf(%esi)");
-  asm ("movzbl 0x7(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0xb(%esi)");
-  asm ("movzbl 0x3(%esi),%edx");
-  asm ("mov    aes_sbox(%edx),%dl");
-  asm ("mov    %dl,0x7(%esi)");
-  asm ("mov    %cl,0x3(%esi)");
-  asm ("mov    0x8(%ebp),%eax");
-  asm ("mov    (%eax),%ebx");
-  asm ("mov    0x4(%eax),%esi");
-  asm ("xor    0xfffffff0(%ebp),%ebx");
-  asm ("xor    0xfffffff4(%ebp),%esi");
-  asm ("mov    %ebx,(%eax)");
-  asm ("mov    %esi,0x4(%eax)");
-  asm ("mov    0x8(%ebp),%eax");
-  asm ("mov    0x8(%eax),%ebx");
-  asm ("mov    0xc(%eax),%esi");
-  asm ("xor    0xfffffff8(%ebp),%ebx");
-  asm ("xor    0xfffffffc(%ebp),%esi");
-  asm ("mov    %ebx,0x8(%eax)");
-  asm ("mov    %esi,0xc(%eax)");
-  asm ("pop    %ebx");
-  asm ("pop    %esi");
-  asm ("pop    %edi");
-  asm ("add    $0x5c,%esp");
-}
-
-#else /* unknown CPU type */
-
 void
 aes_encrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
 
@@ -2140,7 +1935,7 @@ aes_encrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
  
  aes_final_round(plaintext, exp_key[10]);  
 
- }
+}
 
 void
 aes_decrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
@@ -2164,5 +1959,4 @@ aes_decrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
 
 }
 
-#endif /* THIS_ASM_CODE_WORKS */
 

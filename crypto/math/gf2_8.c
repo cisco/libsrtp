@@ -48,18 +48,7 @@
 #include "datatypes.h"
 #include "gf2_8.h"
 
-/*
- * gf2_8_shift(x) returns the result of the GF(2^8) 'multiply by x' 
- * operation, using the field representation from AES.  
- */
-
-inline gf2_8
-gf2_8_shift(gf2_8 input) {
-  if ((input & 128) == 0)
-    return input << 1;
-  else
-    return (input << 1) ^ gf2_8_field_polynomial; 
-}
+/* gf2_8_shift() moved to gf2_8.h as an inline function */
 
 inline gf2_8
 gf2_8_multiply(gf2_8 x, gf2_8 y) {

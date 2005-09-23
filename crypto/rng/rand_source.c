@@ -45,20 +45,32 @@
 
 #include "rand_source.h"
 
+/* FIX! move to configuration file */
+#define HAS_DEV_RANDOM
+
+#ifdef HAS_DEV_RANDOM
 #include <fcntl.h>          /* for open()  */
 #include <unistd.h>         /* for close() */
+#endif
 
 /* global dev_rand_fdes is file descriptor for /dev/random */
 
 int dev_random_fdes = 0;
 
+
 err_status_t
 rand_source_init() {
 
+#ifdef HAS_DEV_RANDOM
   /* open /dev/random for reading */
   dev_random_fdes = open("/dev/urandom", O_RDONLY, 0);
   if (dev_random_fdes == 0)
     return err_status_init_fail;
+#else
+  /* Generic C-library (rand()) version */
+  /* call srand() here if needed */  
+  /* FIX  libsrtp needs a goodrandom value source/seed */
+#endif
 
   return err_status_ok;
 }
@@ -71,19 +83,34 @@ rand_source_get_octet_string(void *dest, int len) {
    * check return value to make sure enough octets were
    * written 
    */
+#ifdef HAS_DEV_RANDOM
   if (read(dev_random_fdes, dest, len) != len)
     return err_status_fail;
-
+#else
+  /* Generic C-library (rand()) version */
+  /* This is a random source of last resort */
+  while (len)
+  {
+	  int val = rand();
+	  /* rand() returns 0-32767 (ugh) */
+	  /* Is this a good enough way to get random bytes?
+	     It is if it passes FIPS-140... */
+	  *dest++ = val & 0xff;
+	  len--;
+  }
+#endif
   return err_status_ok;
 }
 
 err_status_t
 rand_source_deinit() {
 
+#ifdef HAS_DEV_RANDOM
   if (dev_random_fdes == 0)
     return err_status_dealloc_fail;  /* well, we haven't really failed, *
 				      * but there is something wrong    */
   close(dev_random_fdes);  
+#endif
   
   return err_status_ok;  
 }
