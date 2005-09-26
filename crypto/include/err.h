@@ -181,7 +181,7 @@ typedef struct {
 #define debug_print2(mod, format, arg1,arg2)                  \
   if (mod.on) err_report(err_level_debug, ("%s: " format), mod.name, arg1,arg2)
 
-#else
+#else 
 
 /* define macros to do nothing */
 #define debug_print(mod, format, arg) 

@@ -782,6 +782,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     if (status) return status;
     
     /* run auth func over ROC, put result into auth_tag */
+    debug_print(mod_srtp, "estimated packet index: %016llx", est);
     status = auth_compute(stream->rtp_auth, (octet_t *)&est, 4, auth_tag); 
     debug_print(mod_srtp, "srtp auth tag:    %s", 
 		octet_string_hex_string(auth_tag, tag_len));

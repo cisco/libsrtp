@@ -52,14 +52,17 @@ AC_C_BIGENDIAN
 
 AC_CANONICAL_HOST
 
+echo "host_cpu: $host_cpu"
+
 if test $host_cpu = x86; then	
-   echo "x86 cpu found" # should use inline assembly
+   echo "x86 cpu found" 
 fi
 
 dnl check host_cpu type, set defines appropriately
 case $host_cpu in
      i*86 )
-	AC_DEFINE(CPU_CISC);;
+	AC_DEFINE(CPU_CISC)
+        AC_DEFINE(HAVE_X86, 1);; # use x86 inline assembly
 	* )
 	AC_DEFINE(CPU_RISC);;
 esac	

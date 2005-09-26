@@ -413,11 +413,10 @@ octet_string_set_to_zero(octet_t *s, int len) {
 
 inline uint32_t
 bswap_32(uint32_t v) {
-#ifdef WORDS_BIGENDIAN
-  /* assume that we're on a big-endian machine */
-  /* htonl() does nothing */
+#if WORDS_BIGENDIAN
+  /* we're on a big-endian machine, so we do nothing here */
 #else
-#if CPU_CISC                     
+#if HAVE_X86                     
   /* assume that we're on an Intel x86 with x > 3 */
   asm("bswap %0" : "=r" (v) : "0" (v));
 #else
@@ -430,13 +429,14 @@ bswap_32(uint32_t v) {
 
 inline uint64_t
 bswap_64(uint64_t v) {
-#ifdef WORDS_BIGENDIAN
-  /* assume that we're on a big-endian machine */
-  /* FIX? */
+#if WORDS_BIGENDIAN
+  /* we're on a big-endian machine, so we do nothing here */
 #else
-#if CPU_CISC  /* assume that we're on an Intel x86 with x > 3 */
+#if HAVE_U_LONG_LONG
+  /* use the native 64-bit math */
   v= (bswap_32(v >> 32)) | ((uint64_t)bswap_32((uint32_t)v)) << 32 ;
 #else
+  /* use the make64 functions to do 64-bit math */
   v = make64(htonl(low32(v)),htonl(high32(v)));
 #endif
 #endif

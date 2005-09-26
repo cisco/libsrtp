@@ -15,6 +15,10 @@
 
 #define WORDS_BIGENDIAN      0
 
+/* if we're on an intel x86, define this to use inlined asm */
+
+#define HAVE_X86 0
+
 /* check for <stdint.h> or <machine/types.h>              */
 
 #define HAVE_STDINT_H        0

@@ -53,7 +53,7 @@ main() {
 #if WORDS_BIGENDIAN
   printf("CPU set to big-endian\t\t\t(WORDS_BIGENDIAN == 1)\n");
 #else
-  printf("CPU set to little-endian\t\t\t(WORDS_BIGENDIAN == 0)\n");
+  printf("CPU set to little-endian\t\t(WORDS_BIGENDIAN == 0)\n");
 #endif
 
 

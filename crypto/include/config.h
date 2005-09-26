@@ -14,12 +14,16 @@
 
 /* if we're on a big endian machine, we need to define this */
 
-#define WORDS_BIGENDIAN 1
+#define WORDS_BIGENDIAN      0
+
+/* if we're on an intel x86, define this to use inlined asm */
+
+#define HAVE_X86 1
 
 /* check for <stdint.h> or <machine/types.h>              */
 
 #define HAVE_STDINT_H 1
-#define HAVE_MACHINE_TYPES_H 1
+#define HAVE_MACHINE_TYPES_H 0
 #define HAVE_SYS_INT_TYPES_H 0
 
 /* check if an unsigned 64-bit integer is supported natively */
@@ -82,8 +86,8 @@
  *
  */
 
-#define CPU_RISC 1
-#define CPU_CISC     0
+#define CPU_RISC     0
+#define CPU_CISC 1
 #define CPU_ALTIVEC  0
 
 /*
