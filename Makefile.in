@@ -196,7 +196,7 @@ clean:
 
 
 superclean: clean
-	rm -rf include/config.h config.log config.cache config.status \
+	rm -rf crypto/include/config.h config.log config.cache config.status \
                Makefile .gdb_history test/.gdb_history .DS_Store
 	rm -rf autom4te.cache
 

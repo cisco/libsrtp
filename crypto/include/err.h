@@ -177,9 +177,9 @@ typedef struct {
 
 /* use err_report() to report debug message */
 #define debug_print(mod, format, arg)                  \
-  if (mod.on) err_report(err_level_debug, ("%s: " format), mod.name, arg)
+  if (mod.on) err_report(err_level_debug, ("%s: \n" format), mod.name, arg)
 #define debug_print2(mod, format, arg1,arg2)                  \
-  if (mod.on) err_report(err_level_debug, ("%s: " format), mod.name, arg1,arg2)
+  if (mod.on) err_report(err_level_debug, ("%s: \n" format), mod.name, arg1,arg2)
 
 #else 
 
