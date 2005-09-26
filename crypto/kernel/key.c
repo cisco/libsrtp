@@ -61,7 +61,7 @@ key_limit_set(key_limit_t key, const xtd_seq_num_t s) {
 }
 
 err_status_t
-key_limit_clone(key_limit_t original, key_limit_t *new) {
+key_limit_clone(key_limit_t original, key_limit_t *new_key) {
   if (original == NULL)
     return err_status_bad_param;
   *new = original;
