@@ -9,8 +9,14 @@
 # documentation.  Of course, you can just go online at pick up the
 # documentation from http://srtp.sourceforge.net.
 
+# Determine the version of the library
+
+version = $(shell cat ../VERSION)
+
+
 .PHONY: libsrtpdoc cryptodoc clean
-libsrtpdoc: clean
+libsrtpdoc: 
+	sed 's/LIBSRTPVERSION/$(version)/' header.template > header.tex
 	doxygen
 	sed 's/\subsection/\section/' latex/index.tex > latex/index.tmp
 	mv latex/index.tmp latex/index.tex
@@ -20,13 +26,11 @@ libsrtpdoc: clean
 
 cryptodoc: clean
 	doxygen crypto.dox
-	# sed 's/\subsection/\section/' latex/index.tex > latex/index.tmp
-	# mv latex/index.tmp latex/index.tex
 	cd latex; make
 	cp latex/refman.pdf crypto.pdf
 
 clean:
-	rm -rf latex/ 
+	rm -rf latex/ header.tex
 	for a in * ; do			                \
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;

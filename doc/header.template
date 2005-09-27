@@ -13,6 +13,7 @@
 \usepackage{textcomp}
 \usepackage{alltt}
 \usepackage{times}
+\usepackage{graphicx}
 \ifx\pdfoutput\undefined
 \usepackage[ps2pdf,
             pagebackref=true,
@@ -29,7 +30,7 @@
 \usepackage{doxygen}
 \makeindex
 \setcounter{tocdepth}{1}
-\setlength{\footrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
 
 % these lengths are from DAM
 \textwidth = 6.5 in
@@ -60,18 +61,21 @@
 
 \begin{document}
 \begin{titlepage}
-\vspace*{7cm}
+\vspace*{4cm}
 %\begin{center}
 {\Huge 
-libSRTP 1.4 Overview and Reference Manual\\
+libSRTP LIBSRTPVERSION Overview and Reference Manual\\
   \hrulefill
 }\\
-\vspace*{1cm}
+\vspace*{0cm}
 \begin{flushright}
 {\Large David A. McGrew \\ \texttt{mcgrew@cisco.com} }\\
 \vspace*{0.5cm}
 \end{flushright}
 %\end{center}
+
+%\includegraphics[scale=.8]{phone}
+
 \end{titlepage}
 
 
