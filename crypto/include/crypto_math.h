@@ -47,9 +47,6 @@
 
 #include "datatypes.h"
 
-inline int
-octet_get_weight(octet_t octet);
-
 unsigned char
 v32_weight(v32_t a);
 
@@ -60,28 +57,16 @@ unsigned int
 v32_dot_product(v32_t a, v32_t b);
 
 char *
-octet_bit_string(octet_t x);
-
-char *
 v16_bit_string(v16_t x);
 
 char *
 v32_bit_string(v32_t x);
 
 char *
-v64_bit_string(v64_t x);
-
-char *
-v128_bit_string(v128_t x);
-
-octet_t
-nibble_to_hex_char(octet_t nibble);
+v64_bit_string(const v64_t *x);
 
 char *
 octet_hex_string(octet_t x);
-
-char *
-octet_string_hex_string(const octet_t *str, int length);
 
 char *
 v16_hex_string(v16_t x);
@@ -90,30 +75,13 @@ char *
 v32_hex_string(v32_t x);
 
 char *
-v64_hex_string(v64_t x);
-
-char *
-v128_hex_string(v128_t x);
-
-char *
-char_to_hex_string(char *x, int num_char);
+v64_hex_string(const v64_t *x);
 
 int
 hex_char_to_nibble(octet_t c);
 
 int
 is_hex_string(char *s);
-
-octet_t
-hex_string_to_octet(char *s);
-
-/*
- * hex_string_to_octet_string converts a hexadecimal string
- * of length 2 * len to a raw octet string of length len
- */
-
-int
-hex_string_to_octet_string(char *raw, char *hex, int len); 
 
 v16_t
 hex_string_to_v16(char *s);
@@ -123,9 +91,6 @@ hex_string_to_v32(char *s);
 
 v64_t
 hex_string_to_v64(char *s);
-
-v128_t
-hex_string_to_v128(char *s);
 
 /* the matrix A[] is stored in column format, i.e., A[i] is
    the ith column of the matrix */
@@ -141,9 +106,6 @@ v32_copy_octet_string(v32_t *x, const octet_t s[4]);
 
 void
 v64_copy_octet_string(v64_t *x, const octet_t s[8]);
-
-void
-v128_copy_octet_string(v128_t *x, const octet_t s[16]);
 
 void
 v128_add(v128_t *z, v128_t *x, v128_t *y);
@@ -163,142 +125,6 @@ octet_string_set_to_zero(octet_t *s, int len);
 octet_t 
 A_times_x_plus_b(octet_t A[8], octet_t x, octet_t b);
 
-void
-v128_copy_octet_string(v128_t *x, const octet_t s[16]);
-
-void
-v128_left_shift(v128_t *x, int index);
-
-void
-v128_right_shift(v128_t *x, int index);
-
-/*
- * the following macros define the data manipulation functions
- * 
- * If DATATYPES_USE_MACROS is defined, then these macros are used
- * directly (and function call overhead is avoided).  Otherwise,
- * the macros are used through the functions defined in datatypes.c
- * (and the compiler provides better warnings).
- */
-
-#define _v128_set_to_zero(x)     \
-(                               \
-  (x)->v32[0] = 0,              \
-  (x)->v32[1] = 0,              \
-  (x)->v32[2] = 0,              \
-  (x)->v32[3] = 0               \
-)
-
-#define _v128_copy(x, y)          \
-(                                \
-  (x)->v32[0] = (y)->v32[0],     \
-  (x)->v32[1] = (y)->v32[1],     \
-  (x)->v32[2] = (y)->v32[2],     \
-  (x)->v32[3] = (y)->v32[3]      \
-)
-
-#define _v128_xor(z, x, y)                       \
-(                                               \
-   (z)->v32[0] = (x)->v32[0] ^ (y)->v32[0],     \
-   (z)->v32[1] = (x)->v32[1] ^ (y)->v32[1],     \
-   (z)->v32[2] = (x)->v32[2] ^ (y)->v32[2],     \
-   (z)->v32[3] = (x)->v32[3] ^ (y)->v32[3]      \
-)
-
-#define _v128_and(z, x, y)                       \
-(                                               \
-   (z)->v32[0] = (x)->v32[0] & (y)->v32[0],     \
-   (z)->v32[1] = (x)->v32[1] & (y)->v32[1],     \
-   (z)->v32[2] = (x)->v32[2] & (y)->v32[2],     \
-   (z)->v32[3] = (x)->v32[3] & (y)->v32[3]      \
-)
-
-#define _v128_or(z, x, y)                        \
-(                                               \
-   (z)->v32[0] = (x)->v32[0] | (y)->v32[0],     \
-   (z)->v32[1] = (x)->v32[1] | (y)->v32[1],     \
-   (z)->v32[2] = (x)->v32[2] | (y)->v32[2],     \
-   (z)->v32[3] = (x)->v32[3] | (y)->v32[3]      \
-)
-
-#define _v128_complement(x)        \
-(                                  \
-   (x)->v32[0] = ~(x)->v32[0],     \
-   (x)->v32[1] = ~(x)->v32[1],     \
-   (x)->v32[2] = ~(x)->v32[2],     \
-   (x)->v32[3] = ~(x)->v32[3]      \
-)
-
-/* ok for NO_64BIT_MATH if it can compare uint64_t's (even as structures) */
-#define _v128_is_eq(x, y)                                        \
-  (((x)->v64[0] == (y)->v64[0]) && ((x)->v64[1] == (y)->v64[1]))
-
-
-#if (HAVE_U_LONG_LONG == 0)
-#define _v128_xor_eq(z, x)         \
-(                                  \
-   (z)->v32[0] ^= (x)->v32[0],     \
-   (z)->v32[1] ^= (x)->v32[1],     \
-   (z)->v32[2] ^= (x)->v32[2],     \
-   (z)->v32[3] ^= (x)->v32[3]      \
-)
-#else
-#define _v128_xor_eq(z, x)         \
-(                                  \
-   (z)->v64[0] ^= (x)->v64[0],     \
-   (z)->v64[1] ^= (x)->v64[1]      \
-)
-#endif
-
-
-#if 0
-#define _v128_get_bit(x, bit)                     \
-(                                                 \
-   (((x)->v32[3-((bit) >> 5)] >> ((bit) & 31)) & 1)       \
-)
-
-#define _v128_set_bit(x, bit)                                    \
-(                                                                \
-  (((x)->v32[3-((bit) >> 5)]) |= ((uint32_t)1 << ((bit) & 31))) \
-)
-
-#define _v128_clear_bit(x, bit)                                   \
-(                                                                 \
-  (((x)->v32[3-((bit) >> 5])) &= ~((uint32_t)1 << ((bit) & 31))) \
-)
-#endif
-
-#define _v128_set_bit_to(x, bit, value)   \
-(                                         \
-   (value) ? _v128_set_bit(x, bit) :      \
-             _v128_clear_bit(x, bit)      \
-)
-
-
-#if OLD
-
-#define _v128_get_bit(x, bit)                     \
-(                                                 \
-  ((((x)->v32[(bit) >> 5]) >> ((bit) & 31)) & 1)  \
-)
-
-#define _v128_set_bit(x, bit)                                    \
-(                                                                \
-  (((x)->v32[(bit) >> 5]) |= ((unsigned long)1 << ((bit) & 31))) \
-)
-
-#define _v128_clear_bit(x, bit)                                   \
-(                                                                 \
-  (((x)->v32[(bit) >> 5]) &= ~((unsigned long)1 << ((bit) & 31))) \
-)
-
-#define _v128_set_bit_to(x, bit, value)   \
-(                                         \
-   (value) ? _v128_set_bit(x, bit) :      \
-             _v128_clear_bit(x, bit)      \
-)
-
-#endif /* OLD */
 
 #if 0
 #if WORDS_BIGENDIAN
