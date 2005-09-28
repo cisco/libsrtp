@@ -64,7 +64,7 @@ err_status_t
 key_limit_clone(key_limit_t original, key_limit_t *new_key) {
   if (original == NULL)
     return err_status_bad_param;
-  *new = original;
+  *new_key = original;
   return err_status_ok;
 }
 

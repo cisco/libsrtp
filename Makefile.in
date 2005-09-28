@@ -10,12 +10,14 @@
 # libcrypt.a	static library implementing crypto engine
 # libsrtp.a	static library implementing srtp
 # clean		removes objects, libs, and executables
-# distribution	cleans and builds a .tgz
-# tags		builds etags file from all .c and .h files
+# distribution  cleans and builds a .tgz
+# tags          builds etags file from all .c and .h files
 
-.PHONY: test all runtest
+.PHONY: all test 
 
-runtest: test
+all: test 
+
+runtest: table_apps test
 	@echo "running libsrtp test applications..."
 	test/cipher_driver$(EXE) -v >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
@@ -23,30 +25,37 @@ runtest: test
 	test/roc_driver$(EXE) -v >/dev/null
 	test/kernel_driver$(EXE) -v >/dev/null
 	@echo "libsrtp test applications passed."
-
-all: test tables
+	cd crypto/; $(MAKE) runtest
 
 # makefile variables
 
 CC     = @CC@
-CFLAGS = -Wall -O4 -fexpensive-optimizations -funroll-loops
-CDEFS  = -DHAVE_CONFIG_H
-INCDIR = -I./include/ -I./crypto/include
-LIBS   = @LIBS@ -lsrtp 
-LIBDIR = -L.
+INCDIR     = -I./include -I./crypto/include
+CDEFS     = @DEFS@
+CPPFLAGS = @CPPFLAGS@ $(CDEFS) $(INCDIR)
+CFLAGS     = @CFLAGS@
+LIBS     = @LIBS@
+LDFLAGS     = @LDFLAGS@ -L.
+SRTPLIB     = -lsrtp
+
+INSTALL    = @INSTALL@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+includedir = @includedir@
+libdir = @libdir@
 
 
 # implicit rules for object files and test apps
 
 %.o: %.c
-	$(CC) $(CDEFS) -c $(CFLAGS) $(INCDIR) $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 %: %.c libsrtp.a 
-	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ $(LIBDIR) $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@ $(LDFLAGS) $(LIBS) $(SRTPLIB)
 
 
 # libcrypt.a (the crypto engine) 
-
 ciphers = crypto/cipher/cipher.o crypto/cipher/null_cipher.o      \
           crypto/cipher/aes.o crypto/cipher/aes_icm.o             \
           crypto/cipher/aes_cbc.o
@@ -99,7 +108,7 @@ libaesicm.a: $(aesicmobj)
 # generate tables and verify cryptoalgorithm implementations - this
 # library is not meant to be included in production code
 
-cryptomath = crypto/math/math.o crypto/math/gf2_8.o crypto/math/gf2_128.o
+cryptomath = crypto/math/math.o crypto/math/gf2_8.o 
 
 libcryptomath.a: $(cryptomath)
 	ar cr libcryptomath.a $(cryptomath)
@@ -111,13 +120,13 @@ libcryptomath.a: $(cryptomath)
 testapp = test/cipher_driver test/datatypes_driver test/srtp_driver \
           test/replay_driver test/roc_driver test/rdbx_driver       \
           test/stat_driver test/sha1_driver test/kernel_driver      \
-          test/aes_calc test/rand_gen # test/ust_driver @GDOI_APPS@
-#          test/auth_driver test/rtpw                 \
+          test/aes_calc test/rand_gen test/rtpw  
 
 test/rtpw: test/rtpw.c test/rtp.c
-	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) -o test/rtpw test/rtpw.c test/rtp.c $(LIBDIR) $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) $(SRTPLIB)
 
 test: $(testapp)
+	@echo "Build done. Please run '$(MAKE) runtest' to run self tests."
 
 memtest: test/srtp_driver
 	@test/srtp_driver -v -d "alloc" > tmp
@@ -132,12 +141,13 @@ memtest: test/srtp_driver
 # implementations; these need only be generated during porting, not
 # for building libsrtp or the test applications
 
-table_apps = tables/aes_tables tables/gf_128_tables
+table_apps: tables/aes_tables 
+
 
 # in the tables/ subdirectory, we use libcryptomath instead of libsrtp
 
 tables/%: tables/%.c libcryptomath.a 
-	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ $(LIBDIR) libcryptomath.a
+	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@ $(LDFLAGS) $(LIBS) libcryptomath.a
 
 # the target 'plot' runs the timing test (test/srtp_driver -t) then
 # uses gnuplot to produce plots of the results - see the script file
@@ -157,7 +167,7 @@ tags:
 # libsrtp
 
 libsrtpdoc:
-	cd doc; make
+	cd doc; $(MAKE)
 
 # EXE defines the suffix on executables - it's .exe for cygwin, and
 # null on linux, bsd, and OS X and other OSes.  we define this so that
@@ -168,19 +178,21 @@ EXE = @EXE@
 .PHONY: clean superclean install
 
 install:
-	if [ -d /usr/local/include/srtp ]; then \
+	@if [ -d $(DESTDIR)$(includedir)/srtp ]; then \
 	   echo "you should run 'make uninstall' first"; exit 1;  \
 	fi
-	mkdir /usr/local/include/srtp
-	cp include/*.h /usr/local/include/srtp  
-	cp crypto/include/*.h /usr/local/include/srtp
-	cp libsrtp.a /usr/local/lib/
-	if [ -f libaesicm.a ]; then cp libaesicm.a /usr/local/lib/; fi 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	cp include/*.h $(DESTDIR)$(includedir)/srtp  
+	cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp
+	cp libsrtp.a $(DESTDIR)$(libdir)/
+	if [ -f libaesicm.a ]; then cp libaesicm.a $(DESTDIR)$(libdir)/; fi 
+
 
 uninstall:
-	rm -rf /usr/local/include/srtp
-	rm -rf /usr/local/lib/libsrtp.a
-	rm -rf /usr/local/lib/libaesicm.a
+	rm -rf $(DESTDIR)$(includedir)/srtp
+	rm -rf $(DESTDIR)$(libdir)/libsrtp.a
+	rm -rf $(DESTDIR)$(libdir)/libaesicm.a; fi
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) $(table_apps) TAGS \
@@ -191,8 +203,8 @@ clean:
 	for a in $(testapp) $(table_apps); do rm -rf $$a$(EXE); done
 	rm -rf *.pict *.jpg *.dat 
 	rm -rf freed allocated tmp
-	cd doc; make clean
-	cd crypto; make clean
+	cd doc; $(MAKE) clean
+	cd crypto; $(MAKE) clean
 
 
 superclean: clean
@@ -202,7 +214,7 @@ superclean: clean
 
 distname = srtp-$(shell cat VERSION)
 
-distribution: superclean
+distribution: runtest superclean 
 	if ! [ -f VERSION ]; then exit 1; fi
 	if [ -f ../$(distname).tgz ]; then               \
            mv ../$(distname).tgz ../$(distname).tgz.bak; \

@@ -42,7 +42,7 @@
  *
  */
 
-#include "math.h"
+#include "crypto_math.h"
 #include <stdlib.h>           /* malloc() used in bitvector_alloc */
 
 int 
@@ -240,7 +240,7 @@ v32_bit_string(v32_t x) {
 }
 
 char *
-v64_bit_string(v64_t *x) {
+v64_bit_string(const v64_t *x) {
   int i, mask, index;
 
   for (i = index = 0; i < 8; i++) {
@@ -291,7 +291,8 @@ octet_hex_string(octet_t x) {
 }
 
 char *
-octet_string_hex_string(const octet_t *str, int length) {
+octet_string_hex_string(const void *str, int length) {
+  const octet_t *s = str;
   int i;
   
   /* double length, since one octet takes two hex characters */
@@ -302,8 +303,8 @@ octet_string_hex_string(const octet_t *str, int length) {
     length = MAX_STRING_LENGTH-1;
   
   for (i=0; i < length; i+=2) {
-    bit_string[i]   = nibble_to_hex_char(*str >> 4);
-    bit_string[i+1] = nibble_to_hex_char(*str++ & 0xF);
+    bit_string[i]   = nibble_to_hex_char(*s >> 4);
+    bit_string[i+1] = nibble_to_hex_char(*s++ & 0xF);
   }
   bit_string[i] = 0; /* null terminate string */
   return bit_string;
@@ -336,7 +337,7 @@ v32_hex_string(v32_t x) {
 }
 
 char *
-v64_hex_string(v64_t *x) {
+v64_hex_string(const v64_t *x) {
   int i, j;
 
   for (i=j=0; i < 8; i++) {

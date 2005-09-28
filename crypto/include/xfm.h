@@ -37,7 +37,7 @@
  *
  * @param iv        location to write the Initialization Vector (IV)
  *
- * @param protected location of the data to be encrypted and
+ * @param protect   location of the data to be encrypted and
  * authenticated (before the function call), and the ciphertext
  * and authentication tag (after the call)
  *
@@ -53,8 +53,8 @@ typedef err_status_t (*xfm_func_t)
       void *clear,          
       unsigned clear_len,   
       void *iv,             
-      void *opaque,         
-      unsigned *opaque_len, 
+      void *protect,         
+      unsigned *protected_len, 
       void *auth_tag        
       );
 

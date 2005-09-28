@@ -20,13 +20,19 @@ endif
 
 dummy : all runtest 
 
+# test applications 
+
+testapp = test/cipher_driver test/datatypes_driver \
+          test/stat_driver test/sha1_driver test/kernel_driver      \
+          test/aes_calc test/rand_gen test/env
+
 # data values used to test the aes_calc application
 
 k=000102030405060708090a0b0c0d0e0f
 p=00112233445566778899aabbccddeeff
 c=69c4e0d86a7b0430d8cdb78070b4c55a
 
-runtest: $(testapp)
+runtest: libcryptomodule.a $(testapp)
 	test/env # print out information on the build environment
 	@echo "running libcryptomodule test applications..."
 	test `test/aes_calc $k $p` = $c
@@ -82,19 +88,7 @@ libcryptomodule.a: $(cryptobj)
 	$(AR) cr libcryptomodule.a $(cryptobj) 
 	$(RANLIB) libcryptomodule.a
 
-# test applications 
-
-testapp = test/cipher_driver test/datatypes_driver \
-          test/stat_driver test/sha1_driver test/kernel_driver      \
-          test/aes_calc test/rand_gen test/env
-
 all: libcryptomodule.a $(testapp)
-
-test: libcryptomodule.a $(testapp)
-	@echo "running libcryptomodule test applications..."
-	test/kernel_driver$(EXE) -v >/dev/null
-	test/cipher_driver$(EXE) -v >/dev/null
-	@echo "libcryptomodule test applications passed." 
 
 # housekeeping functions
 

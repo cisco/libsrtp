@@ -48,9 +48,7 @@
 
 #include "config.h"             /* check for ERR_REPORTING_SYSLOG */
 
-#ifdef ERR_REPORTING_FILE
 #include <stdio.h>
-#endif
 
 #include <stdarg.h>
 

@@ -59,7 +59,9 @@
 
 /* define ERR_REPORTING_FILE to have messages sent to file */
 
-#define ERR_REPORTING_FILE 
+#define ERR_REPORTING_FILE ""
+
+#define USE_ERR_REPORTING_FILE 0
 
 /* 
  * set ENABLE_DEBUGGING to 1 to compile in dynamic debugging system,
@@ -90,8 +92,6 @@
 #define CPU_ALTIVEC  0
 
 /*
- * if /dev/urandom is available, then DEV_URANDOM == 1
- *
  * /dev/urandom is a (true) random number generator which is
  * implemented in many modern operating systems
  */

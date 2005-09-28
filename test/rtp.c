@@ -111,7 +111,7 @@ rtp_sender_init(rtp_sender_t *sender,
   sender->message.header.ts      = 0;
   sender->message.header.seq     = (uint16_t) random();
   sender->message.header.m       = 0;
-  sender->message.header.pt      = 0x8f;
+  sender->message.header.pt      = 0x1;
   sender->message.header.version = 2;
   sender->message.header.p       = 0;
   sender->message.header.x       = 0;
@@ -135,7 +135,7 @@ rtp_receiver_init(rtp_receiver_t *rcvr,
   rcvr->message.header.ts      = 0;
   rcvr->message.header.seq     = 0;
   rcvr->message.header.m       = 0;
-  rcvr->message.header.pt      = 0x8f;
+  rcvr->message.header.pt      = 0x1;
   rcvr->message.header.version = 2;
   rcvr->message.header.p       = 0;
   rcvr->message.header.x       = 0;

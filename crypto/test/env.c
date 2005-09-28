@@ -43,12 +43,12 @@
  */
 
 #include <stdio.h>
+#include <string.h>     /* for srtcmp() */
 #include "config.h"
 
 int 
 main() {
-  int status = 0;
-
+  int err_count = 0;
 
 #if WORDS_BIGENDIAN
   printf("CPU set to big-endian\t\t\t(WORDS_BIGENDIAN == 1)\n");
@@ -56,14 +56,13 @@ main() {
   printf("CPU set to little-endian\t\t(WORDS_BIGENDIAN == 0)\n");
 #endif
 
-
 #if CPU_RISC
   printf("CPU set to RISC\t\t\t\t(CPU_RISC == 1)\n");
 #elif CPU_CISC
   printf("CPU set to CISC\t\t\t\t(CPU_CISC == 1)\n");
 #else
   printf("CPU set to an unknown type, probably due to a configuration error\n");
-  status = 1;
+  err_count++;
 #endif
 
 #if CPU_ALTIVEC
@@ -80,12 +79,15 @@ main() {
   printf("using stdout for error reporting\t(ERR_REPORTING_STDOUT == 1)\n");
 #endif
 
-#if DEV_URANDOM
-  printf("using /dev/urandom as a random source\t(DEV_URANDOM == 1)\n");
-#endif
+  printf("using %s as a random source\t(DEV_URANDOM == %s)\n",
+	 DEV_URANDOM, DEV_URANDOM);
+  if (strcmp("", DEV_URANDOM) == 0) {
+    err_count++;
+  }
+  
+  if (err_count)
+    printf("warning: configuration is probably in error "
+	   "(found %d problems)\n", err_count);
 
-  if (status)
-    printf("warning: configuration is probably in error\n");
-
-  return status;
+  return err_count;
 }

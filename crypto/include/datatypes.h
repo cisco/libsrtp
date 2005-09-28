@@ -89,7 +89,7 @@ typedef union {
 
 
 /*
- * octet_weight(x) returns the hamming weight (number of bits equal to
+ * octet_get_weight(x) returns the hamming weight (number of bits equal to
  * one) in the octet x
  */
 

@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS RANLIB ac_ct_RANLIB CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT RNG_OBJS CPP EGREP LIBOBJS build build_cpu build_vendor build_os host host_cpu host_vendor host_os EXE GDOI_OBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS RANLIB ac_ct_RANLIB CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA RNG_OBJS CPP EGREP build build_cpu build_vendor build_os host host_cpu host_vendor host_os EXE GDOI_OBJS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -844,12 +844,12 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-debug (compile in dynamic debugging system)
-generic-aesicm (compile in changes for ismacryp)
-syslog (use syslog for error reporting)
-stdout (use stdout for error reporting)
-console (use /dev/console for error reporting)
-gdoi (GDOI key management)
+  --disable-debug         do not compile in dynamic debugging system
+  --enable-generic-aesicm compile in changes for ISMAcryp
+  --enable-syslog         use syslog for error reporting
+  --disable-stdout        don't use stdout for error reporting
+  --enable-console        use /dev/console for error reporting
+  --enable-gdoi           enable GDOI key management
 
 Some influential environment variables:
   CC          C compiler command
@@ -1298,6 +1298,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
+if test -z "$CFLAGS"; then
+      CFLAGS="-Wall -O4 -fexpensive-optimizations -funroll-loops"
+fi
 
 if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ranlib", so it can be a program name with args.
@@ -2309,155 +2313,109 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+ac_aux_dir=
+for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
+  if test -f $ac_dir/install-sh; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f $ac_dir/install.sh; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  elif test -f $ac_dir/shtool; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/shtool install -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." >&5
+echo "$as_me: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+ac_config_guess="$SHELL $ac_aux_dir/config.guess"
+ac_config_sub="$SHELL $ac_aux_dir/config.sub"
+ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
 
-
-
-echo "$as_me:$LINENO: checking for socket in -lsocket" >&5
-echo $ECHO_N "checking for socket in -lsocket... $ECHO_C" >&6
-if test "${ac_cv_lib_socket_socket+set}" = set; then
+# Find a good install program.  We prefer a C program (faster),
+# so one script is as good as another.  But avoid the broken or
+# incompatible versions:
+# SysV /etc/install, /usr/sbin/install
+# SunOS /usr/etc/install
+# IRIX /sbin/install
+# AIX /bin/install
+# AmigaOS /C/install, which installs bootblocks on floppy discs
+# AIX 4 /usr/bin/installbsd, which doesn't work without a -g flag
+# AFS /usr/afsws/bin/install, which mishandles nonexistent args
+# SVR4 /usr/ucb/install, which tries to use the nonexistent group "staff"
+# OS/2's system install, which has a completely different semantic
+# ./install, which can be erroneously created by make from ./install.sh.
+echo "$as_me:$LINENO: checking for a BSD-compatible install" >&5
+echo $ECHO_N "checking for a BSD-compatible install... $ECHO_C" >&6
+if test -z "$INSTALL"; then
+if test "${ac_cv_path_install+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsocket  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  # Account for people who put trailing slashes in PATH elements.
+case $as_dir/ in
+  ./ | .// | /cC/* | \
+  /etc/* | /usr/sbin/* | /usr/etc/* | /sbin/* | /usr/afsws/bin/* | \
+  ?:\\/os2\\/install\\/* | ?:\\/OS2\\/INSTALL\\/* | \
+  /usr/ucb/* ) ;;
+  *)
+    # OSF1 and SCO ODT 3.0 have their own names for install.
+    # Don't use installbsd from OSF since it installs stuff as root
+    # by default.
+    for ac_prog in ginstall scoinst install; do
+      for ac_exec_ext in '' $ac_executable_extensions; do
+	if $as_executable_p "$as_dir/$ac_prog$ac_exec_ext"; then
+	  if test $ac_prog = install &&
+	    grep dspmsg "$as_dir/$ac_prog$ac_exec_ext" >/dev/null 2>&1; then
+	    # AIX install.  It has an incompatible calling convention.
+	    :
+	  elif test $ac_prog = install &&
+	    grep pwplus "$as_dir/$ac_prog$ac_exec_ext" >/dev/null 2>&1; then
+	    # program-specific install script used by HP pwplus--don't use.
+	    :
+	  else
+	    ac_cv_path_install="$as_dir/$ac_prog$ac_exec_ext -c"
+	    break 3
+	  fi
+	fi
+      done
+    done
+    ;;
+esac
+done
 
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char socket ();
-int
-main ()
-{
-socket ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"
-			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_socket_socket=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-ac_cv_lib_socket_socket=no
-fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_socket_socket" >&5
-echo "${ECHO_T}$ac_cv_lib_socket_socket" >&6
-if test $ac_cv_lib_socket_socket = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBSOCKET 1
-_ACEOF
-
-  LIBS="-lsocket $LIBS"
 
 fi
-
-
-echo "$as_me:$LINENO: checking for srtp_init in -lsrtp" >&5
-echo $ECHO_N "checking for srtp_init in -lsrtp... $ECHO_C" >&6
-if test "${ac_cv_lib_srtp_srtp_init+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsrtp  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any gcc2 internal prototype to avoid an error.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-/* We use char because int might match the return type of a gcc2
-   builtin and then its argument prototype would still apply.  */
-char srtp_init ();
-int
-main ()
-{
-srtp_init ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"
-			 || test ! -s conftest.err'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; } &&
-	 { ac_try='test -s conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_lib_srtp_srtp_init=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-ac_cv_lib_srtp_srtp_init=no
+  if test "${ac_cv_path_install+set}" = set; then
+    INSTALL=$ac_cv_path_install
+  else
+    # As a last resort, use the slow shell script.  We don't cache a
+    # path for INSTALL within a source directory, because that will
+    # break other packages using the cache if that directory is
+    # removed, or if the path is relative.
+    INSTALL=$ac_install_sh
+  fi
 fi
-rm -f conftest.err conftest.$ac_objext \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-echo "$as_me:$LINENO: result: $ac_cv_lib_srtp_srtp_init" >&5
-echo "${ECHO_T}$ac_cv_lib_srtp_srtp_init" >&6
-if test $ac_cv_lib_srtp_srtp_init = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBSRTP 1
-_ACEOF
+echo "$as_me:$LINENO: result: $INSTALL" >&5
+echo "${ECHO_T}$INSTALL" >&6
 
-  LIBS="-lsrtp $LIBS"
+# Use test -z because SunOS4 sh mishandles braces in ${var-val}.
+# It thinks the first close brace ends the variable substitution.
+test -z "$INSTALL_PROGRAM" && INSTALL_PROGRAM='${INSTALL}'
 
-fi
+test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
+
+test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
 
@@ -2479,19 +2437,46 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_file__dev_urandom" >&5
 echo "${ECHO_T}$ac_cv_file__dev_urandom" >&6
 if test $ac_cv_file__dev_urandom = yes; then
-  DEV_URANDOM=1
+  DEV_URANDOM=/dev/urandom
 else
-  DEV_URANDOM=0
+  echo "$as_me:$LINENO: checking for /dev/random" >&5
+echo $ECHO_N "checking for /dev/random... $ECHO_C" >&6
+if test "${ac_cv_file__dev_random+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:$LINENO: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "/dev/random"; then
+  ac_cv_file__dev_random=yes
+else
+  ac_cv_file__dev_random=no
+fi
+fi
+echo "$as_me:$LINENO: result: $ac_cv_file__dev_random" >&5
+echo "${ECHO_T}$ac_cv_file__dev_random" >&6
+if test $ac_cv_file__dev_random = yes; then
+  DEV_URANDOM=/dev/random
 fi
 
-if test $DEV_URANDOM = 1; then
-   cat >>confdefs.h <<\_ACEOF
-#define DEV_URANDOM 1
+fi
+
+
+echo "$as_me:$LINENO: checking which random device to use" >&5
+echo $ECHO_N "checking which random device to use... $ECHO_C" >&6
+if test -n "$DEV_URANDOM"; then
+
+cat >>confdefs.h <<_ACEOF
+#define DEV_URANDOM "$DEV_URANDOM"
 _ACEOF
 
    RNG_OBJS=crypto/rng/rand_source.c
-
 fi
+
+echo "$as_me:$LINENO: result: $DEV_URANDOM" >&5
+echo "${ECHO_T}$DEV_URANDOM" >&6
+
 
 
 ac_ext=c
@@ -4799,91 +4784,9 @@ _ACEOF
 fi
 
 
-echo "$as_me:$LINENO: checking for working memcmp" >&5
-echo $ECHO_N "checking for working memcmp... $ECHO_C" >&6
-if test "${ac_cv_func_memcmp_working+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  if test "$cross_compiling" = yes; then
-  ac_cv_func_memcmp_working=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-$ac_includes_default
-int
-main ()
-{
-
-  /* Some versions of memcmp are not 8-bit clean.  */
-  char c0 = 0x40, c1 = 0x80, c2 = 0x81;
-  if (memcmp(&c0, &c2, 1) >= 0 || memcmp(&c1, &c2, 1) >= 0)
-    exit (1);
-
-  /* The Next x86 OpenStep bug shows up only when comparing 16 bytes
-     or more and with at least one buffer not starting on a 4-byte boundary.
-     William Lewis provided this test program.   */
-  {
-    char foo[21];
-    char bar[21];
-    int i;
-    for (i = 0; i < 4; i++)
-      {
-	char *a = foo + i;
-	char *b = bar + i;
-	strcpy (a, "--------01111111");
-	strcpy (b, "--------10000000");
-	if (memcmp (a, b, 16) >= 0)
-	  exit (1);
-      }
-    exit (0);
-  }
-
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest$ac_exeext
-if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
-  (eval $ac_link) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_func_memcmp_working=yes
-else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-ac_cv_func_memcmp_working=no
-fi
-rm -f core *.core gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-fi
-echo "$as_me:$LINENO: result: $ac_cv_func_memcmp_working" >&5
-echo "${ECHO_T}$ac_cv_func_memcmp_working" >&6
-test $ac_cv_func_memcmp_working = no && case $LIBOBJS in
-    "memcmp.$ac_objext"   | \
-  *" memcmp.$ac_objext"   | \
-    "memcmp.$ac_objext "* | \
-  *" memcmp.$ac_objext "* ) ;;
-  *) LIBOBJS="$LIBOBJS memcmp.$ac_objext" ;;
-esac
 
 
-
-
-
-for ac_func in socket strerror inet_aton
+for ac_func in socket inet_aton
 do
 as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
 echo "$as_me:$LINENO: checking for $ac_func" >&5
@@ -4983,6 +4886,81 @@ _ACEOF
 
 fi
 done
+
+
+
+echo "$as_me:$LINENO: checking for socket in -lsocket" >&5
+echo $ECHO_N "checking for socket in -lsocket... $ECHO_C" >&6
+if test "${ac_cv_lib_socket_socket+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lsocket  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any gcc2 internal prototype to avoid an error.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+/* We use char because int might match the return type of a gcc2
+   builtin and then its argument prototype would still apply.  */
+char socket ();
+int
+main ()
+{
+socket ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
+  (eval $ac_link) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_socket_socket=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_lib_socket_socket=no
+fi
+rm -f conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+echo "$as_me:$LINENO: result: $ac_cv_lib_socket_socket" >&5
+echo "${ECHO_T}$ac_cv_lib_socket_socket" >&6
+if test $ac_cv_lib_socket_socket = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBSOCKET 1
+_ACEOF
+
+  LIBS="-lsocket $LIBS"
+
+fi
 
 
 echo "$as_me:$LINENO: checking whether byte ordering is bigendian" >&5
@@ -5216,31 +5194,6 @@ presetting ac_cv_c_bigendian=no (or yes) will help" >&2;}
 esac
 
 
-ac_aux_dir=
-for ac_dir in $srcdir $srcdir/.. $srcdir/../..; do
-  if test -f $ac_dir/install-sh; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f $ac_dir/install.sh; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f $ac_dir/shtool; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  { { echo "$as_me:$LINENO: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." >&5
-echo "$as_me: error: cannot find install-sh or install.sh in $srcdir $srcdir/.. $srcdir/../.." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"
-ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
-
 # Make sure we can run config.sub.
 $ac_config_sub sun4 >/dev/null 2>&1 ||
   { { echo "$as_me:$LINENO: error: cannot run $ac_config_sub" >&5
@@ -5296,24 +5249,21 @@ host_os=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
 
 
-echo "host_cpu: $host_cpu"
-
-if test $host_cpu = x86; then
-   echo "x86 cpu found"
-fi
-
 case $host_cpu in
      i*86 )
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CPU_CISC 1
 _ACEOF
 
-        cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_X86 1
 _ACEOF
-;; # use x86 inline assembly
+;;
 	* )
-	cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define CPU_RISC 1
 _ACEOF
 ;;
@@ -5322,7 +5272,8 @@ esac
 
 case $host_os in
   *cygwin* )
-	      cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_MS_TYPES 1
 _ACEOF
 
@@ -5332,100 +5283,126 @@ esac
 
    # define executable suffix; this is needed for `make clean'
 
+echo "$as_me:$LINENO: checking whether to compile in debugging" >&5
+echo $ECHO_N "checking whether to compile in debugging... $ECHO_C" >&6
 # Check whether --enable-debug or --disable-debug was given.
 if test "${enable_debug+set}" = set; then
   enableval="$enable_debug"
-  USE_DEBUG=0
-else
-  USE_DEBUG=1
-fi;
 
-if test $USE_DEBUG = 1; then
-   cat >>confdefs.h <<\_ACEOF
+else
+  enable_debug=yes
+fi;
+if test "$enable_debug" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
 #define ENABLE_DEBUGGING 1
 _ACEOF
 
 fi
+echo "$as_me:$LINENO: result: $enable_debug" >&5
+echo "${ECHO_T}$enable_debug" >&6
 
+echo "$as_me:$LINENO: checking whether to use ISMAcryp code" >&5
+echo $ECHO_N "checking whether to use ISMAcryp code... $ECHO_C" >&6
 # Check whether --enable-generic-aesicm or --disable-generic-aesicm was given.
 if test "${enable_generic_aesicm+set}" = set; then
   enableval="$enable_generic_aesicm"
-  GENERIC_AESICM=0
-else
-  GENERIC_AESICM=1
-fi;
 
-if test $GENERIC_AESICM = 1; then
-   cat >>confdefs.h <<\_ACEOF
+else
+  enable_generic_aesicm=no
+fi;
+if test "$enable_generic_aesicm" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
 #define GENERIC_AESICM 1
 _ACEOF
 
 fi
+echo "$as_me:$LINENO: result: $enable_generic_aesicm" >&5
+echo "${ECHO_T}$enable_generic_aesicm" >&6
 
+echo "$as_me:$LINENO: checking whether to use syslog for error reporting" >&5
+echo $ECHO_N "checking whether to use syslog for error reporting... $ECHO_C" >&6
 # Check whether --enable-syslog or --disable-syslog was given.
 if test "${enable_syslog+set}" = set; then
   enableval="$enable_syslog"
-  USE_SYSLOG=1
-else
-  USE_SYSLOG=0
-fi;
 
-if test $USE_SYSLOG = 1; then
-   cat >>confdefs.h <<\_ACEOF
+else
+  enable_syslog=no
+fi;
+if test "$enable_syslog" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
 #define USE_SYSLOG 1
 _ACEOF
 
 fi
+echo "$as_me:$LINENO: result: $enable_syslog" >&5
+echo "${ECHO_T}$enable_syslog" >&6
 
+echo "$as_me:$LINENO: checking whether to use stdout for error reporting" >&5
+echo $ECHO_N "checking whether to use stdout for error reporting... $ECHO_C" >&6
 # Check whether --enable-stdout or --disable-stdout was given.
 if test "${enable_stdout+set}" = set; then
   enableval="$enable_stdout"
-  ERR_STDOUT=0
-else
-  ERR_STDOUT=1
-fi;
 
-if test $ERR_STDOUT = 1; then
-   cat >>confdefs.h <<\_ACEOF
+else
+  enable_stdout=yes
+fi;
+if test "$enable_stdout" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
 #define ERR_REPORTING_STDOUT 1
 _ACEOF
 
 fi
+echo "$as_me:$LINENO: result: $enable_stdout" >&5
+echo "${ECHO_T}$enable_stdout" >&6
 
+echo "$as_me:$LINENO: checking whether to use /dev/console for error reporting" >&5
+echo $ECHO_N "checking whether to use /dev/console for error reporting... $ECHO_C" >&6
 # Check whether --enable-console or --disable-console was given.
 if test "${enable_console+set}" = set; then
   enableval="$enable_console"
-  ERR_FILE=1
-else
-  ERR_FILE=0
-fi;
 
-if test $ERR_FILE = 1; then
-   cat >>confdefs.h <<\_ACEOF
+else
+  enable_console=no
+fi;
+if test "$enable_console" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_ERR_REPORTING_FILE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
 #define ERR_REPORTING_FILE "/dev/console"
 _ACEOF
 
 fi
+echo "$as_me:$LINENO: result: $enable_console" >&5
+echo "${ECHO_T}$enable_console" >&6
+
+echo "$as_me:$LINENO: checking whether to use GDOI key management" >&5
+echo $ECHO_N "checking whether to use GDOI key management... $ECHO_C" >&6
 # Check whether --enable-gdoi or --disable-gdoi was given.
 if test "${enable_gdoi+set}" = set; then
   enableval="$enable_gdoi"
-  GDOI=1
-else
-  GDOI=0
-fi;
 
-if test $GDOI = 1; then
-   echo "$as_me:$LINENO: checking for GDOI key management" >&5
-echo $ECHO_N "checking for GDOI key management... $ECHO_C" >&6
-   echo "$as_me:$LINENO: result: ?" >&5
-echo "${ECHO_T}?" >&6
-   cat >>confdefs.h <<\_ACEOF
+else
+  enable_gdoi=no
+fi;
+if test "$enable_gdoi" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
 #define SRTP_GDOI 1
 _ACEOF
 
    GDOI_OBJS=gdoi/srtp+gdoi.o
 
 fi
+echo "$as_me:$LINENO: result: $enable_gdoi" >&5
+echo "${ECHO_T}$enable_gdoi" >&6
 
           ac_config_headers="$ac_config_headers crypto/include/config.h:config_in.h"
 
@@ -5861,6 +5838,7 @@ Copyright (C) 2003 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 srcdir=$srcdir
+INSTALL="$INSTALL"
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF
@@ -6050,10 +6028,12 @@ s,@CPPFLAGS@,$CPPFLAGS,;t t
 s,@ac_ct_CC@,$ac_ct_CC,;t t
 s,@EXEEXT@,$EXEEXT,;t t
 s,@OBJEXT@,$OBJEXT,;t t
+s,@INSTALL_PROGRAM@,$INSTALL_PROGRAM,;t t
+s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
+s,@INSTALL_DATA@,$INSTALL_DATA,;t t
 s,@RNG_OBJS@,$RNG_OBJS,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t
-s,@LIBOBJS@,$LIBOBJS,;t t
 s,@build@,$build,;t t
 s,@build_cpu@,$build_cpu,;t t
 s,@build_vendor@,$build_vendor,;t t
@@ -6064,6 +6044,7 @@ s,@host_vendor@,$host_vendor,;t t
 s,@host_os@,$host_os,;t t
 s,@EXE@,$EXE,;t t
 s,@GDOI_OBJS@,$GDOI_OBJS,;t t
+s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
 
@@ -6226,6 +6207,10 @@ case $ac_abs_builddir in
 esac
 
 
+  case $INSTALL in
+  [\\/$]* | ?:[\\/]* ) ac_INSTALL=$INSTALL ;;
+  *) ac_INSTALL=$ac_top_builddir$INSTALL ;;
+  esac
 
   if test x"$ac_file" != x-; then
     { echo "$as_me:$LINENO: creating $ac_file" >&5
@@ -6287,6 +6272,7 @@ s,@builddir@,$ac_builddir,;t t
 s,@abs_builddir@,$ac_abs_builddir,;t t
 s,@top_builddir@,$ac_top_builddir,;t t
 s,@abs_top_builddir@,$ac_abs_top_builddir,;t t
+s,@INSTALL@,$ac_INSTALL,;t t
 " $ac_file_inputs | (eval "$ac_sed_cmds") >$tmp/out
   rm -f $tmp/stdin
   if test x"$ac_file" != x-; then

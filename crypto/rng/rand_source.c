@@ -42,13 +42,10 @@
  *
  */
 
-
+#include "config.h"
 #include "rand_source.h"
 
-/* FIX! move to configuration file */
-#define HAS_DEV_RANDOM
-
-#ifdef HAS_DEV_RANDOM
+#ifdef DEV_URANDOM
 #include <fcntl.h>          /* for open()  */
 #include <unistd.h>         /* for close() */
 #endif
@@ -61,18 +58,16 @@ int dev_random_fdes = 0;
 err_status_t
 rand_source_init() {
 
-#ifdef HAS_DEV_RANDOM
-  /* open /dev/random for reading */
-  dev_random_fdes = open("/dev/urandom", O_RDONLY, 0);
+#ifdef DEV_URANDOM
+  /* open random source for reading */
+  dev_random_fdes = open(DEV_URANDOM, O_RDONLY, 0);
   if (dev_random_fdes == 0)
     return err_status_init_fail;
-#else
-  /* Generic C-library (rand()) version */
-  /* call srand() here if needed */  
-  /* FIX  libsrtp needs a goodrandom value source/seed */
-#endif
-
   return err_status_ok;
+#else
+  /* no random source available; let the caller know */
+  return err_status_fail;
+#endif
 }
 
 err_status_t
@@ -83,7 +78,7 @@ rand_source_get_octet_string(void *dest, int len) {
    * check return value to make sure enough octets were
    * written 
    */
-#ifdef HAS_DEV_RANDOM
+#ifdef DEV_URANDOM
   if (read(dev_random_fdes, dest, len) != len)
     return err_status_fail;
 #else
@@ -105,7 +100,7 @@ rand_source_get_octet_string(void *dest, int len) {
 err_status_t
 rand_source_deinit() {
 
-#ifdef HAS_DEV_RANDOM
+#ifdef DEV_URANDOM
   if (dev_random_fdes == 0)
     return err_status_dealloc_fail;  /* well, we haven't really failed, *
 				      * but there is something wrong    */

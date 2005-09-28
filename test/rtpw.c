@@ -110,9 +110,9 @@ main (int argc, char *argv[]) {
   sec_serv_t sec_servs = sec_serv_none;
   unsigned char ttl = 5;
   int c;
-  unsigned char *input_key = NULL;
-  unsigned char *address = NULL;
-  octet_t key[MAX_KEY_LEN];
+  char *input_key = NULL;
+  char *address = NULL;
+  char key[MAX_KEY_LEN];
   unsigned short port = 0;
   rtp_sender_t snd;
   srtp_policy_t policy;
@@ -269,7 +269,7 @@ main (int argc, char *argv[]) {
     crypto_policy_set_rtcp_default(&policy.rtcp);
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = ssrc;
-    policy.key  = key;
+    policy.key  = (octet_t *) key;
     policy.next = NULL;
     policy.rtp.sec_serv = sec_servs;
     policy.rtcp.sec_serv = sec_serv_none;  /* we don't do RTCP anyway */

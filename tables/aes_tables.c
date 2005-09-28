@@ -44,7 +44,7 @@
 
 #include <stdio.h>
 #include "gf2_8.h"
-#include "math.h"
+#include "crypto_math.h"
 
 
 unsigned char aes_sbox[256];
@@ -210,7 +210,7 @@ main() {
   for (i=0; i < 256; i++) {
     if ((i % 4) == 0)
       printf("\n");
-    printf("0x%0lx, ", U0[i]);
+    printf("0x%0x, ", U0[i]);
   }
   printf("\n}\n");
 
@@ -218,7 +218,7 @@ main() {
   for (i=0; i < 256; i++) {
     if ((i % 4) == 0)
       printf("\n");
-    printf("0x%lx, ", U1[i]);
+    printf("0x%x, ", U1[i]);
   }
   printf("\n}\n");
 
@@ -226,7 +226,7 @@ main() {
   for (i=0; i < 256; i++) {
     if ((i % 4) == 0)
       printf("\n");
-    printf("0x%lx, ", U2[i]);
+    printf("0x%x, ", U2[i]);
   }
   printf("\n}\n");
 
@@ -234,7 +234,7 @@ main() {
   for (i=0; i < 256; i++) {
     if ((i % 4) == 0)
       printf("\n");
-    printf("0x%lx, ", U3[i]);
+    printf("0x%x, ", U3[i]);
   }
   printf("\n}\n");
 
@@ -242,7 +242,7 @@ main() {
  for (i=0; i < 256; i++) {
     if ((i % 4) == 0)
       printf("\n");
-    printf("0x%lx, ", U4[i]);
+    printf("0x%x, ", U4[i]);
   }
   printf("\n}\n");
 

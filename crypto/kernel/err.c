@@ -67,7 +67,7 @@ err_reporting_init(char *ident) {
 #if ERR_REPORTING_STDOUT
   err_file = stdout;
 #else
-#ifdef ERR_REPORTING_FILE
+#if USE_ERR_REPORTING_FILE
   /* open file for error reporting */
   err_file = fopen(ERR_REPORTING_FILE, "w");
   if (err_file == NULL)

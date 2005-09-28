@@ -761,29 +761,29 @@ srtp_install_event_handler(srtp_event_handler_func_t func);
 #if (WORDS_BIGENDIAN == 0) /* assume LITTLE_ENDIAN */
 
 typedef struct {
-  unsigned char cc:4;		/* CSRC count             */
-  unsigned char x:1;		/* header extension flag  */
-  unsigned char p:1;		/* padding flag           */
-  unsigned char version:2;	/* protocol version       */
-  unsigned char pt:7;		/* payload type           */
-  unsigned char m:1;		/* marker bit             */
-  uint16_t seq;			/* sequence number        */
-  uint32_t ts;			/* timestamp              */
-  uint32_t ssrc;	       	/* synchronization source */
+  unsigned cc:4;	/* CSRC count             */
+  unsigned x:1;		/* header extension flag  */
+  unsigned p:1;		/* padding flag           */
+  unsigned version:2;	/* protocol version       */
+  unsigned pt:7;	/* payload type           */
+  unsigned m:1;		/* marker bit             */
+  uint16_t seq;		/* sequence number        */
+  uint32_t ts;		/* timestamp              */
+  uint32_t ssrc;	/* synchronization source */
 } srtp_hdr_t;
 
 #else /*  BIG_ENDIAN */
 
 typedef struct {
-  unsigned char version:2;	/* protocol version       */
-  unsigned char p:1;		/* padding flag           */
-  unsigned char x:1;		/* header extension flag  */
-  unsigned char cc:4;		/* CSRC count             */
-  unsigned char m:1;		/* marker bit             */
-  unsigned char pt:7;		/* payload type           */
-  uint16_t seq;			/* sequence number        */
-  uint32_t ts;			/* timestamp              */
-  uint32_t ssrc;	       	/* synchronization source */
+  unsigned version:2;	/* protocol version       */
+  unsigned p:1;		/* padding flag           */
+  unsigned x:1;		/* header extension flag  */
+  unsigned cc:4;	/* CSRC count             */
+  unsigned m:1;		/* marker bit             */
+  unsigned pt:7;	/* payload type           */
+  uint16_t seq;		/* sequence number        */
+  uint32_t ts;		/* timestamp              */
+  uint32_t ssrc;	/* synchronization source */
 } srtp_hdr_t;
 
 #endif
