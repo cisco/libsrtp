@@ -61,6 +61,10 @@
 
 #include <stdint.h>
 
+#elif HAVE_INTTYPES_H  
+
+#include <inttypes.h>
+
 #elif HAVE_SYS_INT_TYPES_H  
 
 #include <sys/int_types.h>    /* this exists on Sun OS */
@@ -78,10 +82,7 @@
 
 typedef unsigned short int     uint16_t;
 typedef unsigned int           uint32_t;
-#if (HAVE_U_LONG_LONG == 0)
-typedef double uint64_t;
-/* assert that sizeof(double) == 8 */
-#else
+#if (HAVE_U_LONG_LONG == 1)
 typedef unsigned long long int uint64_t;
 #endif
 
@@ -94,10 +95,7 @@ typedef unsigned long long int uint64_t;
 
 typedef short int     int16_t;
 typedef int           int32_t;
-#if (HAVE_U_LONG_LONG == 0)
-typedef double int64_t;
-/* assert that sizeof(double) == 8 */
-#else
+#if (HAVE_U_LONG_LONG == 1)
 typedef long long int int64_t;
 #endif
 
@@ -107,6 +105,14 @@ typedef long long int int64_t;
 
 #endif
 
+#endif
+
+#if (HAVE_U_LONG_LONG == 0)
+typedef double uint64_t;
+/* assert that sizeof(double) == 8 */
+extern uint64_t make64(uint32_t high, uint32_t low);
+extern uint32_t high32(uint64_t value);
+extern uint32_t low32(uint64_t value);
 #endif
 
 /* These macros are to load and store 32-bit values from un-aligned
