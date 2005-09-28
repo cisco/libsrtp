@@ -1527,7 +1527,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 
 inline void
 aes_inv_round(v128_t *state, const v128_t round_key) {
-  unsigned long column0, column1, column2, column3;
+  uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
      of state, using the tables U0, U1, U2, U3 */
@@ -1644,7 +1644,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 
   column3 = T0[state->v32[3] >> 24] ^ T1[(state->v32[0] >> 16) & 0xff]
     ^ T2[(state->v32[1] >> 8) & 0xff] ^ T3[state->v32[2] & 0xff];
-#elif !WORDS_BIGENDIAN
+#else
   column0 = T0[state->v32[0] & 0xff] ^ T1[(state->v32[1] >> 8) & 0xff]
 	^ T2[(state->v32[2] >> 16) & 0xff] ^ T3[state->v32[3] >> 24];
   
@@ -1685,7 +1685,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 
   column3 = U0[state->v32[3] >> 24] ^ U1[(state->v32[2] >> 16) & 0xff]
     ^ U2[(state->v32[1] >> 8) & 0xff] ^ U3[state->v32[0] & 0xff];
-#elif !WORDS_BIGENDIAN
+#else
   column0 = U0[state->v32[0] & 0xff] ^ U1[(state->v32[1] >> 8) & 0xff]
 	^ U2[(state->v32[2] >> 16) & 0xff] ^ U3[state->v32[3] >> 24];
   
@@ -1780,7 +1780,7 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
 
 inline void
 aes_round(v128_t *state, const v128_t round_key) {
-  unsigned long column0, column1, column2, column3;
+  uint32_t column0, column1, column2, column3;
   uint16_t c
   /* compute the columns of the output square in terms of the octets
      of state, using the tables T0, T1, T2, T3 */
