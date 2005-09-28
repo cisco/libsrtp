@@ -81,7 +81,7 @@ key_limit_update(key_limit_t key) {
   if (low32(key->num_left) == 0)
   {
 	  // carry
-	  key->num_left = make64(high32(key->num_left)-1,lo32(key->num_left) - 1);
+	  key->num_left = make64(high32(key->num_left)-1,low32(key->num_left) - 1);
   }
   else
   {
