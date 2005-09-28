@@ -51,7 +51,7 @@ unsigned char aes_sbox[256];
 
 unsigned char aes_inv_sbox[256];
 
-unsigned long T0[256], T1[256], T2[256], T3[256], T4[256]; 
+uint32_t T0[256], T1[256], T2[256], T3[256], T4[256]; 
 
 
 #define AES_INVERSE_TEST 0  /* set to 1 to test forward/backwards aes */
