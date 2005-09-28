@@ -235,7 +235,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
 	      v128_hex_string(&c->keystream_buffer));    
     
     /*  indicate number of bytes in keystream_buffer  */
-    c->bytes_in_buffer = 16 - tail_num;
+    c->bytes_in_buffer = sizeof(v128_t) - tail_num;
   
   } else {
     
