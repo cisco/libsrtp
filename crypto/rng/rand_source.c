@@ -71,7 +71,7 @@ rand_source_init() {
 }
 
 err_status_t
-rand_source_get_octet_string(void *dest, int len) {
+rand_source_get_octet_string(void *dest, uint32_t len) {
 
   /* 
    * read len octets from /dev/random to dest, and
