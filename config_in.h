@@ -22,6 +22,7 @@
 /* check for <stdint.h> or <machine/types.h>              */
 
 #define HAVE_STDINT_H        0
+#define HAVE_INTTYPES_H      0
 #define HAVE_MACHINE_TYPES_H 0
 #define HAVE_SYS_INT_TYPES_H 0
 
