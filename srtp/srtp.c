@@ -737,7 +737,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 #if (HAVE_U_LONG_LONG == 0)
    est = bswap_64(make64((high32(est) << 16) |
 						 (low32(est) >> 16),
-						 lo32(est) << 16));
+						 low32(est) << 16));
 #else
    est = bswap_64(est << 16);
 #endif
