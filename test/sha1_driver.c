@@ -47,10 +47,10 @@
 #include "sha1.h"
 
 int
-hmac_sha1_test();
+hmac_sha1_test(void);
 
 int
-main () {
+main (void) {
   uint32_t hash_value[5];
   uint8_t msg_ref[3] = { 0x61, 0x62, 0x63 };
   uint8_t hash_ref[20] = {

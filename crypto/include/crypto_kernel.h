@@ -162,7 +162,7 @@ typedef struct {
  */
 
 err_status_t
-crypto_kernel_init();
+crypto_kernel_init(void);
 
 
 /*
@@ -177,7 +177,7 @@ crypto_kernel_init();
  */
 
 err_status_t
-crypto_kernel_shutdown();
+crypto_kernel_shutdown(void);
 
 /*
  * The function crypto_kernel_stats() checks the the crypto_kernel,
@@ -190,7 +190,7 @@ crypto_kernel_shutdown();
  */
 
 err_status_t
-crypto_kernel_status();
+crypto_kernel_status(void);
 
 
 /*
@@ -199,7 +199,7 @@ crypto_kernel_status();
  */
 
 err_status_t
-crypto_kernel_list_debug_modules();
+crypto_kernel_list_debug_modules(void);
 
 /*
  * crypto_kernel_load_cipher_type()

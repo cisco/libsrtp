@@ -32,7 +32,7 @@ typedef struct {
 } x917_prng_t;
 
 err_status_t
-x917_prng_init();
+x917_prng_init(rand_source_func_t random_source);
 
 err_status_t
 x917_prng_get_octet_string(uint8_t *dest, uint32_t len);
@@ -49,7 +49,7 @@ typedef struct {
 } ctr_prng_t;
 
 err_status_t
-ctr_prng_init();
+ctr_prng_init(rand_source_func_t random_source);
 
 err_status_t
 ctr_prng_get_octet_string(void *dest, uint32_t len);

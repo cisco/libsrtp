@@ -118,7 +118,7 @@ main (int argc, char *argv[]) {
  */
 
 err_status_t
-crypto_kernel_cipher_test() {
+crypto_kernel_cipher_test(void) {
 
   /* not implemented yet! */
 

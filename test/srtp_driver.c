@@ -54,13 +54,13 @@
 #define PRINT_REFERENCE_PACKET 1
 
 err_status_t
-srtp_validate();
+srtp_validate(void);
 
 err_status_t
 srtp_create_big_policy(srtp_policy_t **list);
 
 err_status_t
-srtp_test_remove_stream();
+srtp_test_remove_stream(void);
 
 double
 srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
@@ -75,7 +75,7 @@ void
 srtp_do_rejection_timing(const srtp_policy_t *policy);
 
 err_status_t
-srtp_test();
+srtp_test(const srtp_policy_t *policy);
 
 err_status_t
 srtp_session_print_policy(srtp_t srtp);

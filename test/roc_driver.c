@@ -61,7 +61,7 @@ err_status_t
 roc_test(int num_trials);
 
 int
-main () {
+main (void) {
   err_status_t status;
 
   printf("rollover counter test driver\n"

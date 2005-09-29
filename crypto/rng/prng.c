@@ -174,7 +174,7 @@ x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
 }
 
 err_status_t
-x917_prng_deinit() {
+x917_prng_deinit(void) {
   
   return err_status_ok;  
 }

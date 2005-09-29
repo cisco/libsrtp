@@ -49,13 +49,13 @@
 #include "ut_sim.h"
 
 void
-test_rdb_db();
+test_rdb_db(void);
 
 double
-rdb_check_adds_per_second();
+rdb_check_adds_per_second(void);
 
 int
-main () {
+main (void) {
 
   printf("testing anti-replay database (rdb_t)...\n");
   test_rdb_db();
@@ -148,7 +148,7 @@ test_rdb_db() {
 #define REPLAY_NUM_TRIALS 10000000
 
 double
-rdb_check_adds_per_second() {
+rdb_check_adds_per_second(void) {
   uint32_t i;
   rdb_t rdb;
   clock_t timer;

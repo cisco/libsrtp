@@ -49,19 +49,19 @@
 #include "datatypes.h"
 
 void
-byte_order();
+byte_order(void);
 
 void
-test_hex_string_funcs();
+test_hex_string_funcs(void);
 
 void
 print_string(char *s);
 
 void
-test_bswap();
+test_bswap(void);
 
 int
-main () {
+main (void) {
   
   /*
    * this program includes various and sundry tests for fundamental

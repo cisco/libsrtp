@@ -76,7 +76,7 @@ uint8_t b = 99;
 
 
 void
-aes_init_sbox() {
+aes_init_sbox(void) {
   unsigned int i;
   uint8_t x;
   
@@ -89,7 +89,7 @@ aes_init_sbox() {
 }
 
 void
-aes_compute_tables() {
+aes_compute_tables(void) {
   int i;
   uint32_t x1, x2, x3;
   v32_t tmp;
@@ -141,7 +141,7 @@ uint32_t U0[256], U1[256], U2[256], U3[256], U4[256];
 extern uint8_t aes_inv_sbox[256];
 
 void
-aes_compute_inv_tables() {
+aes_compute_inv_tables(void) {
   int i;
   uint8_t x, xe, x9, xd, xb;
   v32_t tmp;
@@ -194,12 +194,12 @@ aes_compute_inv_tables() {
 #include "err.h"
 
 err_status_t
-aes_test_inverse();
+aes_test_inverse(void);
 
 #define TABLES_32BIT 1
 
 int
-main() {
+main(void) {
   int i;
 
   aes_init_sbox();
@@ -313,7 +313,7 @@ main() {
 #if AES_INVERSE_TEST
 
 err_status_t
-aes_test_inverse() {
+aes_test_inverse(void) {
   v128_t x, y;
   aes_expanded_key_t expanded_key, decrypt_key;
   uint8_t plaintext[16] = {

@@ -20,7 +20,7 @@ typedef struct {
 } random_source_t;
 
 err_status_t
-random_source_alloc();
+random_source_alloc(void);
 
 void
 err_check(err_status_t s) {

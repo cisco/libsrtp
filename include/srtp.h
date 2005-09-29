@@ -250,7 +250,7 @@ typedef struct srtp_stream_ctx_t *srtp_stream_t;
  */
 
 err_status_t
-srtp_init();
+srtp_init(void);
 
 /**
  * @brief srtp_protect() is the Secure RTP sender-side packet processing
