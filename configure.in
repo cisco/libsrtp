@@ -148,6 +148,4 @@ AC_MSG_RESULT($enable_gdoi)
 
 AC_CONFIG_HEADER(crypto/include/config.h:config_in.h)
 
-AC_OUTPUT(Makefile)
-
-
+AC_OUTPUT(Makefile crypto/Makefile doc/Makefile)
