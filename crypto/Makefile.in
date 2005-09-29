@@ -3,17 +3,29 @@
 # David A. McGrew
 # Cisco Systems, Inc.
 
-CFLAGS = -Wall -g
-INCDIR = -I. -I./include  
-LIBS   = -lcryptomodule
-LIBDIR = -L. 
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+top_builddir = @top_builddir@
+VPATH = @srcdir@
+
+CC	= @CC@
+INCDIR	= -Iinclude -I$(srcdir)/include
+DEFS	= @DEFS@
+CPPFLAGS= @CPPFLAGS@
+CFLAGS	= @CFLAGS@
+LIBS	= @LIBS@
+LDFLAGS	= @LDFLAGS@ -L.
+COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
+CRYPTOLIB = -lcryptomodule
+
+RANLIB	= @RANLIB@
 
 ifdef ARCH
-  CDEFS += -D$(ARCH)=1
+  DEFS += -D$(ARCH)=1
 endif
 
 ifdef sysname
-  CDEFS += -D$(sysname)=1
+  DEFS += -D$(sysname)=1
 endif
 
 .PHONY: dummy all runtest clean superclean
@@ -69,17 +81,13 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(xfm)
 # the rule for making object files and test apps
 
 %.o: %.c
-	$(CC) -c $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ 
+	$(COMPILE) -c $< -o $@
 
 %: %.c libcryptomodule.a 
-	$(CC) $(CDEFS) $(CFLAGS) $(INCDIR) $< -o $@ $(LIBDIR) $(LIBS)
+	$(COMPILE) $(LDFLAGS) $< -o $@ $(LIBS) $(CRYPTOLIB)
 
 ifndef AR
   AR=ar
-endif
-
-ifndef RANLIB
-  RANLIB=ranlib
 endif
 
 # and the crypto module library itself
