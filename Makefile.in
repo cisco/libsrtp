@@ -13,11 +13,11 @@
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
 
-.PHONY: all test 
+.PHONY: all test build_table_apps
 
 all: test 
 
-runtest: table_apps test
+runtest: build_table_apps test
 	@echo "running libsrtp test applications..."
 	test/cipher_driver$(EXE) -v >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
@@ -141,8 +141,9 @@ memtest: test/srtp_driver
 # implementations; these need only be generated during porting, not
 # for building libsrtp or the test applications
 
-table_apps: tables/aes_tables 
+table_apps = tables/aes_tables 
 
+build_table_apps: $(table_apps)
 
 # in the tables/ subdirectory, we use libcryptomath instead of libsrtp
 
