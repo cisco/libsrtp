@@ -30,17 +30,22 @@ runtest: build_table_apps test
 # makefile variables
 
 CC	= @CC@
-INCDIR	= -I./include -I./crypto/include
-CDEFS	= @DEFS@
-CPPFLAGS = @CPPFLAGS@ $(CDEFS) $(INCDIR)
+INCDIR	= -Icrypto/include -I$(srcdir)/include -I$(srcdir)/crypto/include
+DEFS	= @DEFS@
+CPPFLAGS= @CPPFLAGS@
 CFLAGS	= @CFLAGS@
 LIBS	= @LIBS@
 LDFLAGS	= @LDFLAGS@ -L.
+COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 SRTPLIB	= -lsrtp
 
 RANLIB	= @RANLIB@
 INSTALL	= @INSTALL@
 
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+top_builddir = @top_builddir@
+VPATH = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 includedir = @includedir@
@@ -50,10 +55,10 @@ libdir = @libdir@
 # implicit rules for object files and test apps
 
 %.o: %.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(COMPILE) -c $< -o $@
 
 %: %.c libsrtp.a 
-	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@ $(LDFLAGS) $(LIBS) $(SRTPLIB)
+	$(COMPILE) $(LDFLAGS) $< -o $@ $(LIBS) $(SRTPLIB)
 
 
 # libcrypt.a (the crypto engine) 
@@ -96,7 +101,7 @@ gdoi	= @GDOI_OBJS@
 srtpobj = srtp/srtp.o 
 
 libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
-	ar cr libsrtp.a $(srtpobj) $(cryptobj) $(gdoi)
+	ar cr libsrtp.a $^
 	$(RANLIB) libsrtp.a
 
 # libaesicm.a provides an icm implementation used by mpeg4ip
@@ -124,7 +129,7 @@ testapp = test/cipher_driver test/datatypes_driver test/srtp_driver \
           test/aes_calc test/rand_gen test/rtpw  
 
 test/rtpw: test/rtpw.c test/rtp.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) $(SRTPLIB)
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test: $(testapp)
 	@echo "Build done. Please run '$(MAKE) runtest' to run self tests."
@@ -149,7 +154,7 @@ build_table_apps: $(table_apps)
 # in the tables/ subdirectory, we use libcryptomath instead of libsrtp
 
 tables/%: tables/%.c libcryptomath.a 
-	$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@ $(LDFLAGS) $(LIBS) libcryptomath.a
+	$(COMPILE) $(LDFLAGS) $< -o $@ $(LIBS) libcryptomath.a
 
 # the target 'plot' runs the timing test (test/srtp_driver -t) then
 # uses gnuplot to produce plots of the results - see the script file
@@ -223,6 +228,4 @@ distribution: runtest superclean
         fi
 	cd ..; tar cvzf $(distname).tgz srtp
 
-# EOF 
-
-
+# EOF
