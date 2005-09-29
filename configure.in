@@ -149,3 +149,17 @@ AC_MSG_RESULT($enable_gdoi)
 AC_CONFIG_HEADER(crypto/include/config.h:config_in.h)
 
 AC_OUTPUT(Makefile crypto/Makefile doc/Makefile)
+
+# This is needed when building outside the source dir.
+AS_MKDIR_P(crypto/ae_xfm)
+AS_MKDIR_P(crypto/cipher)
+AS_MKDIR_P(crypto/hash)
+AS_MKDIR_P(crypto/kernel)
+AS_MKDIR_P(crypto/math)
+AS_MKDIR_P(crypto/replay)
+AS_MKDIR_P(crypto/rng)
+AS_MKDIR_P(crypto/test)
+AS_MKDIR_P(doc)
+AS_MKDIR_P(srtp)
+AS_MKDIR_P(tables)
+AS_MKDIR_P(test)
