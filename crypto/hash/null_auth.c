@@ -84,7 +84,7 @@ null_auth_dealloc(auth_t *a) {
   extern auth_type_t null_auth;
   
   /* zeroize entire state*/
-  octet_string_set_to_zero((octet_t *)a, 
+  octet_string_set_to_zero((uint8_t *)a, 
 			   sizeof(null_auth_ctx_t) + sizeof(auth_t));
 
   /* free memory */
@@ -97,7 +97,7 @@ null_auth_dealloc(auth_t *a) {
 }
 
 err_status_t
-null_auth_init(null_auth_ctx_t *state, const octet_t *key, int key_len) {
+null_auth_init(null_auth_ctx_t *state, const uint8_t *key, int key_len) {
 
   /* accept any length of key, and do nothing */
   
@@ -105,14 +105,14 @@ null_auth_init(null_auth_ctx_t *state, const octet_t *key, int key_len) {
 }
 
 err_status_t
-null_auth_compute(null_auth_ctx_t *state, octet_t *message,
-		   int msg_octets, int tag_len, octet_t *result) {
+null_auth_compute(null_auth_ctx_t *state, uint8_t *message,
+		   int msg_octets, int tag_len, uint8_t *result) {
 
   return err_status_ok;
 }
 
 err_status_t
-null_auth_update(null_auth_ctx_t *state, octet_t *message,
+null_auth_update(null_auth_ctx_t *state, uint8_t *message,
 		   int msg_octets) {
 
   return err_status_ok;

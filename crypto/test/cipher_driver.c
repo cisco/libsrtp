@@ -260,8 +260,8 @@ err_status_t
 cipher_driver_test_buffering(cipher_t *c) {
   int i, j, num_trials = 1000;
   unsigned len, buflen = 1024;
-  octet_t buffer0[buflen], buffer1[buflen], *current, *end;
-  octet_t idx[16] = { 
+  uint8_t buffer0[buflen], buffer1[buflen], *current, *end;
+  uint8_t idx[16] = { 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34
   };
@@ -346,7 +346,7 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
 			cipher_type_t *ctype, int klen) {
   int i, j;
   err_status_t status;
-  octet_t *key;
+  uint8_t *key;
   cipher_t **cipher_array;
 
   /* allocate array of pointers to ciphers */
@@ -374,7 +374,7 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
     
     /* generate random key and initialize cipher */
     for (j=0; j < klen; j++)
-      key[j] = (octet_t) random();
+      key[j] = (uint8_t) random();
     status = cipher_init(*cipher_array, key, direction_encrypt);
     if (status)
       return status;

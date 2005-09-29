@@ -238,9 +238,9 @@ test_bswap() {
 
   printf("1234: %0llx\n", y);
   printf("as octet string: %s\n", 
-	 octet_string_hex_string((octet_t *) &y, 8));
+	 octet_string_hex_string((uint8_t *) &y, 8));
   y = bswap_64(y);
   printf("bswapped octet string: %s\n", 
-	 octet_string_hex_string((octet_t *) &y, 8));
+	 octet_string_hex_string((uint8_t *) &y, 8));
 
 }

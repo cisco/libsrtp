@@ -56,16 +56,16 @@ typedef err_status_t (*auth_alloc_func)
      (auth_pointer_t *ap, int key_len, int out_len);
 
 typedef err_status_t (*auth_init_func)
-     (void *state, const octet_t *key, int key_len);
+     (void *state, const uint8_t *key, int key_len);
 
 typedef err_status_t (*auth_dealloc_func)(auth_pointer_t ap);
 
 typedef err_status_t (*auth_compute_func)
-     (void *state, octet_t *buffer, int octets_to_auth, 
-      int tag_len, octet_t *tag);
+     (void *state, uint8_t *buffer, int octets_to_auth, 
+      int tag_len, uint8_t *tag);
 
 typedef err_status_t (*auth_update_func)
-     (void *state, octet_t *buffer, int octets_to_auth);
+     (void *state, uint8_t *buffer, int octets_to_auth);
 
 typedef err_status_t (*auth_start_func)(void *state);
      
@@ -108,11 +108,11 @@ auth_get_prefix_length(const struct auth_t *a);
 
 typedef struct auth_test_case_t {
   int key_length_octets;                    /* octets in key            */
-  octet_t *key;                             /* key                      */
+  uint8_t *key;                             /* key                      */
   int data_length_octets;                   /* octets in data           */ 
-  octet_t *data;                            /* data                     */
+  uint8_t *data;                            /* data                     */
   int tag_length_octets;                    /* octets in tag            */
-  octet_t *tag;                             /* tag                      */
+  uint8_t *tag;                             /* tag                      */
   struct auth_test_case_t *next_test_case;  /* pointer to next testcase */
 } auth_test_case_t;
 

@@ -119,7 +119,7 @@ main (int argc, char *argv[]) {
   }
 
   if (num_octets > 0) {
-    octet_t buffer[BUF_LEN];
+    uint8_t buffer[BUF_LEN];
     
     status = crypto_get_random(buffer, num_octets);
     if (status) {

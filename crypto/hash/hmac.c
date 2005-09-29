@@ -98,7 +98,7 @@ hmac_dealloc(auth_t *a) {
   extern auth_type_t hmac;
   
   /* zeroize entire state*/
-  octet_string_set_to_zero((octet_t *)a, 
+  octet_string_set_to_zero((uint8_t *)a, 
 			   sizeof(hmac_ctx_t) + sizeof(auth_t));
 
   /* free memory */
@@ -111,7 +111,7 @@ hmac_dealloc(auth_t *a) {
 }
 
 err_status_t
-hmac_init(hmac_ctx_t *state, const octet_t *key, int key_len) {
+hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len) {
   int i;
 
   /*
@@ -131,8 +131,8 @@ hmac_init(hmac_ctx_t *state, const octet_t *key, int key_len) {
   }  
   /* set the rest of ipad, opad to constant values */
   for (   ; i < 64; i++) {    
-    ((octet_t *)state->ipad)[i] = 0x36;
-    ((octet_t *)state->opad)[i] = 0x5c;
+    ((uint8_t *)state->ipad)[i] = 0x36;
+    ((uint8_t *)state->opad)[i] = 0x5c;
   }  
 
   debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(state->ipad, 64));
@@ -141,7 +141,7 @@ hmac_init(hmac_ctx_t *state, const octet_t *key, int key_len) {
   sha1_init(&state->ctx);
 
   /* hash ipad ^ key */
-  sha1_update(&state->ctx, (octet_t *)state->ipad, 64);
+  sha1_update(&state->ctx, (uint8_t *)state->ipad, 64);
 
   return err_status_ok;
 }
@@ -153,13 +153,13 @@ hmac_start(hmac_ctx_t *state) {
   sha1_init(&state->ctx);
 
   /* hash ipad ^ key */
-  sha1_update(&state->ctx, (octet_t *)state->ipad, 64);
+  sha1_update(&state->ctx, (uint8_t *)state->ipad, 64);
 
   return err_status_ok;
 }
 
 err_status_t
-hmac_update(hmac_ctx_t *state, const octet_t *message, int msg_octets) {
+hmac_update(hmac_ctx_t *state, const uint8_t *message, int msg_octets) {
 
   debug_print(mod_hmac, "input: %s", 
 	      octet_string_hex_string(message, msg_octets));
@@ -172,7 +172,7 @@ hmac_update(hmac_ctx_t *state, const octet_t *message, int msg_octets) {
 
 err_status_t
 hmac_compute(hmac_ctx_t *state, const void *message,
-	     int msg_octets, int tag_len, octet_t *result) {
+	     int msg_octets, int tag_len, uint8_t *result) {
   uint32_t hash_value[5];
   uint32_t H[5];
   int i;
@@ -190,26 +190,26 @@ hmac_compute(hmac_ctx_t *state, const void *message,
    * function hmac_update() already did that for us
    */
   debug_print(mod_hmac, "intermediate state: %s", 
-	      octet_string_hex_string((octet_t *)H, 20));
+	      octet_string_hex_string((uint8_t *)H, 20));
 
   /* re-initialize hash context */
   sha1_init(&state->ctx);
   
   /* hash opad ^ key  */
-  sha1_update(&state->ctx, (octet_t *)state->opad, 64);
+  sha1_update(&state->ctx, (uint8_t *)state->opad, 64);
 
   /* hash the result of the inner hash */
-  sha1_update(&state->ctx, (octet_t *)H, 20);
+  sha1_update(&state->ctx, (uint8_t *)H, 20);
   
   /* the result is returned in the array hash_value[] */
   sha1_final(&state->ctx, hash_value);
 
   /* copy hash_value to *result */
   for (i=0; i < tag_len; i++)    
-    result[i] = ((octet_t *)hash_value)[i];
+    result[i] = ((uint8_t *)hash_value)[i];
 
   debug_print(mod_hmac, "output: %s", 
-	      octet_string_hex_string((octet_t *)hash_value, tag_len));
+	      octet_string_hex_string((uint8_t *)hash_value, tag_len));
 
   return err_status_ok;
 }
@@ -217,19 +217,19 @@ hmac_compute(hmac_ctx_t *state, const void *message,
 
 /* begin test case 0 */
 
-octet_t
+uint8_t
 hmac_test_case_0_key[20] = {
   0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 
   0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 
   0x0b, 0x0b, 0x0b, 0x0b
 };
 
-octet_t 
+uint8_t 
 hmac_test_case_0_data[8] = {
   0x48, 0x69, 0x20, 0x54, 0x68, 0x65, 0x72, 0x65   /* "Hi There" */
 };
 
-octet_t
+uint8_t
 hmac_test_case_0_tag[20] = {
   0xb6, 0x17, 0x31, 0x86, 0x55, 0x05, 0x72, 0x64, 
   0xe2, 0x8b, 0xc0, 0xb6, 0xfb, 0x37, 0x8c, 0x8e, 

@@ -1142,7 +1142,7 @@ uint32_t U3[256] = {
  * endian-neutral 
  */
 
-octet_t
+uint8_t
 aes_sbox[256] = {
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 
   0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, 
@@ -1178,7 +1178,7 @@ aes_sbox[256] = {
   0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 
 };
 
-octet_t
+uint8_t
 aes_inv_sbox[256] = {
   0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 
   0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
@@ -1553,7 +1553,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 
 inline void
 aes_final_round(v128_t *state, v128_t round_key) {
-  octet_t tmp;
+  uint8_t tmp;
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
@@ -1589,7 +1589,7 @@ aes_final_round(v128_t *state, v128_t round_key) {
 
 inline void
 aes_inv_final_round(v128_t *state, v128_t round_key) {
-  octet_t tmp;
+  uint8_t tmp;
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
@@ -1833,7 +1833,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 
 inline void
 aes_final_round(v128_t *state, v128_t round_key) {
-  octet_t tmp;
+  uint8_t tmp;
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
@@ -1869,7 +1869,7 @@ aes_final_round(v128_t *state, v128_t round_key) {
 
 inline void
 aes_inv_final_round(v128_t *state, v128_t round_key) {
-  octet_t tmp;
+  uint8_t tmp;
 
   /* byte substitutions and row shifts */
   /* first row - no shift */

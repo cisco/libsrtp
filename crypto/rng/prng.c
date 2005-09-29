@@ -61,7 +61,7 @@ x917_prng_init(rand_source_func_t random_source) {
   x917_prng.rand = random_source;
   
   /* initialize secret key from random source */
-  status = random_source((octet_t *)&tmp_key, 16);
+  status = random_source((uint8_t *)&tmp_key, 16);
   if (status) 
     return status;
 
@@ -69,7 +69,7 @@ x917_prng_init(rand_source_func_t random_source) {
   aes_expand_encryption_key(tmp_key, x917_prng.key);
 
   /* initialize prng state from random source */
-  status = x917_prng.rand((octet_t *)&x917_prng.state, 16);
+  status = x917_prng.rand((uint8_t *)&x917_prng.state, 16);
   if (status) 
     return status;
 
@@ -77,7 +77,7 @@ x917_prng_init(rand_source_func_t random_source) {
 }
 
 err_status_t
-x917_prng_get_octet_string(octet_t *dest, uint32_t len) {
+x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
   uint32_t t;
   v128_t buffer;
   int i, tail_len;

@@ -55,7 +55,7 @@ debug_module_t mod_cipher = {
 };
 
 err_status_t
-cipher_output(cipher_t *c, octet_t *buffer, int num_octets_to_output) {
+cipher_output(cipher_t *c, uint8_t *buffer, int num_octets_to_output) {
   
   /* zeroize the buffer */
   octet_string_set_to_zero(buffer, num_octets_to_output);
@@ -86,8 +86,8 @@ cipher_type_self_test(const cipher_type_t *ct) {
   const cipher_test_case_t *test_case = ct->test_data;
   cipher_t *c;
   err_status_t status;
-  octet_t buffer[SELF_TEST_BUF_OCTETS];
-  octet_t buffer2[SELF_TEST_BUF_OCTETS];
+  uint8_t buffer[SELF_TEST_BUF_OCTETS];
+  uint8_t buffer2[SELF_TEST_BUF_OCTETS];
   unsigned int len;
   int i, j, case_num = 0;
 
@@ -271,8 +271,8 @@ cipher_type_self_test(const cipher_type_t *ct) {
   for (j=0; j < NUM_RAND_TESTS; j++) {
     unsigned length;
     int plaintext_len;
-    octet_t key[MAX_KEY_LEN];
-    octet_t  iv[MAX_KEY_LEN];
+    uint8_t key[MAX_KEY_LEN];
+    uint8_t  iv[MAX_KEY_LEN];
 
     /* choose a length at random (leaving room for IV and padding) */
     length = rand() % (SELF_TEST_BUF_OCTETS - 64);

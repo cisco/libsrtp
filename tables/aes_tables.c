@@ -65,20 +65,20 @@ uint32_t T0[256], T1[256], T2[256], T3[256], T4[256];
  * 4.2.1 of the spec).
  */
 
-octet_t A[8] = { 31, 62, 124, 248, 241, 227, 199, 143 };
+uint8_t A[8] = { 31, 62, 124, 248, 241, 227, 199, 143 };
 
 /*
  * b is the 8 bit vector (represented as an octet) used in the affine
  * transform described above.
  */
 
-octet_t b = 99;
+uint8_t b = 99;
 
 
 void
 aes_init_sbox() {
   unsigned int i;
-  octet_t x;
+  uint8_t x;
   
   for (i=0; i < 256; i++) {
     x = gf2_8_compute_inverse((gf2_8)i);
@@ -138,12 +138,12 @@ aes_compute_tables() {
 
 uint32_t U0[256], U1[256], U2[256], U3[256], U4[256];
 
-extern octet_t aes_inv_sbox[256];
+extern uint8_t aes_inv_sbox[256];
 
 void
 aes_compute_inv_tables() {
   int i;
-  octet_t x, xe, x9, xd, xb;
+  uint8_t x, xe, x9, xd, xb;
   v32_t tmp;
 
   /* combine sbox with linear operations to form 8-bit to 32-bit tables */
@@ -316,11 +316,11 @@ err_status_t
 aes_test_inverse() {
   v128_t x, y;
   aes_expanded_key_t expanded_key, decrypt_key;
-  octet_t plaintext[16] = {
+  uint8_t plaintext[16] = {
     0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
     0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff 
   };
-  octet_t key[16] = {
+  uint8_t key[16] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
   };

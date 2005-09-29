@@ -343,7 +343,7 @@ length as its second argument.
 @verbatim
    srtp_t session;   
    srtp_policy_t policy;
-   octet_t key[30];
+   uint8_t key[30];
 
    /* initialize libSRTP */
    srtp_init();                                  

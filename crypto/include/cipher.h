@@ -86,7 +86,7 @@ typedef err_status_t (*cipher_alloc_func_t)
  */
 
 typedef err_status_t (*cipher_init_func_t)
-  (void *state, const octet_t *key, cipher_direction_t dir);
+  (void *state, const uint8_t *key, cipher_direction_t dir);
 
 /* a cipher_dealloc_func_t de-allocates a cipher_t */
 
@@ -100,12 +100,12 @@ typedef err_status_t (*cipher_set_segment_func_t)
 /* a cipher_encrypt_func_t encrypts data in-place */
 
 typedef err_status_t (*cipher_encrypt_func_t)
-     (void *state, octet_t *buffer, unsigned int *octets_to_encrypt);
+     (void *state, uint8_t *buffer, unsigned int *octets_to_encrypt);
 
 /* a cipher_decrypt_func_t decrypts data in-place */
 
 typedef err_status_t (*cipher_decrypt_func_t)
-     (void *state, octet_t *buffer, unsigned int *octets_to_decrypt);
+     (void *state, uint8_t *buffer, unsigned int *octets_to_decrypt);
 
 /* 
  * a cipher_set_nonce_seq_func_t function sets both the nonce
@@ -125,12 +125,12 @@ typedef err_status_t (*cipher_set_iv_func_t)
 
 typedef struct cipher_test_case_t {
   int key_length_octets;                      /* octets in key            */
-  octet_t *key;                               /* key                      */
-  octet_t *idx;                               /* packet index             */
+  uint8_t *key;                               /* key                      */
+  uint8_t *idx;                               /* packet index             */
   int plaintext_length_octets;                /* octets in plaintext      */ 
-  octet_t *plaintext;                         /* plaintext                */
+  uint8_t *plaintext;                         /* plaintext                */
   int ciphertext_length_octets;               /* octets in plaintext      */ 
-  octet_t *ciphertext;                        /* ciphertext               */
+  uint8_t *ciphertext;                        /* ciphertext               */
   struct cipher_test_case_t *next_test_case;  /* pointer to next testcase */
 } cipher_test_case_t;
 
@@ -182,7 +182,7 @@ typedef struct cipher_t {
                                 err_status_no_such_op)  
 
 err_status_t
-cipher_output(cipher_t *c, octet_t *buffer, int num_octets_to_output);
+cipher_output(cipher_t *c, uint8_t *buffer, int num_octets_to_output);
 
 
 /* some bookkeeping functions */

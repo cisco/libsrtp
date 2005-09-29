@@ -35,7 +35,7 @@ cipher_type_alloc(cipher_type_t *ctype, cipher_t **cipher,
  */
 
 err_status_t
-cipher_init(cipher_t *cipher, const octet_t *key);
+cipher_init(cipher_t *cipher, const uint8_t *key);
 
 /**
  * @brief Sets the initialization vector of a given cipher.
@@ -58,7 +58,7 @@ cipher_encrypt(cipher_t *cipher, void *buf, unsigned int *len);
  * @warning May be implemented as a macro.
  */
 err_status_t 
-cipher_output(cipher_t *c, octet_t *buffer, int num_octets_to_output);
+cipher_output(cipher_t *c, uint8_t *buffer, int num_octets_to_output);
 
 /**
  * @brief Deallocates a cipher.

@@ -58,11 +58,11 @@ err_status_t
 null_auth_dealloc(auth_t *a);
 
 err_status_t
-null_auth_init(null_auth_ctx_t *state, const octet_t *key, int key_len);
+null_auth_init(null_auth_ctx_t *state, const uint8_t *key, int key_len);
 
 err_status_t
-null_auth_compute (null_auth_ctx_t *state, octet_t *message,
-		   int msg_octets, int tag_len, octet_t *result);
+null_auth_compute (null_auth_ctx_t *state, uint8_t *message,
+		   int msg_octets, int tag_len, uint8_t *result);
 
 
 #endif /* NULL_AUTH_H */

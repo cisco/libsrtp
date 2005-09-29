@@ -85,7 +85,7 @@ null_cipher_dealloc(cipher_t *c) {
   extern cipher_type_t null_cipher;
 
   /* zeroize entire state*/
-  octet_string_set_to_zero((octet_t *)c, 
+  octet_string_set_to_zero((uint8_t *)c, 
 			   sizeof(null_cipher_ctx_t) + sizeof(cipher_t));
 
   /* free memory of type null_cipher */
@@ -99,7 +99,7 @@ null_cipher_dealloc(cipher_t *c) {
 }
 
 err_status_t
-null_cipher_init(null_cipher_ctx_t *ctx, const octet_t *key) {
+null_cipher_init(null_cipher_ctx_t *ctx, const uint8_t *key) {
 
   debug_print(mod_cipher, "initializing null cipher", NULL);
 

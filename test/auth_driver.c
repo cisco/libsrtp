@@ -137,7 +137,7 @@ main (int argc, char *argv[]) {
       fprintf(stderr, "can't allocate tmmhv2\n");
       exit(status);
     }
-    status = auth_init(a, (octet_t *)key1);
+    status = auth_init(a, (uint8_t *)key1);
     if (status) {
       printf("error initializaing auth function\n");
       exit(status);
@@ -168,7 +168,7 @@ double
 auth_bits_per_second(auth_t *a, int msg_len_octets) {
   int i;
   clock_t timer;
-  octet_t *result;
+  uint8_t *result;
   int msg_len = (msg_len_octets + 1)/2;
   uint16_t *msg_string; 
 
@@ -188,7 +188,7 @@ auth_bits_per_second(auth_t *a, int msg_len_octets) {
   
   timer = clock();
   for (i=0; i < NUM_TRIALS; i++) {
-    auth_compute(a, (octet_t *)msg_string, msg_len_octets, (octet_t *)result);
+    auth_compute(a, (uint8_t *)msg_string, msg_len_octets, (uint8_t *)result);
   }
   timer = clock() - timer;
 

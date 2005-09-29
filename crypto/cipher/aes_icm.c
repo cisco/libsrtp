@@ -133,7 +133,7 @@ aes_icm_dealloc(cipher_t *c) {
   extern cipher_type_t aes_icm;
 
   /* zeroize entire state*/
-  octet_string_set_to_zero((octet_t *)c, 
+  octet_string_set_to_zero((uint8_t *)c, 
 			   sizeof(aes_icm_ctx_t) + sizeof(cipher_t));
 
   /* free memory */
@@ -157,7 +157,7 @@ aes_icm_dealloc(cipher_t *c) {
  */
 
 err_status_t
-aes_icm_context_init(aes_icm_ctx_t *c, const octet_t *key) {
+aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key) {
   v128_t tmp_key;
 
   /* set counter and initial values to 'offset' value */
@@ -376,7 +376,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
     *b++ ^= c->keystream_buffer.v32[1];
     *b++ ^= c->keystream_buffer.v32[2];
     *b++ ^= c->keystream_buffer.v32[3];
-    buf = (octet_t *)b;
+    buf = (uint8_t *)b;
 #else    
     if ((((uint32_t) buf) & 0x03) != 0) {
       *buf++ ^= c->keystream_buffer.octet[0];
@@ -401,7 +401,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
       *b++ ^= c->keystream_buffer.v32[1];
       *b++ ^= c->keystream_buffer.v32[2];
       *b++ ^= c->keystream_buffer.v32[3];
-      buf = (octet_t *)b;
+      buf = (uint8_t *)b;
     }
 #endif /* #if ALIGN_32 */
 
@@ -429,7 +429,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
 }
 
 err_status_t
-aes_icm_output(aes_icm_ctx_t *c, octet_t *buffer, int num_octets_to_output) {
+aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output) {
   unsigned int len = num_octets_to_output;
   
   /* zeroize the buffer */
@@ -443,26 +443,26 @@ aes_icm_output(aes_icm_ctx_t *c, octet_t *buffer, int num_octets_to_output) {
 char 
 aes_icm_description[] = "aes integer counter mode";
 
-octet_t aes_icm_test_case_0_key[30] = {
+uint8_t aes_icm_test_case_0_key[30] = {
   0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
   0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
   0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
   0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-octet_t aes_icm_test_case_0_nonce[16] = {
+uint8_t aes_icm_test_case_0_nonce[16] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-octet_t aes_icm_test_case_0_plaintext[32] =  {
+uint8_t aes_icm_test_case_0_plaintext[32] =  {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 
-octet_t aes_icm_test_case_0_ciphertext[32] = {
+uint8_t aes_icm_test_case_0_ciphertext[32] = {
   0xe0, 0x3e, 0xad, 0x09, 0x35, 0xc9, 0x5e, 0x80,
   0xe1, 0x66, 0xb1, 0x6d, 0xd9, 0x2b, 0x4e, 0xb4,
   0xd2, 0x35, 0x13, 0x16, 0x2b, 0x02, 0xd0, 0xf7,

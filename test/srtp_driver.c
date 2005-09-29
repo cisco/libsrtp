@@ -89,7 +89,7 @@ srtp_packet_to_string(srtp_hdr_t *hdr, int packet_len);
 double
 mips_estimate(int num_trials, int *ignore);
 
-extern octet_t test_key[30];
+extern uint8_t test_key[30];
 
 void
 usage(char *prog_name) {
@@ -350,7 +350,7 @@ main (int argc, char *argv[]) {
 srtp_hdr_t *
 srtp_create_test_packet(int pkt_octet_len, uint32_t ssrc) {
   int i;
-  octet_t *buffer;
+  uint8_t *buffer;
   srtp_hdr_t *hdr;
   int bytes_in_hdr = 12;
 
@@ -370,7 +370,7 @@ srtp_create_test_packet(int pkt_octet_len, uint32_t ssrc) {
   hdr->ts   = htonl(0xdecafbad); /* timestamp           */
   hdr->ssrc = htonl(ssrc);       /* synch. source       */
 
-  buffer = (octet_t *)hdr;
+  buffer = (uint8_t *)hdr;
   buffer += bytes_in_hdr;
 
   /* set RTP data to 0xab */
@@ -546,7 +546,7 @@ srtp_test(const srtp_policy_t *policy) {
   srtp_t srtp_rcvr;
   err_status_t status = err_status_ok;
   srtp_hdr_t *hdr, *hdr2;
-  octet_t *pkt_end;
+  uint8_t *pkt_end;
   int msg_len_octets;
   int len;
   int tag_length = policy->rtp.auth_tag_len; 
@@ -586,7 +586,7 @@ srtp_test(const srtp_policy_t *policy) {
 
 #if PRINT_REFERENCE_PACKET
   debug_print(mod_driver, "reference packet before protection:\n%s", 	      
-	      octet_string_hex_string((octet_t *)hdr, len));
+	      octet_string_hex_string((uint8_t *)hdr, len));
 #endif
   err_check(srtp_protect(srtp_sender, hdr, &len));
 
@@ -594,7 +594,7 @@ srtp_test(const srtp_policy_t *policy) {
 	      srtp_packet_to_string(hdr, len));
 #if PRINT_REFERENCE_PACKET
   debug_print(mod_driver, "after protection:\n%s", 	      
-	      octet_string_hex_string((octet_t *)hdr, len));
+	      octet_string_hex_string((uint8_t *)hdr, len));
 #endif
 
   /* 
@@ -604,13 +604,13 @@ srtp_test(const srtp_policy_t *policy) {
    * data following the packet is different, then we know that the
    * protect function is overwriting the end of the packet.
    */
-  pkt_end = (octet_t *)hdr + sizeof(srtp_hdr_t) 
+  pkt_end = (uint8_t *)hdr + sizeof(srtp_hdr_t) 
     + msg_len_octets + tag_length;
   for (i = 0; i < 4; i++)
     if (pkt_end[i] != 0xff) {
       fprintf(stdout, "overwrite in srtp_protect() function "
               "(expected %x, found %x in trailing octet %d)\n",
-              0xff, ((octet_t *)hdr)[i], i);
+              0xff, ((uint8_t *)hdr)[i], i);
       free(hdr);
       free(hdr2);
       return err_status_algo_fail;
@@ -629,7 +629,7 @@ srtp_test(const srtp_policy_t *policy) {
     printf("testing that ciphertext is distinct from plaintext...");
     status = err_status_algo_fail;
     for (i=12; i < msg_len_octets+12; i++)
-      if (((octet_t *)hdr)[i] != ((octet_t *)hdr2)[i]) {
+      if (((uint8_t *)hdr)[i] != ((uint8_t *)hdr2)[i]) {
 	status = err_status_ok;
       }
     if (status) {
@@ -665,7 +665,7 @@ srtp_test(const srtp_policy_t *policy) {
 
   /* verify that the unprotected packet matches the origial one */
   for (i=0; i < msg_len_octets; i++)
-    if (((octet_t *)hdr)[i] != ((octet_t *)hdr2)[i]) {
+    if (((uint8_t *)hdr)[i] != ((uint8_t *)hdr2)[i]) {
       fprintf(stdout, "mismatch at octet %d\n", i);
       status = err_status_algo_fail;
     }
@@ -825,7 +825,7 @@ char packet_string[MTU];
 char *
 srtp_packet_to_string(srtp_hdr_t *hdr, int pkt_octet_len) {
   int octets_in_rtp_header = 12;
-  octet_t *data = ((octet_t *)hdr)+octets_in_rtp_header;
+  uint8_t *data = ((uint8_t *)hdr)+octets_in_rtp_header;
   int hex_len = pkt_octet_len-octets_in_rtp_header;
 
   /* sanity checking */
@@ -904,20 +904,20 @@ srtp_validate() {
     0x0e, 0xc6, 0x75, 0xad, 0x49, 0x8a, 0xfe, 0xeb,
     0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6
   };
-  octet_t srtp_plaintext_ref[28] = {
+  uint8_t srtp_plaintext_ref[28] = {
     0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
     0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
     0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 
     0xab, 0xab, 0xab, 0xab
   };
-  octet_t srtp_plaintext[38] = {
+  uint8_t srtp_plaintext[38] = {
     0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
     0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
     0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 
     0xab, 0xab, 0xab, 0xab, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00
   };
-  octet_t srtp_ciphertext[38] = {
+  uint8_t srtp_ciphertext[38] = {
     0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
     0xca, 0xfe, 0xba, 0xbe, 0x4e, 0x55, 0xdc, 0x4c,
     0xe7, 0x99, 0x78, 0xd8, 0x8c, 0xa4, 0xd2, 0x15, 

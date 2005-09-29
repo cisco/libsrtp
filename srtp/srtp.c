@@ -319,7 +319,7 @@ typedef struct {
 } srtp_kdf_t;
 
 err_status_t
-srtp_kdf_init(srtp_kdf_t *kdf, const octet_t key[30]) {
+srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t key[30]) {
 
   aes_icm_context_init(&kdf->c, key);
 
@@ -328,7 +328,7 @@ srtp_kdf_init(srtp_kdf_t *kdf, const octet_t key[30]) {
 
 err_status_t
 srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
-		  octet_t *key, int length) {
+		  uint8_t *key, int length) {
 
   v128_t nonce;
   
@@ -348,7 +348,7 @@ err_status_t
 srtp_kdf_clear(srtp_kdf_t *kdf) {
   
   /* zeroize aes context */
-  octet_string_set_to_zero((octet_t *)kdf, sizeof(srtp_kdf_t));
+  octet_string_set_to_zero((uint8_t *)kdf, sizeof(srtp_kdf_t));
 
   return err_status_ok;  
 }
@@ -366,8 +366,8 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 		  const srtp_policy_t *p) {
    err_status_t stat;
    srtp_kdf_t kdf;
-   octet_t tmp_key[MAX_SRTP_KEY_LEN];
-   octet_t *key = p->key;
+   uint8_t tmp_key[MAX_SRTP_KEY_LEN];
+   uint8_t *key = p->key;
 
    debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)", 
 	       p->ssrc.value);
@@ -572,7 +572,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    unsigned enc_octet_len = 0; /* number of octets in encrypted portion  */
    xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
    int delta;                  /* delta of local pkt idx and that in hdr */
-   octet_t *auth_tag = NULL;   /* location of auth_tag within packet     */
+   uint8_t *auth_tag = NULL;   /* location of auth_tag within packet     */
    err_status_t status;   
    int tag_len;
    srtp_stream_ctx_t *stream;
@@ -678,7 +678,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     */
    if (stream->rtp_services & sec_serv_auth) {
      auth_start = (uint32_t *)hdr;
-     auth_tag = (octet_t *)hdr + *pkt_octet_len;
+     auth_tag = (uint8_t *)hdr + *pkt_octet_len;
    } else {
      auth_start = NULL;
      auth_tag = NULL;
@@ -761,7 +761,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
   /* if we're encrypting, exor keystream into the message */
   if (enc_start) {
     status = cipher_encrypt(stream->rtp_cipher, 
-			    (octet_t *)enc_start, &enc_octet_len);
+			    (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return err_status_cipher_fail;
   }
@@ -778,12 +778,12 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 
     /* run auth func over packet */
     status = auth_update(stream->rtp_auth, 
-			 (octet_t *)auth_start, *pkt_octet_len);
+			 (uint8_t *)auth_start, *pkt_octet_len);
     if (status) return status;
     
     /* run auth func over ROC, put result into auth_tag */
     debug_print(mod_srtp, "estimated packet index: %016llx", est);
-    status = auth_compute(stream->rtp_auth, (octet_t *)&est, 4, auth_tag); 
+    status = auth_compute(stream->rtp_auth, (uint8_t *)&est, 4, auth_tag); 
     debug_print(mod_srtp, "srtp auth tag:    %s", 
 		octet_string_hex_string(auth_tag, tag_len));
     if (status)
@@ -807,13 +807,13 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   uint32_t *enc_start;      /* pointer to start of encrypted portion  */
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
   uint32_t enc_octet_len = 0;/* number of octets in encrypted portion */
-  octet_t *auth_tag = NULL; /* location of auth_tag within packet     */
+  uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
   xtd_seq_num_t est;        /* estimated xtd_seq_num_t of *hdr        */
   int delta;                /* delta of local pkt idx and that in hdr */
   v128_t iv;
   err_status_t status;
   srtp_stream_ctx_t *stream;
-  octet_t tmp_tag[SRTP_MAX_TAG_LEN];
+  uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
   int tag_len, prefix_len;
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
@@ -960,7 +960,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
    */
   if (stream->rtp_services & sec_serv_auth) {
     auth_start = (uint32_t *)hdr;
-    auth_tag = (octet_t *)hdr + *pkt_octet_len - tag_len;
+    auth_tag = (uint8_t *)hdr + *pkt_octet_len - tag_len;
   } else {
     auth_start = NULL;
     auth_tag = NULL;
@@ -994,11 +994,11 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     if (status) return status;
  
     /* now compute auth function over packet */
-    status = auth_update(stream->rtp_auth, (octet_t *)auth_start,  
+    status = auth_update(stream->rtp_auth, (uint8_t *)auth_start,  
 			 *pkt_octet_len - tag_len);
 
     /* run auth func over ROC, then write tmp tag */
-    status = auth_compute(stream->rtp_auth, (octet_t *)&est, 4, tmp_tag);  
+    status = auth_compute(stream->rtp_auth, (uint8_t *)&est, 4, tmp_tag);  
 
     debug_print(mod_srtp, "computed auth tag:    %s", 
 		octet_string_hex_string(tmp_tag, tag_len));
@@ -1014,7 +1014,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   /* if we're encrypting, add keystream into ciphertext */
   if (enc_start) {
     status = cipher_encrypt(stream->rtp_cipher, 
-			    (octet_t *)enc_start, &enc_octet_len);
+			    (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return err_status_cipher_fail;
   }
@@ -1353,7 +1353,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
   uint32_t *trailer;        /* pointer to start of trailer            */
   uint32_t enc_octet_len = 0;/* number of octets in encrypted portion */
-  octet_t *auth_tag = NULL; /* location of auth_tag within packet     */
+  uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
   err_status_t status;   
   int tag_len;
   srtp_stream_ctx_t *stream;
@@ -1437,7 +1437,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
    */
   /* Note: This would need to change for optional mikey data */
   auth_start = (uint32_t *)hdr;
-  auth_tag = (octet_t *)hdr + *pkt_octet_len + sizeof(srtcp_trailer_t); 
+  auth_tag = (uint8_t *)hdr + *pkt_octet_len + sizeof(srtcp_trailer_t); 
 
   /* 
    * check sequence number for overruns, and copy it into the packet
@@ -1497,7 +1497,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   /* if we're encrypting, exor keystream into the message */
   if (enc_start) {
     status = cipher_encrypt(stream->rtcp_cipher, 
-			    (octet_t *)enc_start, &enc_octet_len);
+			    (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return err_status_cipher_fail;
   }
@@ -1508,7 +1508,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   /* per spec, do auth after encryption */
   /* run auth func over packet, put result into auth_tag */
   status = auth_compute(stream->rtcp_auth, 
-			(octet_t *)auth_start,  *pkt_octet_len, auth_tag);
+			(uint8_t *)auth_start,  *pkt_octet_len, auth_tag);
   debug_print(mod_srtp, "srtcp auth tag:    %s", 
 	      octet_string_hex_string(auth_tag, tag_len));
   if (status)
@@ -1528,8 +1528,8 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
   uint32_t *trailer;        /* pointer to start of trailer            */
   uint32_t enc_octet_len = 0;/* number of octets in encrypted portion */
-  octet_t *auth_tag = NULL; /* location of auth_tag within packet     */
-  octet_t tmp_tag[SRTP_MAX_TAG_LEN];
+  uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
+  uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
   err_status_t status;   
   int tag_len;
   srtp_stream_ctx_t *stream;
@@ -1587,7 +1587,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    * (note that srtcp *always* uses authentication, unlike srtp)
    */
   auth_start = (uint32_t *)hdr;
-  auth_tag = (octet_t *)hdr + *pkt_octet_len - tag_len;
+  auth_tag = (uint8_t *)hdr + *pkt_octet_len - tag_len;
 
   /* 
    * check the sequence number for replays
@@ -1629,7 +1629,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   auth_start(stream->rtcp_auth);
 
   /* run auth func over packet, put result into tmp_tag */
-  status = auth_compute(stream->rtcp_auth, (octet_t *)auth_start,  
+  status = auth_compute(stream->rtcp_auth, (uint8_t *)auth_start,  
 			*pkt_octet_len - (tag_len + sizeof(srtcp_trailer_t)),
 			tmp_tag);
   debug_print(mod_srtp, "srtcp computed tag:       %s", 
@@ -1659,7 +1659,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* if we're decrypting, exor keystream into the message */
   if (enc_start) {
     status = cipher_encrypt(stream->rtcp_cipher, 
-			    (octet_t *)enc_start, &enc_octet_len);
+			    (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return err_status_cipher_fail;
   }

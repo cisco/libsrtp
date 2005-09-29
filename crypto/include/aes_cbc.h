@@ -30,7 +30,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
 		unsigned int  *bytes_in_data);
 
 err_status_t
-aes_cbc_context_init(aes_cbc_ctx_t *c, const octet_t *key, 
+aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, 
 		     cipher_direction_t dir);
 
 err_status_t

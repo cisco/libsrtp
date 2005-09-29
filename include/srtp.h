@@ -202,7 +202,7 @@ typedef struct srtp_policy_t {
 			      */
   crypto_policy_t rtp;         /**< SRTP crypto policy.                  */
   crypto_policy_t rtcp;        /**< SRTCP crypto policy.                 */
-  octet_t *key;                /**< Pointer to the SRTP master key for
+  uint8_t *key;                /**< Pointer to the SRTP master key for
 				*    this stream.                        */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;

@@ -82,7 +82,7 @@ octet_weight[256] = {
 };
 
 int
-octet_get_weight(octet_t octet) {
+octet_get_weight(uint8_t octet) {
   extern int octet_weight[256];
 
   return octet_weight[octet];
@@ -97,8 +97,8 @@ octet_get_weight(octet_t octet) {
 
 char bit_string[MAX_PRINT_STRING_LEN];
 
-octet_t
-nibble_to_hex_char(octet_t nibble) {
+uint8_t
+nibble_to_hex_char(uint8_t nibble) {
   char buf[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 		  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
   return buf[nibble & 0xF];
@@ -106,7 +106,7 @@ nibble_to_hex_char(octet_t nibble) {
 
 char *
 octet_string_hex_string(const void *s, int length) {
-  const octet_t *str = s;
+  const uint8_t *str = s;
   int i;
   
   /* double length, since one octet takes two hex characters */
@@ -125,7 +125,7 @@ octet_string_hex_string(const void *s, int length) {
 }
 
 inline int
-hex_char_to_nibble(octet_t c) {
+hex_char_to_nibble(uint8_t c) {
   switch(c) {
   case ('0'): return 0x0;
   case ('1'): return 0x1;
@@ -170,7 +170,7 @@ is_hex_string(char *s) {
 
 int
 hex_string_to_octet_string(char *raw, char *hex, int len) {
-  octet_t x;
+  uint8_t x;
   int tmp;
   int hex_len;
 
@@ -225,7 +225,7 @@ v128_bit_string(v128_t *x) {
 }
 
 void
-v128_copy_octet_string(v128_t *x, const octet_t s[16]) {
+v128_copy_octet_string(v128_t *x, const uint8_t s[16]) {
 #if ALIGNMENT_32BIT_REQUIRED
   if ((((uint32_t) &s[0]) & 0x3) != 0)
 #endif
@@ -389,8 +389,8 @@ v128_left_shift(v128_t *x, int index) {
 
 
 int
-octet_string_is_eq(octet_t *a, octet_t *b, int len) {
-  octet_t *end = b + len;
+octet_string_is_eq(uint8_t *a, uint8_t *b, int len) {
+  uint8_t *end = b + len;
   while (b < end)
     if (*a++ != *b++)
       return 1;
@@ -398,8 +398,8 @@ octet_string_is_eq(octet_t *a, octet_t *b, int len) {
 }
 
 void
-octet_string_set_to_zero(octet_t *s, int len) {
-  octet_t *end = s + len;
+octet_string_set_to_zero(uint8_t *s, int len) {
+  uint8_t *end = s + len;
 
   do {
     *s = 0;
@@ -470,7 +470,7 @@ bswap_64(uint64_t v) {
  */
 
 int
-base64_char_to_sextet(octet_t c) {
+base64_char_to_sextet(uint8_t c) {
   switch(c) {
   case 'A':
     return 0;
@@ -615,7 +615,7 @@ base64_char_to_sextet(octet_t c) {
 
 int
 base64_string_to_octet_string(char *raw, char *base64, int len) {
-  octet_t x;
+  uint8_t x;
   int tmp;
   int base64_len;
 

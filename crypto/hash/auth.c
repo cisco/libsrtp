@@ -87,7 +87,7 @@ auth_type_self_test(const auth_type_t *at) {
   auth_test_case_t *test_case = at->test_data;
   auth_t *a;
   err_status_t status;
-  octet_t tag[SELF_TEST_TAG_BUF_OCTETS];
+  uint8_t tag[SELF_TEST_TAG_BUF_OCTETS];
   int i, case_num = 0;
 
   debug_print(mod_auth, "running self-test for auth function %s", 

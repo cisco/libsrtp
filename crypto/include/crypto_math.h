@@ -66,7 +66,7 @@ char *
 v64_bit_string(const v64_t *x);
 
 char *
-octet_hex_string(octet_t x);
+octet_hex_string(uint8_t x);
 
 char *
 v16_hex_string(v16_t x);
@@ -78,7 +78,7 @@ char *
 v64_hex_string(const v64_t *x);
 
 int
-hex_char_to_nibble(octet_t c);
+hex_char_to_nibble(uint8_t c);
 
 int
 is_hex_string(char *s);
@@ -95,26 +95,26 @@ hex_string_to_v64(char *s);
 /* the matrix A[] is stored in column format, i.e., A[i] is
    the ith column of the matrix */
 
-octet_t 
-A_times_x_plus_b(octet_t A[8], octet_t x, octet_t b);
+uint8_t 
+A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b);
 
 void
-v16_copy_octet_string(v16_t *x, const octet_t s[2]);
+v16_copy_octet_string(v16_t *x, const uint8_t s[2]);
 
 void
-v32_copy_octet_string(v32_t *x, const octet_t s[4]);
+v32_copy_octet_string(v32_t *x, const uint8_t s[4]);
 
 void
-v64_copy_octet_string(v64_t *x, const octet_t s[8]);
+v64_copy_octet_string(v64_t *x, const uint8_t s[8]);
 
 void
 v128_add(v128_t *z, v128_t *x, v128_t *y);
 
 int
-octet_string_is_eq(octet_t *a, octet_t *b, int len);
+octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 
 void
-octet_string_set_to_zero(octet_t *s, int len);
+octet_string_set_to_zero(uint8_t *s, int len);
 
 
 
@@ -122,8 +122,8 @@ octet_string_set_to_zero(octet_t *s, int len);
  * the matrix A[] is stored in column format, i.e., A[i] is the ith
  * column of the matrix
 */
-octet_t 
-A_times_x_plus_b(octet_t A[8], octet_t x, octet_t b);
+uint8_t 
+A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b);
 
 
 #if 0
@@ -227,10 +227,10 @@ v128_set_bit_to(v128_t *x, int i, int y);
  */
 
 int
-octet_string_is_eq(octet_t *a, octet_t *b, int len);
+octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 
 void
-octet_string_set_to_zero(octet_t *s, int len);
+octet_string_set_to_zero(uint8_t *s, int len);
 
 
 /*

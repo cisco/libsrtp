@@ -35,7 +35,7 @@ err_status_t
 x917_prng_init();
 
 err_status_t
-x917_prng_get_octet_string(octet_t *dest, uint32_t len);
+x917_prng_get_octet_string(uint8_t *dest, uint32_t len);
 
 
 /*

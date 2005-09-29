@@ -91,7 +91,7 @@ main (int argc, char *argv[]) {
 
   if (verbose) {
     /* print out plaintext */
-    printf("plaintext:\t%s\n", octet_string_hex_string((octet_t *)&data, 16));
+    printf("plaintext:\t%s\n", octet_string_hex_string((uint8_t *)&data, 16));
   }
 
   /* encrypt plaintext */

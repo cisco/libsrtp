@@ -53,8 +53,6 @@
 /* if DATATYPES_USE_MACROS is defined, then little functions are macros */
 #define DATATYPES_USE_MACROS  
 
-typedef unsigned char octet_t;
-
 typedef union {
   unsigned char octet[2];
   uint16_t value;
@@ -94,10 +92,10 @@ typedef union {
  */
 
 int
-octet_get_weight(octet_t octet);
+octet_get_weight(uint8_t octet);
 
 char *
-octet_bit_string(octet_t x);
+octet_bit_string(uint8_t x);
 
 #define MAX_PRINT_STRING_LEN 1024
 
@@ -110,13 +108,13 @@ v128_bit_string(v128_t *x);
 char *
 v128_hex_string(v128_t *x);
 
-octet_t
-nibble_to_hex_char(octet_t nibble);
+uint8_t
+nibble_to_hex_char(uint8_t nibble);
 
 char *
 char_to_hex_string(char *x, int num_char);
 
-octet_t
+uint8_t
 hex_string_to_octet(char *s);
 
 /*
@@ -139,7 +137,7 @@ v128_t
 hex_string_to_v128(char *s);
 
 void
-v128_copy_octet_string(v128_t *x, const octet_t s[16]);
+v128_copy_octet_string(v128_t *x, const uint8_t s[16]);
 
 void
 v128_left_shift(v128_t *x, int index);
@@ -358,10 +356,10 @@ v128_set_bit_to(v128_t *x, int i, int y);
  */
 
 int
-octet_string_is_eq(octet_t *a, octet_t *b, int len);
+octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 
 void
-octet_string_set_to_zero(octet_t *s, int len);
+octet_string_set_to_zero(uint8_t *s, int len);
 
 
 /* 

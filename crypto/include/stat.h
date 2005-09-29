@@ -47,18 +47,18 @@
 #ifndef STAT_H
 #define STAT_H
 
-#include "datatypes.h"       /* for octet_t                       */
+#include "datatypes.h"       /* for uint8_t                       */
 #include "err.h"             /* for err_status_t                  */
 #include "rand_source.h"     /* for rand_source_func_t definition */
 
 err_status_t
-stat_test_monobit(octet_t *data);
+stat_test_monobit(uint8_t *data);
 
 err_status_t
-stat_test_poker(octet_t *data);
+stat_test_poker(uint8_t *data);
 
 err_status_t
-stat_test_runs(octet_t *data);
+stat_test_runs(uint8_t *data);
 
 err_status_t
 stat_test_rand_source(rand_source_func_t rs);

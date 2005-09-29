@@ -155,7 +155,7 @@ high_bit[256] = {
 };
 
 int
-octet_get_weight(octet_t octet) {
+octet_get_weight(uint8_t octet) {
   extern int octet_weight[256];
 
   return octet_weight[octet];
@@ -195,7 +195,7 @@ v32_dot_product(v32_t a, v32_t b) {
 char bit_string[MAX_STRING_LENGTH];
 
 char *
-octet_bit_string(octet_t x) {
+octet_bit_string(uint8_t x) {
   int mask, index;
 
   for (mask = 1, index = 0; mask < 256; mask <<= 1)
@@ -273,15 +273,15 @@ v128_bit_string(v128_t *x) {
   return bit_string;
 }
 
-octet_t
-nibble_to_hex_char(octet_t nibble) {
+uint8_t
+nibble_to_hex_char(uint8_t nibble) {
   char buf[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
 		  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
   return buf[nibble & 0xF];
 }
 
 char *
-octet_hex_string(octet_t x) {
+octet_hex_string(uint8_t x) {
 
   bit_string[0]  = nibble_to_hex_char(x >> 4);
   bit_string[1]  = nibble_to_hex_char(x & 0xF);
@@ -292,7 +292,7 @@ octet_hex_string(octet_t x) {
 
 char *
 octet_string_hex_string(const void *str, int length) {
-  const octet_t *s = str;
+  const uint8_t *s = str;
   int i;
   
   /* double length, since one octet takes two hex characters */
@@ -378,7 +378,7 @@ char_to_hex_string(char *x, int num_char) {
 }
 
 int
-hex_char_to_nibble(octet_t c) {
+hex_char_to_nibble(uint8_t c) {
   switch(c) {
   case ('0'): return 0x0;
   case ('1'): return 0x1;
@@ -416,9 +416,9 @@ is_hex_string(char *s) {
   return 1;
 }
 
-octet_t
+uint8_t
 hex_string_to_octet(char *s) {
-  octet_t x;
+  uint8_t x;
 
   x = (hex_char_to_nibble(s[0]) << 4)
     | hex_char_to_nibble(s[1] & 0xFF);
@@ -433,7 +433,7 @@ hex_string_to_octet(char *s) {
 
 int
 hex_string_to_octet_string(char *raw, char *hex, int len) {
-  octet_t x;
+  uint8_t x;
   int tmp;
   int hex_len;
 
@@ -510,8 +510,8 @@ hex_string_to_v128(char *s) {
  * column of the matrix 
  */
 
-octet_t 
-A_times_x_plus_b(octet_t A[8], octet_t x, octet_t b) {
+uint8_t 
+A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b) {
   int index = 0;
   unsigned mask;
   
@@ -525,13 +525,13 @@ A_times_x_plus_b(octet_t A[8], octet_t x, octet_t b) {
 }
 
 inline void
-v16_copy_octet_string(v16_t *x, const octet_t s[2]) {
+v16_copy_octet_string(v16_t *x, const uint8_t s[2]) {
   x->octet[0]  = s[0];
   x->octet[1]  = s[1];
 }
 
 inline void
-v32_copy_octet_string(v32_t *x, const octet_t s[4]) {
+v32_copy_octet_string(v32_t *x, const uint8_t s[4]) {
   x->octet[0]  = s[0];
   x->octet[1]  = s[1];
   x->octet[2]  = s[2];
@@ -539,7 +539,7 @@ v32_copy_octet_string(v32_t *x, const octet_t s[4]) {
 }
 
 inline void
-v64_copy_octet_string(v64_t *x, const octet_t s[8]) {
+v64_copy_octet_string(v64_t *x, const uint8_t s[8]) {
   x->octet[0]  = s[0];
   x->octet[1]  = s[1];
   x->octet[2]  = s[2];
@@ -551,7 +551,7 @@ v64_copy_octet_string(v64_t *x, const octet_t s[8]) {
 }
 
 void
-v128_copy_octet_string(v128_t *x, const octet_t s[16]) {
+v128_copy_octet_string(v128_t *x, const uint8_t s[16]) {
   x->octet[0]  = s[0];
   x->octet[1]  = s[1];
   x->octet[2]  = s[2];
@@ -755,8 +755,8 @@ v128_add(v128_t *z, v128_t *x, v128_t *y) {
 #endif
 
 int
-octet_string_is_eq(octet_t *a, octet_t *b, int len) {
-  octet_t *end = b + len;
+octet_string_is_eq(uint8_t *a, uint8_t *b, int len) {
+  uint8_t *end = b + len;
   while (b < end)
     if (*a++ != *b++)
       return 1;
@@ -764,8 +764,8 @@ octet_string_is_eq(octet_t *a, octet_t *b, int len) {
 }
 
 void
-octet_string_set_to_zero(octet_t *s, int len) {
-  octet_t *end = s + len;
+octet_string_set_to_zero(uint8_t *s, int len) {
+  uint8_t *end = s + len;
 
   do {
     *s = 0;
