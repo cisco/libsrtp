@@ -3568,6 +3568,156 @@ fi
 done
 
 
+for ac_header in inttypes.h
+do
+as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
+if eval "test \"\${$as_ac_Header+set}\" = set"; then
+  echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6
+if eval "test \"\${$as_ac_Header+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_Header'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_Header'}'`" >&6
+else
+  # Is the header compilable?
+echo "$as_me:$LINENO: checking $ac_header usability" >&5
+echo $ECHO_N "checking $ac_header usability... $ECHO_C" >&6
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+#include <$ac_header>
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_header_compiler=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_header_compiler=no
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
+echo "${ECHO_T}$ac_header_compiler" >&6
+
+# Is the header present?
+echo "$as_me:$LINENO: checking $ac_header presence" >&5
+echo $ECHO_N "checking $ac_header presence... $ECHO_C" >&6
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <$ac_header>
+_ACEOF
+if { (eval echo "$as_me:$LINENO: \"$ac_cpp conftest.$ac_ext\"") >&5
+  (eval $ac_cpp conftest.$ac_ext) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } >/dev/null; then
+  if test -s conftest.err; then
+    ac_cpp_err=$ac_c_preproc_warn_flag
+    ac_cpp_err=$ac_cpp_err$ac_c_werror_flag
+  else
+    ac_cpp_err=
+  fi
+else
+  ac_cpp_err=yes
+fi
+if test -z "$ac_cpp_err"; then
+  ac_header_preproc=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+  ac_header_preproc=no
+fi
+rm -f conftest.err conftest.$ac_ext
+echo "$as_me:$LINENO: result: $ac_header_preproc" >&5
+echo "${ECHO_T}$ac_header_preproc" >&6
+
+# So?  What about this header?
+case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
+  yes:no: )
+    { echo "$as_me:$LINENO: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the compiler's result" >&2;}
+    ac_header_preproc=yes
+    ;;
+  no:yes:* )
+    { echo "$as_me:$LINENO: WARNING: $ac_header: present but cannot be compiled" >&5
+echo "$as_me: WARNING: $ac_header: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: $ac_header:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: $ac_header: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: $ac_header: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: $ac_header: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: $ac_header: in the future, the compiler will take precedence" >&2;}
+    (
+      cat <<\_ASBOX
+## ------------------------------------------ ##
+## Report this to the AC_PACKAGE_NAME lists.  ##
+## ------------------------------------------ ##
+_ASBOX
+    ) |
+      sed "s/^/$as_me: WARNING:     /" >&2
+    ;;
+esac
+echo "$as_me:$LINENO: checking for $ac_header" >&5
+echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6
+if eval "test \"\${$as_ac_Header+set}\" = set"; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  eval "$as_ac_Header=\$ac_header_preproc"
+fi
+echo "$as_me:$LINENO: result: `eval echo '${'$as_ac_Header'}'`" >&5
+echo "${ECHO_T}`eval echo '${'$as_ac_Header'}'`" >&6
+
+fi
+if test `eval echo '${'$as_ac_Header'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+
+done
+
+
 for ac_header in machine/types.h
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -4019,9 +4169,9 @@ fi
 done
 
 
-echo "$as_me:$LINENO: checking for int8" >&5
-echo $ECHO_N "checking for int8... $ECHO_C" >&6
-if test "${ac_cv_type_int8+set}" = set; then
+echo "$as_me:$LINENO: checking for int8_t" >&5
+echo $ECHO_N "checking for int8_t... $ECHO_C" >&6
+if test "${ac_cv_type_int8_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4034,9 +4184,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((int8 *) 0)
+if ((int8_t *) 0)
   return 0;
-if (sizeof (int8))
+if (sizeof (int8_t))
   return 0;
   ;
   return 0;
@@ -4064,28 +4214,28 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_int8=yes
+  ac_cv_type_int8_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_int8=no
+ac_cv_type_int8_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_int8" >&5
-echo "${ECHO_T}$ac_cv_type_int8" >&6
-if test $ac_cv_type_int8 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_int8_t" >&5
+echo "${ECHO_T}$ac_cv_type_int8_t" >&6
+if test $ac_cv_type_int8_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_INT8 1
+#define HAVE_INT8_T 1
 _ACEOF
 
 
 fi
-echo "$as_me:$LINENO: checking for uint8" >&5
-echo $ECHO_N "checking for uint8... $ECHO_C" >&6
-if test "${ac_cv_type_uint8+set}" = set; then
+echo "$as_me:$LINENO: checking for uint8_t" >&5
+echo $ECHO_N "checking for uint8_t... $ECHO_C" >&6
+if test "${ac_cv_type_uint8_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4098,9 +4248,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((uint8 *) 0)
+if ((uint8_t *) 0)
   return 0;
-if (sizeof (uint8))
+if (sizeof (uint8_t))
   return 0;
   ;
   return 0;
@@ -4128,28 +4278,28 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_uint8=yes
+  ac_cv_type_uint8_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_uint8=no
+ac_cv_type_uint8_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_uint8" >&5
-echo "${ECHO_T}$ac_cv_type_uint8" >&6
-if test $ac_cv_type_uint8 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_uint8_t" >&5
+echo "${ECHO_T}$ac_cv_type_uint8_t" >&6
+if test $ac_cv_type_uint8_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_UINT8 1
+#define HAVE_UINT8_T 1
 _ACEOF
 
 
 fi
-echo "$as_me:$LINENO: checking for int16" >&5
-echo $ECHO_N "checking for int16... $ECHO_C" >&6
-if test "${ac_cv_type_int16+set}" = set; then
+echo "$as_me:$LINENO: checking for int16_t" >&5
+echo $ECHO_N "checking for int16_t... $ECHO_C" >&6
+if test "${ac_cv_type_int16_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4162,9 +4312,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((int16 *) 0)
+if ((int16_t *) 0)
   return 0;
-if (sizeof (int16))
+if (sizeof (int16_t))
   return 0;
   ;
   return 0;
@@ -4192,28 +4342,28 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_int16=yes
+  ac_cv_type_int16_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_int16=no
+ac_cv_type_int16_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_int16" >&5
-echo "${ECHO_T}$ac_cv_type_int16" >&6
-if test $ac_cv_type_int16 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_int16_t" >&5
+echo "${ECHO_T}$ac_cv_type_int16_t" >&6
+if test $ac_cv_type_int16_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_INT16 1
+#define HAVE_INT16_T 1
 _ACEOF
 
 
 fi
-echo "$as_me:$LINENO: checking for uint16" >&5
-echo $ECHO_N "checking for uint16... $ECHO_C" >&6
-if test "${ac_cv_type_uint16+set}" = set; then
+echo "$as_me:$LINENO: checking for uint16_t" >&5
+echo $ECHO_N "checking for uint16_t... $ECHO_C" >&6
+if test "${ac_cv_type_uint16_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4226,9 +4376,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((uint16 *) 0)
+if ((uint16_t *) 0)
   return 0;
-if (sizeof (uint16))
+if (sizeof (uint16_t))
   return 0;
   ;
   return 0;
@@ -4256,28 +4406,28 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_uint16=yes
+  ac_cv_type_uint16_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_uint16=no
+ac_cv_type_uint16_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_uint16" >&5
-echo "${ECHO_T}$ac_cv_type_uint16" >&6
-if test $ac_cv_type_uint16 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_uint16_t" >&5
+echo "${ECHO_T}$ac_cv_type_uint16_t" >&6
+if test $ac_cv_type_uint16_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_UINT16 1
+#define HAVE_UINT16_T 1
 _ACEOF
 
 
 fi
-echo "$as_me:$LINENO: checking for int32" >&5
-echo $ECHO_N "checking for int32... $ECHO_C" >&6
-if test "${ac_cv_type_int32+set}" = set; then
+echo "$as_me:$LINENO: checking for int32_t" >&5
+echo $ECHO_N "checking for int32_t... $ECHO_C" >&6
+if test "${ac_cv_type_int32_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4290,9 +4440,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((int32 *) 0)
+if ((int32_t *) 0)
   return 0;
-if (sizeof (int32))
+if (sizeof (int32_t))
   return 0;
   ;
   return 0;
@@ -4320,28 +4470,28 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_int32=yes
+  ac_cv_type_int32_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_int32=no
+ac_cv_type_int32_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_int32" >&5
-echo "${ECHO_T}$ac_cv_type_int32" >&6
-if test $ac_cv_type_int32 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_int32_t" >&5
+echo "${ECHO_T}$ac_cv_type_int32_t" >&6
+if test $ac_cv_type_int32_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_INT32 1
+#define HAVE_INT32_T 1
 _ACEOF
 
 
 fi
-echo "$as_me:$LINENO: checking for uint32" >&5
-echo $ECHO_N "checking for uint32... $ECHO_C" >&6
-if test "${ac_cv_type_uint32+set}" = set; then
+echo "$as_me:$LINENO: checking for uint32_t" >&5
+echo $ECHO_N "checking for uint32_t... $ECHO_C" >&6
+if test "${ac_cv_type_uint32_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4354,9 +4504,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((uint32 *) 0)
+if ((uint32_t *) 0)
   return 0;
-if (sizeof (uint32))
+if (sizeof (uint32_t))
   return 0;
   ;
   return 0;
@@ -4384,28 +4534,28 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_uint32=yes
+  ac_cv_type_uint32_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_uint32=no
+ac_cv_type_uint32_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_uint32" >&5
-echo "${ECHO_T}$ac_cv_type_uint32" >&6
-if test $ac_cv_type_uint32 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_uint32_t" >&5
+echo "${ECHO_T}$ac_cv_type_uint32_t" >&6
+if test $ac_cv_type_uint32_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_UINT32 1
+#define HAVE_UINT32_T 1
 _ACEOF
 
 
 fi
-echo "$as_me:$LINENO: checking for unit64" >&5
-echo $ECHO_N "checking for unit64... $ECHO_C" >&6
-if test "${ac_cv_type_unit64+set}" = set; then
+echo "$as_me:$LINENO: checking for uint64_t" >&5
+echo $ECHO_N "checking for uint64_t... $ECHO_C" >&6
+if test "${ac_cv_type_uint64_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4418,9 +4568,9 @@ $ac_includes_default
 int
 main ()
 {
-if ((unit64 *) 0)
+if ((uint64_t *) 0)
   return 0;
-if (sizeof (unit64))
+if (sizeof (uint64_t))
   return 0;
   ;
   return 0;
@@ -4448,21 +4598,21 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_type_unit64=yes
+  ac_cv_type_uint64_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-ac_cv_type_unit64=no
+ac_cv_type_uint64_t=no
 fi
 rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-echo "$as_me:$LINENO: result: $ac_cv_type_unit64" >&5
-echo "${ECHO_T}$ac_cv_type_unit64" >&6
-if test $ac_cv_type_unit64 = yes; then
+echo "$as_me:$LINENO: result: $ac_cv_type_uint64_t" >&5
+echo "${ECHO_T}$ac_cv_type_uint64_t" >&6
+if test $ac_cv_type_uint64_t = yes; then
 
 cat >>confdefs.h <<_ACEOF
-#define HAVE_UNIT64 1
+#define HAVE_UINT64_T 1
 _ACEOF
 
 
