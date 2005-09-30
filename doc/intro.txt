@@ -345,23 +345,23 @@ length as its second argument.
    srtp_policy_t policy;
    uint8_t key[30];
 
-   /* initialize libSRTP */
+   // initialize libSRTP 
    srtp_init();                                  
 
-   /* set policy to describe a policy for an SRTP stream */
+   // set policy to describe a policy for an SRTP stream 
    crypto_policy_set_rtp_default(&policy.rtp);   
    crypto_policy_set_rtcp_default(&policy.rtcp); 
    policy.ssrc = ssrc;                            
    policy.key  = key;
    policy.next = NULL;
 
-   /* set key to random value */
+   // set key to random value 
    crypto_get_random(key, 30);          
 
-   /* allocate and initialize the SRTP session */
+   // allocate and initialize the SRTP session 
    srtp_create(&session, policy);  
    
-   /* main loop: get rtp packets, send srtp packets */
+   // main loop: get rtp packets, send srtp packets
    while (1) {
       char rtp_buffer[2048];
       unsigned len;
