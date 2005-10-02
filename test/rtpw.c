@@ -51,16 +51,26 @@
  */
 
 
+#include "datatypes.h"
+
 #include <stdio.h>          /* for printf, fprintf */
 #include <stdlib.h>         /* for atoi()          */
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>     /* openbsd wants this  */
-#include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>         /* for close()         */
 #include <string.h>         /* for strncpy()       */
 #include <time.h>	    /* for usleep()        */
+#ifdef HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
+#endif
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined HAVE_WINSOCK2_H
+# include <winsock2.h>
+# include <ws2tcpip.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+# include <arpa/inet.h>
+#endif
 
 #include "srtp.h"           
 #include "rtp.h"
@@ -71,6 +81,16 @@
 #define ADDR_IS_MULTICAST(a) IN_MULTICAST(htonl(a))
 #define MAX_KEY_LEN      64
 #define MASTER_KEY_LEN   30
+
+
+#ifndef HAVE_USLEEP
+# ifdef HAVE_WINDOWS_H
+#  define usleep(us)	Sleep((us)/1000)
+# else
+#  define usleep(us)	sleep((us)/1000000)
+# endif
+#endif
+
 
 /*
  * the function usage() prints an error message describing how this
@@ -199,7 +219,7 @@ main (int argc, char *argv[]) {
   port = atoi(argv[optind++]);
 
   /* set address */
-#if HAVE_INET_ATON
+#ifdef HAVE_INET_ATON
   if (0 == inet_aton(address, &rcvr_addr)) {
     fprintf(stderr, "%s: cannot parse IP v4 address %s\n", argv[0], address);
     exit(1);
@@ -240,7 +260,8 @@ main (int argc, char *argv[]) {
 
     mreq.imr_multiaddr.s_addr = rcvr_addr.s_addr;
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-    ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void*)&mreq,
+		     sizeof(mreq));
     if (ret < 0) {
       fprintf(stderr, "%s: Failed to join multicast group", argv[0]);
       perror("");
@@ -436,7 +457,8 @@ void
 leave_group(int sock, struct ip_mreq mreq, char *name) {
   int ret;
 
-  ret = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mreq, sizeof(mreq));
+  ret = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, (void*)&mreq,
+		   sizeof(mreq));
   if (ret < 0) {
 	fprintf(stderr, "%s: Failed to leave multicast group", name);
 	perror("");
