@@ -51,6 +51,12 @@
 
 #include "srtp.h"
 
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined HAVE_WINSOCK2_H
+# include <winsock2.h>
+#endif
+
 #define PRINT_REFERENCE_PACKET 1
 
 err_status_t
