@@ -20,7 +20,7 @@ typedef struct {
 } random_source_t;
 
 err_status_t
-random_source_alloc();
+random_source_alloc(void);
 
 void
 err_check(err_status_t s) {
@@ -59,8 +59,8 @@ main (int argc, char *argv[]) {
   printf("runs    %d\n", stat_test_runs(buffer));
 
   for (i=0; i < 2500; i++)
-    buffer[i] = random();
-  printf("running stat_tests on random(), expecting success\n");
+    buffer[i] = rand();
+  printf("running stat_tests on rand(), expecting success\n");
   printf("monobit %d\n", stat_test_monobit(buffer));
   printf("poker   %d\n", stat_test_poker(buffer));
   printf("runs    %d\n", stat_test_runs(buffer));
