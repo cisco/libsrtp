@@ -47,68 +47,53 @@
 #ifndef INTEGERS_H
 #define INTEGERS_H
 
-#include "config.h"       /* configuration file, using autoconf          */
-
-#include <stdlib.h>       /* standard integers should be referenced here */
-
-#ifndef HAVE_U_LONG_LONG
-/* Used instead of #ifndef HAVE_UINT64 since we're going to define uint64_t */
-#define NO_64BIT_MATH 1
-#endif
+#include "config.h"	/* configuration file, using autoconf          */
 
 /* use standard integer definitions, if they're available  */
-#if HAVE_STDINT_H 
-
-#include <stdint.h>
-
-#elif HAVE_INTTYPES_H  
-
-#include <inttypes.h>
-
-#elif HAVE_SYS_INT_TYPES_H  
-
-#include <sys/int_types.h>    /* this exists on Sun OS */
-
-#elif (HAVE_MACHINE_TYPES_H && !HAVE_MS_TYPES) /* Open BSD, not Cygwin */
-
-#include <machine/types.h>
-
-#else  /* if all else fails, use these definitions */
-
-/*
- * machine-specific definitions for 32 bit machines - you may need to
- * edit these definitions for your own machine
- */
-
-typedef unsigned char          uint8_t;
-typedef unsigned short int     uint16_t;
-typedef unsigned int           uint32_t;
-#if (HAVE_U_LONG_LONG == 1)
-typedef unsigned long long int uint64_t;
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_INT_TYPES_H
+# include <sys/int_types.h>    /* this exists on Sun OS */
+#endif
+#ifdef HAVE_MACHINE_TYPES_H
+# include <machine/types.h>
 #endif
 
-/* 
- * if we're on MS, avoid re-defining the following mirosoft types - *
- * these are present in cygwin
- */
-
-#if (HAVE_MS_TYPES == 0)
-
-typedef short int     int16_t;
-typedef int           int32_t;
-#if (HAVE_U_LONG_LONG == 1)
-typedef long long int int64_t;
+/* Can we do 64 bit integers? */
+#ifndef HAVE_UINT64_T
+# if SIZEOF_UNSIGNED_LONG == 8
+typedef unsigned long		uint64_t;
+# elif SIZEOF_UNSIGNED_LONG_LONG == 8
+typedef unsigned long long	uint64_t;
+# else
+#  define NO_64BIT_MATH 1
+# endif
 #endif
 
-#else
-
-#include <sys/types.h>  /* pick up cygwin definitions */
-
+/* Reasonable defaults for 32 bit machines - you may need to
+ * edit these definitions for your own machine. */
+#ifndef HAVE_UINT8_T
+typedef unsigned char		uint8_t;
+#endif
+#ifndef HAVE_UINT16_T
+typedef unsigned short int	uint16_t;
+#endif
+#ifndef HAVE_UINT32_T
+typedef unsigned int		uint32_t;
 #endif
 
-#endif
 
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
 typedef double uint64_t;
 /* assert that sizeof(double) == 8 */
 extern uint64_t make64(uint32_t high, uint32_t low);
@@ -119,9 +104,9 @@ extern uint32_t low32(uint64_t value);
 /* These macros are to load and store 32-bit values from un-aligned
    addresses.  This is required for processors that do not allow unaligned
    loads. */
-#if ALIGNMENT_32BIT_REQUIRED
+#ifdef ALIGNMENT_32BIT_REQUIRED
 // Note that if it's in a variable, you can memcpy it
-#if WORDS_BIGENDIAN == 1
+#ifdef WORDS_BIGENDIAN
 #define PUT_32(addr,value) \
     { \
         ((unsigned char *) (addr))[0] = (value >> 24); \
@@ -150,8 +135,5 @@ extern uint32_t low32(uint64_t value);
 #define PUT_32(addr,value) *(((uint32_t *) (addr)) = (value)
 #define GET_32(addr) (*(((uint32_t *) (addr)))
 #endif
-
-#include <sys/types.h>
-#include <netinet/in.h>
 
 #endif /* INTEGERS_H */
