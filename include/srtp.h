@@ -758,7 +758,7 @@ srtp_install_event_handler(srtp_event_handler_func_t func);
  * is not identical)
  */
  
-#if (WORDS_BIGENDIAN == 0) /* assume LITTLE_ENDIAN */
+#ifndef WORDS_BIGENDIAN
 
 typedef struct {
   unsigned cc:4;	/* CSRC count             */
@@ -801,7 +801,7 @@ typedef struct {
  * alinged
  */
 
-#if (WORDS_BIGENDIAN == 0) /* assume LITTLE_ENDIAN */
+#ifndef WORDS_BIGENDIAN
 
 typedef struct {
   unsigned char rc:5;		/* reception report count */
