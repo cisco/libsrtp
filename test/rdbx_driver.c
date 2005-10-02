@@ -120,7 +120,7 @@ main (int argc, char *argv[]) {
 void
 print_rdbx(rdbx_t *rdbx) {
   printf("rdbx: {%llu, %s}\n",
-	 (rdbx->index), v128_bit_string(&rdbx->bitmask));
+	 (unsigned long long)(rdbx->index), v128_bit_string(&rdbx->bitmask));
 }
 
 
