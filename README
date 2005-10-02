@@ -168,4 +168,3 @@ Implementation Notes
 
   * The replay window is 128 bits in length, and is hard-coded to this
     value for now.  
-
