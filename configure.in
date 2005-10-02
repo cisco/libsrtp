@@ -13,9 +13,11 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 
-dnl Check for /dev/urandom
-AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=/dev/urandom,
-   [AC_CHECK_FILE(/dev/random, DEV_URANDOM=/dev/random)])
+if test "$cross_compiling" != yes; then
+   dnl Check for /dev/urandom
+   AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=/dev/urandom,
+      [AC_CHECK_FILE(/dev/random, DEV_URANDOM=/dev/random)])
+fi
 
 AC_MSG_CHECKING(which random device to use)
 if test -n "$DEV_URANDOM"; then
@@ -30,21 +32,23 @@ dnl Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdlib.h)
 AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(byteswap.h)
 AC_CHECK_HEADERS(stdint.h)
 AC_CHECK_HEADERS(sys/uio.h)
 AC_CHECK_HEADERS(inttypes.h)
+AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(machine/types.h)
 AC_CHECK_HEADERS(sys/int_types.h)
+
+dnl socket() and friends
+AC_CHECK_HEADERS(sys/socket.h netinet/in.h arpa/inet.h)
+AC_CHECK_HEADERS(windows.h, [AC_CHECK_HEADERS(winsock2.h)])
 
 AC_CHECK_HEADERS(syslog.h)
 
 AC_CHECK_TYPES([int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t,uint64_t])
-
-AC_CHECK_TYPE(unsigned long long, HAVE_U_LONG_LONG=1, HAVE_U_LONG_LONG=0)
-
-if test $HAVE_U_LONG_LONG = 1; then
-   AC_DEFINE(HAVE_U_LONG_LONG)
-fi
+AC_CHECK_SIZEOF(unsigned long)
+AC_CHECK_SIZEOF(unsigned long long)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -52,10 +56,24 @@ AC_C_INLINE
 AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS(socket inet_aton)
+AC_CHECK_FUNCS(socket inet_aton usleep)
 
-dnl Checks for libraries.
-AC_CHECK_LIB(socket, socket)
+dnl Find socket function if not found yet.
+if test "x$ac_cv_func_socket" = "xno"; then
+  AC_CHECK_LIB(socket, socket)
+  AC_MSG_CHECKING([for socket in -lwsock32])
+  SAVELIBS="$LIBS"
+  LIBS="$LIBS -lwsock32"
+  AC_TRY_LINK([
+#include <winsock2.h>
+],[
+socket(0, 0, 0);
+],
+    ac_cv_func_socket=yes
+    AC_MSG_RESULT(yes),
+    LIBS="$SAVELIBS"
+    AC_MSG_RESULT(no))
+fi
 
 dnl Check the byte order
 AC_C_BIGENDIAN
@@ -70,16 +88,19 @@ case $host_cpu in
         AC_DEFINE(HAVE_X86, 1,
 	   [Define to use X86 inlined assembly code]);; 
 	* )
-	AC_DEFINE(CPU_RISC, 1, 
-	[Define if building for a RISC machine (with slow byte access)]);;
+	# CPU_RISC is only supported for big endian machines.
+	if test "$ac_cv_c_bigendian" = "yes"; then
+	   AC_DEFINE(CPU_RISC, 1,
+	    [Define if building for a RISC machine (assume slow byte access).])
+	else
+	   AC_DEFINE(CPU_CISC, 1)
+	fi
+	;;
 esac	
 
-dnl Check if we're on a cygwin (GNU on MSWin) platform, set HAVE_MS_TYPES
-
+dnl Check if we're on a Windows platform.
 case $host_os in
-  *cygwin* ) 
-	      AC_DEFINE(HAVE_MS_TYPES, 1,
-	      [Define to use microsoft integer definitions (e.g. cygwin).])
+  *cygwin*|*mingw* ) 
 	      EXE=.exe;;
          * )  EXE="";;
 esac
