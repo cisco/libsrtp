@@ -54,7 +54,13 @@
 #ifndef RTP_H
 #define RTP_H
 
-#include "srtp.h"    
+#include "srtp.h"
+
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined HAVE_WINSOCK2_H
+# include <winsock2.h>
+#endif
 
 #define rtp_header_len 12
 
