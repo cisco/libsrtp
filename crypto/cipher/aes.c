@@ -59,7 +59,7 @@
  * optimization on a different platform
  */
 
-#if (WORDS_BIGENDIAN == 0) /* assume little endian */
+#ifndef WORDS_BIGENDIAN
 
 uint32_t T0[256] = {
   0xa56363c6, 0x847c7cf8, 0x997777ee, 0x8d7b7bf6, 
@@ -1432,7 +1432,7 @@ aes_expand_decryption_key(const v128_t key,
    * in the U-tables)
    */
   for (i=1; i < 10; i++) {
-#if CPU_RISC
+#ifdef CPU_RISC
     uint32_t tmp;
 
     tmp = expanded_key[i].v32[0];
@@ -1495,7 +1495,7 @@ aes_expand_decryption_key(const v128_t key,
   }
 }
 
-#if CPU_CISC
+#ifdef CPU_CISC
 
 
 inline void
@@ -1632,7 +1632,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 
   /* compute the columns of the output square in terms of the octets
      of state, using the tables T0, T1, T2, T3 */
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
   column0 = T0[state->v32[0] >> 24] ^ T1[(state->v32[1] >> 16) & 0xff]
     ^ T2[(state->v32[2] >> 8) & 0xff] ^ T3[state->v32[3] & 0xff];
   
@@ -1672,7 +1672,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
   /* compute the columns of the output square in terms of the octets
      of state, using the tables U0, U1, U2, U3 */
 
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
   /* FIX!  WRong indexes */
   column0 = U0[state->v32[0] >> 24] ^ U1[(state->v32[3] >> 16) & 0xff]
     ^ U2[(state->v32[2] >> 8) & 0xff] ^ U3[state->v32[1] & 0xff];
