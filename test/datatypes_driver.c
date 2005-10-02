@@ -221,26 +221,26 @@ print_string(char *s) {
 void
 test_bswap() {
   uint32_t x = 0x11223344;
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
   uint64_t y = make64(0x11223344,55667788);
 #else
   uint64_t y = 0x1122334455667788LL;
 #endif
 
-  printf("before: %0x\nafter:  %0x\n", x, bswap_32(x));
-  printf("before: %0llx\nafter:  %0llx\n", y, bswap_64(y));
+  printf("before: %0x\nafter:  %0x\n", x, be32_to_cpu(x));
+  printf("before: %0llx\nafter:  %0llx\n", (unsigned long long)y,
+	 (unsigned long long)be64_to_cpu(y));
 
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
   y = make64(0,1234);
 #else
   y = 1234;
 #endif
 
-  printf("1234: %0llx\n", y);
+  printf("1234: %0llx\n", (unsigned long long)y);
   printf("as octet string: %s\n", 
 	 octet_string_hex_string((uint8_t *) &y, 8));
-  y = bswap_64(y);
+  y = be64_to_cpu(y);
   printf("bswapped octet string: %s\n", 
 	 octet_string_hex_string((uint8_t *) &y, 8));
-
 }
