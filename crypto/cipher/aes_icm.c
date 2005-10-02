@@ -49,6 +49,13 @@
 #include "aes_icm.h"
 #include "alloc.h"
 
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined HAVE_WINSOCK2_H
+# include <winsock2.h>
+#endif
+
+
 debug_module_t mod_aes_icm = {
   0,                 /* debugging is off by default */
   "aes icm"          /* printable module name       */
@@ -97,7 +104,7 @@ aes_icm_alloc(cipher_t **c, int key_len) {
   debug_print(mod_aes_icm, 
 	      "allocating cipher with key length %d", key_len);
 
-#if GENERIC_AESICM
+#ifdef GENERIC_AESICM
   // Ismacryp, for example, uses 16 byte key + 8 byte 
   // salt  so this function is called with key_len = 24.
   // The check for key_len = 30 does not apply. Our usage
@@ -198,7 +205,7 @@ err_status_t
 aes_icm_set_octet(aes_icm_ctx_t *c,
 		  uint64_t octet_num) {
 
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
   int tail_num       = low32(octet_num) & 0x0f;
   /* 64-bit right-shift 4 */
   uint64_t block_num = make64(high32(octet_num) >> 4,
@@ -213,7 +220,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
   /* set counter value */
   /* FIX - There's no way this is correct */
   c->counter.v64[0] = c->offset.v64[0];
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
   c->counter.v64[0] = make64(high32(c->offset.v64[0]) ^ high32(block_num),
 							 low32(c->offset.v64[0])  ^ low32(block_num));
 #else
@@ -281,7 +288,7 @@ aes_icm_set_iv(aes_icm_ctx_t *c, void *iv) {
 inline void
 aes_icm_advance(aes_icm_ctx_t *c) {
 
-#if GENERIC_AESICM  
+#ifdef GENERIC_AESICM  
   uint32_t temp;
 #endif
  
@@ -297,7 +304,7 @@ aes_icm_advance(aes_icm_ctx_t *c) {
   
   /* clock counter forward */
   
-#if GENERIC_AESICM  
+#ifdef GENERIC_AESICM  
   //alex's clock counter forward
   temp = ntohl(c->counter.v32[3]);
   c->counter.v32[3] = htonl(++temp);
@@ -378,7 +385,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
     *b++ ^= c->keystream_buffer.v32[3];
     buf = (uint8_t *)b;
 #else    
-    if ((((uint32_t) buf) & 0x03) != 0) {
+    if ((((unsigned long) buf) & 0x03) != 0) {
       *buf++ ^= c->keystream_buffer.octet[0];
       *buf++ ^= c->keystream_buffer.octet[1];
       *buf++ ^= c->keystream_buffer.octet[2];
