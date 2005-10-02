@@ -49,19 +49,19 @@
 #include "datatypes.h"
 
 void
-byte_order();
+byte_order(void);
 
 void
-test_hex_string_funcs();
+test_hex_string_funcs(void);
 
 void
 print_string(char *s);
 
 void
-test_bswap();
+test_bswap(void);
 
 int
-main () {
+main (void) {
   
   /*
    * this program includes various and sundry tests for fundamental
@@ -146,7 +146,7 @@ main () {
 /* byte_order() prints out byte ordering of datatypes */
 
 void
-byte_order() {
+byte_order(void) {
   int i;
   v128_t e;
 #if 0
@@ -185,7 +185,7 @@ byte_order() {
 }
 
 void
-test_hex_string_funcs() {
+test_hex_string_funcs(void) {
   char hex1[] = "abadcafe";
   char hex2[] = "0123456789abcdefqqqqq";
   char raw[10];
@@ -193,12 +193,12 @@ test_hex_string_funcs() {
 
   len = hex_string_to_octet_string(raw, hex1, strlen(hex1));
   printf("computed length: %d\tstring: %s\n", len,
-	 octet_string_hex_string(raw, len));
+	 octet_string_hex_string(raw, len/2));
   printf("expected length: %u\tstring: %s\n", (unsigned)strlen(hex1), hex1);
 
   len = hex_string_to_octet_string(raw, hex2, strlen(hex2));
   printf("computed length: %d\tstring: %s\n", len,
-	 octet_string_hex_string(raw, len));
+	 octet_string_hex_string(raw, len/2));
   printf("expected length: %d\tstring: %s\n", 16, "0123456789abcdef");
 
 }
@@ -218,20 +218,20 @@ print_string(char *s) {
 }
 
 void
-test_bswap() {
+test_bswap(void) {
   uint32_t x = 0x11223344;
   uint64_t y = 0x1122334455667788LL;
 
-  printf("before: %0x\nafter:  %0x\n", x, bswap_32(x));
-  printf("before: %0llx\nafter:  %0llx\n", y, bswap_64(y));
+  printf("before: %0x\nafter:  %0x\n", x, be32_to_cpu(x));
+  printf("before: %0llx\nafter:  %0llx\n", (unsigned long long)y,
+	 (unsigned long long)be64_to_cpu(y));
 
   y = 1234;
 
-  printf("1234: %0llx\n", y);
+  printf("1234: %0llx\n", (unsigned long long)y);
   printf("as octet string: %s\n", 
 	 octet_string_hex_string((uint8_t *) &y, 8));
-  y = bswap_64(y);
+  y = be64_to_cpu(y);
   printf("bswapped octet string: %s\n", 
 	 octet_string_hex_string((uint8_t *) &y, 8));
-
 }
