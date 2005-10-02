@@ -51,7 +51,7 @@ p=00112233445566778899aabbccddeeff
 c=69c4e0d86a7b0430d8cdb78070b4c55a
 
 runtest: libcryptomodule.a $(testapp)
-	test/env # print out information on the build environment
+	test/env$(EXE) # print out information on the build environment
 	@echo "running libcryptomodule test applications..."
 	test `test/aes_calc $k $p` = $c
 	test/cipher_driver$(EXE) -v >/dev/null
@@ -89,8 +89,8 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(xfm)
 %.o: %.c
 	$(COMPILE) -c $< -o $@
 
-%: %.c libcryptomodule.a 
-	$(COMPILE) $(LDFLAGS) $< -o $@ $(LIBS) $(CRYPTOLIB)
+%$(EXE): %.c libcryptomodule.a 
+	$(COMPILE) $(LDFLAGS) $< -o $@ $(CRYPTOLIB) $(LIBS)
 
 ifndef AR
   AR=ar
