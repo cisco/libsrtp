@@ -84,13 +84,14 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
 #else
   /* Generic C-library (rand()) version */
   /* This is a random source of last resort */
+  uint8_t *dst = dest;
   while (len)
   {
 	  int val = rand();
 	  /* rand() returns 0-32767 (ugh) */
 	  /* Is this a good enough way to get random bytes?
 	     It is if it passes FIPS-140... */
-	  *dest++ = val & 0xff;
+	  *dst++ = val & 0xff;
 	  len--;
   }
 #endif
