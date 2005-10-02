@@ -719,7 +719,7 @@ void
 v128_add(v128_t *z, v128_t *x, v128_t *y) {
   /* integer addition modulo 2^128    */
 
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
   uint64_t tmp;
     
   tmp = x->v32[3] + y->v32[3];
