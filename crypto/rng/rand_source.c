@@ -46,28 +46,34 @@
 #include "rand_source.h"
 
 #ifdef DEV_URANDOM
-#include <fcntl.h>          /* for open()  */
-#include <unistd.h>         /* for close() */
+# include <fcntl.h>          /* for open()  */
+# include <unistd.h>         /* for close() */
+#else
+# include <stdio.h>
 #endif
 
 /* global dev_rand_fdes is file descriptor for /dev/random */
 
-int dev_random_fdes = 0;
+static int dev_random_fdes = -1;
 
 
 err_status_t
-rand_source_init() {
-
+rand_source_init(void) {
+  if (dev_random_fdes >= 0) {
+    /* already open */
+    return err_status_ok;
+  }
 #ifdef DEV_URANDOM
   /* open random source for reading */
-  dev_random_fdes = open(DEV_URANDOM, O_RDONLY, 0);
-  if (dev_random_fdes == 0)
+  dev_random_fdes = open(DEV_URANDOM, O_RDONLY);
+  if (dev_random_fdes < 0)
     return err_status_init_fail;
-  return err_status_ok;
 #else
-  /* no random source available; let the caller know */
-  return err_status_fail;
+  /* no random source available; let the user know */
+  fprintf(stderr, "WARNING: no real random source present!\n");
+  dev_random_fdes = 17;
 #endif
+  return err_status_ok;
 }
 
 err_status_t
@@ -99,14 +105,14 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
 }
 
 err_status_t
-rand_source_deinit() {
-
-#ifdef DEV_URANDOM
-  if (dev_random_fdes == 0)
+rand_source_deinit(void) {
+  if (dev_random_fdes < 0)
     return err_status_dealloc_fail;  /* well, we haven't really failed, *
 				      * but there is something wrong    */
+#ifdef DEV_URANDOM
   close(dev_random_fdes);  
 #endif
+  dev_random_fdes = -1;
   
   return err_status_ok;  
 }
