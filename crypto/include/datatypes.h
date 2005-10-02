@@ -207,7 +207,7 @@ v128_right_shift(v128_t *x, int index);
   (((x)->v64[0] == (y)->v64[0]) && ((x)->v64[1] == (y)->v64[1]))
 
 
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
 #define _v128_xor_eq(z, x)         \
 (                                  \
    (z)->v32[0] ^= (x)->v32[0],     \
@@ -256,7 +256,7 @@ v128_right_shift(v128_t *x, int index);
 
 #if 0
 /* nothing uses this */
-#if WORDS_BIGENDIAN
+#ifdef WORDS_BIGENDIAN
 
 #define _v128_add(z, x, y) {                    \
   uint64_t tmp;					\
@@ -363,14 +363,46 @@ octet_string_set_to_zero(uint8_t *s, int len);
 
 
 /* 
- * bswap_32() is an optimized version of htonl/ntohl
+ * Convert big endian integers to CPU byte order.
  */
+#ifdef WORDS_BIGENDIAN
+/* Nothing to do. */
+# define be32_to_cpu(x)	/**/
+# define be64_to_cpu(x)	/**/
+#elif defined(HAVE_BYTESWAP_H)
+/* We have (hopefully) optimized versions in byteswap.h */
+# include <byteswap.h>
+# define be32_to_cpu(x)	bswap_32((x))
+# define be64_to_cpu(x)	bswap_64((x))
+#else
 
-uint32_t
-bswap_32(uint32_t v);
+# ifdef HAVE_X86
+/* Fall back. */
+static inline uint32_t be32_to_cpu(uint32_t v) {
+   /* optimized for x86. */
+   asm("bswap %0" : "=r" (v) : "0" (v));
+   return v;
+}
+# else /* HAVE_X86 */
+#  ifdef HAVE_NETINET_IN_H
+#   include <netinet/in.h>
+#  elif defined HAVE_WINSOCK2_H
+#   include <winsock2.h>
+#  endif
+#  define be32_to_cpu(x)	ntohl((x))
+# endif /* HAVE_X86 */
 
-uint64_t
-bswap_64(uint64_t v);
+static inline uint64_t be64_to_cpu(uint64_t v) {
+# ifdef NO_64BIT_MATH
+   /* use the make64 functions to do 64-bit math */
+   v = make64(htonl(low32(v)),htonl(high32(v)));
+# else
+   /* use the native 64-bit math */
+   v= (be32_to_cpu(v >> 32)) | (((uint64_t)be32_to_cpu((uint32_t)v)) << 32);
+# endif
+   return v;
+}
 
+#endif /* WORDS_BIGENDIAN */
 
 #endif /* _DATATYPES_H */
