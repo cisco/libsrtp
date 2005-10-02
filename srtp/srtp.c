@@ -48,6 +48,13 @@
 #include "alloc.h"           /* for crypto_alloc()          */
 #include "limits.h"
 
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined(HAVE_WINSOCK2_H)
+# include <winsock2.h>
+#endif
+
+
 extern cipher_type_t aes_icm;
 extern auth_type_t   tmmhv2;
 
@@ -376,11 +383,11 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    rdbx_init(&srtp->rtp_rdbx);
 
    /* initialize key limit to maximum value */
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
 {
-	uint64_t temp;
-	temp = make64(UINT_MAX,UINT_MAX);
-	key_limit_set(srtp->limit, temp);
+   uint64_t temp;
+   temp = make64(UINT_MAX,UINT_MAX);
+   key_limit_set(srtp->limit, temp);
 }
 #else
    key_limit_set(srtp->limit, 0xffffffffffffLL);
@@ -694,7 +701,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      return status;  /* we've been asked to reuse an index */
    rdbx_add_index(&stream->rtp_rdbx, delta);
 
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
    debug_print2(mod_srtp, "estimated packet index: %08x%08x", 
 		high32(est),low32(est));
 #else
@@ -709,11 +716,11 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 
      iv.v32[0] = 0;
      iv.v32[1] = hdr->ssrc;
-#if (HAVE_U_LONG_LONG == 0)
-     iv.v64[1] = bswap_64(make64((high32(est) << 16) | (low32(est) >> 16),
+#ifdef NO_64BIT_MATH
+     iv.v64[1] = be64_to_cpu(make64((high32(est) << 16) | (low32(est) >> 16),
 								 low32(est) << 16));
 #else
-     iv.v64[1] = bswap_64(est << 16);
+     iv.v64[1] = be64_to_cpu(est << 16);
 #endif
      status = cipher_set_iv(stream->rtp_cipher, &iv);
 
@@ -721,25 +728,25 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      v128_t iv;
 
      /* otherwise, set the index to est */  
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
      iv.v32[0] = 0;
      iv.v32[1] = 0;
 #else
      iv.v64[0] = 0;
 #endif
-     iv.v64[1] = bswap_64(est);
+     iv.v64[1] = be64_to_cpu(est);
      status = cipher_set_iv(stream->rtp_cipher, &iv);
    }
    if (status)
      return err_status_cipher_fail;
 
    /* shift est, put into network byte order */
-#if (HAVE_U_LONG_LONG == 0)
-   est = bswap_64(make64((high32(est) << 16) |
+#ifdef NO_64BIT_MATH
+   est = be64_to_cpu(make64((high32(est) << 16) |
 						 (low32(est) >> 16),
 						 low32(est) << 16));
 #else
-   est = bswap_64(est << 16);
+   est = be64_to_cpu(est << 16);
 #endif
    
    /* 
@@ -842,7 +849,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
        * set estimated packet index to sequence number from header,
        * and set delta equal to the same value
        */
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
       est = (xtd_seq_num_t) make64(0,ntohs(hdr->seq));
       delta = low32(est);
 #else
@@ -868,7 +875,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
       return status;
   }
 
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
   debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),low32(est));
 #else
   debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
@@ -904,35 +911,35 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     /* aes counter mode */
     iv.v32[0] = 0;
     iv.v32[1] = hdr->ssrc;  /* still in network order */
-#if (HAVE_U_LONG_LONG == 0)
-    iv.v64[1] = bswap_64(make64((high32(est) << 16) | (low32(est) >> 16),
+#ifdef NO_64BIT_MATH
+    iv.v64[1] = be64_to_cpu(make64((high32(est) << 16) | (low32(est) >> 16),
 			         low32(est) << 16));
 #else
-    iv.v64[1] = bswap_64(est << 16);
+    iv.v64[1] = be64_to_cpu(est << 16);
 #endif
     status = aes_icm_set_iv(stream->rtp_cipher->state, &iv);
   } else {  
     
     /* no particular format - set the iv to the pakcet index */  
-#if (HAVE_U_LONG_LONG == 0)
+#ifdef NO_64BIT_MATH
     iv.v32[0] = 0;
     iv.v32[1] = 0;
 #else
     iv.v64[0] = 0;
 #endif
-    iv.v64[1] = bswap_64(est);
+    iv.v64[1] = be64_to_cpu(est);
     status = cipher_set_iv(stream->rtp_cipher, &iv);
   }
   if (status)
     return err_status_cipher_fail;
 
   /* shift est, put into network byte order */
-#if (HAVE_U_LONG_LONG == 0)
-  est = bswap_64(make64((high32(est) << 16) |
+#ifdef NO_64BIT_MATH
+  est = be64_to_cpu(make64((high32(est) << 16) |
 					    (low32(est) >> 16),
 					    low32(est) << 16));
 #else
-  est = bswap_64(est << 16);
+  est = be64_to_cpu(est << 16);
 #endif
 
   /*
