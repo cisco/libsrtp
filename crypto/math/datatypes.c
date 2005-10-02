@@ -226,7 +226,7 @@ v128_bit_string(v128_t *x) {
 
 void
 v128_copy_octet_string(v128_t *x, const uint8_t s[16]) {
-#if ALIGNMENT_32BIT_REQUIRED
+#ifdef ALIGNMENT_32BIT_REQUIRED
   if ((((uint32_t) &s[0]) & 0x3) != 0)
 #endif
   {
@@ -247,7 +247,7 @@ v128_copy_octet_string(v128_t *x, const uint8_t s[16]) {
 	  x->octet[14] = s[14];
 	  x->octet[15] = s[15];
   }
-#if ALIGNMENT_32BIT_REQUIRED
+#ifdef ALIGNMENT_32BIT_REQUIRED
   else 
   {
 	  v128_t *v = (v128_t *) &s[0];
@@ -406,44 +406,6 @@ octet_string_set_to_zero(uint8_t *s, int len) {
   } while (++s < end);
   
 }
-
-/* 
- * bswap_32() is an optimized version of htonl/ntohl
- */
-
-inline uint32_t
-bswap_32(uint32_t v) {
-#if WORDS_BIGENDIAN
-  /* we're on a big-endian machine, so we do nothing here */
-#else
-#if HAVE_X86                     
-  /* assume that we're on an Intel x86 with x > 3 */
-  asm("bswap %0" : "=r" (v) : "0" (v));
-#else
-  /* little-endian; we can use htonl() */
-  v = htonl(v);
-#endif
-#endif
-  return v;
-}
-
-inline uint64_t
-bswap_64(uint64_t v) {
-#if WORDS_BIGENDIAN
-  /* we're on a big-endian machine, so we do nothing here */
-#else
-#if HAVE_U_LONG_LONG
-  /* use the native 64-bit math */
-  v= (bswap_32(v >> 32)) | ((uint64_t)bswap_32((uint32_t)v)) << 32 ;
-#else
-  /* use the make64 functions to do 64-bit math */
-  v = make64(htonl(low32(v)),htonl(high32(v)));
-#endif
-#endif
-  return v;
-}
-
-
 
 
 /*
