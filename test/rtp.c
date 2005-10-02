@@ -14,7 +14,9 @@
 #include <string.h>
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#ifdef HAVE_SYS_SOCKET_YH
+# include <sys/socket.h>
+#endif
 
 #define PRINT_DEBUG    0    /* set to 1 to print out debugging data */
 #define VERBOSE_DEBUG  0    /* set to 1 to print out more data      */
@@ -45,7 +47,7 @@ rtp_sendto(rtp_sender_t *sender, const void* msg, int len) {
 #if VERBOSE_DEBUG
   srtp_print_packet(&sender->message.header, pkt_len);
 #endif
-  octets_sent = sendto(sender->socket, &sender->message,
+  octets_sent = sendto(sender->socket, (void*)&sender->message,
 		       pkt_len, 0, (struct sockaddr *)&sender->addr,
 		       sizeof (struct sockaddr_in));
 
@@ -109,7 +111,7 @@ rtp_sender_init(rtp_sender_t *sender,
   /* set header values */
   sender->message.header.ssrc    = htonl(ssrc);
   sender->message.header.ts      = 0;
-  sender->message.header.seq     = (uint16_t) random();
+  sender->message.header.seq     = (uint16_t) rand();
   sender->message.header.m       = 0;
   sender->message.header.pt      = 0x1;
   sender->message.header.version = 2;
