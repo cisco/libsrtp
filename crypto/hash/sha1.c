@@ -52,8 +52,6 @@ debug_module_t mod_sha1 = {
   "sha-1"            /* printable module name       */
 };
 
-#define bswap_32(x) ntohl(x)
-
 /* SN == Rotate left N bits */
 #define S1(X)  ((X << 1)  | (X >> 31))
 #define S5(X)  ((X << 5)  | (X >> 27))
@@ -117,22 +115,22 @@ sha1_core(const uint32_t M[16], uint32_t hash_value[5]) {
 
   /* copy/xor message into array */
     
-  W[0]  = bswap_32(M[0]);
-  W[1]  = bswap_32(M[1]);
-  W[2]  = bswap_32(M[2]);
-  W[3]  = bswap_32(M[3]);
-  W[4]  = bswap_32(M[4]);
-  W[5]  = bswap_32(M[5]);
-  W[6]  = bswap_32(M[6]);
-  W[7]  = bswap_32(M[7]);
-  W[8]  = bswap_32(M[8]);
-  W[9]  = bswap_32(M[9]);
-  W[10] = bswap_32(M[10]);
-  W[11] = bswap_32(M[11]);
-  W[12] = bswap_32(M[12]);
-  W[13] = bswap_32(M[13]);
-  W[14] = bswap_32(M[14]);
-  W[15] = bswap_32(M[15]);
+  W[0]  = be32_to_cpu(M[0]);
+  W[1]  = be32_to_cpu(M[1]);
+  W[2]  = be32_to_cpu(M[2]);
+  W[3]  = be32_to_cpu(M[3]);
+  W[4]  = be32_to_cpu(M[4]);
+  W[5]  = be32_to_cpu(M[5]);
+  W[6]  = be32_to_cpu(M[6]);
+  W[7]  = be32_to_cpu(M[7]);
+  W[8]  = be32_to_cpu(M[8]);
+  W[9]  = be32_to_cpu(M[9]);
+  W[10] = be32_to_cpu(M[10]);
+  W[11] = be32_to_cpu(M[11]);
+  W[12] = be32_to_cpu(M[12]);
+  W[13] = be32_to_cpu(M[13]);
+  W[14] = be32_to_cpu(M[14]);
+  W[15] = be32_to_cpu(M[15]);
   TEMP = W[13] ^ W[8]  ^ W[2]  ^ W[0];  W[16] = S1(TEMP);
   TEMP = W[14] ^ W[9]  ^ W[3]  ^ W[1];  W[17] = S1(TEMP);
   TEMP = W[15] ^ W[10] ^ W[4]  ^ W[2];  W[18] = S1(TEMP);
@@ -265,20 +263,20 @@ sha1_final(sha1_ctx_t *ctx, uint32_t *output) {
     
     /* copy/xor message into array */
     for (i=0; i < (ctx->octets_in_buffer+3)/4; i++) 
-      W[i]  = bswap_32(ctx->M[i]);  /* why no bswap_32() here?   - DAM */
+      W[i]  = be32_to_cpu(ctx->M[i]);
 
     /* set the high bit of the octet immediately following the message */
     switch (tail) {
     case (3):
-      W[i-1] = (bswap_32(ctx->M[i-1]) & 0xffffff00) | 0x80;
+      W[i-1] = (be32_to_cpu(ctx->M[i-1]) & 0xffffff00) | 0x80;
       W[i] = 0x0;
       break;
     case (2):      
-      W[i-1] = (bswap_32(ctx->M[i-1]) & 0xffff0000) | 0x8000;
+      W[i-1] = (be32_to_cpu(ctx->M[i-1]) & 0xffff0000) | 0x8000;
       W[i] = 0x0;
       break;
     case (1):
-      W[i-1] = (bswap_32(ctx->M[i-1]) & 0xff000000) | 0x800000;
+      W[i-1] = (be32_to_cpu(ctx->M[i-1]) & 0xff000000) | 0x800000;
       W[i] = 0x0;
       break;
     case (0):
@@ -391,11 +389,11 @@ sha1_final(sha1_ctx_t *ctx, uint32_t *output) {
   }
 
   /* copy result into output buffer */
-  output[0] = bswap_32(ctx->H[0]);
-  output[1] = bswap_32(ctx->H[1]);
-  output[2] = bswap_32(ctx->H[2]);
-  output[3] = bswap_32(ctx->H[3]);
-  output[4] = bswap_32(ctx->H[4]);
+  output[0] = be32_to_cpu(ctx->H[0]);
+  output[1] = be32_to_cpu(ctx->H[1]);
+  output[2] = be32_to_cpu(ctx->H[2]);
+  output[3] = be32_to_cpu(ctx->H[3]);
+  output[4] = be32_to_cpu(ctx->H[4]);
 
   /* indicate that message buffer in context is empty */
   ctx->octets_in_buffer = 0;
