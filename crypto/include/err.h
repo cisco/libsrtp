@@ -46,11 +46,7 @@
 #ifndef ERR_H
 #define ERR_H
 
-#include "config.h"             /* check for ERR_REPORTING_SYSLOG */
-
-#include <stdio.h>
-
-#include <stdarg.h>
+#include "datatypes.h"
 
 /**
  * @defgroup Error Error Codes
@@ -101,7 +97,7 @@ typedef enum {
  * @}
  */
 
-#if (ERR_REPORTING_SYSLOG) 
+#ifdef ERR_REPORTING_SYSLOG
 
 #include <syslog.h>
 
@@ -167,7 +163,7 @@ typedef struct {
   char *name;        /* printable name for debug module      */
 } debug_module_t;
 
-#if ENABLE_DEBUGGING 
+#ifdef ENABLE_DEBUGGING
 
 #define debug_on(mod)  (mod).on = 1
 
