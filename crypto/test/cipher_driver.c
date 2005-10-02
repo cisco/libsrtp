@@ -44,7 +44,7 @@
  */
 
 #include <stdio.h>           /* for printf() */
-#include <stdlib.h>          /* for random() */
+#include <stdlib.h>          /* for rand() */
 #include <string.h>          /* for memset() */
 #include <unistd.h>          /* for getopt() */
 #include "cipher.h"
@@ -297,7 +297,7 @@ cipher_driver_test_buffering(cipher_t *c) {
     while (current < end) {
 
       /* choose a short length */
-      len = random() & 0x01f;
+      len = rand() & 0x01f;
 
       /* make sure that len doesn't cause us to overreach the buffer */
       if (current + len > end)
@@ -374,7 +374,7 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
     
     /* generate random key and initialize cipher */
     for (j=0; j < klen; j++)
-      key[j] = (uint8_t) random();
+      key[j] = (uint8_t) rand();
     status = cipher_init(*cipher_array, key, direction_encrypt);
     if (status)
       return status;

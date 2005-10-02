@@ -50,7 +50,7 @@
 
 int
 ut_compar(const void *a, const void *b) {
-  return random() > (RAND_MAX/2) ? -1 : 1;
+  return rand() > (RAND_MAX/2) ? -1 : 1;
 }
 
 void
