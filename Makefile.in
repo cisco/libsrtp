@@ -19,11 +19,11 @@ all: test
 
 runtest: build_table_apps test
 	@echo "running libsrtp test applications..."
-	test/cipher_driver$(EXE) -v >/dev/null
+	crypto/test/cipher_driver$(EXE) -v >/dev/null
+	crypto/test/kernel_driver$(EXE) -v >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
 	test/srtp_driver$(EXE) -v >/dev/null
 	test/roc_driver$(EXE) -v >/dev/null
-	test/kernel_driver$(EXE) -v >/dev/null
 	@echo "libsrtp test applications passed."
 	$(MAKE) -C crypto runtest
 
@@ -125,12 +125,13 @@ libcryptomath.a: $(cryptomath)
 
 # test applications 
 
-testapp = test/cipher_driver$(EXE) test/datatypes_driver$(EXE) \
-	  test/srtp_driver$(EXE) test/replay_driver$(EXE) \
-	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) \
-          test/stat_driver$(EXE) test/sha1_driver$(EXE) \
-	  test/kernel_driver$(EXE) test/aes_calc$(EXE) test/rand_gen$(EXE) \
-	  test/rtpw$(EXE)
+crypto_testapp = crypto/test/aes_calc$(EXE) crypto/test/cipher_driver$(EXE) \
+	crypto/test/datatypes_driver$(EXE) crypto/test/kernel_driver$(EXE) \
+	crypto/test/rand_gen$(EXE) crypto/test/sha1_driver$(EXE) \
+	crypto/test/stat_driver$(EXE)
+
+testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
+	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE)
 
 test/rtpw$(EXE): test/rtpw.c test/rtp.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
