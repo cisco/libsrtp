@@ -44,18 +44,21 @@
 
 #include "err.h"
 
+#include <stdio.h>
+#include <stdarg.h>
+
 
 /*  err_level reflects the level of errors that are reported  */
 
-err_reporting_level_t err_level = err_level_none;
+static err_reporting_level_t err_level = err_level_none;
 
 /* err_file is the FILE to which errors are reported */
 
-FILE *err_file = NULL;
+static FILE *err_file = NULL;
 
 err_status_t
 err_reporting_init(char *ident) {
-#if (ERR_REPORTING_SYSLOG == 1)
+#ifdef ERR_REPORTING_SYSLOG
   openlog(ident, LOG_PID, LOG_AUTHPRIV);
 #endif
   
@@ -64,15 +67,13 @@ err_reporting_init(char *ident) {
    * But then, neither does the syslog() call...
    */
 
-#if ERR_REPORTING_STDOUT
+#ifdef ERR_REPORTING_STDOUT
   err_file = stdout;
-#else
-#if USE_ERR_REPORTING_FILE
+#elif defined(USE_ERR_REPORTING_FILE)
   /* open file for error reporting */
   err_file = fopen(ERR_REPORTING_FILE, "w");
   if (err_file == NULL)
     return err_status_init_fail;
-#endif
 #endif
 
   return err_status_ok;
@@ -89,7 +90,7 @@ err_report(int priority, char *format, ...) {
       vfprintf(err_file, format, args);
 	  /*      fprintf(err_file, "\n"); */
     }
-#if (ERR_REPORTING_SYSLOG == 1)
+#ifdef ERR_REPORTING_SYSLOG
     vsyslog(priority, format, args);
 #endif
     va_end(args);
@@ -100,5 +101,3 @@ void
 err_reporting_set_level(err_reporting_level_t lvl) { 
   err_level = lvl;
 }
-
-
