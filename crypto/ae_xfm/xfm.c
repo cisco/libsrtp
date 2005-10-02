@@ -464,23 +464,29 @@ null_enc(void *key,
 
   } else {
 
+#if DEBUG
     printf("NULL ENC using key %s\n", octet_string_hex_string(key, KEY_LEN));
     printf("NULL_TAG_LEN:  %d\n", NULL_TAG_LEN);
     printf("plaintext len:  %d\n", *opaque_len);
+#endif
     for (i=0; i < IV_LEN; i++)
       init_vec[i] = i + (i * 16);
+#if DEBUG
     printf("iv:                %s\n", 
 	   octet_string_hex_string(iv, IV_LEN));
     printf("plaintext:         %s\n", 
 	   octet_string_hex_string(opaque, *opaque_len));
+#endif
     auth_tag = opaque;
     auth_tag += *opaque_len;
     for (i=0; i < NULL_TAG_LEN; i++)
       auth_tag[i] = i + (i * 16);
     *opaque_len += NULL_TAG_LEN;
+#if DEBUG
     printf("protected data len: %d\n", *opaque_len);
     printf("protected data:    %s\n", 
 	   octet_string_hex_string(opaque, *opaque_len));
+#endif
 
   }
 
@@ -511,18 +517,24 @@ null_dec(void *key,
 
   } else {
 
+#if DEBUG
     printf("NULL DEC using key %s\n", octet_string_hex_string(key, KEY_LEN));
 
     printf("protected data len: %d\n", *opaque_len);
     printf("protected data:    %s\n", 
 	   octet_string_hex_string(opaque, *opaque_len));
+#endif
     auth_tag = opaque;
     auth_tag += (*opaque_len - NULL_TAG_LEN);
+#if DEBUG
     printf("iv:         %s\n", octet_string_hex_string(iv, IV_LEN));
+#endif
     *opaque_len -= NULL_TAG_LEN;
+#if DEBUG
     printf("plaintext len:  %d\n", *opaque_len);
     printf("plaintext:  %s\n", 
 	   octet_string_hex_string(opaque, *opaque_len));
+#endif
   }
 
   return err_status_ok;
