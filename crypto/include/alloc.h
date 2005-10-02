@@ -48,8 +48,8 @@
 
 #include "config.h"
 
-#if HAVE_STDLIB_H
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
 #endif 
 
 void *
