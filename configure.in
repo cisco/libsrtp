@@ -13,6 +13,19 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 
+AC_ARG_ENABLE(kernel-linux,
+  [AS_HELP_STRING([--enable-kernel-linux],
+		  [build library to run in Linux kernel context])],
+  [], enable_kernel_linux=no)
+AC_MSG_CHECKING(whether to build for Linux kernel context)
+if test "$enable_kernel_linux" = "yes"; then
+   AC_DEFINE(SRTP_KERNEL, 1,
+	[Define to compile for kernel contexts.])
+   AC_DEFINE(SRTP_KERNEL_LINUX, 1,
+	[Define to compile for Linux kernel context.])
+fi
+AC_MSG_RESULT($enable_kernel_linux)
+
 if test "$cross_compiling" != yes; then
    dnl Check for /dev/urandom
    AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=/dev/urandom,
@@ -20,12 +33,21 @@ if test "$cross_compiling" != yes; then
 fi
 
 AC_MSG_CHECKING(which random device to use)
-if test -n "$DEV_URANDOM"; then
-   AC_DEFINE_UNQUOTED(DEV_URANDOM, "$DEV_URANDOM", [Path to random device])
-   RNG_OBJS=crypto/rng/rand_source.c
+if test "$enable_kernel_linux" = "yes"; then
+   RNG_OBJS=rand_linux_kernel.o
+   AC_MSG_RESULT([Linux kernel builtin])
+else
+   RNG_OBJS=rand_source.o
+   if test -n "$DEV_URANDOM"; then
+      AC_DEFINE_UNQUOTED(DEV_URANDOM, "$DEV_URANDOM",[*
+  Path to random device
+  and another line])
+      AC_MSG_RESULT([$DEV_URANDOM])
+   else
+      AC_MSG_RESULT([standard rand() function...])
+   fi
 fi
 AC_SUBST(RNG_OBJS)
-AC_MSG_RESULT([$DEV_URANDOM])
 
 
 dnl Checks for header files.
