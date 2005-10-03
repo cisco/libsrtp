@@ -53,6 +53,11 @@
 #ifndef SRTP_KERNEL
 # include <string.h>
 # include <time.h>
+# ifdef HAVE_NETINET_IN_H
+#  include <netinet/in.h>
+# elif defined HAVE_WINSOCK2_H
+#  include <winsock2.h>
+# endif
 #endif
 
 /* if DATATYPES_USE_MACROS is defined, then little functions are macros */
