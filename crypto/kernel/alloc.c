@@ -52,8 +52,6 @@ debug_module_t mod_alloc = {
   "alloc"             /* printable name for module   */
 };
 
-#if HAVE_STDLIB_H
-
 /*
  * Nota bene: the debugging statements for crypto_alloc() and
  * crypto_free() have identical prefixes, which include the addresses
@@ -62,6 +60,33 @@ debug_module_t mod_alloc = {
  * grepping for 'alloc', then matching alloc and free calls by
  * address.
  */
+
+#ifdef SRTP_KERNEL_LINUX
+
+void *
+crypto_alloc(size_t size) {
+  void *ptr;
+
+  ptr = kmalloc(size + 4, GFP_KERNEL);
+
+  if (ptr) {
+    debug_print(mod_alloc, "(location: %p) allocated", ptr);
+  } else
+    debug_print(mod_alloc, "allocation failed (asked for %d bytes)\n", size);
+
+  return ptr;
+}
+
+void 
+crypto_free(void *ptr) {
+
+  debug_print(mod_alloc, "(location: %p) freed", ptr);
+
+  kfree(ptr);
+}
+
+
+#elif defined(HAVE_STDLIB_H)
 
 void *
 crypto_alloc(size_t size) {
