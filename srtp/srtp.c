@@ -46,13 +46,15 @@
 #include "srtp.h"
 #include "aes_icm.h"         /* aes_icm is used in the KDF  */
 #include "alloc.h"           /* for crypto_alloc()          */
-#include "limits.h"
 
-#ifdef HAVE_NETINET_IN_H
-# include <netinet/in.h>
-#elif defined(HAVE_WINSOCK2_H)
-# include <winsock2.h>
-#endif
+#ifndef SRTP_KERNEL
+# include <limits.h>
+# ifdef HAVE_NETINET_IN_H
+#  include <netinet/in.h>
+# elif defined(HAVE_WINSOCK2_H)
+#  include <winsock2.h>
+# endif
+#endif /* ! SRTP_KERNEL */
 
 
 extern cipher_type_t aes_icm;
