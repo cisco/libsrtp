@@ -49,6 +49,12 @@
 
 #include "config.h"	/* configuration file, using autoconf          */
 
+#ifdef SRTP_KERNEL
+
+#include "kernel_compat.h"
+
+#else /* SRTP_KERNEL */
+
 /* use standard integer definitions, if they're available  */
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
@@ -100,6 +106,8 @@ extern uint64_t make64(uint32_t high, uint32_t low);
 extern uint32_t high32(uint64_t value);
 extern uint32_t low32(uint64_t value);
 #endif
+
+#endif /* SRTP_KERNEL */
 
 /* These macros are to load and store 32-bit values from un-aligned
    addresses.  This is required for processors that do not allow unaligned
