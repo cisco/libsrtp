@@ -49,12 +49,6 @@
 #include "aes_icm.h"
 #include "alloc.h"
 
-#ifdef HAVE_NETINET_IN_H
-# include <netinet/in.h>
-#elif defined HAVE_WINSOCK2_H
-# include <winsock2.h>
-#endif
-
 
 debug_module_t mod_aes_icm = {
   0,                 /* debugging is off by default */

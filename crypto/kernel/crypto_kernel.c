@@ -43,7 +43,6 @@
  */
 
 
-#include <stdio.h>      /* printf() is used in crypto_kernel_status() */
 #include "alloc.h"
 
 #include "crypto_kernel.h"
@@ -436,8 +435,6 @@ crypto_kernel_alloc_auth(auth_type_id_t id,
   
   return ((at)->alloc(ap, key_len, tag_len));
 }
-
-#include <string.h>   /* for strncmp() */
 
 err_status_t
 crypto_kernel_load_debug_module(debug_module_t *new_dm) {
