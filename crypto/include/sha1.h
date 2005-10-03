@@ -87,7 +87,6 @@ sha1_update(sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg);
 void
 sha1_final(sha1_ctx_t *ctx, uint32_t output[5]);
 
-
 /*
  * The sha1_core function is INTERNAL to SHA-1, but it is declared
  * here because it is also used by the cipher SEAL 3.0 in its key

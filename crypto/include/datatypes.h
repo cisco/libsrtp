@@ -79,6 +79,7 @@ typedef union {
 } v128_t;
 
 
+
 /* some useful and simple math functions */
 
 #define pow_2(X) ( (unsigned int)1 << (X) )   /* 2^X     */
@@ -367,8 +368,8 @@ octet_string_set_to_zero(uint8_t *s, int len);
  */
 #ifdef WORDS_BIGENDIAN
 /* Nothing to do. */
-# define be32_to_cpu(x)	/**/
-# define be64_to_cpu(x)	/**/
+# define be32_to_cpu(x)	(x)
+# define be64_to_cpu(x)	(x)
 #elif defined(HAVE_BYTESWAP_H)
 /* We have (hopefully) optimized versions in byteswap.h */
 # include <byteswap.h>

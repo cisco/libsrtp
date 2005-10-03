@@ -42,6 +42,7 @@
  *
  */
 
+#include <string.h>    /* for memcpy()  */
 #include "hmac.h" 
 #include "alloc.h"
 
@@ -113,8 +114,9 @@ hmac_dealloc(auth_t *a) {
 err_status_t
 hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len) {
   int i;
-
-  /*
+  uint8_t ipad[64]; 
+  
+    /*
    * check key length - note that we don't support keys larger
    * than 20 bytes yet
    */
@@ -122,26 +124,27 @@ hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len) {
     return err_status_bad_param;
   
   /*
-   * set values of ipad and opad in the context by exoring the key
-   * into the appropriate constant values
+   * set values of ipad and opad by exoring the key into the
+   * appropriate constant values
    */
   for (i=0; i < key_len; i++) {    
-    state->ipad[i] = key[i] ^ 0x36;
+    ipad[i] = key[i] ^ 0x36;
     state->opad[i] = key[i] ^ 0x5c;
   }  
   /* set the rest of ipad, opad to constant values */
   for (   ; i < 64; i++) {    
-    ((uint8_t *)state->ipad)[i] = 0x36;
+    ipad[i] = 0x36;
     ((uint8_t *)state->opad)[i] = 0x5c;
   }  
 
-  debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(state->ipad, 64));
+  debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(ipad, 64));
   
   /* initialize sha1 context */
-  sha1_init(&state->ctx);
+  sha1_init(&state->init_ctx);
 
   /* hash ipad ^ key */
-  sha1_update(&state->ctx, (uint8_t *)state->ipad, 64);
+  sha1_update(&state->init_ctx, ipad, 64);
+  memcpy(&state->ctx, &state->init_ctx, sizeof(sha1_ctx_t)); 
 
   return err_status_ok;
 }
@@ -149,11 +152,7 @@ hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len) {
 err_status_t
 hmac_start(hmac_ctx_t *state) {
     
-  /* initialize sha1 context */
-  sha1_init(&state->ctx);
-
-  /* hash ipad ^ key */
-  sha1_update(&state->ctx, (uint8_t *)state->ipad, 64);
+  memcpy(&state->ctx, &state->init_ctx, sizeof(sha1_ctx_t));
 
   return err_status_ok;
 }

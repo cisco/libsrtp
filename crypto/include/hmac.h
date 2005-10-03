@@ -50,8 +50,9 @@
 #include "sha1.h"
 
 typedef struct {
-  uint8_t    ipad[64], opad[64];
+  uint8_t    opad[64];
   sha1_ctx_t ctx;
+  sha1_ctx_t init_ctx;
 } hmac_ctx_t;
 
 err_status_t
