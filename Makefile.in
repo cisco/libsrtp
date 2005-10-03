@@ -48,6 +48,8 @@ EXE	= @EXE@
 # gdoi is the group domain of interpretation for isakmp, a group key
 # management system which can provide keys for srtp
 gdoi	= @GDOI_OBJS@
+# Random source.
+RNG_OBJS = @RNG_OBJS@
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -83,7 +85,7 @@ math    = crypto/math/datatypes.o crypto/math/stat.o
 
 ust     = crypto/ust/ust.o 
 
-rng     = crypto/rng/rand_source.o crypto/rng/prng.o crypto/rng/ctr_prng.o
+rng     = crypto/rng/$(RNG_OBJS) crypto/rng/prng.o crypto/rng/ctr_prng.o
 
 err     = crypto/kernel/err.o
 

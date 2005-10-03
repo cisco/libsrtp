@@ -24,6 +24,8 @@ RANLIB	= @RANLIB@
 # null on linux, bsd, and OS X and other OSes.  we define this so that
 # `make clean` will work on the cygwin platform
 EXE = @EXE@
+# Random source.
+RNG_OBJS = @RNG_OBJS@
 
 ifdef ARCH
   DEFS += -D$(ARCH)=1
@@ -73,7 +75,7 @@ hashes  = hash/null_auth.o hash/sha1.o \
 
 math    = math/datatypes.o math/stat.o
 
-rng     = rng/rand_source.o rng/prng.o rng/ctr_prng.o
+rng     = rng/$(RNG_OBJS) rng/rand_source.o rng/prng.o rng/ctr_prng.o
 
 err     = kernel/err.o
 
