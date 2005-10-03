@@ -47,7 +47,6 @@
 #include "cipher.h"
 #include "rand_source.h"        /* used in invertibiltiy tests        */
 #include "alloc.h"              /* for crypto_alloc(), crypto_free()  */
-#include <time.h>               /* for clock()                        */
 
 debug_module_t mod_cipher = {
   0,                 /* debugging is off by default */
@@ -373,10 +372,10 @@ cipher_type_self_test(const cipher_type_t *ct) {
  * is the length in octets of the test data to be encrypted, and t is
  * the number of trials
  *
- * if an error is encountered, the value 0.0 is returned
+ * if an error is encountered, the value 0 is returned
  */
 
-double
+uint64_t
 cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials) {
   int i;
   v128_t nonce;
@@ -386,7 +385,7 @@ cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials) {
 
   enc_buf = crypto_alloc(octets_in_buffer);
   if (enc_buf == NULL)
-    return 0.0;  /* indicate bad parameters by returning null */
+    return 0;  /* indicate bad parameters by returning null */
   
   /* time repeated trials */
   v128_set_to_zero(&nonce);
@@ -398,7 +397,11 @@ cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials) {
   timer = clock() - timer;
 
   crypto_free(enc_buf);
+
+  if (timer == 0) {
+    /* Too fast! */
+    return 0;
+  }
   
-  return (double) CLOCKS_PER_SEC * num_trials
-    * 8 * octets_in_buffer / timer;
+  return (uint64_t)CLOCKS_PER_SEC * num_trials * 8 * octets_in_buffer / timer;
 }
