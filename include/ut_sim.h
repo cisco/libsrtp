@@ -50,7 +50,6 @@
 #define UT_SIM_H
 
 #include "integers.h"  /* for uint32_t */
-#include <stdlib.h>   /* for random() */
 
 #define UT_BUF 4      /* maximum amount of packet reorder */
 
