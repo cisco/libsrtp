@@ -80,7 +80,7 @@ cipher_driver_test_array_throughput(cipher_type_t *ct,
 void
 cipher_array_test_throughput(cipher_t *ca[], int num_cipher);
 
-double
+uint64_t
 cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher, 
 			     unsigned octets_in_buffer, int num_trials);
 
@@ -413,14 +413,12 @@ cipher_array_delete(cipher_t *cipher_array[], int num_cipher) {
  * is the length in octets of the test data to be encrypted, and t is
  * the number of trials
  *
- * if an error is encountered, the value 0.0 is returned
+ * if an error is encountered, the value 0 is returned
  */
 
-#include <time.h>
-
-double
+uint64_t
 cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher, 
-			     unsigned octets_in_buffer, int num_trials) {
+			      unsigned octets_in_buffer, int num_trials) {
   int i;
   v128_t nonce;
   clock_t timer;
@@ -430,7 +428,7 @@ cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher,
 
   enc_buf = crypto_alloc(octets_in_buffer);
   if (enc_buf == NULL)
-    return 0.0;  /* indicate bad parameters by returning null */
+    return 0;  /* indicate bad parameters by returning null */
   
   /* time repeated trials */
   v128_set_to_zero(&nonce);
@@ -447,9 +445,13 @@ cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher,
   timer = clock() - timer;
 
   free(enc_buf);
-  
-  return (double) CLOCKS_PER_SEC * num_trials
-    * 8 * octets_in_buffer / timer;
+
+  if (timer == 0) {
+    /* Too fast! */
+    return 0;
+  }
+
+  return CLOCKS_PER_SEC * num_trials * 8 * octets_in_buffer / timer;
 }
 
 void
