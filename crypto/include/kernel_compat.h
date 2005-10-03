@@ -52,6 +52,7 @@
 #include <linux/slab.h>
 #include <linux/sched.h>
 #include <linux/random.h>
+#include <linux/byteorder/generic.h>
 
 /* clock() implementation. */
 #define clock()	(jiffies)
@@ -65,6 +66,10 @@ static inline int rand(void)
 	get_random_bytes(&temp, sizeof(temp));
 	return temp % (RAND_MAX+1);
 }
+
+/* stdio/stdlib implementation. */
+#define printf(...)	printk(__VA_ARGS__)
+#define exit(n)	panic("%s:%d: exit(%d)\n", __FILE__, __LINE__, (n))
 
 #endif /* SRTP_KERNEL_LINUX */
 
