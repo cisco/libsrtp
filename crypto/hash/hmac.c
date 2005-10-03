@@ -42,7 +42,6 @@
  *
  */
 
-#include <string.h>    /* for memcpy()  */
 #include "hmac.h" 
 #include "alloc.h"
 
