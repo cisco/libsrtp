@@ -209,11 +209,10 @@ cipher_type_self_test(const cipher_type_t *ct);
  * is the length in octets of the test data to be encrypted, and t is
  * the number of trials
  *
- * if an error is encountered, then the value 0.0 is returned
+ * if an error is encountered, then the value 0 is returned
  */
 
-double
+uint64_t
 cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials);
 
 #endif /* CIPHER_H */
-
