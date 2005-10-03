@@ -844,6 +844,7 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-kernel-linux   build library to run in Linux kernel context
   --disable-debug         do not compile in dynamic debugging system
   --enable-generic-aesicm compile in changes for ISMAcryp
   --enable-syslog         use syslog for error reporting
@@ -2419,6 +2420,30 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
 
+# Check whether --enable-kernel-linux or --disable-kernel-linux was given.
+if test "${enable_kernel_linux+set}" = set; then
+  enableval="$enable_kernel_linux"
+
+else
+  enable_kernel_linux=no
+fi;
+echo "$as_me:$LINENO: checking whether to build for Linux kernel context" >&5
+echo $ECHO_N "checking whether to build for Linux kernel context... $ECHO_C" >&6
+if test "$enable_kernel_linux" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define SRTP_KERNEL 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define SRTP_KERNEL_LINUX 1
+_ACEOF
+
+fi
+echo "$as_me:$LINENO: result: $enable_kernel_linux" >&5
+echo "${ECHO_T}$enable_kernel_linux" >&6
+
 if test "$cross_compiling" != yes; then
       echo "$as_me:$LINENO: checking for /dev/urandom" >&5
 echo $ECHO_N "checking for /dev/urandom... $ECHO_C" >&6
@@ -2467,17 +2492,26 @@ fi
 
 echo "$as_me:$LINENO: checking which random device to use" >&5
 echo $ECHO_N "checking which random device to use... $ECHO_C" >&6
-if test -n "$DEV_URANDOM"; then
+if test "$enable_kernel_linux" = "yes"; then
+   RNG_OBJS=rand_linux_kernel.o
+   echo "$as_me:$LINENO: result: Linux kernel builtin" >&5
+echo "${ECHO_T}Linux kernel builtin" >&6
+else
+   RNG_OBJS=rand_source.o
+   if test -n "$DEV_URANDOM"; then
 
 cat >>confdefs.h <<_ACEOF
 #define DEV_URANDOM "$DEV_URANDOM"
 _ACEOF
 
-   RNG_OBJS=crypto/rng/rand_source.c
+      echo "$as_me:$LINENO: result: $DEV_URANDOM" >&5
+echo "${ECHO_T}$DEV_URANDOM" >&6
+   else
+      echo "$as_me:$LINENO: result: standard rand() function..." >&5
+echo "${ECHO_T}standard rand() function..." >&6
+   fi
 fi
 
-echo "$as_me:$LINENO: result: $DEV_URANDOM" >&5
-echo "${ECHO_T}$DEV_URANDOM" >&6
 
 
 
