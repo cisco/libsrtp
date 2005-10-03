@@ -10,10 +10,6 @@
 #ifndef PRNG_H
 #define PRNG_H
 
-#ifndef CLOCKS_PER_SEC
-#include <time.h>         /* for time()                              */
-#endif
-
 #include "rand_source.h"  /* for rand_source_func_t definition       */
 #include "aes.h"          /* for aes                                 */
 #include "aes_icm.h"      /* for aes ctr                             */
