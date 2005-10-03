@@ -50,6 +50,8 @@
 #include "integers.h"           /* definitions of uint32_t, et cetera   */
 #include "alloc.h"
 
+#include <stdarg.h>
+
 #ifndef SRTP_KERNEL
 # include <stdio.h>
 # include <string.h>
