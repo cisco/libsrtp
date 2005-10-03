@@ -252,8 +252,6 @@ typedef struct {
   uint32_t *word;
 } bitvector_t;
 
-#include <stdio.h>
-
 int
 bitvector_alloc(bitvector_t *v, unsigned long length);
 
