@@ -50,6 +50,11 @@
 #include "integers.h"           /* definitions of uint32_t, et cetera   */
 #include "alloc.h"
 
+#ifndef SRTP_KERNEL
+# include <string.h>
+# include <time.h>
+#endif
+
 /* if DATATYPES_USE_MACROS is defined, then little functions are macros */
 #define DATATYPES_USE_MACROS  
 
@@ -363,6 +368,8 @@ void
 octet_string_set_to_zero(uint8_t *s, int len);
 
 
+#ifndef SRTP_KERNEL_LINUX
+
 /* 
  * Convert big endian integers to CPU byte order.
  */
@@ -403,6 +410,8 @@ static inline uint64_t be64_to_cpu(uint64_t v) {
 # endif
    return v;
 }
+
+#endif /* ! SRTP_KERNEL_LINUX */
 
 #endif /* WORDS_BIGENDIAN */
 
