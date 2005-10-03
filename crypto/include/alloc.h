@@ -46,11 +46,7 @@
 #ifndef CRYPTO_ALLOC_H
 #define CRYPTO_ALLOC_H
 
-#include "config.h"
-
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif 
+#include "datatypes.h"
 
 void *
 crypto_alloc(size_t size);
