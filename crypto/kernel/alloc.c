@@ -63,11 +63,13 @@ debug_module_t mod_alloc = {
 
 #ifdef SRTP_KERNEL_LINUX
 
+#include <linux/interrupt.h>
+
 void *
 crypto_alloc(size_t size) {
   void *ptr;
 
-  ptr = kmalloc(size + 4, GFP_KERNEL);
+  ptr = kmalloc(size, in_interrupt() ? GFP_ATOMIC : GFP_KERNEL);
 
   if (ptr) {
     debug_print(mod_alloc, "(location: %p) allocated", ptr);
