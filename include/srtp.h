@@ -349,8 +349,9 @@ srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
  * @param policy is the srtp_policy_t struct that describes the policy
  * for the session.  The struct may be a single element, or it may be
  * the head of a list, in which case each element of the list is
- * processed.  The final element of the list @b must have its `next'
- * field set to zero.
+ * processed.  It may also be NULL, in which case streams should be added
+ * later using srtp_add_stream().  The final element of the list @b must
+ * have its `next' field set to NULL.
  * 
  * @return
  *    - err_status_ok           if creation succeded.
