@@ -1196,6 +1196,10 @@ srtp_add_stream(srtp_t session,
   err_status_t status;
   srtp_stream_t tmp;
 
+  /* sanity check arguments */
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
+    return err_status_bad_param;
+
   /* allocate stream  */
   status = srtp_stream_alloc(&tmp, policy);
   if (status) {
@@ -1253,7 +1257,7 @@ srtp_create(srtp_t *session,               /* handle for session     */
   srtp_ctx_t *ctx;
 
   /* sanity check arguments */
-  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
+  if (session == NULL)
     return err_status_bad_param;
 
   /* allocate srtp context and set ctx_ptr */
@@ -1272,6 +1276,8 @@ srtp_create(srtp_t *session,               /* handle for session     */
 
     stat = srtp_add_stream(ctx, policy);
     if (stat) {
+      /* clean up everything */
+      srtp_dealloc(*session);
       return stat;
     }    
 
