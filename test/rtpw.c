@@ -67,6 +67,7 @@
 #elif defined HAVE_WINSOCK2_H
 # include <winsock2.h>
 # include <ws2tcpip.h>
+# define RTPW_USE_WINSOCK2	1
 #endif
 #ifdef HAVE_ARPA_INET_H
 # include <arpa/inet.h>
@@ -140,6 +141,16 @@ main (int argc, char *argv[]) {
   int len;
   int do_list_mods = 0;
   uint32_t ssrc = 0xdeadbeef; /* ssrc value hardcoded for now */
+#ifdef RTPW_USE_WINSOCK2
+  WORD wVersionRequested = MAKEWORD(2, 0);
+  WSADATA wsaData;
+
+  ret = WSAStartup(wVersionRequested, &wsaData);
+  if (ret != 0) {
+    fprintf(stderr, "error: WSAStartup() failed: %d\n", ret);
+    exit(1);
+  }
+#endif
 
   /* initialize srtp library */
   status = srtp_init();
@@ -239,7 +250,13 @@ main (int argc, char *argv[]) {
   /* open socket */
   sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if (sock < 0) {
-    fprintf(stderr, "%s: couldn't open socket\n", argv[0]);
+    int err;
+#ifdef RTPW_USE_WINSOCK2
+    err = WSAGetLastError();
+#else
+    err = errno;
+#endif
+    fprintf(stderr, "%s: couldn't open socket: %d\n", argv[0], err);
     exit(1);
   }
 
@@ -421,8 +438,6 @@ main (int argc, char *argv[]) {
       len = MAX_WORD_LEN;
       if (rtp_recvfrom(&rcvr, word, &len) > -1)
 	printf("\tword: %s", word);
-      else
-	printf("error receiving data\n");
     }
       
   } 
@@ -430,6 +445,11 @@ main (int argc, char *argv[]) {
   if (ADDR_IS_MULTICAST(rcvr_addr.s_addr)) {
     leave_group(sock, mreq, argv[0]);
   }
+
+#ifdef RTPW_USE_WINSOCK2
+  WSACleanup();
+#endif
+
   return 0;
 }
 
