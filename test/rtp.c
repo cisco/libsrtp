@@ -76,7 +76,7 @@ rtp_recvfrom(rtp_receiver_t *receiver, void *msg, int *len) {
   }
 
 #if PRINT_DEBUG
-  fprintf(stderr, "%d octets received from SSRC %u",
+  fprintf(stderr, "%d octets received from SSRC %u\n",
 	  octets_recvd, receiver->message.header.ssrc);
 #endif
 #if VERBOSE_DEBUG
@@ -87,14 +87,10 @@ rtp_recvfrom(rtp_receiver_t *receiver, void *msg, int *len) {
   stat = srtp_unprotect(receiver->srtp_ctx,
 			&receiver->message.header, &octets_recvd);
   if (stat) {
-#if PRINT_DEBUG
     fprintf(stderr,
-	    "\nerror: srtp unprotection failed with code %d", stat);
-    if (stat == err_status_replay_fail)
-      fprintf(stderr, " (replay check failed)\n");
-    if (stat == err_status_auth_fail)
-      fprintf(stderr, " (auth check failed)\n"); 
-#endif
+	    "error: srtp unprotection failed with code %d%s\n", stat,
+	    stat == err_status_replay_fail ? " (replay check failed)" :
+	    stat == err_status_auth_fail ? " (auth check failed)" : "");
     return -1;
   }
   strncpy(msg, receiver->message.body, octets_recvd);
