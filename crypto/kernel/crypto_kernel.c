@@ -93,6 +93,16 @@ err_status_t
 crypto_kernel_init() {
   err_status_t status;  
 
+  /* check the security state */
+  if (crypto_kernel.state == crypto_kernel_state_secure) {
+    
+    /*
+     * we're already in the secure state, but we've been asked to
+     * re-initialize, so we just re-run the self-tests and then return
+     */
+    return crypto_kernel_status(); 
+  }
+
   /* initialize error reporting system */
   status = err_reporting_init("crypto");
   if (status)
