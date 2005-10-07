@@ -346,6 +346,7 @@ main (int argc, char *argv[]) {
      * the effect of this policy is to turn off SRTP, so that this
      * application is now a vanilla-flavored RTP application.
      */
+    policy.key                 = (uint8_t *)key;
     policy.ssrc.type           = ssrc_specific;
     policy.ssrc.value          = ssrc;
     policy.rtp.cipher_type     = NULL_CIPHER;
