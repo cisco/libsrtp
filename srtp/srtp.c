@@ -870,11 +870,6 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   
     /* estimate packet index from seq. num. in header */
     delta = rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-    
-    /* check replay database */
-    status = rdbx_check(&stream->rtp_rdbx, delta);
-    if (status)
-      return status;
   }
 
 #ifdef NO_64BIT_MATH
@@ -882,24 +877,6 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 #else
   debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
 #endif
-
-  /* 
-   * update the key usage limit, and check it to make sure that we
-   * didn't just hit either the soft limit or the hard limit, and call
-   * the event handler if we hit either.
-   */
-  switch(key_limit_update(stream->limit)) {
-  case key_event_normal:
-    break;
-  case key_event_soft_limit: 
-    srtp_handle_event(ctx, stream, event_key_soft_limit);
-    break; 
-  case key_event_hard_limit:
-    srtp_handle_event(ctx, stream, event_key_hard_limit);
-    return err_status_key_expired;
-  default:
-    break;
-  }
 
   /* get tag length from stream */
   tag_len = auth_get_tag_length(stream->rtp_auth); 
@@ -943,24 +920,6 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 #else
   est = be64_to_cpu(est << 16);
 #endif
-
-  /*
-   * find starting point for decryption and length of data to be
-   * decrypted - the encrypted portion starts after the rtp header
-   * extension, if present; otherwise, it starts after the last csrc,
-   * if any are present
-   *
-   * if we're not providing confidentiality, set enc_start to NULL
-   */
-  if (stream->rtp_services & sec_serv_conf) {
-    enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;  
-    if (hdr->x == 1) 
-      enc_start += ((srtp_hdr_xtnd_t *)enc_start)->length;
-    enc_octet_len = *pkt_octet_len - tag_len
-      - ((enc_start - (uint32_t *)hdr) << 2);
-  } else {
-    enc_start = NULL;
-  }
 
   /* 
    * if we're providing authentication, set the auth_start and auth_tag
@@ -1018,6 +977,50 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 
     if (octet_string_is_eq(tmp_tag, auth_tag, tag_len))
       return err_status_auth_fail;
+  }
+
+  if (stream != ctx->stream_template) {  
+
+    /* check replay database */
+    status = rdbx_check(&stream->rtp_rdbx, delta);
+    if (status)
+      return status;
+  }
+  
+  /* 
+   * update the key usage limit, and check it to make sure that we
+   * didn't just hit either the soft limit or the hard limit, and call
+   * the event handler if we hit either.
+   */
+  switch(key_limit_update(stream->limit)) {
+  case key_event_normal:
+    break;
+  case key_event_soft_limit: 
+    srtp_handle_event(ctx, stream, event_key_soft_limit);
+    break; 
+  case key_event_hard_limit:
+    srtp_handle_event(ctx, stream, event_key_hard_limit);
+    return err_status_key_expired;
+  default:
+    break;
+  }
+
+  /*
+   * find starting point for decryption and length of data to be
+   * decrypted - the encrypted portion starts after the rtp header
+   * extension, if present; otherwise, it starts after the last csrc,
+   * if any are present
+   *
+   * if we're not providing confidentiality, set enc_start to NULL
+   */
+  if (stream->rtp_services & sec_serv_conf) {
+    enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;  
+    if (hdr->x == 1) 
+      enc_start += ((srtp_hdr_xtnd_t *)enc_start)->length;
+    enc_octet_len = *pkt_octet_len - tag_len
+      - ((enc_start - (uint32_t *)hdr) << 2);
+  } else {
+    enc_start = NULL;
   }
 
   /* if we're encrypting, add keystream into ciphertext */
