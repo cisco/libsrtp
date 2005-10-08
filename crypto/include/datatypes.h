@@ -67,25 +67,25 @@
 #define DATATYPES_USE_MACROS  
 
 typedef union {
-  unsigned char octet[2];
+  uint8_t  v8[2];
   uint16_t value;
 } v16_t;
 
 typedef union {
-  unsigned char octet[4];
+  uint8_t  v8[4];
   uint16_t v16[2];
   uint32_t value;
 } v32_t;
 
 typedef union {
-  unsigned char octet[8];
+  uint8_t  v8[8];
   uint16_t v16[4];
   uint32_t v32[2];
   uint64_t value;
 } v64_t;
 
 typedef union {
-  unsigned char octet[16];
+  uint8_t  v8[16];
   uint16_t v16[8];
   uint32_t v32[4];
   uint64_t v64[2];
