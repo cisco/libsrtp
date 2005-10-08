@@ -552,8 +552,9 @@ srtp_test(const srtp_policy_t *policy) {
   srtp_t srtp_rcvr;
   err_status_t status = err_status_ok;
   srtp_hdr_t *hdr, *hdr2;
+  uint8_t hdr_enc[64];
   uint8_t *pkt_end;
-  int msg_len_octets;
+  int msg_len_octets, msg_len_enc;
   int len;
   int tag_length = policy->rtp.auth_tag_len; 
   uint32_t ssrc;
@@ -602,6 +603,10 @@ srtp_test(const srtp_policy_t *policy) {
   debug_print(mod_driver, "after protection:\n%s", 	      
 	      octet_string_hex_string((uint8_t *)hdr, len));
 #endif
+
+  /* save protected message and length */
+  memcpy(hdr_enc, hdr, len);
+  msg_len_enc = len;
 
   /* 
    * check for overrun of the srtp_protect() function
@@ -689,8 +694,11 @@ srtp_test(const srtp_policy_t *policy) {
     
     printf("testing for false positives in replay check...");
 
+    /* set message length */
+    len = msg_len_enc;
+
     /* unprotect a second time - should fail with a replay error */
-    status = srtp_unprotect(srtp_rcvr, hdr, &len);
+    status = srtp_unprotect(srtp_rcvr, hdr_enc, &len);
     if (status != err_status_replay_fail) {
       printf("failed with error code %d\n", status);
       free(hdr); 
@@ -704,6 +712,9 @@ srtp_test(const srtp_policy_t *policy) {
 
     /* increment sequence number in header */
     hdr->seq++; 
+
+    /* set message length */
+    len = msg_len_octets;
 
     /* apply protection */
     err_check(srtp_protect(srtp_sender, hdr, &len));
