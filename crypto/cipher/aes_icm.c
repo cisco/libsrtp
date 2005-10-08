@@ -169,8 +169,8 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key) {
   v128_copy_octet_string(&c->offset, key + 16);
 
   /* force last two octets of the offset to zero (for srtp compatibility) */
-  c->offset.octet[14] = c->offset.octet[15] = 0;
-  c->counter.octet[14] = c->counter.octet[15] = 0;
+  c->offset.v8[14] = c->offset.v8[15] = 0;
+  c->counter.v8[14] = c->counter.v8[15] = 0;
   
   /* set tmp_key (for alignment) */
   v128_copy_octet_string(&tmp_key, key);
@@ -303,8 +303,8 @@ aes_icm_advance(aes_icm_ctx_t *c) {
   temp = ntohl(c->counter.v32[3]);
   c->counter.v32[3] = htonl(++temp);
 #else
-  if (!++(c->counter.octet[15])) 
-    ++(c->counter.octet[14]);
+  if (!++(c->counter.v8[15])) 
+    ++(c->counter.v8[14]);
 #endif
 }
 
@@ -341,7 +341,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
     for (i = (sizeof(v128_t) - c->bytes_in_buffer);
 		 i < (sizeof(v128_t) - c->bytes_in_buffer + bytes_to_encr); i++) 
 	{
-      *buf++ ^= c->keystream_buffer.octet[i];
+      *buf++ ^= c->keystream_buffer.v8[i];
 	}
 
     c->bytes_in_buffer -= bytes_to_encr;
@@ -353,7 +353,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
     
     /* encrypt bytes until the remaining data is 16-byte aligned */    
     for (i=(sizeof(v128_t) - c->bytes_in_buffer); i < sizeof(v128_t); i++) 
-      *buf++ ^= c->keystream_buffer.octet[i];
+      *buf++ ^= c->keystream_buffer.v8[i];
 
     bytes_to_encr -= c->bytes_in_buffer;
     c->bytes_in_buffer = 0;
@@ -380,22 +380,22 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
     buf = (uint8_t *)b;
 #else    
     if ((((unsigned long) buf) & 0x03) != 0) {
-      *buf++ ^= c->keystream_buffer.octet[0];
-      *buf++ ^= c->keystream_buffer.octet[1];
-      *buf++ ^= c->keystream_buffer.octet[2];
-      *buf++ ^= c->keystream_buffer.octet[3];
-      *buf++ ^= c->keystream_buffer.octet[4];
-      *buf++ ^= c->keystream_buffer.octet[5];
-      *buf++ ^= c->keystream_buffer.octet[6];
-      *buf++ ^= c->keystream_buffer.octet[7];
-      *buf++ ^= c->keystream_buffer.octet[8];
-      *buf++ ^= c->keystream_buffer.octet[9];
-      *buf++ ^= c->keystream_buffer.octet[10];
-      *buf++ ^= c->keystream_buffer.octet[11];
-      *buf++ ^= c->keystream_buffer.octet[12];
-      *buf++ ^= c->keystream_buffer.octet[13];
-      *buf++ ^= c->keystream_buffer.octet[14];
-      *buf++ ^= c->keystream_buffer.octet[15];
+      *buf++ ^= c->keystream_buffer.v8[0];
+      *buf++ ^= c->keystream_buffer.v8[1];
+      *buf++ ^= c->keystream_buffer.v8[2];
+      *buf++ ^= c->keystream_buffer.v8[3];
+      *buf++ ^= c->keystream_buffer.v8[4];
+      *buf++ ^= c->keystream_buffer.v8[5];
+      *buf++ ^= c->keystream_buffer.v8[6];
+      *buf++ ^= c->keystream_buffer.v8[7];
+      *buf++ ^= c->keystream_buffer.v8[8];
+      *buf++ ^= c->keystream_buffer.v8[9];
+      *buf++ ^= c->keystream_buffer.v8[10];
+      *buf++ ^= c->keystream_buffer.v8[11];
+      *buf++ ^= c->keystream_buffer.v8[12];
+      *buf++ ^= c->keystream_buffer.v8[13];
+      *buf++ ^= c->keystream_buffer.v8[14];
+      *buf++ ^= c->keystream_buffer.v8[15];
     } else {
       b = (uint32_t *)buf;
       *b++ ^= c->keystream_buffer.v32[0];
@@ -415,7 +415,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
     aes_icm_advance(c);
     
     for (i=0; i < (bytes_to_encr & 0xf); i++)
-      *buf++ ^= c->keystream_buffer.octet[i];
+      *buf++ ^= c->keystream_buffer.v8[i];
     
     /* reset the keystream buffer size to right value */
     c->bytes_in_buffer = sizeof(v128_t) - i;  

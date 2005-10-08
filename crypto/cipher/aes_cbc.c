@@ -139,7 +139,7 @@ aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv) {
  
   /* set state and 'previous' block to iv */
   for (i=0; i < 16; i++) 
-    c->previous.octet[i] = c->state.octet[i] = input[i];
+    c->previous.v8[i] = c->state.v8[i] = input[i];
 
   debug_print(mod_aes_cbc, "setting iv: %s", v128_hex_string(&c->state)); 
 
@@ -176,7 +176,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
     
     /* exor plaintext into state */
     for (i=0; i < 16; i++)
-      c->state.octet[i] ^= *input++;
+      c->state.v8[i] ^= *input++;
 
     debug_print(mod_aes_cbc, "inblock:  %s", 
 	      v128_hex_string(&c->state));
@@ -188,7 +188,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
 
     /* copy ciphertext to output */
     for (i=0; i < 16; i++)
-      *output++ = c->state.octet[i];
+      *output++ = c->state.v8[i];
 
     bytes_to_encr -= 16;
   }
@@ -215,7 +215,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
 
   /* set 'previous' block to iv*/
   for (i=0; i < 16; i++) {
-    previous.octet[i] = c->previous.octet[i];
+    previous.v8[i] = c->previous.v8[i];
   }
 
   debug_print(mod_aes_cbc, "iv: %s", 
@@ -229,7 +229,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
     
     /* set state to ciphertext input block */
     for (i=0; i < 16; i++) {
-     state.octet[i] = *input++;
+     state.v8[i] = *input++;
     }
 
     debug_print(mod_aes_cbc, "inblock:  %s", 
@@ -248,8 +248,8 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
      */
     for (i=0; i < 16; i++) {
       tmp = *output;
-      *output++ = state.octet[i] ^ previous.octet[i];
-      previous.octet[i] = tmp;
+      *output++ = state.v8[i] ^ previous.v8[i];
+      previous.v8[i] = tmp;
     }
 
     bytes_to_encr -= 16;

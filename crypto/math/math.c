@@ -165,10 +165,10 @@ unsigned char
 v32_weight(v32_t a) {
   unsigned int wt = 0;
   
-  wt += octet_weight[a.octet[0]];  /* note: endian-ness makes no difference */
-  wt += octet_weight[a.octet[1]];
-  wt += octet_weight[a.octet[2]];
-  wt += octet_weight[a.octet[3]];
+  wt += octet_weight[a.v8[0]];  /* note: endian-ness makes no difference */
+  wt += octet_weight[a.v8[1]];
+  wt += octet_weight[a.v8[2]];
+  wt += octet_weight[a.v8[3]];
   
   return wt;
 }
@@ -215,7 +215,7 @@ v16_bit_string(v16_t x) {
 
   for (i = index = 0; i < 2; i++) {
     for (mask = 1; mask < 256; mask <<= 1)
-      if ((x.octet[i] & mask) == 0)
+      if ((x.v8[i] & mask) == 0)
 	bit_string[index++] = '0';
       else
 	bit_string[index++] = '1';
@@ -230,7 +230,7 @@ v32_bit_string(v32_t x) {
 
   for (i = index = 0; i < 4; i++) {
     for (mask = 128; mask > 0; mask >>= 1)
-      if ((x.octet[i] & mask) == 0)
+      if ((x.v8[i] & mask) == 0)
 	bit_string[index++] = '0';
       else
 	bit_string[index++] = '1';
@@ -245,7 +245,7 @@ v64_bit_string(const v64_t *x) {
 
   for (i = index = 0; i < 8; i++) {
     for (mask = 1; mask < 256; mask <<= 1)
-      if ((x->octet[i] & mask) == 0)
+      if ((x->v8[i] & mask) == 0)
 	bit_string[index++] = '0';
       else
 	bit_string[index++] = '1';
@@ -315,8 +315,8 @@ v16_hex_string(v16_t x) {
   int i, j;
 
   for (i=j=0; i < 2; i++) {
-    bit_string[j++]  = nibble_to_hex_char(x.octet[i] >> 4);
-    bit_string[j++]  = nibble_to_hex_char(x.octet[i] & 0xF);
+    bit_string[j++]  = nibble_to_hex_char(x.v8[i] >> 4);
+    bit_string[j++]  = nibble_to_hex_char(x.v8[i] & 0xF);
   }
   
   bit_string[j] = 0; /* null terminate string */
@@ -328,8 +328,8 @@ v32_hex_string(v32_t x) {
   int i, j;
 
   for (i=j=0; i < 4; i++) {
-    bit_string[j++]  = nibble_to_hex_char(x.octet[i] >> 4);
-    bit_string[j++]  = nibble_to_hex_char(x.octet[i] & 0xF);
+    bit_string[j++]  = nibble_to_hex_char(x.v8[i] >> 4);
+    bit_string[j++]  = nibble_to_hex_char(x.v8[i] & 0xF);
   }
   
   bit_string[j] = 0; /* null terminate string */
@@ -341,8 +341,8 @@ v64_hex_string(const v64_t *x) {
   int i, j;
 
   for (i=j=0; i < 8; i++) {
-    bit_string[j++]  = nibble_to_hex_char(x->octet[i] >> 4);
-    bit_string[j++]  = nibble_to_hex_char(x->octet[i] & 0xF);
+    bit_string[j++]  = nibble_to_hex_char(x->v8[i] >> 4);
+    bit_string[j++]  = nibble_to_hex_char(x->v8[i] & 0xF);
   }
   
   bit_string[j] = 0; /* null terminate string */
@@ -354,8 +354,8 @@ v128_hex_string(v128_t *x) {
   int i, j;
 
   for (i=j=0; i < 16; i++) {
-    bit_string[j++]  = nibble_to_hex_char(x->octet[i] >> 4);
-    bit_string[j++]  = nibble_to_hex_char(x->octet[i] & 0xF);
+    bit_string[j++]  = nibble_to_hex_char(x->v8[i] >> 4);
+    bit_string[j++]  = nibble_to_hex_char(x->v8[i] & 0xF);
   }
   
   bit_string[j] = 0; /* null terminate string */
@@ -461,7 +461,7 @@ hex_string_to_v16(char *s) {
   int i, j;
 
   for (i=j=0; i < 4; i += 2, j++) {
-    x.octet[j] = (hex_char_to_nibble(s[i]) << 4)
+    x.v8[j] = (hex_char_to_nibble(s[i]) << 4)
       | hex_char_to_nibble(s[i+1] & 0xFF);
   }
   return x;
@@ -473,7 +473,7 @@ hex_string_to_v32(char *s) {
   int i, j;
 
   for (i=j=0; i < 8; i += 2, j++) {
-    x.octet[j] = (hex_char_to_nibble(s[i]) << 4)
+    x.v8[j] = (hex_char_to_nibble(s[i]) << 4)
       | hex_char_to_nibble(s[i+1] & 0xFF);
   }
   return x;
@@ -485,7 +485,7 @@ hex_string_to_v64(char *s) {
   int i, j;
 
   for (i=j=0; i < 16; i += 2, j++) {
-    x.octet[j] = (hex_char_to_nibble(s[i]) << 4)
+    x.v8[j] = (hex_char_to_nibble(s[i]) << 4)
       | hex_char_to_nibble(s[i+1] & 0xFF);
   }
   return x;
@@ -497,7 +497,7 @@ hex_string_to_v128(char *s) {
   int i, j;
 
   for (i=j=0; i < 32; i += 2, j++) {
-    x.octet[j] = (hex_char_to_nibble(s[i]) << 4)
+    x.v8[j] = (hex_char_to_nibble(s[i]) << 4)
       | hex_char_to_nibble(s[i+1] & 0xFF);
   }
   return x;
@@ -526,48 +526,48 @@ A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b) {
 
 inline void
 v16_copy_octet_string(v16_t *x, const uint8_t s[2]) {
-  x->octet[0]  = s[0];
-  x->octet[1]  = s[1];
+  x->v8[0]  = s[0];
+  x->v8[1]  = s[1];
 }
 
 inline void
 v32_copy_octet_string(v32_t *x, const uint8_t s[4]) {
-  x->octet[0]  = s[0];
-  x->octet[1]  = s[1];
-  x->octet[2]  = s[2];
-  x->octet[3]  = s[3];
+  x->v8[0]  = s[0];
+  x->v8[1]  = s[1];
+  x->v8[2]  = s[2];
+  x->v8[3]  = s[3];
 }
 
 inline void
 v64_copy_octet_string(v64_t *x, const uint8_t s[8]) {
-  x->octet[0]  = s[0];
-  x->octet[1]  = s[1];
-  x->octet[2]  = s[2];
-  x->octet[3]  = s[3];
-  x->octet[4]  = s[4];
-  x->octet[5]  = s[5];
-  x->octet[6]  = s[6];
-  x->octet[7]  = s[7];
+  x->v8[0]  = s[0];
+  x->v8[1]  = s[1];
+  x->v8[2]  = s[2];
+  x->v8[3]  = s[3];
+  x->v8[4]  = s[4];
+  x->v8[5]  = s[5];
+  x->v8[6]  = s[6];
+  x->v8[7]  = s[7];
 }
 
 void
 v128_copy_octet_string(v128_t *x, const uint8_t s[16]) {
-  x->octet[0]  = s[0];
-  x->octet[1]  = s[1];
-  x->octet[2]  = s[2];
-  x->octet[3]  = s[3];
-  x->octet[4]  = s[4];
-  x->octet[5]  = s[5];
-  x->octet[6]  = s[6];
-  x->octet[7]  = s[7];
-  x->octet[8]  = s[8];
-  x->octet[9]  = s[9];
-  x->octet[10] = s[10];
-  x->octet[11] = s[11];
-  x->octet[12] = s[12];
-  x->octet[13] = s[13];
-  x->octet[14] = s[14];
-  x->octet[15] = s[15];
+  x->v8[0]  = s[0];
+  x->v8[1]  = s[1];
+  x->v8[2]  = s[2];
+  x->v8[3]  = s[3];
+  x->v8[4]  = s[4];
+  x->v8[5]  = s[5];
+  x->v8[6]  = s[6];
+  x->v8[7]  = s[7];
+  x->v8[8]  = s[8];
+  x->v8[9]  = s[9];
+  x->v8[10] = s[10];
+  x->v8[11] = s[11];
+  x->v8[12] = s[12];
+  x->v8[13] = s[13];
+  x->v8[14] = s[14];
+  x->v8[15] = s[15];
 
 }
 
@@ -939,16 +939,16 @@ int
 v32_low_bit(v32_t *w) {
   int value;
 
-  value = low_bit[w->octet[0]];
+  value = low_bit[w->v8[0]];
   if (value != -1)
     return value;
-  value = low_bit[w->octet[1]];
+  value = low_bit[w->v8[1]];
   if (value != -1)
     return value + 8;
-  value = low_bit[w->octet[2]];
+  value = low_bit[w->v8[2]];
   if (value != -1)
     return value + 16;
-  value = low_bit[w->octet[3]];
+  value = low_bit[w->v8[3]];
   if (value == -1)
     return -1;
   return value + 24;

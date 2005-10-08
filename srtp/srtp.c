@@ -343,7 +343,7 @@ srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
   
   /* set eigth octet of nonce to <label>, set the rest of it to zero */
   v128_set_to_zero(&nonce);
-  nonce.octet[7] = label;
+  nonce.v8[7] = label;
  
   aes_icm_set_iv(&kdf->c, &nonce);  
   

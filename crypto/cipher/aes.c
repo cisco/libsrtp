@@ -1379,10 +1379,10 @@ aes_expand_encryption_key(const v128_t *key,
   for (i=1; i < 11; i++) {
 
     /* munge first word of round key */
-    expanded_key[i].octet[0] = aes_sbox[expanded_key[i-1].octet[13]] ^ rc;
-    expanded_key[i].octet[1] = aes_sbox[expanded_key[i-1].octet[14]];
-    expanded_key[i].octet[2] = aes_sbox[expanded_key[i-1].octet[15]];
-    expanded_key[i].octet[3] = aes_sbox[expanded_key[i-1].octet[12]];
+    expanded_key[i].v8[0] = aes_sbox[expanded_key[i-1].v8[13]] ^ rc;
+    expanded_key[i].v8[1] = aes_sbox[expanded_key[i-1].v8[14]];
+    expanded_key[i].v8[2] = aes_sbox[expanded_key[i-1].v8[15]];
+    expanded_key[i].v8[3] = aes_sbox[expanded_key[i-1].v8[12]];
 
     expanded_key[i].v32[0] ^=  expanded_key[i-1].v32[0];
 
@@ -1467,25 +1467,25 @@ aes_expand_decryption_key(const v128_t *key,
 
     uint32_t c0, c1, c2, c3;
 
-    c0 = U0[aes_sbox[expanded_key[i].octet[0]]] 
-       ^ U1[aes_sbox[expanded_key[i].octet[1]]] 
-       ^ U2[aes_sbox[expanded_key[i].octet[2]]] 
-       ^ U3[aes_sbox[expanded_key[i].octet[3]]];
+    c0 = U0[aes_sbox[expanded_key[i].v8[0]]] 
+       ^ U1[aes_sbox[expanded_key[i].v8[1]]] 
+       ^ U2[aes_sbox[expanded_key[i].v8[2]]] 
+       ^ U3[aes_sbox[expanded_key[i].v8[3]]];
 
-    c1 = U0[aes_sbox[expanded_key[i].octet[4]]] 
-       ^ U1[aes_sbox[expanded_key[i].octet[5]]] 
-       ^ U2[aes_sbox[expanded_key[i].octet[6]]] 
-       ^ U3[aes_sbox[expanded_key[i].octet[7]]];
+    c1 = U0[aes_sbox[expanded_key[i].v8[4]]] 
+       ^ U1[aes_sbox[expanded_key[i].v8[5]]] 
+       ^ U2[aes_sbox[expanded_key[i].v8[6]]] 
+       ^ U3[aes_sbox[expanded_key[i].v8[7]]];
 
-    c2 = U0[aes_sbox[expanded_key[i].octet[8]]] 
-       ^ U1[aes_sbox[expanded_key[i].octet[9]]] 
-       ^ U2[aes_sbox[expanded_key[i].octet[10]]] 
-       ^ U3[aes_sbox[expanded_key[i].octet[11]]];
+    c2 = U0[aes_sbox[expanded_key[i].v8[8]]] 
+       ^ U1[aes_sbox[expanded_key[i].v8[9]]] 
+       ^ U2[aes_sbox[expanded_key[i].v8[10]]] 
+       ^ U3[aes_sbox[expanded_key[i].v8[11]]];
 
-    c3 = U0[aes_sbox[expanded_key[i].octet[12]]] 
-       ^ U1[aes_sbox[expanded_key[i].octet[13]]] 
-       ^ U2[aes_sbox[expanded_key[i].octet[14]]] 
-       ^ U3[aes_sbox[expanded_key[i].octet[15]]];
+    c3 = U0[aes_sbox[expanded_key[i].v8[12]]] 
+       ^ U1[aes_sbox[expanded_key[i].v8[13]]] 
+       ^ U2[aes_sbox[expanded_key[i].v8[14]]] 
+       ^ U3[aes_sbox[expanded_key[i].v8[15]]];
 
     expanded_key[i].v32[0] = c0;
     expanded_key[i].v32[1] = c1;
@@ -1506,17 +1506,17 @@ aes_round(v128_t *state, const v128_t *round_key) {
   /* compute the columns of the output square in terms of the octets
      of state, using the tables T0, T1, T2, T3 */
 
-  column0 = T0[state->octet[0]] ^ T1[state->octet[5]]
-    ^ T2[state->octet[10]] ^ T3[state->octet[15]];
+  column0 = T0[state->v8[0]] ^ T1[state->v8[5]]
+    ^ T2[state->v8[10]] ^ T3[state->v8[15]];
 
-  column1 = T0[state->octet[4]] ^ T1[state->octet[9]]
-    ^ T2[state->octet[14]] ^ T3[state->octet[3]];
+  column1 = T0[state->v8[4]] ^ T1[state->v8[9]]
+    ^ T2[state->v8[14]] ^ T3[state->v8[3]];
 
-  column2 = T0[state->octet[8]] ^ T1[state->octet[13]]
-    ^ T2[state->octet[2]] ^ T3[state->octet[7]];
+  column2 = T0[state->v8[8]] ^ T1[state->v8[13]]
+    ^ T2[state->v8[2]] ^ T3[state->v8[7]];
 
-  column3 = T0[state->octet[12]] ^ T1[state->octet[1]]
-    ^ T2[state->octet[6]] ^ T3[state->octet[11]];
+  column3 = T0[state->v8[12]] ^ T1[state->v8[1]]
+    ^ T2[state->v8[6]] ^ T3[state->v8[11]];
 
   state->v32[0] = column0 ^ round_key->v32[0];
   state->v32[1] = column1 ^ round_key->v32[1];
@@ -1533,17 +1533,17 @@ aes_inv_round(v128_t *state, const v128_t *round_key) {
   /* compute the columns of the output square in terms of the octets
      of state, using the tables U0, U1, U2, U3 */
 
-  column0 = U0[state->octet[0]] ^ U1[state->octet[13]]
-    ^ U2[state->octet[10]] ^ U3[state->octet[7]];
+  column0 = U0[state->v8[0]] ^ U1[state->v8[13]]
+    ^ U2[state->v8[10]] ^ U3[state->v8[7]];
 
-  column1 = U0[state->octet[4]] ^ U1[state->octet[1]]
-    ^ U2[state->octet[14]] ^ U3[state->octet[11]];
+  column1 = U0[state->v8[4]] ^ U1[state->v8[1]]
+    ^ U2[state->v8[14]] ^ U3[state->v8[11]];
 
-  column2 = U0[state->octet[8]] ^ U1[state->octet[5]]
-    ^ U2[state->octet[2]] ^ U3[state->octet[15]];
+  column2 = U0[state->v8[8]] ^ U1[state->v8[5]]
+    ^ U2[state->v8[2]] ^ U3[state->v8[15]];
 
-  column3 = U0[state->octet[12]] ^ U1[state->octet[9]]
-    ^ U2[state->octet[6]] ^ U3[state->octet[3]];
+  column3 = U0[state->v8[12]] ^ U1[state->v8[9]]
+    ^ U2[state->v8[6]] ^ U3[state->v8[3]];
 
   state->v32[0] = column0 ^ round_key->v32[0];
   state->v32[1] = column1 ^ round_key->v32[1];
@@ -1558,32 +1558,32 @@ aes_final_round(v128_t *state, const v128_t *round_key) {
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
-  state->octet[0] = aes_sbox[state->octet[0]];
-  state->octet[4] = aes_sbox[state->octet[4]];
-  state->octet[8] = aes_sbox[state->octet[8]];
-  state->octet[12] = aes_sbox[state->octet[12]];
+  state->v8[0] = aes_sbox[state->v8[0]];
+  state->v8[4] = aes_sbox[state->v8[4]];
+  state->v8[8] = aes_sbox[state->v8[8]];
+  state->v8[12] = aes_sbox[state->v8[12]];
 
   /* second row - shift one left */
-  tmp = aes_sbox[state->octet[1]];
-  state->octet[1] = aes_sbox[state->octet[5]];
-  state->octet[5] = aes_sbox[state->octet[9]];
-  state->octet[9] = aes_sbox[state->octet[13]];
-  state->octet[13] = tmp;
+  tmp = aes_sbox[state->v8[1]];
+  state->v8[1] = aes_sbox[state->v8[5]];
+  state->v8[5] = aes_sbox[state->v8[9]];
+  state->v8[9] = aes_sbox[state->v8[13]];
+  state->v8[13] = tmp;
 
   /* third row - shift two left */
-  tmp = aes_sbox[state->octet[10]];
-  state->octet[10] = aes_sbox[state->octet[2]];
-  state->octet[2] = tmp;
-  tmp = aes_sbox[state->octet[14]];
-  state->octet[14] = aes_sbox[state->octet[6]];
-  state->octet[6] = tmp; 
+  tmp = aes_sbox[state->v8[10]];
+  state->v8[10] = aes_sbox[state->v8[2]];
+  state->v8[2] = tmp;
+  tmp = aes_sbox[state->v8[14]];
+  state->v8[14] = aes_sbox[state->v8[6]];
+  state->v8[6] = tmp; 
 
   /* fourth row - shift three left */
-  tmp = aes_sbox[state->octet[15]];
-  state->octet[15] = aes_sbox[state->octet[11]];
-  state->octet[11] = aes_sbox[state->octet[7]];
-  state->octet[7] = aes_sbox[state->octet[3]];
-  state->octet[3] = tmp;
+  tmp = aes_sbox[state->v8[15]];
+  state->v8[15] = aes_sbox[state->v8[11]];
+  state->v8[11] = aes_sbox[state->v8[7]];
+  state->v8[7] = aes_sbox[state->v8[3]];
+  state->v8[3] = tmp;
 
   v128_xor_eq(state, round_key);
 }
@@ -1594,32 +1594,32 @@ aes_inv_final_round(v128_t *state, const v128_t *round_key) {
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
-  state->octet[0] = aes_inv_sbox[state->octet[0]];
-  state->octet[4] = aes_inv_sbox[state->octet[4]];
-  state->octet[8] = aes_inv_sbox[state->octet[8]];
-  state->octet[12] = aes_inv_sbox[state->octet[12]];
+  state->v8[0] = aes_inv_sbox[state->v8[0]];
+  state->v8[4] = aes_inv_sbox[state->v8[4]];
+  state->v8[8] = aes_inv_sbox[state->v8[8]];
+  state->v8[12] = aes_inv_sbox[state->v8[12]];
 
   /* second row - shift one right */
-  tmp = aes_inv_sbox[state->octet[13]];
-  state->octet[13] = aes_inv_sbox[state->octet[9]];
-  state->octet[9] = aes_inv_sbox[state->octet[5]];
-  state->octet[5] = aes_inv_sbox[state->octet[1]];
-  state->octet[1] = tmp;
+  tmp = aes_inv_sbox[state->v8[13]];
+  state->v8[13] = aes_inv_sbox[state->v8[9]];
+  state->v8[9] = aes_inv_sbox[state->v8[5]];
+  state->v8[5] = aes_inv_sbox[state->v8[1]];
+  state->v8[1] = tmp;
 
   /* third row - shift two right */
-  tmp = aes_inv_sbox[state->octet[2]];
-  state->octet[2] = aes_inv_sbox[state->octet[10]];
-  state->octet[10] = tmp;
-  tmp = aes_inv_sbox[state->octet[6]];
-  state->octet[6] = aes_inv_sbox[state->octet[14]];
-  state->octet[14] = tmp; 
+  tmp = aes_inv_sbox[state->v8[2]];
+  state->v8[2] = aes_inv_sbox[state->v8[10]];
+  state->v8[10] = tmp;
+  tmp = aes_inv_sbox[state->v8[6]];
+  state->v8[6] = aes_inv_sbox[state->v8[14]];
+  state->v8[14] = tmp; 
 
   /* fourth row - shift three right */
-  tmp = aes_inv_sbox[state->octet[3]];
-  state->octet[3] = aes_inv_sbox[state->octet[7]];
-  state->octet[7] = aes_inv_sbox[state->octet[11]];
-  state->octet[11] = aes_inv_sbox[state->octet[15]];
-  state->octet[15] = tmp;
+  tmp = aes_inv_sbox[state->v8[3]];
+  state->v8[3] = aes_inv_sbox[state->v8[7]];
+  state->v8[7] = aes_inv_sbox[state->v8[11]];
+  state->v8[11] = aes_inv_sbox[state->v8[15]];
+  state->v8[15] = tmp;
 
   v128_xor_eq(state, round_key);
 }
@@ -1786,17 +1786,17 @@ aes_round(v128_t *state, const v128_t *round_key) {
   /* compute the columns of the output square in terms of the octets
      of state, using the tables T0, T1, T2, T3 */
 
-  column0 = T0[state->octet[0]] ^ T1[state->octet[5]]
-    ^ T2[state->octet[10]] ^ T3[state->octet[15]];
+  column0 = T0[state->v8[0]] ^ T1[state->v8[5]]
+    ^ T2[state->v8[10]] ^ T3[state->v8[15]];
 
-  column1 = T0[state->octet[4]] ^ T1[state->octet[9]]
-    ^ T2[state->octet[14]] ^ T3[state->octet[3]];
+  column1 = T0[state->v8[4]] ^ T1[state->v8[9]]
+    ^ T2[state->v8[14]] ^ T3[state->v8[3]];
 
-  column2 = T0[state->octet[8]] ^ T1[state->octet[13]]
-    ^ T2[state->octet[2]] ^ T3[state->octet[7]];
+  column2 = T0[state->v8[8]] ^ T1[state->v8[13]]
+    ^ T2[state->v8[2]] ^ T3[state->v8[7]];
 
-  column3 = T0[state->octet[12]] ^ T1[state->octet[1]]
-    ^ T2[state->octet[6]] ^ T3[state->octet[11]];
+  column3 = T0[state->v8[12]] ^ T1[state->v8[1]]
+    ^ T2[state->v8[6]] ^ T3[state->v8[11]];
 
   state->v32[0] = column0 ^ round_key->v32[0];
   state->v32[1] = column1 ^ round_key->v32[1];
@@ -1813,17 +1813,17 @@ aes_inv_round(v128_t *state, const v128_t *round_key) {
   /* compute the columns of the output square in terms of the octets
      of state, using the tables U0, U1, U2, U3 */
 
-  column0 = U0[state->octet[0]] ^ U1[state->octet[5]]
-    ^ U2[state->octet[10]] ^ U3[state->octet[15]];
+  column0 = U0[state->v8[0]] ^ U1[state->v8[5]]
+    ^ U2[state->v8[10]] ^ U3[state->v8[15]];
 
-  column1 = U0[state->octet[4]] ^ U1[state->octet[9]]
-    ^ U2[state->octet[14]] ^ U3[state->octet[3]];
+  column1 = U0[state->v8[4]] ^ U1[state->v8[9]]
+    ^ U2[state->v8[14]] ^ U3[state->v8[3]];
 
-  column2 = U0[state->octet[8]] ^ U1[state->octet[13]]
-    ^ U2[state->octet[2]] ^ U3[state->octet[7]];
+  column2 = U0[state->v8[8]] ^ U1[state->v8[13]]
+    ^ U2[state->v8[2]] ^ U3[state->v8[7]];
 
-  column3 = U0[state->octet[12]] ^ U1[state->octet[1]]
-    ^ U2[state->octet[6]] ^ U3[state->octet[11]];
+  column3 = U0[state->v8[12]] ^ U1[state->v8[1]]
+    ^ U2[state->v8[6]] ^ U3[state->v8[11]];
 
   state->v32[0] = column0 ^ round_key->v32[0];
   state->v32[1] = column1 ^ round_key->v32[1];
@@ -1838,32 +1838,32 @@ aes_final_round(v128_t *state, const v128_t *round_key) {
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
-  state->octet[0] = aes_sbox[state->octet[0]];
-  state->octet[4] = aes_sbox[state->octet[4]];
-  state->octet[8] = aes_sbox[state->octet[8]];
-  state->octet[12] = aes_sbox[state->octet[12]];
+  state->v8[0] = aes_sbox[state->v8[0]];
+  state->v8[4] = aes_sbox[state->v8[4]];
+  state->v8[8] = aes_sbox[state->v8[8]];
+  state->v8[12] = aes_sbox[state->v8[12]];
 
   /* second row - shift one left */
-  tmp = aes_sbox[state->octet[1]];
-  state->octet[1] = aes_sbox[state->octet[5]];
-  state->octet[5] = aes_sbox[state->octet[9]];
-  state->octet[9] = aes_sbox[state->octet[13]];
-  state->octet[13] = tmp;
+  tmp = aes_sbox[state->v8[1]];
+  state->v8[1] = aes_sbox[state->v8[5]];
+  state->v8[5] = aes_sbox[state->v8[9]];
+  state->v8[9] = aes_sbox[state->v8[13]];
+  state->v8[13] = tmp;
 
   /* third row - shift two left */
-  tmp = aes_sbox[state->octet[10]];
-  state->octet[10] = aes_sbox[state->octet[2]];
-  state->octet[2] = tmp;
-  tmp = aes_sbox[state->octet[14]];
-  state->octet[14] = aes_sbox[state->octet[6]];
-  state->octet[6] = tmp; 
+  tmp = aes_sbox[state->v8[10]];
+  state->v8[10] = aes_sbox[state->v8[2]];
+  state->v8[2] = tmp;
+  tmp = aes_sbox[state->v8[14]];
+  state->v8[14] = aes_sbox[state->v8[6]];
+  state->v8[6] = tmp; 
 
   /* fourth row - shift three left */
-  tmp = aes_sbox[state->octet[15]];
-  state->octet[15] = aes_sbox[state->octet[11]];
-  state->octet[11] = aes_sbox[state->octet[7]];
-  state->octet[7] = aes_sbox[state->octet[3]];
-  state->octet[3] = tmp;
+  tmp = aes_sbox[state->v8[15]];
+  state->v8[15] = aes_sbox[state->v8[11]];
+  state->v8[11] = aes_sbox[state->v8[7]];
+  state->v8[7] = aes_sbox[state->v8[3]];
+  state->v8[3] = tmp;
 
   v128_xor_eq(state, round_key);
 }
@@ -1874,32 +1874,32 @@ aes_inv_final_round(v128_t *state, const v128_t *round_key) {
 
   /* byte substitutions and row shifts */
   /* first row - no shift */
-  state->octet[0] = aes_inv_sbox[state->octet[0]];
-  state->octet[4] = aes_inv_sbox[state->octet[4]];
-  state->octet[8] = aes_inv_sbox[state->octet[8]];
-  state->octet[12] = aes_inv_sbox[state->octet[12]];
+  state->v8[0] = aes_inv_sbox[state->v8[0]];
+  state->v8[4] = aes_inv_sbox[state->v8[4]];
+  state->v8[8] = aes_inv_sbox[state->v8[8]];
+  state->v8[12] = aes_inv_sbox[state->v8[12]];
 
   /* second row - shift one left */
-  tmp = aes_inv_sbox[state->octet[1]];
-  state->octet[1] = aes_inv_sbox[state->octet[5]];
-  state->octet[5] = aes_inv_sbox[state->octet[9]];
-  state->octet[9] = aes_inv_sbox[state->octet[13]];
-  state->octet[13] = tmp;
+  tmp = aes_inv_sbox[state->v8[1]];
+  state->v8[1] = aes_inv_sbox[state->v8[5]];
+  state->v8[5] = aes_inv_sbox[state->v8[9]];
+  state->v8[9] = aes_inv_sbox[state->v8[13]];
+  state->v8[13] = tmp;
 
   /* third row - shift two left */
-  tmp = aes_inv_sbox[state->octet[10]];
-  state->octet[10] = aes_inv_sbox[state->octet[2]];
-  state->octet[2] = tmp;
-  tmp = aes_inv_sbox[state->octet[14]];
-  state->octet[14] = aes_inv_sbox[state->octet[6]];
-  state->octet[6] = tmp; 
+  tmp = aes_inv_sbox[state->v8[10]];
+  state->v8[10] = aes_inv_sbox[state->v8[2]];
+  state->v8[2] = tmp;
+  tmp = aes_inv_sbox[state->v8[14]];
+  state->v8[14] = aes_inv_sbox[state->v8[6]];
+  state->v8[6] = tmp; 
 
   /* fourth row - shift three left */
-  tmp = aes_inv_sbox[state->octet[15]];
-  state->octet[15] = aes_inv_sbox[state->octet[11]];
-  state->octet[11] = aes_inv_sbox[state->octet[7]];
-  state->octet[7] = aes_inv_sbox[state->octet[3]];
-  state->octet[3] = tmp;
+  tmp = aes_inv_sbox[state->v8[15]];
+  state->v8[15] = aes_inv_sbox[state->v8[11]];
+  state->v8[11] = aes_inv_sbox[state->v8[7]];
+  state->v8[7] = aes_inv_sbox[state->v8[3]];
+  state->v8[3] = tmp;
 
   v128_xor_eq(state, round_key);
 }

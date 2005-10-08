@@ -103,28 +103,28 @@ aes_compute_tables(void) {
     x2 = gf2_8_shift(x1);
     x3 = x2 ^ x1;
 
-    tmp.octet[0] = x2;
-    tmp.octet[1] = x1;
-    tmp.octet[2] = x1;
-    tmp.octet[3] = x3;
+    tmp.v8[0] = x2;
+    tmp.v8[1] = x1;
+    tmp.v8[2] = x1;
+    tmp.v8[3] = x3;
     T0[i] = tmp.value;
 
-    tmp.octet[0] = x3;
-    tmp.octet[1] = x2;
-    tmp.octet[2] = x1;
-    tmp.octet[3] = x1;
+    tmp.v8[0] = x3;
+    tmp.v8[1] = x2;
+    tmp.v8[2] = x1;
+    tmp.v8[3] = x1;
     T1[i] = tmp.value;
      
-    tmp.octet[0] = x1;
-    tmp.octet[1] = x3;
-    tmp.octet[2] = x2;
-    tmp.octet[3] = x1;
+    tmp.v8[0] = x1;
+    tmp.v8[1] = x3;
+    tmp.v8[2] = x2;
+    tmp.v8[3] = x1;
     T2[i] = tmp.value;
 
-    tmp.octet[0] = x1;
-    tmp.octet[1] = x1;
-    tmp.octet[2] = x3;
-    tmp.octet[3] = x2;
+    tmp.v8[0] = x1;
+    tmp.v8[1] = x1;
+    tmp.v8[2] = x3;
+    tmp.v8[3] = x2;
     T3[i] = tmp.value;
      
   }
@@ -155,31 +155,31 @@ aes_compute_inv_tables(void) {
      xd = gf2_8_multiply(0x0d, x);     
      xb = gf2_8_multiply(0x0b, x);     
 
-     tmp.octet[0] = xe;
-     tmp.octet[1] = x9;
-     tmp.octet[2] = xd;
-     tmp.octet[3] = xb;
+     tmp.v8[0] = xe;
+     tmp.v8[1] = x9;
+     tmp.v8[2] = xd;
+     tmp.v8[3] = xb;
      U0[i] = tmp.value;
 
-     tmp.octet[0] = xb;
-     tmp.octet[1] = xe;
-     tmp.octet[2] = x9;
-     tmp.octet[3] = xd;
+     tmp.v8[0] = xb;
+     tmp.v8[1] = xe;
+     tmp.v8[2] = x9;
+     tmp.v8[3] = xd;
      U1[i] = tmp.value;
      
-     tmp.octet[0] = xd;
-     tmp.octet[1] = xb;
-     tmp.octet[2] = xe;
-     tmp.octet[3] = x9;
+     tmp.v8[0] = xd;
+     tmp.v8[1] = xb;
+     tmp.v8[2] = xe;
+     tmp.v8[3] = x9;
      U2[i] = tmp.value;
 
-     tmp.octet[0] = x9;
-     tmp.octet[1] = xd;
-     tmp.octet[2] = xb;
-     tmp.octet[3] = xe;
+     tmp.v8[0] = x9;
+     tmp.v8[1] = xd;
+     tmp.v8[2] = xb;
+     tmp.v8[3] = xe;
      U3[i] = tmp.value;
 
-     tmp.octet[0] = tmp.octet[1] = tmp.octet[2] = tmp.octet[3] = x;
+     tmp.v8[0] = tmp.v8[1] = tmp.v8[2] = tmp.v8[3] = x;
      U4[i] = tmp.value;
    }
 }

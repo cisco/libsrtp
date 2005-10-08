@@ -179,7 +179,7 @@ byte_order(void) {
 
   printf("byte ordering of crypto/math datatypes:\n");
   for (i=0; i < sizeof(e); i++)
-    e.octet[i] = i;
+    e.v8[i] = i;
   printf("v128_t: %s\n", v128_hex_string(&e));
   
 }

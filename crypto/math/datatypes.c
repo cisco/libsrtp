@@ -197,8 +197,8 @@ v128_hex_string(v128_t *x) {
   int i, j;
 
   for (i=j=0; i < 16; i++) {
-    bit_string[j++]  = nibble_to_hex_char(x->octet[i] >> 4);
-    bit_string[j++]  = nibble_to_hex_char(x->octet[i] & 0xF);
+    bit_string[j++]  = nibble_to_hex_char(x->v8[i] >> 4);
+    bit_string[j++]  = nibble_to_hex_char(x->v8[i] & 0xF);
   }
   
   bit_string[j] = 0; /* null terminate string */
@@ -230,22 +230,22 @@ v128_copy_octet_string(v128_t *x, const uint8_t s[16]) {
   if ((((uint32_t) &s[0]) & 0x3) != 0)
 #endif
   {
-	  x->octet[0]  = s[0];
-	  x->octet[1]  = s[1];
-	  x->octet[2]  = s[2];
-	  x->octet[3]  = s[3];
-	  x->octet[4]  = s[4];
-	  x->octet[5]  = s[5];
-	  x->octet[6]  = s[6];
-	  x->octet[7]  = s[7];
-	  x->octet[8]  = s[8];
-	  x->octet[9]  = s[9];
-	  x->octet[10] = s[10];
-	  x->octet[11] = s[11];
-	  x->octet[12] = s[12];
-	  x->octet[13] = s[13];
-	  x->octet[14] = s[14];
-	  x->octet[15] = s[15];
+	  x->v8[0]  = s[0];
+	  x->v8[1]  = s[1];
+	  x->v8[2]  = s[2];
+	  x->v8[3]  = s[3];
+	  x->v8[4]  = s[4];
+	  x->v8[5]  = s[5];
+	  x->v8[6]  = s[6];
+	  x->v8[7]  = s[7];
+	  x->v8[8]  = s[8];
+	  x->v8[9]  = s[9];
+	  x->v8[10] = s[10];
+	  x->v8[11] = s[11];
+	  x->v8[12] = s[12];
+	  x->v8[13] = s[13];
+	  x->v8[14] = s[14];
+	  x->v8[15] = s[15];
   }
 #ifdef ALIGNMENT_32BIT_REQUIRED
   else 

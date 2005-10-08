@@ -111,22 +111,22 @@ x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
     aes_encrypt(&buffer, x917_prng.key);
     
     /* write data to output */
-    *dest++ = buffer.octet[0];
-    *dest++ = buffer.octet[1];
-    *dest++ = buffer.octet[2];
-    *dest++ = buffer.octet[3];
-    *dest++ = buffer.octet[4];
-    *dest++ = buffer.octet[5];
-    *dest++ = buffer.octet[6];
-    *dest++ = buffer.octet[7];
-    *dest++ = buffer.octet[8];
-    *dest++ = buffer.octet[9];
-    *dest++ = buffer.octet[10];
-    *dest++ = buffer.octet[11];
-    *dest++ = buffer.octet[12];
-    *dest++ = buffer.octet[13];
-    *dest++ = buffer.octet[14];
-    *dest++ = buffer.octet[15];
+    *dest++ = buffer.v8[0];
+    *dest++ = buffer.v8[1];
+    *dest++ = buffer.v8[2];
+    *dest++ = buffer.v8[3];
+    *dest++ = buffer.v8[4];
+    *dest++ = buffer.v8[5];
+    *dest++ = buffer.v8[6];
+    *dest++ = buffer.v8[7];
+    *dest++ = buffer.v8[8];
+    *dest++ = buffer.v8[9];
+    *dest++ = buffer.v8[10];
+    *dest++ = buffer.v8[11];
+    *dest++ = buffer.v8[12];
+    *dest++ = buffer.v8[13];
+    *dest++ = buffer.v8[14];
+    *dest++ = buffer.v8[15];
 
     /* exor time into buffer */
     buffer.v32[0] ^= t;
@@ -154,7 +154,7 @@ x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
 
     /* write data to output */
     for (i=0; i < tail_len; i++) {
-      *dest++ = buffer.octet[i];
+      *dest++ = buffer.v8[i];
     }
 
     /* now update the state one more time */
