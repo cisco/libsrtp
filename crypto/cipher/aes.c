@@ -61,7 +61,7 @@
 
 #ifndef WORDS_BIGENDIAN
 
-uint32_t T0[256] = {
+static uint32_t T0[256] = {
   0xa56363c6, 0x847c7cf8, 0x997777ee, 0x8d7b7bf6, 
   0xdf2f2ff, 0xbd6b6bd6, 0xb16f6fde, 0x54c5c591, 
   0x50303060, 0x3010102, 0xa96767ce, 0x7d2b2b56, 
@@ -128,7 +128,7 @@ uint32_t T0[256] = {
   0xcbb0b07b, 0xfc5454a8, 0xd6bbbb6d, 0x3a16162c, 
 };
 
-uint32_t T1[256] = {
+static uint32_t T1[256] = {
   0x6363c6a5, 0x7c7cf884, 0x7777ee99, 0x7b7bf68d, 
   0xf2f2ff0d, 0x6b6bd6bd, 0x6f6fdeb1, 0xc5c59154, 
   0x30306050, 0x1010203, 0x6767cea9, 0x2b2b567d, 
@@ -195,7 +195,7 @@ uint32_t T1[256] = {
   0xb0b07bcb, 0x5454a8fc, 0xbbbb6dd6, 0x16162c3a, 
 };
 
-uint32_t T2[256] = {
+static uint32_t T2[256] = {
   0x63c6a563, 0x7cf8847c, 0x77ee9977, 0x7bf68d7b, 
   0xf2ff0df2, 0x6bd6bd6b, 0x6fdeb16f, 0xc59154c5, 
   0x30605030, 0x1020301, 0x67cea967, 0x2b567d2b, 
@@ -262,7 +262,7 @@ uint32_t T2[256] = {
   0xb07bcbb0, 0x54a8fc54, 0xbb6dd6bb, 0x162c3a16, 
 };
 
-uint32_t T3[256] = {
+static uint32_t T3[256] = {
   0xc6a56363, 0xf8847c7c, 0xee997777, 0xf68d7b7b, 
   0xff0df2f2, 0xd6bd6b6b, 0xdeb16f6f, 0x9154c5c5, 
   0x60503030, 0x2030101, 0xcea96767, 0x567d2b2b, 
@@ -329,7 +329,7 @@ uint32_t T3[256] = {
   0x7bcbb0b0, 0xa8fc5454, 0x6dd6bbbb, 0x2c3a1616, 
 };
 
-uint32_t U0[256] = {
+static uint32_t U0[256] = {
   0x50a7f451, 0x5365417e, 0xc3a4171a, 0x965e273a, 
   0xcb6bab3b, 0xf1459d1f, 0xab58faac, 0x9303e34b, 
   0x55fa3020, 0xf66d76ad, 0x9176cc88, 0x254c02f5, 
@@ -396,7 +396,7 @@ uint32_t U0[256] = {
   0x6184cb7b, 0x70b632d5, 0x745c6c48, 0x4257b8d0, 
 };
 
-uint32_t U1[256] = {
+static uint32_t U1[256] = {
   0xa7f45150, 0x65417e53, 0xa4171ac3, 0x5e273a96, 
   0x6bab3bcb, 0x459d1ff1, 0x58faacab, 0x3e34b93, 
   0xfa302055, 0x6d76adf6, 0x76cc8891, 0x4c02f525, 
@@ -463,7 +463,7 @@ uint32_t U1[256] = {
   0x84cb7b61, 0xb632d570, 0x5c6c4874, 0x57b8d042, 
 };
 
-uint32_t U2[256] = {
+static uint32_t U2[256] = {
   0xf45150a7, 0x417e5365, 0x171ac3a4, 0x273a965e, 
   0xab3bcb6b, 0x9d1ff145, 0xfaacab58, 0xe34b9303, 
   0x302055fa, 0x76adf66d, 0xcc889176, 0x2f5254c, 
@@ -530,7 +530,7 @@ uint32_t U2[256] = {
   0xcb7b6184, 0x32d570b6, 0x6c48745c, 0xb8d04257, 
 };
 
-uint32_t U3[256] = {
+static uint32_t U3[256] = {
   0x5150a7f4, 0x7e536541, 0x1ac3a417, 0x3a965e27, 
   0x3bcb6bab, 0x1ff1459d, 0xacab58fa, 0x4b9303e3, 
   0x2055fa30, 0xadf66d76, 0x889176cc, 0xf5254c02, 
@@ -599,7 +599,7 @@ uint32_t U3[256] = {
 
 #else /* assume big endian */
 
-uint32_t T0[256] = {
+static uint32_t T0[256] = {
   0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, 
   0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554, 
   0x60303050, 0x2010103, 0xce6767a9, 0x562b2b7d, 
@@ -666,7 +666,7 @@ uint32_t T0[256] = {
   0x7bb0b0cb, 0xa85454fc, 0x6dbbbbd6, 0x2c16163a, 
 };
 
-uint32_t T1[256] = {
+static uint32_t T1[256] = {
   0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b, 
   0xdfff2f2, 0xbdd66b6b, 0xb1de6f6f, 0x5491c5c5, 
   0x50603030, 0x3020101, 0xa9ce6767, 0x7d562b2b, 
@@ -733,7 +733,7 @@ uint32_t T1[256] = {
   0xcb7bb0b0, 0xfca85454, 0xd66dbbbb, 0x3a2c1616, 
 };
 
-uint32_t T2[256] = {
+static uint32_t T2[256] = {
   0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b, 
   0xf20dfff2, 0x6bbdd66b, 0x6fb1de6f, 0xc55491c5, 
   0x30506030, 0x1030201, 0x67a9ce67, 0x2b7d562b, 
@@ -800,7 +800,7 @@ uint32_t T2[256] = {
   0xb0cb7bb0, 0x54fca854, 0xbbd66dbb, 0x163a2c16, 
 };
 
-uint32_t T3[256] = {
+static uint32_t T3[256] = {
   0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6, 
   0xf2f20dff, 0x6b6bbdd6, 0x6f6fb1de, 0xc5c55491, 
   0x30305060, 0x1010302, 0x6767a9ce, 0x2b2b7d56, 
@@ -867,7 +867,7 @@ uint32_t T3[256] = {
   0xb0b0cb7b, 0x5454fca8, 0xbbbbd66d, 0x16163a2c, 
 };
 
-uint32_t U0[256] = {
+static uint32_t U0[256] = {
   0x51f4a750, 0x7e416553, 0x1a17a4c3, 0x3a275e96, 
   0x3bab6bcb, 0x1f9d45f1, 0xacfa58ab, 0x4be30393, 
   0x2030fa55, 0xad766df6, 0x88cc7691, 0xf5024c25, 
@@ -934,7 +934,7 @@ uint32_t U0[256] = {
   0x7bcb8461, 0xd532b670, 0x486c5c74, 0xd0b85742
 };
 
-uint32_t U1[256] = {
+static uint32_t U1[256] = {
   0x5051f4a7, 0x537e4165, 0xc31a17a4, 0x963a275e, 
   0xcb3bab6b, 0xf11f9d45, 0xabacfa58, 0x934be303, 
   0x552030fa, 0xf6ad766d, 0x9188cc76, 0x25f5024c, 
@@ -1001,7 +1001,7 @@ uint32_t U1[256] = {
   0x617bcb84, 0x70d532b6, 0x74486c5c, 0x42d0b857
 };
 
-uint32_t U2[256] = {
+static uint32_t U2[256] = {
   0xa75051f4, 0x65537e41, 0xa4c31a17, 0x5e963a27, 
   0x6bcb3bab, 0x45f11f9d, 0x58abacfa, 0x3934be3, 
   0xfa552030, 0x6df6ad76, 0x769188cc, 0x4c25f502, 
@@ -1068,7 +1068,7 @@ uint32_t U2[256] = {
   0x84617bcb, 0xb670d532, 0x5c74486c, 0x5742d0b8 
 };
 
-uint32_t U3[256] = {
+static uint32_t U3[256] = {
   0xf4a75051, 0x4165537e, 0x17a4c31a, 0x275e963a, 
   0xab6bcb3b, 0x9d45f11f, 0xfa58abac, 0xe303934b, 
   0x30fa5520, 0x766df6ad, 0xcc769188, 0x24c25f5, 
@@ -1142,7 +1142,7 @@ uint32_t U3[256] = {
  * endian-neutral 
  */
 
-uint8_t
+static uint8_t
 aes_sbox[256] = {
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 
   0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, 
@@ -1178,7 +1178,7 @@ aes_sbox[256] = {
   0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 
 };
 
-uint8_t
+static uint8_t
 aes_inv_sbox[256] = {
   0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 
   0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
@@ -1214,7 +1214,8 @@ aes_inv_sbox[256] = {
   0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
-uint32_t
+#ifdef CPU_RISC
+static uint32_t
 T4[256] = { 
   0x63636363, 0x7c7c7c7c, 0x77777777, 0x7b7b7b7b,
   0xf2f2f2f2, 0x6b6b6b6b, 0x6f6f6f6f, 0xc5c5c5c5, 
@@ -1282,7 +1283,7 @@ T4[256] = {
   0xb0b0b0b0, 0x54545454, 0xbbbbbbbb, 0x16161616
 };
 
-uint32_t U4[256] = {
+static uint32_t U4[256] = {
   0x52525252, 0x9090909, 0x6a6a6a6a, 0xd5d5d5d5, 
   0x30303030, 0x36363636, 0xa5a5a5a5, 0x38383838, 
   0xbfbfbfbf, 0x40404040, 0xa3a3a3a3, 0x9e9e9e9e, 
@@ -1348,7 +1349,7 @@ uint32_t U4[256] = {
   0xe1e1e1e1, 0x69696969, 0x14141414, 0x63636363, 
   0x55555555, 0x21212121, 0xc0c0c0c, 0x7d7d7d7d
 };
-
+#endif /* CPU_RISC */
 
 
 /* aes internals */
@@ -1356,18 +1357,18 @@ uint32_t U4[256] = {
 extern debug_module_t mod_aes_icm;
 
 inline void
-aes_expand_encryption_key(const v128_t key, 
+aes_expand_encryption_key(const v128_t *key, 
 			  aes_expanded_key_t expanded_key) {
   int i;
   gf2_8 rc;
 
   /* initialize round constant */
   rc = 1;
-  
-  expanded_key[0].v32[0] = key.v32[0];
-  expanded_key[0].v32[1] = key.v32[1];
-  expanded_key[0].v32[2] = key.v32[2];
-  expanded_key[0].v32[3] = key.v32[3];
+
+  expanded_key[0].v32[0] = key->v32[0];
+  expanded_key[0].v32[1] = key->v32[1];
+  expanded_key[0].v32[2] = key->v32[2];
+  expanded_key[0].v32[3] = key->v32[3];
 
 #if 0
   debug_print(mod_aes_icm, 
@@ -1384,13 +1385,13 @@ aes_expand_encryption_key(const v128_t key,
     expanded_key[i].octet[3] = aes_sbox[expanded_key[i-1].octet[12]];
 
     expanded_key[i].v32[0] ^=  expanded_key[i-1].v32[0];
-    
+
     /* set remaining 32 bit words to the exor of the one previous with
      * the one four words previous */
-    
+
     expanded_key[i].v32[1] =
       expanded_key[i].v32[0] ^ expanded_key[i-1].v32[1];
-    
+
     expanded_key[i].v32[2] =
       expanded_key[i].v32[1] ^ expanded_key[i-1].v32[2];
 
@@ -1409,7 +1410,7 @@ aes_expand_encryption_key(const v128_t key,
 }
 
 inline void
-aes_expand_decryption_key(const v128_t key, 
+aes_expand_decryption_key(const v128_t *key, 
 			  aes_expanded_key_t expanded_key) {
   int i;
 
@@ -1422,7 +1423,7 @@ aes_expand_decryption_key(const v128_t key,
     v128_copy(&expanded_key[10-i], &expanded_key[i]);
     v128_copy(&expanded_key[i], &tmp);
   }
-    
+
   /* 
    * apply the inverse mixColumn transform to the round keys (except
    * for the first and the last)  
@@ -1465,7 +1466,7 @@ aes_expand_decryption_key(const v128_t key,
 #else /* assume CPU_CISC */
 
     uint32_t c0, c1, c2, c3;
-     
+
     c0 = U0[aes_sbox[expanded_key[i].octet[0]]] 
        ^ U1[aes_sbox[expanded_key[i].octet[1]]] 
        ^ U2[aes_sbox[expanded_key[i].octet[2]]] 
@@ -1490,7 +1491,7 @@ aes_expand_decryption_key(const v128_t key,
     expanded_key[i].v32[1] = c1;
     expanded_key[i].v32[2] = c2;
     expanded_key[i].v32[3] = c3;
-        
+
 #endif     
   }
 }
@@ -1498,8 +1499,8 @@ aes_expand_decryption_key(const v128_t key,
 #ifdef CPU_CISC
 
 
-inline void
-aes_round(v128_t *state, const v128_t round_key) {
+static inline void
+aes_round(v128_t *state, const v128_t *round_key) {
   uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
@@ -1507,7 +1508,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 
   column0 = T0[state->octet[0]] ^ T1[state->octet[5]]
     ^ T2[state->octet[10]] ^ T3[state->octet[15]];
-  
+
   column1 = T0[state->octet[4]] ^ T1[state->octet[9]]
     ^ T2[state->octet[14]] ^ T3[state->octet[3]];
 
@@ -1517,16 +1518,16 @@ aes_round(v128_t *state, const v128_t round_key) {
   column3 = T0[state->octet[12]] ^ T1[state->octet[1]]
     ^ T2[state->octet[6]] ^ T3[state->octet[11]];
 
-  state->v32[0] = column0 ^ round_key.v32[0];
-  state->v32[1] = column1 ^ round_key.v32[1];
-  state->v32[2] = column2 ^ round_key.v32[2];
-  state->v32[3] = column3 ^ round_key.v32[3];
-  
+  state->v32[0] = column0 ^ round_key->v32[0];
+  state->v32[1] = column1 ^ round_key->v32[1];
+  state->v32[2] = column2 ^ round_key->v32[2];
+  state->v32[3] = column3 ^ round_key->v32[3];
+
 }
 
 
-inline void
-aes_inv_round(v128_t *state, const v128_t round_key) {
+static inline void
+aes_inv_round(v128_t *state, const v128_t *round_key) {
   uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
@@ -1534,7 +1535,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 
   column0 = U0[state->octet[0]] ^ U1[state->octet[13]]
     ^ U2[state->octet[10]] ^ U3[state->octet[7]];
-  
+
   column1 = U0[state->octet[4]] ^ U1[state->octet[1]]
     ^ U2[state->octet[14]] ^ U3[state->octet[11]];
 
@@ -1544,15 +1545,15 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
   column3 = U0[state->octet[12]] ^ U1[state->octet[9]]
     ^ U2[state->octet[6]] ^ U3[state->octet[3]];
 
-  state->v32[0] = column0 ^ round_key.v32[0];
-  state->v32[1] = column1 ^ round_key.v32[1];
-  state->v32[2] = column2 ^ round_key.v32[2];
-  state->v32[3] = column3 ^ round_key.v32[3];
-  
+  state->v32[0] = column0 ^ round_key->v32[0];
+  state->v32[1] = column1 ^ round_key->v32[1];
+  state->v32[2] = column2 ^ round_key->v32[2];
+  state->v32[3] = column3 ^ round_key->v32[3];
+
 }
 
-inline void
-aes_final_round(v128_t *state, v128_t round_key) {
+static inline void
+aes_final_round(v128_t *state, const v128_t *round_key) {
   uint8_t tmp;
 
   /* byte substitutions and row shifts */
@@ -1576,7 +1577,7 @@ aes_final_round(v128_t *state, v128_t round_key) {
   tmp = aes_sbox[state->octet[14]];
   state->octet[14] = aes_sbox[state->octet[6]];
   state->octet[6] = tmp; 
-  
+
   /* fourth row - shift three left */
   tmp = aes_sbox[state->octet[15]];
   state->octet[15] = aes_sbox[state->octet[11]];
@@ -1584,11 +1585,11 @@ aes_final_round(v128_t *state, v128_t round_key) {
   state->octet[7] = aes_sbox[state->octet[3]];
   state->octet[3] = tmp;
 
-  v128_xor_eq(state, &round_key);
+  v128_xor_eq(state, round_key);
 }
 
-inline void
-aes_inv_final_round(v128_t *state, v128_t round_key) {
+static inline void
+aes_inv_final_round(v128_t *state, const v128_t *round_key) {
   uint8_t tmp;
 
   /* byte substitutions and row shifts */
@@ -1612,7 +1613,7 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
   tmp = aes_inv_sbox[state->octet[6]];
   state->octet[6] = aes_inv_sbox[state->octet[14]];
   state->octet[14] = tmp; 
-  
+
   /* fourth row - shift three right */
   tmp = aes_inv_sbox[state->octet[3]];
   state->octet[3] = aes_inv_sbox[state->octet[7]];
@@ -1620,14 +1621,14 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
   state->octet[11] = aes_inv_sbox[state->octet[15]];
   state->octet[15] = tmp;
 
-  v128_xor_eq(state, &round_key);
+  v128_xor_eq(state, round_key);
 }
 
 
 #elif CPU_RISC
 
-inline void
-aes_round(v128_t *state, const v128_t round_key) {
+static inline void
+aes_round(v128_t *state, const v128_t *round_key) {
   uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
@@ -1635,7 +1636,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 #ifdef WORDS_BIGENDIAN
   column0 = T0[state->v32[0] >> 24] ^ T1[(state->v32[1] >> 16) & 0xff]
     ^ T2[(state->v32[2] >> 8) & 0xff] ^ T3[state->v32[3] & 0xff];
-  
+
   column1 = T0[state->v32[1] >> 24] ^ T1[(state->v32[2] >> 16) & 0xff]
     ^ T2[(state->v32[3] >> 8) & 0xff] ^ T3[state->v32[0] & 0xff];
 
@@ -1647,7 +1648,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 #else
   column0 = T0[state->v32[0] & 0xff] ^ T1[(state->v32[1] >> 8) & 0xff]
 	^ T2[(state->v32[2] >> 16) & 0xff] ^ T3[state->v32[3] >> 24];
-  
+
   column1 = T0[state->v32[1] & 0xff] ^ T1[(state->v32[2] >> 8) & 0xff]
 	^ T2[(state->v32[3] >> 16) & 0xff] ^ T3[state->v32[0] >> 24];
 
@@ -1658,15 +1659,15 @@ aes_round(v128_t *state, const v128_t round_key) {
 	^ T2[(state->v32[1] >> 16) & 0xff] ^ T3[state->v32[2] >> 24];
 #endif /* WORDS_BIGENDIAN */
 
-  state->v32[0] = column0 ^ round_key.v32[0];
-  state->v32[1] = column1 ^ round_key.v32[1];
-  state->v32[2] = column2 ^ round_key.v32[2];
-  state->v32[3] = column3 ^ round_key.v32[3];
-  
+  state->v32[0] = column0 ^ round_key->v32[0];
+  state->v32[1] = column1 ^ round_key->v32[1];
+  state->v32[2] = column2 ^ round_key->v32[2];
+  state->v32[3] = column3 ^ round_key->v32[3];
+
 }
 
-inline void
-aes_inv_round(v128_t *state, const v128_t round_key) {
+static inline void
+aes_inv_round(v128_t *state, const v128_t *round_key) {
   uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
@@ -1676,7 +1677,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
   /* FIX!  WRong indexes */
   column0 = U0[state->v32[0] >> 24] ^ U1[(state->v32[3] >> 16) & 0xff]
     ^ U2[(state->v32[2] >> 8) & 0xff] ^ U3[state->v32[1] & 0xff];
-  
+
   column1 = U0[state->v32[1] >> 24] ^ U1[(state->v32[0] >> 16) & 0xff]
     ^ U2[(state->v32[3] >> 8) & 0xff] ^ U3[state->v32[2] & 0xff];
 
@@ -1688,7 +1689,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 #else
   column0 = U0[state->v32[0] & 0xff] ^ U1[(state->v32[1] >> 8) & 0xff]
 	^ U2[(state->v32[2] >> 16) & 0xff] ^ U3[state->v32[3] >> 24];
-  
+
   column1 = U0[state->v32[1] & 0xff] ^ U1[(state->v32[2] >> 8) & 0xff]
 	^ U2[(state->v32[3] >> 16) & 0xff] ^ U3[state->v32[0] >> 24];
 
@@ -1699,40 +1700,40 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 	^ U2[(state->v32[1] >> 16) & 0xff] ^ U3[state->v32[2] >> 24];
 #endif /* WORDS_BIGENDIAN */
 
-  state->v32[0] = column0 ^ round_key.v32[0];
-  state->v32[1] = column1 ^ round_key.v32[1];
-  state->v32[2] = column2 ^ round_key.v32[2];
-  state->v32[3] = column3 ^ round_key.v32[3];
-  
+  state->v32[0] = column0 ^ round_key->v32[0];
+  state->v32[1] = column1 ^ round_key->v32[1];
+  state->v32[2] = column2 ^ round_key->v32[2];
+  state->v32[3] = column3 ^ round_key->v32[3];
+
 }
 
-inline void
-aes_final_round(v128_t *state, v128_t round_key) {
+static inline void
+aes_final_round(v128_t *state, const v128_t *round_key) {
   uint32_t tmp0, tmp1, tmp2, tmp3;
 
   tmp0 = (T4[(state->v32[0] >> 24)]        & 0xff000000) 
        ^ (T4[(state->v32[1] >> 16) & 0xff] & 0x00ff0000) 
        ^ (T4[(state->v32[2] >>  8) & 0xff] & 0x0000ff00) 
        ^ (T4[(state->v32[3]      ) & 0xff] & 0x000000ff) 
-       ^ round_key.v32[0];
+       ^ round_key->v32[0];
 
   tmp1 = (T4[(state->v32[1] >> 24)]        & 0xff000000)
        ^ (T4[(state->v32[2] >> 16) & 0xff] & 0x00ff0000)
        ^ (T4[(state->v32[3] >>  8) & 0xff] & 0x0000ff00)
        ^ (T4[(state->v32[0]      ) & 0xff] & 0x000000ff)
-       ^ round_key.v32[1];
+       ^ round_key->v32[1];
 
   tmp2 = (T4[(state->v32[2] >> 24)]        & 0xff000000)
        ^ (T4[(state->v32[3] >> 16) & 0xff] & 0x00ff0000)
        ^ (T4[(state->v32[0] >>  8) & 0xff] & 0x0000ff00)
        ^ (T4[(state->v32[1]      ) & 0xff] & 0x000000ff)
-       ^ round_key.v32[2];
+       ^ round_key->v32[2];
 
   tmp3 = (T4[(state->v32[3] >> 24)]        & 0xff000000)
        ^ (T4[(state->v32[0] >> 16) & 0xff] & 0x00ff0000)
        ^ (T4[(state->v32[1] >>  8) & 0xff] & 0x0000ff00)
        ^ (T4[(state->v32[2]      ) & 0xff] & 0x000000ff)
-       ^ round_key.v32[3];
+       ^ round_key->v32[3];
 
   state->v32[0] = tmp0;
   state->v32[1] = tmp1;
@@ -1741,33 +1742,33 @@ aes_final_round(v128_t *state, v128_t round_key) {
 
 }
 
-inline void
-aes_inv_final_round(v128_t *state, v128_t round_key) {
+static inline void
+aes_inv_final_round(v128_t *state, const v128_t *round_key) {
   uint32_t tmp0, tmp1, tmp2, tmp3;
 
   tmp0 = (U4[(state->v32[0] >> 24)]        & 0xff000000) 
        ^ (U4[(state->v32[3] >> 16) & 0xff] & 0x00ff0000) 
        ^ (U4[(state->v32[2] >>  8) & 0xff] & 0x0000ff00) 
        ^ (U4[(state->v32[1]      ) & 0xff] & 0x000000ff) 
-       ^ round_key.v32[0];
+       ^ round_key->v32[0];
 
   tmp1 = (U4[(state->v32[1] >> 24)]        & 0xff000000)
        ^ (U4[(state->v32[0] >> 16) & 0xff] & 0x00ff0000)
        ^ (U4[(state->v32[3] >>  8) & 0xff] & 0x0000ff00)
        ^ (U4[(state->v32[2]      ) & 0xff] & 0x000000ff)
-       ^ round_key.v32[1];
+       ^ round_key->v32[1];
 
   tmp2 = (U4[(state->v32[2] >> 24)]        & 0xff000000)
        ^ (U4[(state->v32[1] >> 16) & 0xff] & 0x00ff0000)
        ^ (U4[(state->v32[0] >>  8) & 0xff] & 0x0000ff00)
        ^ (U4[(state->v32[3]      ) & 0xff] & 0x000000ff)
-       ^ round_key.v32[2];
+       ^ round_key->v32[2];
 
   tmp3 = (U4[(state->v32[3] >> 24)]        & 0xff000000)
        ^ (U4[(state->v32[2] >> 16) & 0xff] & 0x00ff0000)
        ^ (U4[(state->v32[1] >>  8) & 0xff] & 0x0000ff00)
        ^ (U4[(state->v32[0]      ) & 0xff] & 0x000000ff)
-       ^ round_key.v32[3];
+       ^ round_key->v32[3];
 
   state->v32[0] = tmp0;
   state->v32[1] = tmp1;
@@ -1778,8 +1779,8 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
 
 #elif CPU_16  /* assume 16-bit word size on processor */
 
-inline void
-aes_round(v128_t *state, const v128_t round_key) {
+static inline void
+aes_round(v128_t *state, const v128_t *round_key) {
   uint32_t column0, column1, column2, column3;
   uint16_t c
   /* compute the columns of the output square in terms of the octets
@@ -1787,7 +1788,7 @@ aes_round(v128_t *state, const v128_t round_key) {
 
   column0 = T0[state->octet[0]] ^ T1[state->octet[5]]
     ^ T2[state->octet[10]] ^ T3[state->octet[15]];
-  
+
   column1 = T0[state->octet[4]] ^ T1[state->octet[9]]
     ^ T2[state->octet[14]] ^ T3[state->octet[3]];
 
@@ -1797,16 +1798,16 @@ aes_round(v128_t *state, const v128_t round_key) {
   column3 = T0[state->octet[12]] ^ T1[state->octet[1]]
     ^ T2[state->octet[6]] ^ T3[state->octet[11]];
 
-  state->v32[0] = column0 ^ round_key.v32[0];
-  state->v32[1] = column1 ^ round_key.v32[1];
-  state->v32[2] = column2 ^ round_key.v32[2];
-  state->v32[3] = column3 ^ round_key.v32[3];
-  
+  state->v32[0] = column0 ^ round_key->v32[0];
+  state->v32[1] = column1 ^ round_key->v32[1];
+  state->v32[2] = column2 ^ round_key->v32[2];
+  state->v32[3] = column3 ^ round_key->v32[3];
+
 }
 
 
-inline void
-aes_inv_round(v128_t *state, const v128_t round_key) {
+static inline void
+aes_inv_round(v128_t *state, const v128_t *round_key) {
   uint32_t column0, column1, column2, column3;
 
   /* compute the columns of the output square in terms of the octets
@@ -1814,7 +1815,7 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
 
   column0 = U0[state->octet[0]] ^ U1[state->octet[5]]
     ^ U2[state->octet[10]] ^ U3[state->octet[15]];
-  
+
   column1 = U0[state->octet[4]] ^ U1[state->octet[9]]
     ^ U2[state->octet[14]] ^ U3[state->octet[3]];
 
@@ -1824,15 +1825,15 @@ aes_inv_round(v128_t *state, const v128_t round_key) {
   column3 = U0[state->octet[12]] ^ U1[state->octet[1]]
     ^ U2[state->octet[6]] ^ U3[state->octet[11]];
 
-  state->v32[0] = column0 ^ round_key.v32[0];
-  state->v32[1] = column1 ^ round_key.v32[1];
-  state->v32[2] = column2 ^ round_key.v32[2];
-  state->v32[3] = column3 ^ round_key.v32[3];
-  
+  state->v32[0] = column0 ^ round_key->v32[0];
+  state->v32[1] = column1 ^ round_key->v32[1];
+  state->v32[2] = column2 ^ round_key->v32[2];
+  state->v32[3] = column3 ^ round_key->v32[3];
+
 }
 
-inline void
-aes_final_round(v128_t *state, v128_t round_key) {
+static inline void
+aes_final_round(v128_t *state, const v128_t *round_key) {
   uint8_t tmp;
 
   /* byte substitutions and row shifts */
@@ -1856,7 +1857,7 @@ aes_final_round(v128_t *state, v128_t round_key) {
   tmp = aes_sbox[state->octet[14]];
   state->octet[14] = aes_sbox[state->octet[6]];
   state->octet[6] = tmp; 
-  
+
   /* fourth row - shift three left */
   tmp = aes_sbox[state->octet[15]];
   state->octet[15] = aes_sbox[state->octet[11]];
@@ -1864,11 +1865,11 @@ aes_final_round(v128_t *state, v128_t round_key) {
   state->octet[7] = aes_sbox[state->octet[3]];
   state->octet[3] = tmp;
 
-  v128_xor_eq(state, &round_key);
+  v128_xor_eq(state, round_key);
 }
 
-inline void
-aes_inv_final_round(v128_t *state, v128_t round_key) {
+static inline void
+aes_inv_final_round(v128_t *state, const v128_t *round_key) {
   uint8_t tmp;
 
   /* byte substitutions and row shifts */
@@ -1892,7 +1893,7 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
   tmp = aes_inv_sbox[state->octet[14]];
   state->octet[14] = aes_inv_sbox[state->octet[6]];
   state->octet[6] = tmp; 
-  
+
   /* fourth row - shift three left */
   tmp = aes_inv_sbox[state->octet[15]];
   state->octet[15] = aes_inv_sbox[state->octet[11]];
@@ -1900,63 +1901,49 @@ aes_inv_final_round(v128_t *state, v128_t round_key) {
   state->octet[7] = aes_inv_sbox[state->octet[3]];
   state->octet[3] = tmp;
 
-  v128_xor_eq(state, &round_key);
+  v128_xor_eq(state, round_key);
 }
 
 #endif  /* CPU type */
-
-inline void
-aes_add_in_subkey(v128_t *state, v128_t round_key) {
-  state->v32[0] ^= round_key.v32[0];
-  state->v32[1] ^= round_key.v32[1];
-  state->v32[2] ^= round_key.v32[2];
-  state->v32[3] ^= round_key.v32[3];    
-}
 
 
 void
 aes_encrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
 
   /* add in the subkey */
-  /* v128_xor_eq(plaintext, &exp_key[0]); */
-  aes_add_in_subkey(plaintext, exp_key[0]);
+  v128_xor_eq(plaintext, exp_key + 0);
 
   /* now do nine rounds */
-  aes_round(plaintext, exp_key[1]);
-  aes_round(plaintext, exp_key[2]);
-  aes_round(plaintext, exp_key[3]);
-  aes_round(plaintext, exp_key[4]);
-  aes_round(plaintext, exp_key[5]);
-  aes_round(plaintext, exp_key[6]);
-  aes_round(plaintext, exp_key[7]);
-  aes_round(plaintext, exp_key[8]);  
-  aes_round(plaintext, exp_key[9]);
+  aes_round(plaintext, exp_key + 1);
+  aes_round(plaintext, exp_key + 2);
+  aes_round(plaintext, exp_key + 3);
+  aes_round(plaintext, exp_key + 4);
+  aes_round(plaintext, exp_key + 5);
+  aes_round(plaintext, exp_key + 6);
+  aes_round(plaintext, exp_key + 7);
+  aes_round(plaintext, exp_key + 8);  
+  aes_round(plaintext, exp_key + 9);
   /* the last round is different */
- 
- aes_final_round(plaintext, exp_key[10]);  
 
+ aes_final_round(plaintext, exp_key + 10);  
 }
 
 void
 aes_decrypt(v128_t *plaintext, const aes_expanded_key_t exp_key) {
-  
+
   /* add in the subkey */
-  /* v128_xor_eq(plaintext, &exp_key[10]); */
-  aes_add_in_subkey(plaintext, exp_key[0]);
+  v128_xor_eq(plaintext, exp_key + 0);
 
   /* now do nine rounds */
-  aes_inv_round(plaintext, exp_key[1]);
-  aes_inv_round(plaintext, exp_key[2]);
-  aes_inv_round(plaintext, exp_key[3]);
-  aes_inv_round(plaintext, exp_key[4]);
-  aes_inv_round(plaintext, exp_key[5]);
-  aes_inv_round(plaintext, exp_key[6]);
-  aes_inv_round(plaintext, exp_key[7]);
-  aes_inv_round(plaintext, exp_key[8]);  
-  aes_inv_round(plaintext, exp_key[9]);
+  aes_inv_round(plaintext, exp_key + 1);
+  aes_inv_round(plaintext, exp_key + 2);
+  aes_inv_round(plaintext, exp_key + 3);
+  aes_inv_round(plaintext, exp_key + 4);
+  aes_inv_round(plaintext, exp_key + 5);
+  aes_inv_round(plaintext, exp_key + 6);
+  aes_inv_round(plaintext, exp_key + 7);
+  aes_inv_round(plaintext, exp_key + 8);  
+  aes_inv_round(plaintext, exp_key + 9);
   /* the last round is different */
-  aes_inv_final_round(plaintext, exp_key[10]);  
-
+  aes_inv_final_round(plaintext, exp_key + 10);  
 }
-
-
