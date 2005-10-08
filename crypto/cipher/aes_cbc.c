@@ -117,10 +117,10 @@ aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key,
   /* expand key for the appropriate direction */
   switch (dir) {
   case (direction_encrypt):
-    aes_expand_encryption_key(tmp_key, c->expanded_key);
+    aes_expand_encryption_key(&tmp_key, c->expanded_key);
     break;
   case (direction_decrypt):
-    aes_expand_decryption_key(tmp_key, c->expanded_key);
+    aes_expand_decryption_key(&tmp_key, c->expanded_key);
     break;
   default:
     return err_status_bad_param;
