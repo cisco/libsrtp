@@ -95,7 +95,7 @@ main (int argc, char *argv[]) {
   }
 
   /* encrypt plaintext */
-  aes_expand_encryption_key(key, exp_key);
+  aes_expand_encryption_key(&key, exp_key);
 
   aes_encrypt(&data, exp_key);
 

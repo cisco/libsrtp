@@ -66,7 +66,7 @@ x917_prng_init(rand_source_func_t random_source) {
     return status;
 
   /* expand aes key */
-  aes_expand_encryption_key(tmp_key, x917_prng.key);
+  aes_expand_encryption_key(&tmp_key, x917_prng.key);
 
   /* initialize prng state from random source */
   status = x917_prng.rand((uint8_t *)&x917_prng.state, 16);

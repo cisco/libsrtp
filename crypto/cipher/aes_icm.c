@@ -181,7 +181,7 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key) {
 	      "offset: %s", v128_hex_string(&c->offset)); 
 
   /* expand key */
-  aes_expand_encryption_key(tmp_key, c->expanded_key);
+  aes_expand_encryption_key(&tmp_key, c->expanded_key);
 
   /* indicate that the keystream_buffer is empty */
   c->bytes_in_buffer = 0;
