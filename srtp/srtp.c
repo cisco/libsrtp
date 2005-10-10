@@ -673,8 +673,10 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     */
    if (stream->rtp_services & sec_serv_conf) {
      enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;  
-     if (hdr->x == 1) 
-       enc_start += ((srtp_hdr_xtnd_t *)enc_start)->length;
+     if (hdr->x == 1) {
+       srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
+       enc_start += (ntohs(xtn_hdr->length) + 1);
+     }
      enc_octet_len = *pkt_octet_len - ((enc_start - (uint32_t *)hdr) << 2);
    } else {
      enc_start = NULL;
@@ -936,8 +938,10 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
    */
   if (stream->rtp_services & sec_serv_conf) {
     enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;  
-    if (hdr->x == 1) 
-      enc_start += ((srtp_hdr_xtnd_t *)enc_start)->length;
+    if (hdr->x == 1) {
+      srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
+      enc_start += (ntohs(xtn_hdr->length) + 1);
+    }  
     enc_octet_len = *pkt_octet_len - tag_len
       - ((enc_start - (uint32_t *)hdr) << 2);
   } else {
