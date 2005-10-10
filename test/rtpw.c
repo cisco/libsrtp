@@ -76,7 +76,11 @@
 #include "srtp.h"           
 #include "rtp.h"
 
-#define DICT_FILE        "/usr/share/dict/words"
+#ifdef RTPW_USE_WINSOCK2
+# define DICT_FILE        "words.txt"
+#else
+# define DICT_FILE        "/usr/share/dict/words"
+#endif
 #define USEC_RATE        (5e5)
 #define MAX_WORD_LEN     128  
 #define ADDR_IS_MULTICAST(a) IN_MULTICAST(htonl(a))
