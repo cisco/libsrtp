@@ -46,6 +46,10 @@
 #ifndef SRTP_H
 #define SRTP_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "crypto_kernel.h"
 #include "rdbx.h"
 #include "rdb.h"
@@ -854,5 +858,9 @@ typedef struct {
 /* for byte-access */
 #define SRTCP_E_BYTE_BIT 0x80
 #define SRTCP_INDEX_MASK 0x7fffffff
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SRTP_H */
