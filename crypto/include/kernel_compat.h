@@ -54,8 +54,16 @@
 #include <linux/random.h>
 #include <linux/byteorder/generic.h>
 
-/* clock() implementation. */
+
+#define err_report(priority, ...) \
+  do {\
+    if (priority <= err_level) {\
+       printk(__VA_ARGS__);\
+    }\
+  }while(0)
+
 #define clock()	(jiffies)
+#define time(x)	(jiffies)
 
 /* rand() implementation. */
 #define RAND_MAX	32767
