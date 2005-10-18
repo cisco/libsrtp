@@ -55,6 +55,15 @@
 
 err_reporting_level_t err_level = err_level_none;
 
+#ifdef SRTP_KERNEL_LINUX
+err_status_t
+err_reporting_init(char *ident) {
+
+  return err_status_ok;
+}
+
+#else /* SRTP_KERNEL_LINUX */	
+
 /* err_file is the FILE to which errors are reported */
 
 static FILE *err_file = NULL;
@@ -131,6 +140,7 @@ err_report(int priority, char *format, ...) {
     va_end(args);
   }
 }
+#endif /* SRTP_KERNEL_LINUX */	
 
 void
 err_reporting_set_level(err_reporting_level_t lvl) { 
