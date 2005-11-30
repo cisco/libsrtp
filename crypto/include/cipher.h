@@ -158,7 +158,7 @@ typedef struct cipher_t {
   cipher_type_t *type;
   void          *state;
   int            key_len;
-#if FORCE_64BIT_ALIGN
+#ifdef FORCE_64BIT_ALIGN
   int            pad;
 #endif
 } cipher_t;
