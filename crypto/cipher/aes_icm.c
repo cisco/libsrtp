@@ -328,13 +328,14 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   int i;
   uint32_t *b;
 
-  /* check that there's enough segment left */
+  /* check that there's enough segment left but not for ismacryp*/
+#ifndef GENERIC_AESICM  
   if ((bytes_to_encr + htons(c->counter.v16[7])) > 0xffff)
     return err_status_terminus;
+#endif  
 
  debug_print(mod_aes_icm, "block index: %d", 
-	     htons(c->counter.v16[7]));
-  
+           htons(c->counter.v16[7]));
   if (bytes_to_encr <= c->bytes_in_buffer) {
     
     /* deal with odd case of small bytes_to_encr */
