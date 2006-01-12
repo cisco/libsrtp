@@ -307,8 +307,23 @@ main (int argc, char *argv[]) {
      * with only the security services requested on the command line,
      * using the right SSRC value
      */
-    crypto_policy_set_rtp_default(&policy.rtp);
-    crypto_policy_set_rtcp_default(&policy.rtcp);
+    switch (sec_servs) {
+    case sec_serv_conf_and_auth:
+      crypto_policy_set_rtp_default(&policy.rtp);
+      crypto_policy_set_rtcp_default(&policy.rtcp);
+      break;
+    case sec_serv_conf:
+      crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
+      crypto_policy_set_rtcp_default(&policy.rtcp);      
+      break;
+    case sec_serv_auth:
+      crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
+      crypto_policy_set_rtcp_default(&policy.rtcp);
+      break;
+    default:
+      printf("error: unknown security service requested\n");
+      return -1;
+    } 
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = ssrc;
     policy.key  = (uint8_t *) key;

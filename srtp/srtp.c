@@ -1361,6 +1361,61 @@ crypto_policy_set_rtcp_default(crypto_policy_t *p) {
   
 }
 
+void
+crypto_policy_set_aes_cm_128_hmac_sha1_32(crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-mmusic-sdescriptions-12.txt
+   *
+   * note that this crypto policy is intended for SRTP, but not SRTCP
+   */
+
+  p->cipher_type     = AES_128_ICM;           
+  p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
+  p->auth_type       = HMAC_SHA1;             
+  p->auth_key_len    = 20;                /* 160 bit key               */
+  p->auth_tag_len    = 4;                 /* 32 bit tag                */
+  p->sec_serv        = sec_serv_conf_and_auth;
+  
+}
+
+
+void
+crypto_policy_set_aes_cm_128_null_auth(crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-mmusic-sdescriptions-12.txt
+   *
+   * note that this crypto policy is intended for SRTP, but not SRTCP
+   */
+
+  p->cipher_type     = AES_128_ICM;           
+  p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
+  p->auth_type       = NULL_AUTH;             
+  p->auth_key_len    = 0; 
+  p->auth_tag_len    = 0; 
+  p->sec_serv        = sec_serv_conf;
+  
+}
+
+
+void
+crypto_policy_set_null_cipher_hmac_sha1_80(crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-mmusic-sdescriptions-12.txt
+   */
+
+  p->cipher_type     = NULL_CIPHER;           
+  p->cipher_key_len  = 0;
+  p->auth_type       = HMAC_SHA1;             
+  p->auth_key_len    = 20; 
+  p->auth_tag_len    = 10; 
+  p->sec_serv        = sec_serv_auth;
+  
+}
+
+
 /* 
  * secure rtcp functions
  */
