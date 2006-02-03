@@ -475,7 +475,7 @@ srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy) {
   timer = clock();
   for (i=0; i < num_trials; i++) {
     err_status_t status;
-    len = msg_len_octets;
+    len = msg_len_octets + 12;  /* add in rtp header length */
     
     /* srtp protect message */
     status = srtp_protect(srtp, mesg, &len);
