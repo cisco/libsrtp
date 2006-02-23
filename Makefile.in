@@ -195,14 +195,14 @@ install:
 	$(INSTALL) -d $(DESTDIR)$(libdir)
 	cp include/*.h $(DESTDIR)$(includedir)/srtp  
 	cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp
-	cp libsrtp.a $(DESTDIR)$(libdir)/
+	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
 	if [ -f libaesicm.a ]; then cp libaesicm.a $(DESTDIR)$(libdir)/; fi 
 
 
 uninstall:
 	rm -rf $(DESTDIR)$(includedir)/srtp
 	rm -rf $(DESTDIR)$(libdir)/libsrtp.a
-	rm -rf $(DESTDIR)$(libdir)/libaesicm.a; fi
+	rm -rf $(DESTDIR)$(libdir)/libaesicm.a
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) $(table_apps) TAGS \
