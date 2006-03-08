@@ -599,6 +599,17 @@ srtp_dealloc(srtp_t s);
  */
 
 
+/*
+ * the following declarations are libSRTP internal functions 
+ */
+
+/*
+ * srtp_get_stream(ssrc) returns a pointer to the stream corresponding
+ * to ssrc, or NULL if no stream exists for that ssrc
+ */
+
+srtp_stream_t 
+srtp_get_stream(srtp_t srtp, uint32_t ssrc);
 
 
 

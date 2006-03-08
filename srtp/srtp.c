@@ -72,21 +72,6 @@ debug_module_t mod_srtp = {
 #define octets_in_rtcp_header  8
 #define uint32s_in_rtcp_header 2
 
-/*
- * the following declarations are libSRTP internal functions 
- */
-
-/*
- * srtp_get_stream(ssrc) returns a pointer to the stream corresponding
- * to ssrc, or NULL if no stream exists for that ssrc
- */
-
-srtp_stream_t 
-srtp_get_stream(srtp_t srtp, uint32_t ssrc);
-
-err_status_t
-srtp_session_alloc(srtp_t *ctx_ptr, const crypto_policy_t *p);
-
 
 err_status_t
 srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
