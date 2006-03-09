@@ -1458,7 +1458,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
    */
   if (stream->direction != dir_srtp_sender) {
     if (stream->direction == dir_unknown) {
-      stream->direction = dir_srtp_receiver;
+      stream->direction = dir_srtp_sender;
     } else {
       srtp_handle_event(ctx, stream, event_ssrc_collision);
     }
