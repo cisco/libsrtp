@@ -51,7 +51,7 @@
 
 #include "integers.h"  /* for uint32_t */
 
-#define UT_BUF 4      /* maximum amount of packet reorder */
+#define UT_BUF 160      /* maximum amount of packet reorder */
 
 typedef struct {
   uint32_t index;

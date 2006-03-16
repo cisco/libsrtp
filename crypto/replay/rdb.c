@@ -73,7 +73,7 @@ err_status_t
 rdb_check(const rdb_t *rdb, uint32_t index) {
   
   /* if the index appears after (or at very end of) the window, its good */
-  if (index > rdb->window_start + rdb_bits_in_bitmask)
+  if (index >= rdb->window_start + rdb_bits_in_bitmask)
     return err_status_ok;
   
   /* if the index appears before the window, its bad */
@@ -111,7 +111,7 @@ rdb_add_index(rdb_t *rdb, uint32_t index) {
 
   } else { 
     
-    delta -= rdb_bits_in_bitmask;
+    delta -= rdb_bits_in_bitmask - 1;
 
     /* shift the window forward by delta bits*/
     v128_left_shift(&rdb->bitmask, delta);
