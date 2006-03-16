@@ -90,25 +90,23 @@ debug_module_t mod_aes_icm = {
  */
 
 err_status_t
-aes_icm_alloc(cipher_t **c, int key_len) {
+aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
   extern cipher_type_t aes_icm;
   uint8_t *pointer;
   int tmp;
 
   debug_print(mod_aes_icm, 
-	      "allocating cipher with key length %d", key_len);
+            "allocating cipher with key length %d", key_len);
 
-#ifdef GENERIC_AESICM
   // Ismacryp, for example, uses 16 byte key + 8 byte 
   // salt  so this function is called with key_len = 24.
   // The check for key_len = 30 does not apply. Our usage
   // of aes functions with key_len = values other than 30
   // has not broken anything. Don't know what would be the
   // effect of skipping this check for srtp in general.
-#else
-  if (key_len != 30)
+  if (!forIsmacryp && key_len != 30)
     return err_status_bad_param;
-#endif
+
   /* allocate memory a cipher of type aes_icm */
   tmp = (sizeof(aes_icm_ctx_t) + sizeof(cipher_t));
   pointer = crypto_alloc(tmp);
@@ -127,6 +125,10 @@ aes_icm_alloc(cipher_t **c, int key_len) {
   (*c)->key_len = key_len;
 
   return err_status_ok;  
+}
+
+err_status_t aes_icm_alloc(cipher_t **c, int key_len, int forIsmacryp) {
+  return aes_icm_alloc_ismacryp(c, key_len, 0);
 }
 
 err_status_t
@@ -280,12 +282,7 @@ aes_icm_set_iv(aes_icm_ctx_t *c, void *iv) {
  */
   
 inline void
-aes_icm_advance(aes_icm_ctx_t *c) {
-
-#ifdef GENERIC_AESICM  
-  uint32_t temp;
-#endif
- 
+aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
   /* fill buffer with new keystream */
   v128_copy(&c->keystream_buffer, &c->counter);
   aes_encrypt(&c->keystream_buffer, c->expanded_key);
@@ -297,18 +294,24 @@ aes_icm_advance(aes_icm_ctx_t *c) {
 	      v128_hex_string(&c->keystream_buffer));    
   
   /* clock counter forward */
-  
-#ifdef GENERIC_AESICM  
-  //alex's clock counter forward
-  temp = ntohl(c->counter.v32[3]);
-  c->counter.v32[3] = htonl(++temp);
-#else
-  if (!++(c->counter.v8[15])) 
-    ++(c->counter.v8[14]);
-#endif
+
+  if (forIsmacryp) {
+    uint32_t temp;    
+    //alex's clock counter forward
+    temp = ntohl(c->counter.v32[3]);
+    c->counter.v32[3] = htonl(++temp);
+  } else {
+    if (!++(c->counter.v8[15])) 
+      ++(c->counter.v8[14]);
+  }
 }
 
-/*
+inline void aes_icm_advance(aes_icm_ctx_t *c) {
+  aes_icm_advance_ismacryp(c, 0);
+}
+
+
+/*e
  * icm_encrypt deals with the following cases:
  *
  * bytes_to_encr < bytes_in_buffer
@@ -322,17 +325,16 @@ aes_icm_advance(aes_icm_ctx_t *c) {
  */
 
 err_status_t
-aes_icm_encrypt(aes_icm_ctx_t *c,
-		unsigned char *buf, unsigned int *enc_len) {
+aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
+              unsigned char *buf, unsigned int *enc_len, 
+              int forIsmacryp) {
   unsigned int bytes_to_encr = *enc_len;
   int i;
   uint32_t *b;
 
   /* check that there's enough segment left but not for ismacryp*/
-#ifndef GENERIC_AESICM  
-  if ((bytes_to_encr + htons(c->counter.v16[7])) > 0xffff)
+  if (!forIsmacryp && (bytes_to_encr + htons(c->counter.v16[7])) > 0xffff)
     return err_status_terminus;
-#endif  
 
  debug_print(mod_aes_icm, "block index: %d", 
            htons(c->counter.v16[7]));
@@ -365,7 +367,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   for (i=0; i < (bytes_to_encr/sizeof(v128_t)); i++) {
 
     /* fill buffer with new keystream */
-    aes_icm_advance(c);
+    aes_icm_advance_ismacryp(c, forIsmacryp);
 
     /*
      * add keystream into the data buffer (this would be a lot faster
@@ -413,7 +415,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   if ((bytes_to_encr & 0xf) != 0) {
     
     /* fill buffer with new keystream */
-    aes_icm_advance(c);
+    aes_icm_advance_ismacryp(c, forIsmacryp);
     
     for (i=0; i < (bytes_to_encr & 0xf); i++)
       *buf++ ^= c->keystream_buffer.v8[i];
@@ -428,6 +430,11 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
   }
 
   return err_status_ok;
+}
+
+err_status_t
+aes_icm_encrypt(aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len) {
+  return aes_icm_encrypt_ismacryp(c, buf, enc_len, 0);
 }
 
 err_status_t
