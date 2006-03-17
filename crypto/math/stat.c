@@ -349,3 +349,19 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
   debug_print(mod_stat, "passed random stat test", NULL);
   return err_status_ok;
 }
+
+err_status_t
+stat_test_rand_source_with_repetition(rand_source_func_t source, unsigned num_trials) {
+  int i;
+  err_status_t err = err_status_algo_fail;
+
+  for (i=0; i < num_trials; i++) {
+    err = stat_test_rand_source(source);
+    if (err == err_status_ok) {
+      return err_status_ok;  
+    }
+    debug_print(mod_stat, "failed stat test (try number %d)\n", i);
+  }
+  
+  return err;
+}
