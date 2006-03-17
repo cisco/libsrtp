@@ -89,8 +89,11 @@ crypto_kernel = {
   NULL                             /* no debug modules yet        */
 };
 
+#define MAX_RNG_TRIALS 10
+
 err_status_t
 crypto_kernel_init() {
+  unsigned num_rng_trials;
   err_status_t status;  
 
   /* check the security state */
@@ -126,9 +129,16 @@ crypto_kernel_init() {
     return status;
   
   /* initialize random number generator */
-  status = rand_source_init();
-  if (status)
-    return status;
+  num_rng_trials = 0;
+  while (num_rng_trials < MAX_RNG_TRIALS) {
+    status = rand_source_init();
+    if (status)
+      return status;
+    debug_print(mod_crypto_kernel, 
+		"provisional RNG failure (%d), will retest\n", 
+		num_rng_trials);
+    num_rng_trials++;
+  }
 
   /* run FIPS-140 statistical tests on rand_source */  
   status = stat_test_rand_source(rand_source_get_octet_string);
@@ -250,25 +260,42 @@ crypto_kernel_list_debug_modules() {
 err_status_t
 crypto_kernel_shutdown() {
   err_status_t status;
-  kernel_cipher_type_t *ctype, *next;
 
   /*
    * free dynamic memory used in crypto_kernel at present
    */
 
   /* walk down cipher type list, freeing memory */
-  ctype = crypto_kernel.cipher_type_list;
-  while (ctype != NULL) {
-    next = ctype->next;
+  while (crypto_kernel.cipher_type_list != NULL) {
+    kernel_cipher_type_t *ctype = crypto_kernel.cipher_type_list;
+    crypto_kernel.cipher_type_list = ctype->next;
     debug_print(mod_crypto_kernel, 
 		"freeing memory for cipher %s", 
 		ctype->cipher_type->description);
     crypto_free(ctype);
-    ctype = next;
   }
 
-  /* de-initialize random number generator */
-  status = rand_source_deinit();
+  /* walk down authetication module list, freeing memory */
+  while (crypto_kernel.auth_type_list != NULL) {
+     kernel_auth_type_t *atype = crypto_kernel.auth_type_list;
+     crypto_kernel.auth_type_list = atype->next;
+     debug_print(mod_crypto_kernel, 
+		"freeing memory for authentication %s",
+		atype->auth_type->description);
+     crypto_free(atype);
+  }
+
+  /* walk down debug module list, freeing memory */
+  while (crypto_kernel.debug_module_list != NULL) {
+    kernel_debug_module_t *kdm = crypto_kernel.debug_module_list;
+    crypto_kernel.debug_module_list = kdm->next;
+    debug_print(mod_crypto_kernel, 
+		"freeing memory for debug module %s", 
+		kdm->mod->name);
+    crypto_free(kdm);
+  }
+
+  /* de-initialize random number generator */  status = rand_source_deinit();
   if (status)
     return status;
 
