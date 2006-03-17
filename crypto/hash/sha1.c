@@ -296,11 +296,10 @@ sha1_final(sha1_ctx_t *ctx, uint32_t *output) {
      */
     if (ctx->octets_in_buffer < 56) 
       W[15] = ctx->num_bits_in_msg;
-    else
+    else if (ctx->octets_in_buffer < 60)
       W[15] = 0x0;
 
-    /* process the word array */
-    for (t=16; t < 80; t++) {
+    /* process the word array */    for (t=16; t < 80; t++) {
       TEMP = W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16];
       W[t] = S1(TEMP);
     }
