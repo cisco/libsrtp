@@ -95,12 +95,6 @@ kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
 
 cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
 
-aesicm	= crypto/cipher/cipher.o crypto/cipher/aes.o crypto/cipher/aes_icm.o \
-          crypto/hash/auth.o crypto/kernel/alloc.o crypto/kernel/err.o \
-          crypto/math/datatypes.o crypto/replay/rdbx.o
-
-aesicmobj = $(aesicm)  $(rng)
-
 # libsrtp.a (implements srtp processing)
 
 srtpobj = srtp/srtp.o 
@@ -108,12 +102,6 @@ srtpobj = srtp/srtp.o
 libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
 	ar cr libsrtp.a $^
 	$(RANLIB) libsrtp.a
-
-# libaesicm.a provides an icm implementation used by mpeg4ip
-
-libaesicm.a: $(aesicmobj)
-	ar cr libaesicm.a $(aesicmobj)
-	$(RANLIB) libaesicm.a
 
 # libcryptomath.a contains general-purpose routines that are used to
 # generate tables and verify cryptoalgorithm implementations - this
@@ -197,17 +185,14 @@ install:
 	cp include/*.h $(DESTDIR)$(includedir)/srtp  
 	cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libaesicm.a ]; then cp libaesicm.a $(DESTDIR)$(libdir)/; fi 
-
 
 uninstall:
 	rm -rf $(DESTDIR)$(includedir)/srtp
 	rm -rf $(DESTDIR)$(libdir)/libsrtp.a
-	rm -rf $(DESTDIR)$(libdir)/libaesicm.a
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) $(table_apps) TAGS \
-        libcryptomath.a libsrtp.a libaesicm.a core *.core test/core
+        libcryptomath.a libsrtp.a core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;

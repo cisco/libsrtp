@@ -38,5 +38,19 @@ err_status_t
 aes_icm_output(aes_icm_ctx_t *c,
 	       unsigned char *buf, int bytes_to_output);
 
+err_status_t 
+aes_icm_dealloc(cipher_t *c);
+ 
+err_status_t 
+aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c, 
+			 unsigned char *buf, 
+			 unsigned int *enc_len, 
+			 int forIsmacryp);
+ 
+err_status_t 
+aes_icm_alloc_ismacryp(cipher_t **c, 
+		       int key_len, 
+		       int forIsmacryp);
+
 #endif /* AES_ICM_H */
 
