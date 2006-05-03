@@ -1564,10 +1564,14 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   /* initialize auth func context */
   auth_start(stream->rtcp_auth);
 
-  /* per spec, do auth after encryption */
-  /* run auth func over packet, put result into auth_tag */
+  /* 
+   * run auth func over packet (including trailer), and write the
+   * result at auth_tag 
+   */
   status = auth_compute(stream->rtcp_auth, 
-			(uint8_t *)auth_start,  *pkt_octet_len, auth_tag);
+			(uint8_t *)auth_start, 
+			(*pkt_octet_len) + sizeof(srtcp_trailer_t), 
+			auth_tag);
   debug_print(mod_srtp, "srtcp auth tag:    %s", 
 	      octet_string_hex_string(auth_tag, tag_len));
   if (status)
@@ -1653,10 +1657,10 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    */
   /* this is easier than dealing with bitfield access */
   seq_num = ntohl(*trailer) & SRTCP_INDEX_MASK;
+  debug_print(mod_srtp, "srtcp index: %x", seq_num);
   status = rdb_check(&stream->rtcp_rdb, seq_num);
   if (status)
     return status;
-  debug_print(mod_srtp, "srtcp index: %x", seq_num);
 
   /* 
    * if we're using aes counter mode, set nonce and seq 
@@ -1689,7 +1693,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
 
   /* run auth func over packet, put result into tmp_tag */
   status = auth_compute(stream->rtcp_auth, (uint8_t *)auth_start,  
-			*pkt_octet_len - (tag_len + sizeof(srtcp_trailer_t)),
+			*pkt_octet_len - tag_len,
 			tmp_tag);
   debug_print(mod_srtp, "srtcp computed tag:       %s", 
 	      octet_string_hex_string(tmp_tag, tag_len));

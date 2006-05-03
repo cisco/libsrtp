@@ -78,11 +78,11 @@ rdb_check(const rdb_t *rdb, uint32_t index) {
   
   /* if the index appears before the window, its bad */
   if (index < rdb->window_start)
-    return err_status_fail;
+    return err_status_replay_old;
 
   /* otherwise, the index appears within the window, so check the bitmask */
   if (v128_get_bit(&rdb->bitmask, (index - rdb->window_start)) == 1)
-    return err_status_fail;    
+    return err_status_replay_fail;    
       
   /* otherwise, the index is okay */
   return err_status_ok;
