@@ -392,7 +392,7 @@ octet_string_set_to_zero(uint8_t *s, int len);
 # define be64_to_cpu(x)	bswap_64((x))
 #else
 
-# ifdef HAVE_X86
+#if defined(__GNUC__) && defined(HAVE_X86)
 /* Fall back. */
 static inline uint32_t be32_to_cpu(uint32_t v) {
    /* optimized for x86. */
@@ -414,7 +414,7 @@ static inline uint64_t be64_to_cpu(uint64_t v) {
    v = make64(htonl(low32(v)),htonl(high32(v)));
 # else
    /* use the native 64-bit math */
-   v= (be32_to_cpu(v >> 32)) | (((uint64_t)be32_to_cpu((uint32_t)v)) << 32);
+   v= (uint64_t)((be32_to_cpu((uint32_t)(v >> 32))) | (((uint64_t)be32_to_cpu((uint32_t)v)) << 32));
 # endif
    return v;
 }

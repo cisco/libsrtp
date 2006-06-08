@@ -80,7 +80,7 @@ err_status_t
 x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
   uint32_t t;
   v128_t buffer;
-  int i, tail_len;
+  uint32_t i, tail_len;
   err_status_t status;
 
   /* 
@@ -96,7 +96,7 @@ x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
   x917_prng.octet_count += len;
   
   /* find out the time */
-  t = time(NULL);
+  t = (uint32_t)time(NULL);
   
   /* loop until we have output enough data */
   for (i=0; i < len/16; i++) {

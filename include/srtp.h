@@ -50,6 +50,10 @@
 extern "C" {
 #endif
 
+#ifdef _MSC_VER
+#pragma pack(4)
+#endif
+
 #include "crypto_kernel.h"
 #include "rdbx.h"
 #include "rdb.h"
@@ -415,8 +419,7 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc);
  * @brief crypto_policy_set_rtp_default() sets a crypto policy
  * structure to the SRTP default policy for RTP protection.
  *
- * @param p is a pointer to the policy strucutre to be set to the
- * default policy.
+ * @param p is a pointer to the policy structure to be set 
  * 
  * The function call crypto_policy_set_rtp_default(&p) sets the
  * crypto_policy_t at location p to the SRTP default policy for RTP
@@ -438,8 +441,7 @@ crypto_policy_set_rtp_default(crypto_policy_t *p);
  * @brief crypto_policy_set_rtcp_default() sets a crypto policy
  * structure to the SRTP default policy for RTCP protection.
  *
- * @param p is a pointer to the policy strucutre to be set to the
- * default policy.
+ * @param p is a pointer to the policy structure to be set 
  * 
  * The function call crypto_policy_set_rtcp_default(&p) sets the
  * crypto_policy_t at location p to the SRTP default policy for RTCP
@@ -461,8 +463,7 @@ crypto_policy_set_rtcp_default(crypto_policy_t *p);
  * @brief crypto_policy_set_aes_cm_128_hmac_sha1_80() sets a crypto
  * policy structure to the SRTP default policy for RTP protection.
  *
- * @param p is a pointer to the policy strucutre to be set to the
- * default policy.
+ * @param p is a pointer to the policy structure to be set 
  * 
  * The function crypto_policy_set_aes_cm_128_hmac_sha1_80() is a
  * synonym for crypto_policy_set_rtp_default().  It conforms to the
@@ -480,8 +481,7 @@ crypto_policy_set_rtcp_default(crypto_policy_t *p);
  * @brief crypto_policy_set_aes_cm_128_hmac_sha1_32() sets a crypto
  * policy structure to a short-authentication tag policy
  *
- * @param p is a pointer to the policy strucutre to be set to the
- * default policy.
+ * @param p is a pointer to the policy structure to be set 
  * 
  * The function call crypto_policy_set_aes_cm_128_hmac_sha1_32(&p)
  * sets the crypto_policy_t at location p to use policy
@@ -517,8 +517,7 @@ crypto_policy_set_aes_cm_128_hmac_sha1_32(crypto_policy_t *p);
  * @brief crypto_policy_set_aes_cm_128_null_auth() sets a crypto
  * policy structure to an encryption-only policy
  *
- * @param p is a pointer to the policy strucutre to be set to the
- * default policy.
+ * @param p is a pointer to the policy structure to be set 
  * 
  * The function call crypto_policy_set_aes_cm_128_null_auth(&p) sets
  * the crypto_policy_t at location p to use the SRTP default cipher
@@ -548,8 +547,7 @@ crypto_policy_set_aes_cm_128_null_auth(crypto_policy_t *p);
  * @brief crypto_policy_set_null_cipher_hmac_sha1_80() sets a crypto
  * policy structure to an authentication-only policy
  *
- * @param p is a pointer to the policy strucutre to be set to the
- * default policy.
+ * @param p is a pointer to the policy structure to be set 
  * 
  * The function call crypto_policy_set_null_cipher_hmac_sha1_80(&p)
  * sets the crypto_policy_t at location p to use HMAC-SHA1 with an 80
@@ -985,6 +983,10 @@ typedef struct {
 /* for byte-access */
 #define SRTCP_E_BYTE_BIT 0x80
 #define SRTCP_INDEX_MASK 0x7fffffff
+
+#ifdef _MSC_VER
+#pragma pack()
+#endif
 
 #ifdef __cplusplus
 }

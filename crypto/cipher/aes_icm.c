@@ -329,7 +329,7 @@ aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
               unsigned char *buf, unsigned int *enc_len, 
               int forIsmacryp) {
   unsigned int bytes_to_encr = *enc_len;
-  int i;
+  unsigned int i;
   uint32_t *b;
 
   /* check that there's enough segment left but not for ismacryp*/
@@ -338,7 +338,7 @@ aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
 
  debug_print(mod_aes_icm, "block index: %d", 
            htons(c->counter.v16[7]));
-  if (bytes_to_encr <= c->bytes_in_buffer) {
+  if (bytes_to_encr <= (unsigned int)c->bytes_in_buffer) {
     
     /* deal with odd case of small bytes_to_encr */
     for (i = (sizeof(v128_t) - c->bytes_in_buffer);
