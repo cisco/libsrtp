@@ -610,6 +610,14 @@ srtp_stream_t
 srtp_get_stream(srtp_t srtp, uint32_t ssrc);
 
 
+/*
+ * srtp_stream_init_keys(s, k) (re)initializes the srtp_stream_t s by
+ * deriving all of the needed keys using the KDF and the key k.
+ */
+
+
+err_status_t
+srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
 
 /*
  * libsrtp internal datatypes 

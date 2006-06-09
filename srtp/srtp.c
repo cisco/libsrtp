@@ -354,14 +354,120 @@ srtp_kdf_clear(srtp_kdf_t *kdf) {
 #define MAX_SRTP_KEY_LEN 256
 
 
+err_status_t
+srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
+  err_status_t stat;
+  srtp_kdf_t kdf;
+  uint8_t tmp_key[MAX_SRTP_KEY_LEN];
+  
+  /* initialize KDF state     */
+  srtp_kdf_init(&kdf, key);
+  
+  /* generate encryption key  */
+  srtp_kdf_generate(&kdf, label_rtp_encryption, 
+		    tmp_key, cipher_get_key_length(srtp->rtp_cipher));
+  /* 
+   * if the cipher in the srtp context is aes_icm, then we need
+   * to generate the salt value
+   */
+  if (srtp->rtp_cipher->type == &aes_icm) {
+    /* FIX!!! this is really the cipher key length; rest is salt */
+    int base_key_len = 16;
+    int salt_len = cipher_get_key_length(srtp->rtp_cipher) - base_key_len;
+    
+    debug_print(mod_srtp, "found aes_icm, generating salt", NULL);
+
+    /* generate encryption salt, put after encryption key */
+    srtp_kdf_generate(&kdf, label_rtp_salt, 
+		      tmp_key + base_key_len, salt_len);
+  }
+  debug_print(mod_srtp, "cipher key: %s", 
+	      octet_string_hex_string(tmp_key, 
+		      cipher_get_key_length(srtp->rtp_cipher)));  
+
+  /* initialize cipher */
+  stat = cipher_init(srtp->rtp_cipher, tmp_key, direction_any);
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
+  /* generate authentication key */
+  srtp_kdf_generate(&kdf, label_rtp_msg_auth,
+		    tmp_key, auth_get_key_length(srtp->rtp_auth));
+  debug_print(mod_srtp, "auth key:   %s",
+	      octet_string_hex_string(tmp_key, 
+				      auth_get_key_length(srtp->rtp_auth))); 
+
+  /* initialize auth function */
+  stat = auth_init(srtp->rtp_auth, tmp_key);
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
+  /*
+   * ...now initialize SRTCP keys
+   */
+
+  /* generate encryption key  */
+  srtp_kdf_generate(&kdf, label_rtcp_encryption, 
+		    tmp_key, cipher_get_key_length(srtp->rtcp_cipher));
+  /* 
+   * if the cipher in the srtp context is aes_icm, then we need
+   * to generate the salt value
+   */
+  if (srtp->rtcp_cipher->type == &aes_icm) {
+    /* FIX!!! this is really the cipher key length; rest is salt */
+    int base_key_len = 16;
+    int salt_len = cipher_get_key_length(srtp->rtcp_cipher) - base_key_len;
+
+    debug_print(mod_srtp, "found aes_icm, generating rtcp salt", NULL);
+
+    /* generate encryption salt, put after encryption key */
+    srtp_kdf_generate(&kdf, label_rtcp_salt, 
+		      tmp_key + base_key_len, salt_len);
+  }
+  debug_print(mod_srtp, "rtcp cipher key: %s", 
+	      octet_string_hex_string(tmp_key, 
+		   cipher_get_key_length(srtp->rtcp_cipher)));  
+
+  /* initialize cipher */
+  stat = cipher_init(srtp->rtcp_cipher, tmp_key, direction_any);
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
+  /* generate authentication key */
+  srtp_kdf_generate(&kdf, label_rtcp_msg_auth,
+		    tmp_key, auth_get_key_length(srtp->rtcp_auth));
+  debug_print(mod_srtp, "rtcp auth key:   %s",
+	      octet_string_hex_string(tmp_key, 
+		     auth_get_key_length(srtp->rtcp_auth))); 
+
+  /* initialize auth function */
+  stat = auth_init(srtp->rtcp_auth, tmp_key);
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
+  /* clear memory then return */
+  srtp_kdf_clear(&kdf);
+  octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);  
+
+  return err_status_ok;
+}
 
 err_status_t
 srtp_stream_init(srtp_stream_ctx_t *srtp, 
 		  const srtp_policy_t *p) {
-   err_status_t stat;
-   srtp_kdf_t kdf;
-   uint8_t tmp_key[MAX_SRTP_KEY_LEN];
-   uint8_t *key = p->key;
+  err_status_t err;
 
    debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)", 
 	       p->ssrc.value);
@@ -394,111 +500,15 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     */
    srtp->direction = dir_unknown;
 
-   /* initialize KDF state     */
-   srtp_kdf_init(&kdf, key);
-
-   /* generate encryption key  */
-   srtp_kdf_generate(&kdf, label_rtp_encryption, 
-		     tmp_key, cipher_get_key_length(srtp->rtp_cipher));
-   /* 
-    * if the cipher in the srtp context is aes_icm, then we need
-    * to generate the salt value
-    */
-   if (srtp->rtp_cipher->type == &aes_icm) {
-	   /* FIX!!! this is really the cipher key length; rest is salt */
-     int base_key_len = 16;
-     int salt_len = cipher_get_key_length(srtp->rtp_cipher) - base_key_len;
-
-     debug_print(mod_srtp, "found aes_icm, generating salt", NULL);
-
-     /* generate encryption salt, put after encryption key */
-     srtp_kdf_generate(&kdf, label_rtp_salt, 
-		       tmp_key + base_key_len, salt_len);
-   }
-   debug_print(mod_srtp, "cipher key: %s", 
-	       octet_string_hex_string(tmp_key, 
-		    cipher_get_key_length(srtp->rtp_cipher)));  
-
-   /* initialize cipher */
-   stat = cipher_init(srtp->rtp_cipher, tmp_key, direction_any);
-   if (stat) {
-     /* zeroize temp buffer */
-     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
-     return err_status_init_fail;
-   }
-
-   /* generate authentication key */
-   srtp_kdf_generate(&kdf, label_rtp_msg_auth,
-		     tmp_key, auth_get_key_length(srtp->rtp_auth));
-   debug_print(mod_srtp, "auth key:   %s",
-	       octet_string_hex_string(tmp_key, 
-		   auth_get_key_length(srtp->rtp_auth))); 
-
-   /* initialize auth function */
-   stat = auth_init(srtp->rtp_auth, tmp_key);
-   if (stat) {
-     /* zeroize temp buffer */
-     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
-     return err_status_init_fail;
-   }
-
-   /*
-    * ...now initialize RTCP-specific structures   
-    */
-
-   /* initialize replay database */
+   /* initialize SRTCP replay database */
    rdb_init(&srtp->rtcp_rdb);
 
    /* DAM - no RTCP key limit at present */
 
-   /* generate encryption key  */
-   srtp_kdf_generate(&kdf, label_rtcp_encryption, 
-		     tmp_key, cipher_get_key_length(srtp->rtcp_cipher));
-   /* 
-    * if the cipher in the srtp context is aes_icm, then we need
-    * to generate the salt value
-    */
-   if (srtp->rtcp_cipher->type == &aes_icm) {
-	   /* FIX!!! this is really the cipher key length; rest is salt */
-     int base_key_len = 16;
-     int salt_len = cipher_get_key_length(srtp->rtcp_cipher) - base_key_len;
+   /* initialize keys */
+   err = srtp_stream_init_keys(srtp, p->key);
+   if (err) return err;
 
-     debug_print(mod_srtp, "found aes_icm, generating rtcp salt", NULL);
-
-     /* generate encryption salt, put after encryption key */
-     srtp_kdf_generate(&kdf, label_rtcp_salt, 
-		       tmp_key + base_key_len, salt_len);
-   }
-   debug_print(mod_srtp, "rtcp cipher key: %s", 
-	       octet_string_hex_string(tmp_key, 
-		    cipher_get_key_length(srtp->rtcp_cipher)));  
-
-   /* initialize cipher */
-   stat = cipher_init(srtp->rtcp_cipher, tmp_key, direction_any);
-   if (stat) {
-     /* zeroize temp buffer */
-     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
-     return err_status_init_fail;
-   }
-
-   /* generate authentication key */
-   srtp_kdf_generate(&kdf, label_rtcp_msg_auth,
-		     tmp_key, auth_get_key_length(srtp->rtcp_auth));
-   debug_print(mod_srtp, "rtcp auth key:   %s",
-	       octet_string_hex_string(tmp_key, 
-		   auth_get_key_length(srtp->rtcp_auth))); 
-
-   /* initialize auth function */
-   stat = auth_init(srtp->rtcp_auth, tmp_key);
-   if (stat) {
-     /* zeroize temp buffer */
-     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
-     return err_status_init_fail;
-   }
-
-   /* clear memory then return */
-   srtp_kdf_clear(&kdf);
-   octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
    return err_status_ok;  
  }
 
