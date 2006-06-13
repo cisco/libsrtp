@@ -25,6 +25,7 @@ runtest: build_table_apps test
 	test/srtp_driver$(EXE) -v >/dev/null
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
+	cd test; ./rtpw_test.sh >/dev/null	
 	@echo "libsrtp test applications passed."
 	$(MAKE) -C crypto runtest
 
