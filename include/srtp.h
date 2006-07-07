@@ -591,6 +591,108 @@ err_status_t
 srtp_dealloc(srtp_t s);
 
 
+/*
+ * @brief identifies a particular SRTP profile 
+ *
+ * An srtp_profile_t enumeration is used to identify a particular SRTP
+ * profile (that is, a set of algorithms and parameters).  These
+ * profiles are defined in the DTLS-SRTP draft.
+ */
+
+typedef enum {
+  srtp_profile_reserved           = 0,
+  srtp_profile_aes128_cm_sha1_80  = 1,
+  srtp_profile_aes128_cm_sha1_32  = 2,
+  srtp_profile_aes256_cm_sha1_80  = 3,
+  srtp_profile_aes256_cm_sha1_32  = 4,
+  srtp_profile_null_sha1_80       = 5,
+  srtp_profile_null_sha1_32       = 6,
+} srtp_profile_t;
+
+
+/**
+ * @brief crypto_policy_set_from_profile_for_rtp() sets a crypto policy
+ * structure to the appropriate value for RTP based on an srtp_profile_t
+ *
+ * @param p is a pointer to the policy structure to be set 
+ * 
+ * The function call crypto_policy_set_rtp_default(&policy, profile)
+ * sets the crypto_policy_t at location policy to the policy for RTP
+ * protection, as defined by the srtp_profile_t profile.
+ * 
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the crypto_policy_t datatype.
+ * 
+ * @return values
+ *     - err_status_ok         no problems were encountered
+ *     - err_status_bad_param  the profile is not supported 
+ * 
+ */
+err_status_t
+crypto_policy_set_from_profile_for_rtp(crypto_policy_t *policy, 
+				       srtp_profile_t profile);
+
+
+
+
+/**
+ * @brief crypto_policy_set_from_profile_for_rtcp() sets a crypto policy
+ * structure to the appropriate value for RTCP based on an srtp_profile_t
+ *
+ * @param p is a pointer to the policy structure to be set 
+ * 
+ * The function call crypto_policy_set_rtcp_default(&policy, profile)
+ * sets the crypto_policy_t at location policy to the policy for RTCP
+ * protection, as defined by the srtp_profile_t profile.
+ * 
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the crypto_policy_t datatype.
+ * 
+ * @return values
+ *     - err_status_ok         no problems were encountered
+ *     - err_status_bad_param  the profile is not supported 
+ * 
+ */
+err_status_t
+crypto_policy_set_from_profile_for_rtcp(crypto_policy_t *policy, 
+				       srtp_profile_t profile);
+
+/**
+ * @brief returns the master key length for a given SRTP profile
+ */
+unsigned int
+srtp_profile_get_master_key_length(srtp_profile_t profile);
+
+
+/**
+ * @brief returns the master salt length for a given SRTP profile
+ */
+unsigned int
+srtp_profile_get_master_salt_length(srtp_profile_t profile);
+
+/**
+ * @brief appends the salt to the key
+ *
+ * The function call append_salt_to_key(k, klen, s, slen) 
+ * copies the string s to the location at klen bytes following
+ * the location k.  
+ *
+ * @warning There must be at least bytes_in_salt + bytes_in_key bytes
+ *          available at the location pointed to by key.
+ * 
+ */
+
+void
+append_salt_to_key(uint8_t *key, unsigned int bytes_in_key,
+		   uint8_t *salt, unsigned int bytes_in_salt);
+
+
 
 /**
  * @}

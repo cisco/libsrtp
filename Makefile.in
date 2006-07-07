@@ -25,6 +25,7 @@ runtest: build_table_apps test
 	test/srtp_driver$(EXE) -v >/dev/null
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
+	test/dtls_srtp_driver$(EXE) >/dev/null
 	cd test; ./rtpw_test.sh >/dev/null	
 	@echo "libsrtp test applications passed."
 	$(MAKE) -C crypto runtest
@@ -123,7 +124,8 @@ crypto_testapp = crypto/test/aes_calc$(EXE) crypto/test/cipher_driver$(EXE) \
 	crypto/test/stat_driver$(EXE)
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
-	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE)
+	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
+	  test/dtls_srtp_driver
 
 $(testapp): libsrtp.a
 

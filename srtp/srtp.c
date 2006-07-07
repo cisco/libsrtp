@@ -1792,3 +1792,116 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     
   return err_status_ok;  
 }
+
+
+
+/*
+ * dtls keying for srtp 
+ */
+
+err_status_t
+crypto_policy_set_from_profile_for_rtp(crypto_policy_t *policy, 
+				       srtp_profile_t profile) {
+
+  /* set SRTP policy from the SRTP profile in the key set */
+  switch(profile) {
+  case srtp_profile_aes128_cm_sha1_80:
+    crypto_policy_set_aes_cm_128_hmac_sha1_80(policy);
+    crypto_policy_set_aes_cm_128_hmac_sha1_80(policy);
+    break;
+  case srtp_profile_aes128_cm_sha1_32:
+    crypto_policy_set_aes_cm_128_hmac_sha1_32(policy);
+    crypto_policy_set_aes_cm_128_hmac_sha1_80(policy);
+    break;
+  case srtp_profile_null_sha1_80:
+    crypto_policy_set_null_cipher_hmac_sha1_80(policy);
+    crypto_policy_set_null_cipher_hmac_sha1_80(policy);
+    break;
+    /* the following profiles are not (yet) supported */
+  case srtp_profile_null_sha1_32:
+  case srtp_profile_aes256_cm_sha1_80:
+  case srtp_profile_aes256_cm_sha1_32:
+  default:
+    return err_status_bad_param;
+  }
+
+  return err_status_ok;
+}
+
+err_status_t
+crypto_policy_set_from_profile_for_rtcp(crypto_policy_t *policy, 
+					srtp_profile_t profile) {
+
+  /* set SRTP policy from the SRTP profile in the key set */
+  switch(profile) {
+  case srtp_profile_aes128_cm_sha1_80:
+    crypto_policy_set_aes_cm_128_hmac_sha1_80(policy);
+    break;
+  case srtp_profile_aes128_cm_sha1_32:
+    crypto_policy_set_aes_cm_128_hmac_sha1_80(policy);
+    break;
+  case srtp_profile_null_sha1_80:
+    crypto_policy_set_null_cipher_hmac_sha1_80(policy);
+    break;
+    /* the following profiles are not (yet) supported */
+  case srtp_profile_null_sha1_32:
+  case srtp_profile_aes256_cm_sha1_80:
+  case srtp_profile_aes256_cm_sha1_32:
+  default:
+    return err_status_bad_param;
+  }
+
+  return err_status_ok;
+}
+
+void
+append_salt_to_key(uint8_t *key, unsigned int bytes_in_key,
+		   uint8_t *salt, unsigned int bytes_in_salt) {
+
+  memcpy(key + bytes_in_key, salt, bytes_in_salt);
+
+}
+
+unsigned int
+srtp_profile_get_master_key_length(srtp_profile_t profile) {
+
+  switch(profile) {
+  case srtp_profile_aes128_cm_sha1_80:
+    return 16;
+    break;
+  case srtp_profile_aes128_cm_sha1_32:
+    return 16;
+    break;
+  case srtp_profile_null_sha1_80:
+    return 16;
+    break;
+    /* the following profiles are not (yet) supported */
+  case srtp_profile_null_sha1_32:
+  case srtp_profile_aes256_cm_sha1_80:
+  case srtp_profile_aes256_cm_sha1_32:
+  default:
+    return 0;  /* indicate error by returning a zero */
+  }
+}
+
+unsigned int
+srtp_profile_get_master_salt_length(srtp_profile_t profile) {
+
+  switch(profile) {
+  case srtp_profile_aes128_cm_sha1_80:
+    return 14;
+    break;
+  case srtp_profile_aes128_cm_sha1_32:
+    return 14;
+    break;
+  case srtp_profile_null_sha1_80:
+    return 14;
+    break;
+    /* the following profiles are not (yet) supported */
+  case srtp_profile_null_sha1_32:
+  case srtp_profile_aes256_cm_sha1_80:
+  case srtp_profile_aes256_cm_sha1_32:
+  default:
+    return 0;  /* indicate error by returning a zero */
+  }
+}
