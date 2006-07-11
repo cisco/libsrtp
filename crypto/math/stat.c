@@ -83,7 +83,7 @@ stat_test_runs(uint8_t *data) {
   uint16_t gaps[6] = { 0, 0, 0, 0, 0, 0 };
   uint16_t lo_value[6] = { 2315, 1114, 527, 240, 103, 103 };
   uint16_t hi_value[6] = { 2685, 1386, 723, 384, 209, 209 };
-  int16_t  state = 0;
+  int state = 0;
   uint16_t mask;
   int i;
   
