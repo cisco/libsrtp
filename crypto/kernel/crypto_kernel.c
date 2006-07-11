@@ -299,7 +299,7 @@ crypto_kernel_shutdown() {
 
 err_status_t
 crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
-  kernel_cipher_type_t *ctype, *new;
+  kernel_cipher_type_t *ctype, *new_ctype;
   err_status_t status;
 
   /* defensive coding */
@@ -322,17 +322,17 @@ crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
 
   /* put new_ct at the head of the list */
   /* allocate memory */
-  new = (kernel_cipher_type_t *) crypto_alloc(sizeof(kernel_cipher_type_t));
-  if (new == NULL)
+  new_ctype = (kernel_cipher_type_t *) crypto_alloc(sizeof(kernel_cipher_type_t));
+  if (new_ctype == NULL)
     return err_status_alloc_fail;
     
   /* set fields */
-  new->cipher_type = new_ct;
-  new->id = id;
-  new->next = crypto_kernel.cipher_type_list;
+  new_ctype->cipher_type = new_ct;
+  new_ctype->id = id;
+  new_ctype->next = crypto_kernel.cipher_type_list;
 
   /* set head of list to new cipher type */
-  crypto_kernel.cipher_type_list = new;    
+  crypto_kernel.cipher_type_list = new_ctype;    
 
   /* load debug module, if there is one present */
   if (new_ct->debug != NULL)
@@ -344,7 +344,7 @@ crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
 
 err_status_t
 crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
-  kernel_auth_type_t *atype, *new;
+  kernel_auth_type_t *atype, *new_atype;
   err_status_t status;
 
   /* defensive coding */
@@ -367,17 +367,17 @@ crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
 
   /* put new_at at the head of the list */
   /* allocate memory */
-  new = (kernel_auth_type_t *)crypto_alloc(sizeof(kernel_auth_type_t));
-  if (new == NULL)
+  new_atype = (kernel_auth_type_t *)crypto_alloc(sizeof(kernel_auth_type_t));
+  if (new_atype == NULL)
     return err_status_alloc_fail;
     
   /* set fields */
-  new->auth_type = new_at;
-  new->id = id;
-  new->next = crypto_kernel.auth_type_list;
+  new_atype->auth_type = new_at;
+  new_atype->id = id;
+  new_atype->next = crypto_kernel.auth_type_list;
 
   /* set head of list to new auth type */
-  crypto_kernel.auth_type_list = new;    
+  crypto_kernel.auth_type_list = new_atype;    
 
   /* load debug module, if there is one present */
   if (new_at->debug != NULL)
