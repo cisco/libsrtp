@@ -154,10 +154,10 @@ main (int argc, char *argv[]) {
    * verify that the compiler has interpreted the header data
    * structure srtp_hdr_t correctly
    */
-  printf("uint16_t size %d, uint32_t size %d\n", sizeof(uint16_t), sizeof(uint32_t));
-
   if (sizeof(srtp_hdr_t) != 12) {
-     printf("error: srtp_hdr_t has incorrect size, size is: %d\n", sizeof(srtp_hdr_t));
+     printf("error: srtp_hdr_t has incorrect size"
+	    "(size is %ld bytes, expected 12)\n", 
+	    sizeof(srtp_hdr_t));
     exit(1);
   }
 

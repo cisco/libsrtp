@@ -8,7 +8,7 @@
  */
 
 
-#include "rtp.h"
+#include "rtp_priv.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,11 +21,11 @@
 #define PRINT_DEBUG    0    /* set to 1 to print out debugging data */
 #define VERBOSE_DEBUG  0    /* set to 1 to print out more data      */
 
-ssize_t
-rtp_sendto(rtp_sender_t *sender, const void* msg, int len) {
+unsigned int
+rtp_sendto(rtp_sender_t sender, const void* msg, int len) {
   int octets_sent;
   err_status_t stat;
-  int pkt_len = len + rtp_header_len;
+  int pkt_len = len + RTP_HEADER_LEN;
 
   /* marshal data */
   strncpy(sender->message.body, msg, len);
@@ -61,8 +61,8 @@ rtp_sendto(rtp_sender_t *sender, const void* msg, int len) {
   return octets_sent;
 }
 
-ssize_t
-rtp_recvfrom(rtp_receiver_t *receiver, void *msg, int *len) {
+unsigned int
+rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len) {
   int octets_recvd;
   err_status_t stat;
   
@@ -99,10 +99,10 @@ rtp_recvfrom(rtp_receiver_t *receiver, void *msg, int *len) {
 }
 
 int
-rtp_sender_init(rtp_sender_t *sender, 
+rtp_sender_init(rtp_sender_t sender, 
 		int socket, 
 		struct sockaddr_in addr,
-		uint32_t ssrc) {
+		unsigned int ssrc) {
 
   /* set header values */
   sender->message.header.ssrc    = htonl(ssrc);
@@ -123,10 +123,10 @@ rtp_sender_init(rtp_sender_t *sender,
 }
 
 int
-rtp_receiver_init(rtp_receiver_t *rcvr, 
+rtp_receiver_init(rtp_receiver_t rcvr, 
 		  int socket, 
 		  struct sockaddr_in addr,
-		  uint32_t ssrc) {
+		  unsigned int ssrc) {
   
   /* set header values */
   rcvr->message.header.ssrc    = htonl(ssrc);
@@ -146,5 +146,12 @@ rtp_receiver_init(rtp_receiver_t *rcvr,
   return 0;
 }
 
+int
+rtp_sender_init_srtp(rtp_sender_t sender, const srtp_policy_t *policy) {
+  return srtp_create(&sender->srtp_ctx, policy);
+}
 
-
+int
+rtp_receiver_init_srtp(rtp_receiver_t sender, const srtp_policy_t *policy) {
+  return srtp_create(&sender->srtp_ctx, policy);
+}

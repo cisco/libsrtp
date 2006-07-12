@@ -399,8 +399,9 @@ main (int argc, char *argv[]) {
 #endif /* BEW */
 
     /* initialize sender's rtp and srtp contexts */
-    rtp_sender_init(&snd, sock, name, ssrc); 
-    status = srtp_create(&snd.srtp_ctx, &policy);
+    snd = (rtp_sender_t) malloc(RTP_SENDER_LEN);
+    rtp_sender_init(snd, sock, name, ssrc); 
+    status = rtp_sender_init_srtp(snd, &policy);
     if (status) {
       fprintf(stderr, 
 	      "error: srtp_create() failed with code %d\n", 
@@ -425,7 +426,7 @@ main (int argc, char *argv[]) {
       if (len > MAX_WORD_LEN) 
 	printf("error: word %s too large to send\n", word);
       else {
-	rtp_sendto(&snd, word, len);
+	rtp_sendto(snd, word, len);
         printf("sending word: %s", word);
       }
       usleep(USEC_RATE);
@@ -444,8 +445,9 @@ main (int argc, char *argv[]) {
       exit(1);
     }
 
-    rtp_receiver_init(&rcvr, sock, name, ssrc);
-    status = srtp_create(&rcvr.srtp_ctx, &policy);
+    rcvr = (rtp_receiver_t) malloc(RTP_RECEIVER_LEN);
+    rtp_receiver_init(rcvr, sock, name, ssrc);
+    status = rtp_receiver_init_srtp(rcvr, &policy);
     if (status) {
       fprintf(stderr, 
 	      "error: srtp_create() failed with code %d\n", 
@@ -456,7 +458,7 @@ main (int argc, char *argv[]) {
     /* get next word and loop */
     while (1) {
       len = MAX_WORD_LEN;
-      if (rtp_recvfrom(&rcvr, word, &len) > -1)
+      if (rtp_recvfrom(rcvr, word, &len) > -1)
 	printf("\tword: %s", word);
     }
       

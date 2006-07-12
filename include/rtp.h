@@ -54,72 +54,60 @@
 #ifndef RTP_H
 #define RTP_H
 
-#include "srtp_priv.h"
-
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
 #elif defined HAVE_WINSOCK2_H
 # include <winsock2.h>
 #endif
 
-#define rtp_header_len 12
+#include "srtp.h"
 
-typedef srtp_hdr_t rtp_hdr_t;
+typedef struct rtp_sender_ctx_t *rtp_sender_t;
 
-#define RTP_MAX_BUF_LEN 16384
+typedef struct rtp_receiver_ctx_t *rtp_receiver_t;
 
-typedef struct {
-  srtp_hdr_t header;        
-  char body[RTP_MAX_BUF_LEN];  
-} rtp_msg_t;
+unsigned int
+rtp_sendto(rtp_sender_t sender, const void* msg, int len);
 
-typedef struct {
-  rtp_msg_t message;         
-  int socket;
-  srtp_ctx_t *srtp_ctx;
-  struct sockaddr_in addr;   /* reciever's address */
-} rtp_sender_t;
-
-typedef struct {
-  rtp_msg_t message;
-  int socket;
-  srtp_ctx_t *srtp_ctx;
-  struct sockaddr_in addr;   /* receiver's address */
-} rtp_receiver_t;
-
-
-ssize_t
-rtp_sendto(rtp_sender_t *sender, const void* msg, int len);
-
-ssize_t
-rtp_recvfrom(rtp_receiver_t *receiver, void *msg, int *len);
+unsigned int
+rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len);
 
 int
-rtp_receiver_init(rtp_receiver_t *rcvr, int socket, 
-		  struct sockaddr_in addr, uint32_t ssrc);
+rtp_receiver_init(rtp_receiver_t rcvr, int socket, 
+		  struct sockaddr_in addr, unsigned int ssrc);
 
 int
-rtp_sender_init(rtp_sender_t *sender, int socket, 
-		struct sockaddr_in addr, uint32_t ssrc);
+rtp_sender_init(rtp_sender_t sender, int socket, 
+		struct sockaddr_in addr, unsigned int ssrc);
 
 /*
  * srtp_sender_init(...) initializes an rtp_sender_t
- *
  */
 
 int
-srtp_sender_init(rtp_sender_t *rtp_ctx,         /* structure to be init'ed */
+srtp_sender_init(rtp_sender_t rtp_ctx,          /* structure to be init'ed */
 		 struct sockaddr_in name,       /* socket name             */
 		 sec_serv_t security_services,  /* sec. servs. to be used  */
 		 unsigned char *input_key       /* master key/salt in hex  */
 		 );
 
 int
-srtp_receiver_init(rtp_receiver_t *rtp_ctx,      /* structure to be init'ed */
+srtp_receiver_init(rtp_receiver_t rtp_ctx,       /* structure to be init'ed */
 		   struct sockaddr_in name, 	 /* socket name             */
 		   sec_serv_t security_services, /* sec. servs. to be used  */
 		   unsigned char *input_key	 /* master key/salt in hex  */
 		   );
 
+
+int
+rtp_sender_init_srtp(rtp_sender_t sender, const srtp_policy_t *policy);
+
+int
+rtp_receiver_init_srtp(rtp_receiver_t sender, const srtp_policy_t *policy);
+
+#define RTP_HEADER_LEN   12
+#define RTP_MAX_BUF_LEN  16384
+#define RTP_SENDER_LEN   (RTP_MAX_BUF_LEN - RTP_HEADER_LEN - 32)
+#define RTP_RECEIVER_LEN (RTP_MAX_BUF_LEN - RTP_HEADER_LEN - 32)
 
 #endif /* RTP_H */
