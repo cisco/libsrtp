@@ -125,7 +125,7 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
 #else
   /* Generic C-library (rand()) version */
   /* This is a random source of last resort */
-  uint8_t *dst = dest;
+  uint8_t *dst = (uint8_t *)dest;
   while (len)
   {
 	  int val = rand();

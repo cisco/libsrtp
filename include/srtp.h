@@ -902,7 +902,6 @@ srtp_install_event_handler(srtp_event_handler_func_t func);
 /**
  * @}
  */
-
 /* in host order, so outside the #if */
 #define SRTCP_E_BIT      0x80000000
 /* for byte-access */

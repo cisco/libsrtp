@@ -1,4 +1,7 @@
+Debug
 Makefile
+Root
+autom4te.cache
 config.log
 config.status
-autom4te.cache
+fixcvs.sh

@@ -47,7 +47,11 @@
 #include <time.h>     /* for clock()           */
 #include <stdlib.h>   /* for malloc(), free()  */
 #include <stdio.h>    /* for print(), fflush() */
+#ifdef WIN32
+#include "getopt.h"
+#else
 #include <unistd.h>   /* for getopt()          */
+#endif
 
 #include "srtp_priv.h"
 
@@ -150,8 +154,10 @@ main (int argc, char *argv[]) {
    * verify that the compiler has interpreted the header data
    * structure srtp_hdr_t correctly
    */
+  printf("uint16_t size %d, uint32_t size %d\n", sizeof(uint16_t), sizeof(uint32_t));
+
   if (sizeof(srtp_hdr_t) != 12) {
-    printf("error: srtp_hdr_t has incorrect size\n");
+     printf("error: srtp_hdr_t has incorrect size, size is: %d\n", sizeof(srtp_hdr_t));
     exit(1);
   }
 
@@ -371,7 +377,7 @@ srtp_create_test_packet(int pkt_octet_len, uint32_t ssrc) {
   int bytes_in_hdr = 12;
 
   /* allocate memory for test packet */
-  hdr = malloc(pkt_octet_len + bytes_in_hdr
+  hdr = (srtp_hdr_t*) malloc(pkt_octet_len + bytes_in_hdr
 	       + SRTP_MAX_TRAILER_LEN + 4);
   if (!hdr)
     return NULL;
@@ -669,7 +675,7 @@ srtp_test(const srtp_policy_t *policy) {
    * we always copy the policy into the rcvr_policy, since otherwise
    * the compiler would fret about the constness of the policy
    */
-  rcvr_policy = malloc(sizeof(srtp_policy_t));
+  rcvr_policy = (srtp_policy_t*) malloc(sizeof(srtp_policy_t));
   if (rcvr_policy == NULL)
     return err_status_alloc_fail;
   memcpy(rcvr_policy, policy, sizeof(srtp_policy_t));
@@ -868,7 +874,7 @@ srtcp_test(const srtp_policy_t *policy) {
    * we always copy the policy into the rcvr_policy, since otherwise
    * the compiler would fret about the constness of the policy
    */
-  rcvr_policy = malloc(sizeof(srtp_policy_t));
+  rcvr_policy = (srtp_policy_t*) malloc(sizeof(srtp_policy_t));
   if (rcvr_policy == NULL)
     return err_status_alloc_fail;
   memcpy(rcvr_policy, policy, sizeof(srtp_policy_t));
@@ -1226,7 +1232,7 @@ srtp_create_big_policy(srtp_policy_t **list) {
    */
   tmp = NULL;
   while (policy_array[i] != NULL) {
-    p = malloc(sizeof(srtp_policy_t));
+    p  = (srtp_policy_t*) malloc(sizeof(srtp_policy_t));
     if (p == NULL)
       return err_status_bad_param;
     memcpy(p, policy_array[i], sizeof(srtp_policy_t));

@@ -47,7 +47,6 @@
 #ifndef _DATATYPES_H
 #define _DATATYPES_H
 
-#include "integers.h"           /* definitions of uint32_t, et cetera   */
 #include "alloc.h"
 
 #include <stdarg.h>
@@ -62,6 +61,8 @@
 #  include <winsock2.h>
 # endif
 #endif
+#include "integers.h"           /* definitions of uint32_t, et cetera   */
+
 
 /* if DATATYPES_USE_MACROS is defined, then little functions are macros */
 #define DATATYPES_USE_MACROS  
@@ -313,7 +314,7 @@ v128_right_shift(v128_t *x, int index);
 
 
 #ifdef DATATYPES_USE_MACROS  /* little functions are really macros */
-
+   
 #define v128_set_to_zero(z)       _v128_set_to_zero(z)
 #define v128_copy(z, x)           _v128_copy(z, x)
 #define v128_xor(z, x, y)         _v128_xor(z, x, y)

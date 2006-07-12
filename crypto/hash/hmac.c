@@ -74,7 +74,7 @@ hmac_alloc(auth_t **a, int key_len, int out_len) {
     return err_status_bad_param;
 
   /* allocate memory for auth and hmac_ctx_t structures */
-  pointer = crypto_alloc(sizeof(hmac_ctx_t) + sizeof(auth_t));
+  pointer = (uint8_t*)crypto_alloc(sizeof(hmac_ctx_t) + sizeof(auth_t));
   if (pointer == NULL)
     return err_status_alloc_fail;
 
@@ -180,7 +180,7 @@ hmac_compute(hmac_ctx_t *state, const void *message,
     return err_status_bad_param;
   
   /* hash message, copy output into H */
-  hmac_update(state, message, msg_octets);
+  hmac_update(state, (const uint8_t*)message, msg_octets);
   sha1_final(&state->ctx, H);
 
   /*

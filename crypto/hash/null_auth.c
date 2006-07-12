@@ -61,7 +61,7 @@ null_auth_alloc(auth_t **a, int key_len, int out_len) {
   debug_print(mod_auth, "                          tag length %d", out_len);
 
   /* allocate memory for auth and null_auth_ctx_t structures */
-  pointer = crypto_alloc(sizeof(null_auth_ctx_t) + sizeof(auth_t));
+  pointer = (uint8_t*)crypto_alloc(sizeof(null_auth_ctx_t) + sizeof(auth_t));
   if (pointer == NULL)
     return err_status_alloc_fail;
 

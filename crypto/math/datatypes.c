@@ -106,7 +106,7 @@ nibble_to_hex_char(uint8_t nibble) {
 
 char *
 octet_string_hex_string(const void *s, int length) {
-  const uint8_t *str = s;
+  const uint8_t *str = (const uint8_t *)s;
   int i;
   
   /* double length, since one octet takes two hex characters */

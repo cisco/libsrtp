@@ -178,7 +178,7 @@ typedef struct cipher_t {
         (((c)->type)->decrypt(((c)->state), (buf), (len)))
 
 #define cipher_set_iv(c, n)                           \
-  ((c) ? (((c)->type)->set_iv(((c)->state), (n))) :   \
+  ((c) ? (((c)->type)->set_iv(((cipher_pointer_t)(c)->state), (n))) :   \
                                 err_status_no_such_op)  
 
 err_status_t

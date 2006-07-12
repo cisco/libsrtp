@@ -92,7 +92,7 @@ ctr_prng_get_octet_string(void *dest, uint32_t len) {
   /*
    * write prng output 
    */
-  status = aes_icm_output(&ctr_prng.state, dest, len);
+  status = aes_icm_output(&ctr_prng.state, (uint8_t*)dest, len);
   if (status)
     return status;
   

@@ -68,7 +68,7 @@ aes_cbc_alloc(cipher_t **c, int key_len) {
   
   /* allocate memory a cipher of type aes_icm */
   tmp = (sizeof(aes_cbc_ctx_t) + sizeof(cipher_t));
-  pointer = crypto_alloc(tmp);
+  pointer = (uint8_t*)crypto_alloc(tmp);
   if (pointer == NULL) 
     return err_status_alloc_fail;
 
@@ -135,7 +135,7 @@ err_status_t
 aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv) {
   int i;
 /*   v128_t *input = iv; */
-  uint8_t *input = iv;
+  uint8_t *input = (uint8_t*) iv;
  
   /* set state and 'previous' block to iv */
   for (i=0; i < 16; i++) 

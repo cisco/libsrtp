@@ -109,7 +109,7 @@ aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
 
   /* allocate memory a cipher of type aes_icm */
   tmp = (sizeof(aes_icm_ctx_t) + sizeof(cipher_t));
-  pointer = crypto_alloc(tmp);
+  pointer = (uint8_t*)crypto_alloc(tmp);
   if (pointer == NULL) 
     return err_status_alloc_fail;
 
@@ -256,7 +256,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
 
 err_status_t
 aes_icm_set_iv(aes_icm_ctx_t *c, void *iv) {
-  v128_t *nonce = iv;
+  v128_t *nonce = (v128_t *) iv;
 
   debug_print(mod_aes_icm, 
 	      "setting iv: %s", v128_hex_string(nonce)); 
