@@ -44,7 +44,7 @@
 
 #include <stdio.h>    /* for printf()          */
 #include <unistd.h>   /* for getopt()          */
-#include "srtp.h"
+#include "srtp_priv.h"
 
 err_status_t 
 test_dtls_srtp();

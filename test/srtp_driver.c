@@ -49,7 +49,7 @@
 #include <stdio.h>    /* for print(), fflush() */
 #include <unistd.h>   /* for getopt()          */
 
-#include "srtp.h"
+#include "srtp_priv.h"
 
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>

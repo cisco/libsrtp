@@ -43,7 +43,7 @@
  */
 
 
-#include "srtp.h"
+#include "srtp_priv.h"
 #include "aes_icm.h"         /* aes_icm is used in the KDF  */
 #include "alloc.h"           /* for crypto_alloc()          */
 

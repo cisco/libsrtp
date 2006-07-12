@@ -54,7 +54,7 @@
 #ifndef RTP_H
 #define RTP_H
 
-#include "srtp.h"
+#include "srtp_priv.h"
 
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
