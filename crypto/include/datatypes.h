@@ -47,6 +47,7 @@
 #ifndef _DATATYPES_H
 #define _DATATYPES_H
 
+#include "integers.h"           /* definitions of uint32_t, et cetera   */
 #include "alloc.h"
 
 #include <stdarg.h>
@@ -61,7 +62,6 @@
 #  include <winsock2.h>
 # endif
 #endif
-#include "integers.h"           /* definitions of uint32_t, et cetera   */
 
 
 /* if DATATYPES_USE_MACROS is defined, then little functions are macros */
