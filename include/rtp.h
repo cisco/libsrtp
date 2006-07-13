@@ -105,9 +105,23 @@ rtp_sender_init_srtp(rtp_sender_t sender, const srtp_policy_t *policy);
 int
 rtp_receiver_init_srtp(rtp_receiver_t sender, const srtp_policy_t *policy);
 
+
+rtp_sender_t 
+rtp_sender_alloc();
+
+rtp_receiver_t 
+rtp_receiver_alloc();
+
+
+/*
+ * RTP_HEADER_LEN indicates the size of an RTP header
+ */
 #define RTP_HEADER_LEN   12
+
+/* 
+ * RTP_MAX_BUF_LEN defines the largest RTP packet in the rtp.c implementation
+ */
 #define RTP_MAX_BUF_LEN  16384
-#define RTP_SENDER_LEN   (RTP_MAX_BUF_LEN - RTP_HEADER_LEN - 32)
-#define RTP_RECEIVER_LEN (RTP_MAX_BUF_LEN - RTP_HEADER_LEN - 32)
+
 
 #endif /* RTP_H */

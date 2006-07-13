@@ -155,3 +155,13 @@ int
 rtp_receiver_init_srtp(rtp_receiver_t sender, const srtp_policy_t *policy) {
   return srtp_create(&sender->srtp_ctx, policy);
 }
+
+rtp_sender_t 
+rtp_sender_alloc() {
+  return (rtp_sender_t)malloc(sizeof(rtp_sender_ctx_t));
+}
+
+rtp_receiver_t 
+rtp_receiver_alloc() {
+  return (rtp_receiver_t)malloc(sizeof(rtp_receiver_ctx_t));
+}

@@ -399,7 +399,11 @@ main (int argc, char *argv[]) {
 #endif /* BEW */
 
     /* initialize sender's rtp and srtp contexts */
-    snd = (rtp_sender_t) malloc(RTP_SENDER_LEN);
+    snd = rtp_sender_alloc();
+    if (snd == NULL) {
+      fprintf(stderr, "error: malloc() failed\n");
+      exit(1);
+    }
     rtp_sender_init(snd, sock, name, ssrc); 
     status = rtp_sender_init_srtp(snd, &policy);
     if (status) {
@@ -445,7 +449,11 @@ main (int argc, char *argv[]) {
       exit(1);
     }
 
-    rcvr = (rtp_receiver_t) malloc(RTP_RECEIVER_LEN);
+    rcvr = rtp_receiver_alloc();
+    if (rcvr == NULL) {
+      fprintf(stderr, "error: malloc() failed\n");
+      exit(1);
+    }
     rtp_receiver_init(rcvr, sock, name, ssrc);
     status = rtp_receiver_init_srtp(rcvr, &policy);
     if (status) {
