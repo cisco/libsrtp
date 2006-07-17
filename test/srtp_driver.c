@@ -47,11 +47,7 @@
 #include <time.h>     /* for clock()           */
 #include <stdlib.h>   /* for malloc(), free()  */
 #include <stdio.h>    /* for print(), fflush() */
-#ifdef WIN32
-#include "getopt.h"
-#else
-#include <unistd.h>   /* for getopt()          */
-#endif
+#include "getopt_s.h" /* for local getopt()    */
 
 #include "srtp_priv.h"
 
@@ -178,7 +174,7 @@ main (int argc, char *argv[]) {
 
   /* process input arguments */
   while (1) {
-    q = getopt(argc, argv, "trcvld:");
+    q = getopt_s(argc, argv, "trcvld:");
     if (q == -1) 
       break;
     switch (q) {
@@ -198,9 +194,9 @@ main (int argc, char *argv[]) {
       do_list_mods = 1;
       break;
     case 'd':
-      status = crypto_kernel_set_debug_module(optarg, 1);
+      status = crypto_kernel_set_debug_module(optarg_s, 1);
       if (status) {
-        printf("error: set debug module (%s) failed\n", optarg);
+        printf("error: set debug module (%s) failed\n", optarg_s);
         exit(1);
       }  
       break;

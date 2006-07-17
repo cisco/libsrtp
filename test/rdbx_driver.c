@@ -43,8 +43,8 @@
  *
  */
 
-#include <stdio.h>        /* for printf() */
-#include <unistd.h>       /* for getopt() */
+#include <stdio.h>    /* for printf()          */
+#include "getopt_s.h" /* for local getopt()    */
 
 #include "rdbx.h"
 
@@ -76,7 +76,7 @@ main (int argc, char *argv[]) {
 
   /* process input arguments */
   while (1) {
-    q = getopt(argc, argv, "tv");
+    q = getopt_s(argc, argv, "tv");
     if (q == -1) 
       break;
     switch (q) {

@@ -129,7 +129,16 @@ testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 
 $(testapp): libsrtp.a
 
-test/rtpw$(EXE): test/rtpw.c test/rtp.c
+test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/srtp_driver$(EXE): test/srtp_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test: $(testapp)

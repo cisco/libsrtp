@@ -43,7 +43,7 @@
  */
 
 #include <stdio.h>    /* for printf()          */
-#include <unistd.h>   /* for getopt()          */
+#include "getopt_s.h" /* for local getopt()    */
 #include "srtp_priv.h"
 
 err_status_t 
@@ -77,7 +77,7 @@ main(int argc, char *argv[]) {
 
   /* process input arguments */
   while (1) {
-    q = getopt(argc, argv, "ld:");
+    q = getopt_s(argc, argv, "ld:");
     if (q == -1) 
       break;
     switch (q) {
@@ -85,9 +85,9 @@ main(int argc, char *argv[]) {
       do_list_mods = 1;
       break;
     case 'd':
-      err = crypto_kernel_set_debug_module(optarg, 1);
+      err = crypto_kernel_set_debug_module(optarg_s, 1);
       if (err) {
-        printf("error: set debug module (%s) failed\n", optarg);
+        printf("error: set debug module (%s) failed\n", optarg_s);
         exit(1);
       }  
       break;
