@@ -90,7 +90,7 @@ typedef enum {
   err_status_parse_err    = 21, /**< error pasring data                      */
   err_status_encode_err   = 22, /**< error encoding data                     */
   err_status_semaphore_err = 23,/**< error while using semaphores            */
-  err_status_pfkey_err = 24    ,/**< error while using pfkey                 */
+  err_status_pfkey_err    = 24  /**< error while using pfkey                 */
 } err_status_t;
 
 /**

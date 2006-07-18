@@ -564,7 +564,7 @@ cryptoalg_find_by_id(int id) {
   case 1:
     return cryptoalg;
   default:
-    return 0;
+    break;
   }
   return 0;
 }

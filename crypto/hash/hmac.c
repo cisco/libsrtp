@@ -57,7 +57,6 @@ err_status_t
 hmac_alloc(auth_t **a, int key_len, int out_len) {
   extern auth_type_t hmac;
   uint8_t *pointer;
-  hmac_ctx_t *new_hmac_ctx;
 
   debug_print(mod_hmac, "allocating auth func with key length %d", key_len);
   debug_print(mod_hmac, "                          tag length %d", out_len);
@@ -85,7 +84,6 @@ hmac_alloc(auth_t **a, int key_len, int out_len) {
   (*a)->out_len = out_len;
   (*a)->key_len = key_len;
   (*a)->prefix_len = 0;
-  new_hmac_ctx = (hmac_ctx_t *)((*a)->state);
 
   /* increment global count of all hmac uses */
   hmac.ref_count++;

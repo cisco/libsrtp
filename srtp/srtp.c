@@ -813,7 +813,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
   uint32_t *enc_start;      /* pointer to start of encrypted portion  */
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
-  uint32_t enc_octet_len = 0;/* number of octets in encrypted portion */
+  unsigned enc_octet_len = 0;/* number of octets in encrypted portion */
   uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
   xtd_seq_num_t est;        /* estimated xtd_seq_num_t of *hdr        */
   int delta;                /* delta of local pkt idx and that in hdr */
@@ -1422,7 +1422,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   uint32_t *enc_start;      /* pointer to start of encrypted portion  */
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
   uint32_t *trailer;        /* pointer to start of trailer            */
-  uint32_t enc_octet_len = 0;/* number of octets in encrypted portion */
+  unsigned enc_octet_len = 0;/* number of octets in encrypted portion */
   uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
   err_status_t status;   
   int tag_len;
@@ -1601,7 +1601,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   uint32_t *enc_start;      /* pointer to start of encrypted portion  */
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
   uint32_t *trailer;        /* pointer to start of trailer            */
-  uint32_t enc_octet_len = 0;/* number of octets in encrypted portion */
+  unsigned enc_octet_len = 0;/* number of octets in encrypted portion */
   uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
   uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
   err_status_t status;   

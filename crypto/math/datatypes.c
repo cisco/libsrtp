@@ -565,7 +565,7 @@ base64_char_to_sextet(uint8_t c) {
   case '=':
     return 64;
   default:
-    return -1;
+    break;
  }
  return -1;
 }
