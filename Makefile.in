@@ -125,7 +125,7 @@ crypto_testapp = crypto/test/aes_calc$(EXE) crypto/test/cipher_driver$(EXE) \
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
-	  test/dtls_srtp_driver
+	  test/dtls_srtp_driver$(EXE)
 
 $(testapp): libsrtp.a
 
@@ -203,7 +203,7 @@ uninstall:
 	rm -rf $(DESTDIR)$(libdir)/libsrtp.a
 
 clean:
-	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) $(table_apps) TAGS \
+	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
         libcryptomath.a libsrtp.a core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
