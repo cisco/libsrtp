@@ -345,6 +345,12 @@ main (int argc, char *argv[]) {
     printf("G.729\t\t%d\t\t\t%e\n", 20, 
            (double) mips * (20 * 8) /
 	   srtp_bits_per_second(20, &policy) / .02 );
+    printf("Wideband\t%d\t\t\t%e\n", 320, 
+           (double) mips * (320 * 8) /
+	   srtp_bits_per_second(320, &policy) / .01 );
+    printf("Wideband\t%d\t\t\t%e\n", 640, 
+           (double) mips * (640 * 8) /
+	   srtp_bits_per_second(640, &policy) / .02 );
   }
 
   return 0;  
