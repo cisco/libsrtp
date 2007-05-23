@@ -47,10 +47,9 @@
 #ifdef DEV_URANDOM
 # include <fcntl.h>          /* for open()  */
 # include <unistd.h>         /* for close() */
-#elif (_MSC_VER >= 1400)
-#define _CRT_RAND_S
+#elif defined(HAVE_RAND_S)
+# define _CRT_RAND_S
 # include <stdlib.h>         
-# include <stdio.h>
 #else
 # include <stdio.h>
 #endif
@@ -87,7 +86,7 @@ rand_source_init(void) {
   dev_random_fdes = open(DEV_URANDOM, O_RDONLY);
   if (dev_random_fdes < 0)
     return err_status_init_fail;
-#elif (_MSC_VER >= 1400)
+#elif defined(HAVE_RAND_S)
   dev_random_fdes = RAND_SOURCE_READY;
 #else
   /* no random source available; let the user know */
@@ -108,19 +107,18 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
 #ifdef DEV_URANDOM
   if (read(dev_random_fdes, dest, len) != len)
     return err_status_fail;
-#elif (_MSC_VER >= 1400)
-  unsigned int *dst = dest;
+#elif defined(HAVE_RAND_S)
+  uint8_t *dst = (uint8_t *)dest;
   while (len)
   {
-      unsigned int val = 0;
-	  errno_t err = rand_s(&val);
-      if (err != 0)
-	      {
-              return err_status_fail;
-          }
+    unsigned int val;
+    errno_t err = rand_s(&val);
+
+    if (err != 0)
+      return err_status_fail;
   
-      *dst++ = val;
-	  len--;
+    *dst++ = val & 0xff;
+    len--;
   }
 #else
   /* Generic C-library (rand()) version */
