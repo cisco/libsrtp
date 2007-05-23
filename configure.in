@@ -12,6 +12,41 @@ AC_PROG_RANLIB
 AC_PROG_CC
 AC_PROG_INSTALL
 
+dnl Check the byte order
+AC_C_BIGENDIAN
+
+AC_CANONICAL_HOST
+
+dnl check host_cpu type, set defines appropriately
+case $host_cpu in
+     i*86 )
+	AC_DEFINE(CPU_CISC, 1,
+	   [Define if building for a CISC machine (e.g. Intel).])
+        AC_DEFINE(HAVE_X86, 1,
+	   [Define to use X86 inlined assembly code]);; 
+	* )
+	# CPU_RISC is only supported for big endian machines.
+	if test "$ac_cv_c_bigendian" = "yes"; then
+	   AC_DEFINE(CPU_RISC, 1,
+	    [Define if building for a RISC machine (assume slow byte access).])
+	else
+	   AC_DEFINE(CPU_CISC, 1)
+	fi
+	;;
+esac	
+
+dnl Check if we are on a Windows platform.
+case $host_os in
+    *cygwin*|*mingw* ) 
+	EXE=.exe
+	HOST_IS_WINDOWS=yes
+	;;
+    * )
+	EXE=""
+	;;
+esac
+AC_SUBST(EXE)   # define executable suffix; this is needed for `make clean'
+
 
 AC_ARG_ENABLE(kernel-linux,
   [AS_HELP_STRING([--enable-kernel-linux],
@@ -26,7 +61,7 @@ if test "$enable_kernel_linux" = "yes"; then
 fi
 AC_MSG_RESULT($enable_kernel_linux)
 
-if test "$cross_compiling" != yes; then
+if test "$cross_compiling" != yes -a "$HOST_IS_WINDOWS" != yes; then
    dnl Check for /dev/urandom
    AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=/dev/urandom,
       [AC_CHECK_FILE(/dev/random, DEV_URANDOM=/dev/random)])
@@ -94,38 +129,6 @@ socket(0, 0, 0);
     LIBS="$SAVELIBS"
     AC_MSG_RESULT(no))
 fi
-
-dnl Check the byte order
-AC_C_BIGENDIAN
-
-AC_CANONICAL_HOST
-
-dnl check host_cpu type, set defines appropriately
-case $host_cpu in
-     i*86 )
-	AC_DEFINE(CPU_CISC, 1,
-	   [Define if building for a CISC machine (e.g. Intel).])
-        AC_DEFINE(HAVE_X86, 1,
-	   [Define to use X86 inlined assembly code]);; 
-	* )
-	# CPU_RISC is only supported for big endian machines.
-	if test "$ac_cv_c_bigendian" = "yes"; then
-	   AC_DEFINE(CPU_RISC, 1,
-	    [Define if building for a RISC machine (assume slow byte access).])
-	else
-	   AC_DEFINE(CPU_CISC, 1)
-	fi
-	;;
-esac	
-
-dnl Check if we're on a Windows platform.
-case $host_os in
-  *cygwin*|*mingw* ) 
-	      EXE=.exe;;
-         * )  EXE="";;
-esac
-
-AC_SUBST(EXE)   # define executable suffix; this is needed for `make clean'
 
 AC_MSG_CHECKING(whether to compile in debugging)
 AC_ARG_ENABLE(debug,
