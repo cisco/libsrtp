@@ -204,8 +204,10 @@ ekt_write_data(ekt_stream_t ekt,
   void *packet;
 
   /* if the pointer ekt is NULL, then EKT is not in effect */
-  if (!ekt) 
+  if (!ekt) {
+    debug_print(mod_srtp, "EKT not in use", NULL);
     return;
+  }
 
   /* write zeros into the location of the base tag */
   octet_string_set_to_zero(base_tag, base_tag_len);
@@ -214,20 +216,28 @@ ekt_write_data(ekt_stream_t ekt,
   /* copy encrypted master key into packet */
   emk_len = ekt_octets_after_base_tag(ekt);
   memcpy(packet, ekt->encrypted_master_key, emk_len);
+  debug_print(mod_srtp, "writing EKT EMK: %s,", 
+	      octet_string_hex_string(packet, emk_len));
   packet += emk_len;
 
   /* copy ROC into packet */
   roc = pkt_index >> 16;
   *((uint32_t *)packet) = be32_to_cpu(roc);
+  debug_print(mod_srtp, "writing EKT ROC: %s,", 
+	      octet_string_hex_string(packet, sizeof(roc)));
   packet += sizeof(roc);
 
   /* copy ISN into packet */
   isn = pkt_index;
   *((uint16_t *)packet) = htons(isn);
+  debug_print(mod_srtp, "writing EKT ISN: %s,", 
+	      octet_string_hex_string(packet, sizeof(isn)));
   packet += sizeof(isn);
 
   /* copy SPI into packet */
   *((uint16_t *)packet) = htons(ekt->data->spi);
+  debug_print(mod_srtp, "writing EKT SPI: %s,", 
+	      octet_string_hex_string(packet, sizeof(ekt->data->spi)));
 
   /* increase packet length appropriately */
   *packet_len += EKT_OCTETS_AFTER_EMK + emk_len;
