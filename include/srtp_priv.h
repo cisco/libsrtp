@@ -180,6 +180,15 @@ err_status_t
 srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
 
 /*
+ * srtp_stream_init(s, p) initializes the srtp_stream_t s to 
+ * use the policy at the location p
+ */
+err_status_t
+srtp_stream_init(srtp_stream_t srtp, 
+		 const srtp_policy_t *p);
+
+
+/*
  * libsrtp internal datatypes 
  */
 
@@ -209,6 +218,7 @@ typedef struct srtp_stream_ctx_t {
   sec_serv_t rtcp_services;
   key_limit_ctx_t *limit;
   direction_t direction;
+  ekt_stream_t ekt; 
   struct srtp_stream_ctx_t *next;   /* linked list of streams */
 } srtp_stream_ctx_t;
 

@@ -54,7 +54,7 @@ extern "C" {
 #pragma pack(4)
 #endif
 
-#include "crypto_kernel.h"
+#include "crypto_kernel.h" 
 
 /**
  * @defgroup SRTP Secure RTP
@@ -172,6 +172,18 @@ typedef struct {
 } ssrc_t;
 
 
+/**
+ * @brief points to an EKT policy
+ */
+typedef struct ekt_policy_ctx_t *ekt_policy_t;
+
+
+/**
+ * @brief points to EKT stream data
+ */
+typedef struct ekt_stream_ctx_t *ekt_stream_t;
+
+
 /** 
  * @brief represents the policy for an SRTP session.  
  *
@@ -209,6 +221,8 @@ typedef struct srtp_policy_t {
   crypto_policy_t rtcp;        /**< SRTCP crypto policy.                 */
   unsigned char *key;          /**< Pointer to the SRTP master key for
 				*    this stream.                        */
+  ekt_policy_t ekt;            /**< Pointer to the EKT policy structure
+                                *   for this stream (if any)             */ 
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;
 

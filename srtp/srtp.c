@@ -43,7 +43,8 @@
  */
 
 
-#include "srtp_priv.h"
+#include "srtp.h"
+#include "ekt.h"             /* for SRTP Encrypted Key Transport */
 #include "aes_icm.h"         /* aes_icm is used in the KDF  */
 #include "alloc.h"           /* for crypto_alloc()          */
 
@@ -151,6 +152,18 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
    return stat;
   }  
 
+  /* allocate ekt data associated with stream */
+  stat = ekt_alloc(&str->ekt, p->ekt);
+  if (stat) {
+    auth_dealloc(str->rtcp_auth);
+    cipher_dealloc(str->rtcp_cipher);
+    auth_dealloc(str->rtp_auth);
+    cipher_dealloc(str->rtp_cipher);
+    crypto_free(str->limit);
+    crypto_free(str);
+   return stat;    
+  }
+
   return err_status_ok;
 }
 
@@ -217,6 +230,8 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
     if (status)
       return status;
   }
+
+  /* DAM - need to deallocate EKT here */
   
   /* deallocate srtp stream context */
   crypto_free(stream);
@@ -270,6 +285,9 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   str->direction     = stream_template->direction;
   str->rtp_services  = stream_template->rtp_services;
   str->rtcp_services = stream_template->rtcp_services;
+
+  /* set pointer to EKT data associated with stream */
+  str->ekt = stream_template->ekt;
 
   /* defensive coding */
   str->next = NULL;
@@ -507,6 +525,13 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 
    /* initialize keys */
    err = srtp_stream_init_keys(srtp, p->key);
+   if (err) return err;
+
+   /* 
+    * if EKT is in use, then initialize the EKT data associated with
+    * the stream
+    */
+   err = ekt_stream_init_from_policy(srtp->ekt, p->ekt);
    if (err) return err;
 
    return err_status_ok;  
@@ -1509,6 +1534,10 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   auth_start = (uint32_t *)hdr;
   auth_tag = (uint8_t *)hdr + *pkt_octet_len + sizeof(srtcp_trailer_t); 
 
+  /* perform EKT processing if needed */
+  ekt_write_data(stream->ekt, auth_tag, tag_len, pkt_octet_len, 
+		 rdbx_get_packet_index(&stream->rtp_rdbx));
+
   /* 
    * check sequence number for overruns, and copy it into the packet
    * if its value isn't too big
@@ -1604,7 +1633,9 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   unsigned enc_octet_len = 0;/* number of octets in encrypted portion */
   uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
   uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
+  uint8_t tag_copy[SRTP_MAX_TAG_LEN];
   err_status_t status;   
+  unsigned auth_len;
   int tag_len;
   srtp_stream_ctx_t *stream;
   int prefix_len;
@@ -1622,6 +1653,23 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   if (stream == NULL) {
     if (ctx->stream_template != NULL) {
       stream = ctx->stream_template;
+
+      /* 
+       * check to see if stream_template has an EKT data structure, in
+       * which case we initialize the template using the EKT policy
+       * referenced by that data (which consists of decrypting the
+       * master key from the EKT field)
+       *
+       * this function initializes a *provisional* stream, and this
+       * stream should not be accepted until and unless the packet
+       * passes its authentication check
+       */ 
+      if (stream->ekt != NULL) {
+	status = srtp_stream_init_from_ekt(stream, srtcp_hdr, *pkt_octet_len);
+	if (status)
+	  return status;
+      }
+
       debug_print(mod_srtp, "srtcp using provisional stream (SSRC: 0x%08x)", 
 		  hdr->ssrc);
     } else {
@@ -1661,7 +1709,23 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    * (note that srtcp *always* uses authentication, unlike srtp)
    */
   auth_start = (uint32_t *)hdr;
-  auth_tag = (uint8_t *)hdr + *pkt_octet_len - tag_len;
+  auth_len = *pkt_octet_len - tag_len;
+  auth_tag = (uint8_t *)hdr + auth_len;
+
+  /* 
+   * if EKT is in use, then we make a copy of the tag from the packet,
+   * and then zeroize the location of the base tag
+   *
+   * we first re-position the auth_tag pointer so that it points to
+   * the base tag
+   */
+  if (stream->ekt) {
+    auth_tag -= ekt_octets_after_base_tag(stream->ekt);
+    memcpy(tag_copy, auth_tag, tag_len);
+    octet_string_set_to_zero(auth_tag, tag_len);
+    auth_tag = tag_copy;
+    auth_len += tag_len;
+  }
 
   /* 
    * check the sequence number for replays
@@ -1704,8 +1768,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
 
   /* run auth func over packet, put result into tmp_tag */
   status = auth_compute(stream->rtcp_auth, (uint8_t *)auth_start,  
-			*pkt_octet_len - tag_len,
-			tmp_tag);
+			auth_len, tmp_tag);
   debug_print(mod_srtp, "srtcp computed tag:       %s", 
 	      octet_string_hex_string(tmp_tag, tag_len));
   if (status)
@@ -1738,8 +1801,14 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
       return err_status_cipher_fail;
   }
 
-  /* decrease the packet length by the length of the auth tag and seq_num*/
+  /* decrease the packet length by the length of the auth tag and seq_num */
   *pkt_octet_len -= (tag_len + sizeof(srtcp_trailer_t));
+
+  /*
+   * if EKT is in effect, subtract the EKT data out of the packet
+   * length
+   */
+  *pkt_octet_len -= ekt_octets_after_base_tag(stream->ekt);
 
   /* 
    * verify that stream is for received traffic - this check will

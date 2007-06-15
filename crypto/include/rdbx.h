@@ -100,6 +100,27 @@ rdbx_check(const rdbx_t *rdbx, int difference);
 err_status_t
 rdbx_add_index(rdbx_t *rdbx, int delta);
 
+
+/*
+ * rdbx_set_roc(rdbx, roc) initalizes the rdbx_t at the location rdbx
+ * to have the rollover counter value roc.  If that value is less than
+ * the current rollover counter value, then the function returns
+ * err_status_replay_old; otherwise, err_status_ok is returned.
+ * 
+ */
+
+err_status_t
+rdbx_set_roc(rdbx_t *rdbx, uint32_t roc);
+
+/*
+ * rdbx_get_roc(rdbx) returns the value of the rollover counter for
+ * the rdbx_t pointed to by rdbx
+ * 
+ */
+
+xtd_seq_num_t
+rdbx_get_packet_index(const rdbx_t *rdbx);
+
 /*
  * xtd_seq_num_t functions - these are *internal* functions of rdbx, and
  * shouldn't be used to manipulate rdbx internal values.  use the rdbx

@@ -1327,6 +1327,7 @@ const srtp_policy_t default_policy = {
     sec_serv_conf_and_auth  /* security services flag      */
   },
   test_key,
+  NULL,        /* indicates that EKT is not in use */
   NULL
 };
 
@@ -1349,6 +1350,7 @@ const srtp_policy_t aes_tmmh_policy = {
     sec_serv_conf_and_auth  /* security services flag      */
   },
   test_key,
+  NULL,        /* indicates that EKT is not in use */
   NULL
 };
 
@@ -1371,6 +1373,7 @@ const srtp_policy_t tmmh_only_policy = {
     sec_serv_auth           /* security services flag      */
   },
   test_key,
+  NULL,        /* indicates that EKT is not in use */
   NULL
 };
 
@@ -1393,6 +1396,7 @@ const srtp_policy_t aes_only_policy = {
     sec_serv_conf           /* security services flag      */
   },
   test_key,
+  NULL,        /* indicates that EKT is not in use */
   NULL
 };
 
@@ -1415,6 +1419,7 @@ const srtp_policy_t hmac_only_policy = {
     sec_serv_auth           /* security services flag      */
   },
   test_key,
+  NULL,        /* indicates that EKT is not in use */
   NULL
 };
 
@@ -1437,6 +1442,44 @@ const srtp_policy_t null_policy = {
     sec_serv_none           /* security services flag      */  
   },
   test_key,
+  NULL,        /* indicates that EKT is not in use */
+  NULL
+};
+
+uint8_t ekt_test_key[16] = {
+  0x77, 0x26, 0x9d, 0xac, 0x16, 0xa3, 0x28, 0xca, 
+  0x8e, 0xc9, 0x68, 0x4b, 0xcc, 0xc4, 0xd2, 0x1b
+};
+
+#include "ekt.h"
+
+ekt_policy_ctx_t ekt_test_policy = {
+  0xa5a5,                   /* SPI */
+  EKT_CIPHER_AES_128_ECB,
+  ekt_test_key,
+  NULL
+};
+
+const srtp_policy_t hmac_only_with_ekt_policy = {
+  { ssrc_any_outbound, 0 },     /* SSRC                        */
+  {
+    NULL_CIPHER,            /* cipher type                 */
+    0,                      /* cipher key length in octets */
+    HMAC_SHA1,              /* authentication func type    */
+    20,                     /* auth key length in octets   */
+    4,                      /* auth tag length in octets   */
+    sec_serv_auth           /* security services flag      */
+  },  
+  {
+    NULL_CIPHER,            /* cipher type                 */
+    0,                      /* cipher key length in octets */
+    HMAC_SHA1,              /* authentication func type    */
+    20,                     /* auth key length in octets   */
+    4,                      /* auth tag length in octets   */
+    sec_serv_auth           /* security services flag      */
+  },
+  test_key,
+  &ekt_test_policy,        /* indicates that EKT is not in use */
   NULL
 };
 
@@ -1465,6 +1508,7 @@ policy_array[] = {
 #endif
   &default_policy,
   &null_policy,
+  &hmac_only_with_ekt_policy,
   NULL
 };
 
