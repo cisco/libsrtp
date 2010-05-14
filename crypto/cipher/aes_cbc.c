@@ -437,7 +437,7 @@ cipher_type_t aes_cbc = {
   (cipher_set_iv_func_t)         aes_cbc_set_iv,
   (char *)                       aes_cbc_description,
   (int)                          0,   /* instance count */
-  (cipher_test_case_t *)        &aes_cbc_test_case_0,
+  (cipher_test_case_t *)        &aes_cbc_test_case_1,
   (debug_module_t *)            &mod_aes_cbc
 };
 
