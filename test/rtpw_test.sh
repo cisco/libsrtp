@@ -4,7 +4,7 @@
 # 
 # tests the rtpw sender and receiver functions
 
-RTPW=rtpw
+RTPW=./rtpw
 DEST_PORT=9999
 DURATION=3
 
