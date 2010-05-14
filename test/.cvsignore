@@ -1,6 +1,7 @@
 aes_calc
 cipher_driver
 datatypes_driver
+dtls_srtp_driver
 kernel_driver
 rand_gen
 rdbx_driver
