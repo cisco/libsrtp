@@ -153,7 +153,7 @@ main (int argc, char *argv[]) {
   if (sizeof(srtp_hdr_t) != 12) {
      printf("error: srtp_hdr_t has incorrect size"
 	    "(size is %ld bytes, expected 12)\n", 
-	    sizeof(srtp_hdr_t));
+	    (long)sizeof(srtp_hdr_t));
     exit(1);
   }
 
