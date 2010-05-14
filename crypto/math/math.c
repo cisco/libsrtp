@@ -854,7 +854,7 @@ bitvector_print_hex(const bitvector_t *v, FILE *stream) {
     *str-- = nibble_to_hex_char(tmp & 0xf);   
 
     /* now print stream */
-    fprintf(stream, string);
+    fprintf(stream, "%s", string);
   }
   
   return 0;
