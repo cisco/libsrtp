@@ -131,6 +131,9 @@ ekt_alloc(ekt_stream_t *stream_data, ekt_policy_t policy) {
     return err_status_ok;
   }
 
+  /* TODO */
+  *stream_data = NULL;
+
   return err_status_ok;
 }
 
