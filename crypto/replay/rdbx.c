@@ -271,8 +271,8 @@ rdbx_add_index(rdbx_t *rdbx, int delta) {
     v128_left_shift(&rdbx->bitmask, delta);
     v128_set_bit(&rdbx->bitmask, 127);
   } else {
-    /* delta is in window, so flip bit in bitmask */
-    v128_set_bit(&rdbx->bitmask, -delta);
+    /* delta is in window */
+    v128_set_bit(&rdbx->bitmask, rdbx_high_bit_in_bitmask + delta);
   }
 
   /* note that we need not consider the case that delta == 0 */
