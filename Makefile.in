@@ -26,7 +26,7 @@ runtest: build_table_apps test
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
-	cd test; ./rtpw_test.sh >/dev/null	
+	cd test; $(abspath $(srcdir))/test/rtpw_test.sh >/dev/null	
 	@echo "libsrtp test applications passed."
 	$(MAKE) -C crypto runtest
 
@@ -194,8 +194,9 @@ install:
 	fi
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
 	$(INSTALL) -d $(DESTDIR)$(libdir)
-	cp include/*.h $(DESTDIR)$(includedir)/srtp  
-	cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp
+	cp $(srcdir)/include/*.h $(DESTDIR)$(includedir)/srtp  
+	cp $(srcdir)/crypto/include/*.h $(DESTDIR)$(includedir)/srtp
+	if [ "$(srcdir)" != "." ]; then cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp; fi
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
 
 uninstall:
