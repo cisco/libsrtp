@@ -189,7 +189,7 @@ libsrtpdoc:
 .PHONY: clean superclean install
 
 install:
-	@if [ -d $(DESTDIR)$(includedir)/srtp ]; then \
+	@if [ -r $(DESTDIR)$(includedir)/srtp/srtp.h ]; then \
 	   echo "you should run 'make uninstall' first"; exit 1;  \
 	fi
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
@@ -200,8 +200,9 @@ install:
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
 
 uninstall:
-	rm -rf $(DESTDIR)$(includedir)/srtp
-	rm -rf $(DESTDIR)$(libdir)/libsrtp.a
+	rm -f $(DESTDIR)$(includedir)/srtp/*.h
+	rm -f $(DESTDIR)$(libdir)/libsrtp.a
+	-rmdir $(DESTDIR)$(includedir)/srtp
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
