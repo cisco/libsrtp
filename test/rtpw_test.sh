@@ -18,7 +18,7 @@ ARGS="-k $key -ae"
 # they are killed, those processes will linger.  Re-running the script
 # will get rid of them.
 
-killall rtpw 2&>/dev/null
+killall rtpw 2>/dev/null
 
 if test -x $RTPW; then
 
