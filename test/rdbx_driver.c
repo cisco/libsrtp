@@ -183,14 +183,26 @@ rdbx_check_expect_failure(rdbx_t *rdbx, uint32_t idx) {
 }
 
 err_status_t
-rdbx_check_unordered(rdbx_t *rdbx, uint32_t idx) {
+rdbx_check_add_unordered(rdbx_t *rdbx, uint32_t idx) {
+  int delta;
+  xtd_seq_num_t est;
   err_status_t rstat;
 
-  rstat = rdbx_check(rdbx, idx);
+  delta = index_guess(&rdbx->index, &est, idx);
+
+  rstat = rdbx_check(rdbx, delta);
   if ((rstat != err_status_ok) && (rstat != err_status_replay_old)) {
-    printf("replay_check_unordered failed at index %u\n", idx);
+    printf("replay_check_add_unordered failed at index %u\n", idx);
     return err_status_algo_fail;
   }
+  if (rstat == err_status_replay_old) {
+	return err_status_ok;
+  }
+  if (rdbx_add_index(rdbx, delta) != err_status_ok) {
+    printf("rdbx_add_index failed at index %u\n", idx);
+    return err_status_algo_fail;
+  }  
+
   return err_status_ok;
 }
 
@@ -257,7 +269,31 @@ test_replay_dbx(int num_trials) {
   printf("\ttesting non-sequential insertion...");  
   for (idx=0; idx < num_trials; idx++) {
     ircvd = ut_next_index(&utc);
-    status = rdbx_check_unordered(&rdbx, ircvd);
+    status = rdbx_check_add_unordered(&rdbx, ircvd);
+    if (status)
+      return status;
+	status = rdbx_check_expect_failure(&rdbx, ircvd);
+	if (status)
+		return status;
+  }
+  printf("passed\n");
+
+  /* re-initialize */
+  if (rdbx_init(&rdbx) != err_status_ok) {
+    printf("replay_init failed\n");
+    return err_status_init_fail;
+  }
+
+  /*
+   * test insertion with large gaps.
+   * check for false positives for each insertion.
+   */
+  printf("\ttesting insertion with large gaps...");  
+  for (idx=0, ircvd=0; idx < num_trials; idx++, ircvd += (1 << (rand() % 12))) {
+    status = rdbx_check_add(&rdbx, ircvd);
+    if (status)
+      return status;
+    status = rdbx_check_expect_failure(&rdbx, ircvd);
     if (status)
       return status;
   }
