@@ -63,7 +63,7 @@ usage(char *prog_name) {
 int
 main(int argc, char *argv[]) {
   unsigned do_list_mods      = 0;
-  char q;
+  int q;
   err_status_t err;
 
   printf("dtls_srtp_driver\n");

@@ -70,7 +70,7 @@ int
 main (int argc, char *argv[]) {
   double rate;
   err_status_t status;
-  char q;
+  int q;
   unsigned do_timing_test = 0;
   unsigned do_validation = 0;
 

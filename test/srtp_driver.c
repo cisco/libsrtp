@@ -138,7 +138,7 @@ debug_module_t mod_driver = {
 
 int
 main (int argc, char *argv[]) {
-  char q;
+  int q;
   unsigned do_timing_test    = 0;
   unsigned do_rejection_test = 0;
   unsigned do_codec_timing   = 0;
