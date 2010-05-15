@@ -324,6 +324,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\srtp\ekt.c"
+				>
+			</File>
+			<File
 				RelativePath=".\srtp\srtp.c"
 				>
 			</File>
@@ -497,6 +501,10 @@
 			</File>
 			<File
 				RelativePath=".\crypto\include\datatypes.h"
+				>
+			</File>
+			<File
+				RelativePath=".\include\ekt.h"
 				>
 			</File>
 			<File
