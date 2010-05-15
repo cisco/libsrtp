@@ -272,6 +272,15 @@ err_status_t
 srtp_init(void);
 
 /**
+ * @brief srtp_shutdown() de-initializes the srtp library.
+ *
+ * @warning No srtp functions may be called after calling this function.
+ */
+
+err_status_t
+srtp_shutdown(void);
+
+/**
  * @brief srtp_protect() is the Secure RTP sender-side packet processing
  * function.
  * 

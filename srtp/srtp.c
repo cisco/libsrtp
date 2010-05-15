@@ -1127,6 +1127,21 @@ srtp_init() {
   return err_status_ok;
 }
 
+err_status_t
+srtp_shutdown() {
+  err_status_t status;
+
+  /* shut down crypto kernel */
+  status = crypto_kernel_shutdown();
+  if (status) 
+    return status;
+
+  /* shutting down crypto kernel frees the srtp debug module as well */
+
+  return err_status_ok;
+}
+
+
 /* 
  * The following code is under consideration for removal.  See
  * SRTP_MAX_TRAILER_LEN 
