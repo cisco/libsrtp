@@ -1531,5 +1531,6 @@ const srtp_policy_t wildcard_policy = {
     sec_serv_conf_and_auth  /* security services flag      */
   },
   test_key,
+  NULL,
   NULL
 };
