@@ -182,7 +182,7 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
 
   /* decrypt the Encrypted Master Key field */
   master_key = srtcp_packet_get_emk_location(srtcp_hdr, pkt_octet_len);
-  aes_decrypt_with_raw_key(master_key, stream->ekt->data->ekt_dec_key);
+  aes_decrypt_with_raw_key((void*)master_key, stream->ekt->data->ekt_dec_key);
 
   /* set the SRTP ROC */
   roc = srtcp_packet_get_ekt_roc(srtcp_hdr, pkt_octet_len);
