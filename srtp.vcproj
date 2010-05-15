@@ -488,10 +488,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\crypto\include\crypto_math.h"
-				>
-			</File>
-			<File
 				RelativePath=".\crypto\include\crypto_types.h"
 				>
 			</File>
@@ -524,10 +520,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\crypto\include\kernel_compat.h"
-				>
-			</File>
-			<File
 				RelativePath=".\crypto\include\key.h"
 				>
 			</File>
@@ -556,10 +548,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\include\rtp.h"
-				>
-			</File>
-			<File
 				RelativePath=".\crypto\include\sha1.h"
 				>
 			</File>
@@ -568,15 +556,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\include\srtp_priv.h"
+				>
+			</File>
+			<File
 				RelativePath=".\crypto\include\stat.h"
 				>
 			</File>
 			<File
 				RelativePath=".\include\ut_sim.h"
-				>
-			</File>
-			<File
-				RelativePath=".\crypto\include\xfm.h"
 				>
 			</File>
 		</Filter>
