@@ -190,6 +190,7 @@ test_dtls_srtp() {
   err = crypto_policy_set_from_profile_for_rtcp(&policy.rtcp, profile);
   if (err) return err;
   policy.ssrc.type  = ssrc_any_inbound;
+  policy.ekt = NULL;
   policy.next = NULL;
     
   err = srtp_add_stream(s, &policy);
