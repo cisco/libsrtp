@@ -587,6 +587,10 @@
 			>
 		</Filter>
 		<File
+			RelativePath=".\config.hw"
+			>
+		</File>
+		<File
 			RelativePath=".\srtp.def"
 			>
 		</File>
