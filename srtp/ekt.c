@@ -91,8 +91,8 @@ ekt_octets_after_base_tag(ekt_stream_t ekt) {
 }
 
 inline ekt_spi_t
-srtcp_packet_get_ekt_spi(const void *packet_start, unsigned pkt_octet_len) {
-  void *spi_location;
+srtcp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
+  const uint8_t *spi_location;
   
   spi_location = packet_start + (pkt_octet_len - EKT_SPI_LEN);
   
@@ -100,18 +100,18 @@ srtcp_packet_get_ekt_spi(const void *packet_start, unsigned pkt_octet_len) {
 }
 
 inline uint32_t
-srtcp_packet_get_ekt_roc(const void *packet_start, unsigned pkt_octet_len) {
-  void *roc_location;
+srtcp_packet_get_ekt_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
+  const uint8_t *roc_location;
   
   roc_location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_ROC);
   
   return *((uint32_t *)roc_location);
 }
 
-inline void *
-srtcp_packet_get_emk_location(const void *packet_start, 
+inline const uint8_t *
+srtcp_packet_get_emk_location(const uint8_t *packet_start, 
 			      unsigned pkt_octet_len) {
-  void *location;
+  const uint8_t *location;
   
   location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_BASE_TAG);
 
@@ -164,7 +164,7 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
 			  const void *srtcp_hdr,
 			  unsigned pkt_octet_len) {
   err_status_t err;
-  uint8_t *master_key;
+  const uint8_t *master_key;
   srtp_policy_t srtp_policy;
   unsigned master_key_len;
   uint32_t roc;
@@ -197,14 +197,14 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
 
 void
 ekt_write_data(ekt_stream_t ekt,
-	       void *base_tag, 
+	       uint8_t *base_tag, 
 	       unsigned base_tag_len, 
 	       int *packet_len,
 	       xtd_seq_num_t pkt_index) {
   uint32_t roc;
   uint16_t isn;
   unsigned emk_len;
-  void *packet;
+  uint8_t *packet;
 
   /* if the pointer ekt is NULL, then EKT is not in effect */
   if (!ekt) {

@@ -145,7 +145,7 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
 
 void
 ekt_write_data(ekt_stream_t ekt,
-	       void *base_tag, 
+	       uint8_t *base_tag, 
 	       unsigned base_tag_len, 
 	       int *packet_len,
 	       xtd_seq_num_t pkt_index);		
