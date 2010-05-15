@@ -210,7 +210,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
 							  ((high32(octet_num) & 0x0f)<<(32-4)) |
 							   (low32(octet_num) >> 4));
 #else
-  int tail_num       = octet_num % 16;
+  int tail_num       = (int)(octet_num % 16);
   uint64_t block_num = octet_num / 16;
 #endif
   

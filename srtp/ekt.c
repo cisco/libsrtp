@@ -224,14 +224,14 @@ ekt_write_data(ekt_stream_t ekt,
   packet += emk_len;
 
   /* copy ROC into packet */
-  roc = pkt_index >> 16;
+  roc = (uint32_t)(pkt_index >> 16);
   *((uint32_t *)packet) = be32_to_cpu(roc);
   debug_print(mod_srtp, "writing EKT ROC: %s,", 
 	      octet_string_hex_string(packet, sizeof(roc)));
   packet += sizeof(roc);
 
   /* copy ISN into packet */
-  isn = pkt_index;
+  isn = (uint16_t)pkt_index;
   *((uint16_t *)packet) = htons(isn);
   debug_print(mod_srtp, "writing EKT ISN: %s,", 
 	      octet_string_hex_string(packet, sizeof(isn)));
