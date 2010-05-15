@@ -1114,7 +1114,7 @@ srtp_packet_to_string(srtp_hdr_t *hdr, int pkt_octet_len) {
 double
 mips_estimate(int num_trials, int *ignore) {
   clock_t t;
-  int i, sum;
+  volatile int i, sum;
 
   sum = 0;
   t = clock();
