@@ -112,6 +112,13 @@ main(int argc, char *argv[]) {
   }
   printf("passed\n");
   
+  /* shut down srtp library */
+  err = srtp_shutdown();
+  if (err) {
+    printf("error: srtp shutdown failed with error code %d\n", err);
+    exit(1);
+  }
+
   return 0;
 }
 

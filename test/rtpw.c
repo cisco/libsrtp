@@ -478,6 +478,12 @@ main (int argc, char *argv[]) {
     leave_group(sock, mreq, argv[0]);
   }
 
+  status = srtp_shutdown();
+  if (status) {
+    printf("error: srtp shutdown failed with error code %d\n", status);
+    exit(1);
+  }
+
 #ifdef RTPW_USE_WINSOCK2
   WSACleanup();
 #endif

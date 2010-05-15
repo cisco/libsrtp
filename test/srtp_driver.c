@@ -353,6 +353,12 @@ main (int argc, char *argv[]) {
 	   srtp_bits_per_second(640, &policy) / .02 );
   }
 
+  status = srtp_shutdown();
+  if (status) {
+    printf("error: srtp shutdown failed with error code %d\n", status);
+    exit(1);
+  }
+
   return 0;  
 }
 
