@@ -487,8 +487,8 @@ crypto_policy_set_rtcp_default(crypto_policy_t *p);
  * 
  * The function crypto_policy_set_aes_cm_128_hmac_sha1_80() is a
  * synonym for crypto_policy_set_rtp_default().  It conforms to the
- * naming convention used in
- * http://www.ietf.org/internet-drafts/draft-ietf-mmusic-sdescriptions-12.txt
+ * naming convention used in RFC 4568 (SDP Security Descriptions for
+ * Media Streams).
  * 
  * @return void.
  * 
@@ -505,8 +505,8 @@ crypto_policy_set_rtcp_default(crypto_policy_t *p);
  * 
  * The function call crypto_policy_set_aes_cm_128_hmac_sha1_32(&p)
  * sets the crypto_policy_t at location p to use policy
- * AES_CM_128_HMAC_SHA1_32 as defined in
- * draft-ietf-mmusic-sdescriptions-12.txt.  This policy uses AES-128
+ * AES_CM_128_HMAC_SHA1_32 as defined in RFC 4568.
+ * This policy uses AES-128
  * Counter Mode encryption and HMAC-SHA1 authentication, with an
  * authentication tag that is only 32 bits long.  This length is
  * considered adequate only for protecting audio and video media that

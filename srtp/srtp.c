@@ -1401,7 +1401,7 @@ void
 crypto_policy_set_aes_cm_128_hmac_sha1_32(crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-mmusic-sdescriptions-12.txt
+   * corresponds to RFC 4568
    *
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
@@ -1420,7 +1420,7 @@ void
 crypto_policy_set_aes_cm_128_null_auth(crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-mmusic-sdescriptions-12.txt
+   * corresponds to RFC 4568
    *
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
@@ -1439,7 +1439,7 @@ void
 crypto_policy_set_null_cipher_hmac_sha1_80(crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-mmusic-sdescriptions-12.txt
+   * corresponds to RFC 4568
    */
 
   p->cipher_type     = NULL_CIPHER;           

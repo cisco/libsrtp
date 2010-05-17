@@ -48,15 +48,15 @@
 #define rdbx_high_bit_in_bitmask 127
 
 /*
- * from draft-ietf-avt-srtp-00.txt:
+ * from RFC 3711:
  *
  * A receiver reconstructs the index i of a packet with sequence
- *  number s using the estimate
+ *  number SEQ using the estimate
  *
- * i = 65,536 * t + s,
+ * i = 2^16 * v + SEQ,
  *
- * where t is chosen from the set { r-1, r, r+1 } such that i is
- * closest to the value 65,536 * r + s_l.  If the value r+1 is used,
+ * where v is chosen from the set { ROC-1, ROC, ROC+1 } such that i is
+ * closest to the value 2^16 * ROC + s_l.  If the value r+1 is used,
  * then the rollover counter r in the cryptographic context is
  * incremented by one (if the packet containing s is authentic).
  */
