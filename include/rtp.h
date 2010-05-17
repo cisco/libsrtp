@@ -113,13 +113,13 @@ rtp_receiver_deinit_srtp(rtp_receiver_t sender);
 
 
 rtp_sender_t 
-rtp_sender_alloc();
+rtp_sender_alloc(void);
 
 void
 rtp_sender_dealloc(rtp_sender_t rtp_ctx);
 
 rtp_receiver_t 
-rtp_receiver_alloc();
+rtp_receiver_alloc(void);
 
 void
 rtp_receiver_dealloc(rtp_receiver_t rtp_ctx);

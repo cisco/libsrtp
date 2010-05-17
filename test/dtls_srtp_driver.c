@@ -47,7 +47,7 @@
 #include "srtp_priv.h"
 
 err_status_t 
-test_dtls_srtp();
+test_dtls_srtp(void);
 
 srtp_hdr_t *
 srtp_create_test_packet(int pkt_octet_len, uint32_t ssrc);
@@ -124,7 +124,7 @@ main(int argc, char *argv[]) {
 
 
 err_status_t
-test_dtls_srtp() {
+test_dtls_srtp(void) {
   srtp_hdr_t *test_packet;
   int test_packet_len = 80;
   srtp_t s;

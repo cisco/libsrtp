@@ -136,7 +136,7 @@ struct hex_sha1_test_case_t {
 };
 
 err_status_t
-sha1_add_test_cases() {
+sha1_add_test_cases(void) {
   int i;
   err_status_t err;
 

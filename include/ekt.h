@@ -191,7 +191,7 @@ srtp_stream_srtcp_auth_tag_generation_preprocess(const srtp_stream_t *s,
 /* it's not clear that a tag_generation_postprocess function is needed */
 
 err_status_t
-srtcp_auth_tag_generation_postprocess();
+srtcp_auth_tag_generation_postprocess(void);
 
 
 #ifdef __cplusplus
