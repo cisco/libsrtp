@@ -197,6 +197,12 @@ test_dtls_srtp() {
   if (err)
     return err;
   
+  err = srtp_dealloc(s);
+  if (err)
+    return err;
+
+  free(test_packet);
+
   return err_status_ok;
 }
 

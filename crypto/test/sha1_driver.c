@@ -485,6 +485,21 @@ sha1_add_test_cases() {
   return err_status_ok;
 }
 
+err_status_t
+sha1_dealloc_test_cases(void) {
+  hash_test_case_t *t, *next;
+
+  for (t = sha1_test_case_list; t != NULL; t = next) {
+    next = t->next_test_case;
+    free(t);
+  }
+
+  sha1_test_case_list = NULL;
+
+  return err_status_ok;
+}
+
+
 
 err_status_t
 sha1_validate(void) {
@@ -509,6 +524,8 @@ sha1_validate(void) {
     }
     test_case = test_case->next_test_case;
   }
+
+  sha1_dealloc_test_cases();
 
   return err_status_ok;
 }

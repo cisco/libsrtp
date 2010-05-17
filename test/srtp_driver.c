@@ -66,6 +66,9 @@ err_status_t
 srtp_create_big_policy(srtp_policy_t **list);
 
 err_status_t
+srtp_dealloc_big_policy(srtp_policy_t *list);
+
+err_status_t
 srtp_test_remove_stream(void);
 
 double
@@ -251,6 +254,11 @@ main (int argc, char *argv[]) {
       printf("passed\n\n");
     else {
       printf("failed\n");
+      exit(1);
+    }
+    status = srtp_dealloc_big_policy(big_policy);
+    if (status) {
+      printf("unexpected failure with error code %d\n", status);
       exit(1);
     }
 
@@ -515,6 +523,12 @@ srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy) {
   timer = clock() - timer;
 
   free(mesg);
+
+  status = srtp_dealloc(srtp);
+  if (status) {
+    printf("error: srtp_dealloc() failed with error code %d\n", status);
+    exit(1);
+  }
   
   return (double) (msg_len_octets) * 8 *
                   num_trials * CLOCKS_PER_SEC / timer;   
@@ -555,7 +569,13 @@ srtp_rejections_per_second(int msg_len_octets, const srtp_policy_t *policy) {
   timer = clock() - timer;
 
   free(mesg);
-  
+
+  status = srtp_dealloc(srtp);
+  if (status) {
+    printf("error: srtp_dealloc() failed with error code %d\n", status);
+    exit(1);
+  }
+
   return (double) num_trials * CLOCKS_PER_SEC / timer;   
 }
 
@@ -684,8 +704,11 @@ srtp_test(const srtp_policy_t *policy) {
    * the compiler would fret about the constness of the policy
    */
   rcvr_policy = (srtp_policy_t*) malloc(sizeof(srtp_policy_t));
-  if (rcvr_policy == NULL)
+  if (rcvr_policy == NULL) {
+    free(hdr);
+    free(hdr2);
     return err_status_alloc_fail;
+  }
   memcpy(rcvr_policy, policy, sizeof(srtp_policy_t));
   if (policy->ssrc.type == ssrc_any_outbound) {
     rcvr_policy->ssrc.type = ssrc_any_inbound;       
@@ -707,6 +730,7 @@ srtp_test(const srtp_policy_t *policy) {
   if (status) {
     free(hdr);
     free(hdr2);
+    free(rcvr_policy);
     return status;
   }
 
@@ -727,6 +751,7 @@ srtp_test(const srtp_policy_t *policy) {
       printf("failed with error code %d\n", status);
       free(hdr); 
       free(hdr2);
+      free(rcvr_policy);
       return status;
     } else {
       printf("passed\n");
@@ -752,6 +777,7 @@ srtp_test(const srtp_policy_t *policy) {
       printf("failed\n");
       free(hdr); 
       free(hdr2);
+      free(rcvr_policy);
       return status;
     } else {
       printf("passed\n");
@@ -764,6 +790,7 @@ srtp_test(const srtp_policy_t *policy) {
 
   free(hdr);
   free(hdr2);
+  free(rcvr_policy);
   return err_status_ok;
 }
 
@@ -906,6 +933,7 @@ srtcp_test(const srtp_policy_t *policy) {
   if (status) {
     free(hdr);
     free(hdr2);
+    free(rcvr_policy);
     return status;
   }
 
@@ -926,6 +954,7 @@ srtcp_test(const srtp_policy_t *policy) {
       printf("failed with error code %d\n", status);
       free(hdr); 
       free(hdr2);
+      free(rcvr_policy);
       return status;
     } else {
       printf("passed\n");
@@ -951,6 +980,7 @@ srtcp_test(const srtp_policy_t *policy) {
       printf("failed\n");
       free(hdr); 
       free(hdr2);
+      free(rcvr_policy);
       return status;
     } else {
       printf("passed\n");
@@ -963,6 +993,7 @@ srtcp_test(const srtp_policy_t *policy) {
 
   free(hdr);
   free(hdr2);
+  free(rcvr_policy);
   return err_status_ok;
 }
 
@@ -1219,6 +1250,14 @@ srtp_validate() {
   if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len))
     return err_status_fail;
 
+  status = srtp_dealloc(srtp_snd);
+  if (status)
+    return status;
+
+  status = srtp_dealloc(srtp_recv);
+  if (status)
+    return status;
+
   return err_status_ok;
 }
 
@@ -1254,6 +1293,19 @@ srtp_create_big_policy(srtp_policy_t **list) {
  
   return err_status_ok;
 }
+
+err_status_t
+srtp_dealloc_big_policy(srtp_policy_t *list) {
+  srtp_policy_t *p, *next;
+
+  for (p = list; p != NULL; p = next) {
+    next = p->next;
+    free(p);
+  }
+
+  return err_status_ok;
+}
+
 
 err_status_t
 srtp_test_remove_stream() { 
@@ -1298,6 +1350,14 @@ srtp_test_remove_stream() {
   stream = srtp_get_stream(session, htonl(0x2));
   if (stream == NULL)
     return err_status_fail;  
+
+  status = srtp_dealloc(session);
+  if (status != err_status_ok)
+    return status;
+
+  status = srtp_dealloc_big_policy(policy_list);
+  if (status != err_status_ok)
+    return status;
 
   return err_status_ok;  
 }

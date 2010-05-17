@@ -97,5 +97,7 @@ main (int argc, char *argv[]) {
   printf("(nota bene: a small fraction of stat_test failures does not \n"
 	 "indicate that the random source is invalid)\n");
 
+  err_check(cipher_dealloc(c));
+
   return 0;
 }
