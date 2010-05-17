@@ -21,7 +21,7 @@
 #define PRINT_DEBUG    0    /* set to 1 to print out debugging data */
 #define VERBOSE_DEBUG  0    /* set to 1 to print out more data      */
 
-unsigned int
+int
 rtp_sendto(rtp_sender_t sender, const void* msg, int len) {
   int octets_sent;
   err_status_t stat;
@@ -61,7 +61,7 @@ rtp_sendto(rtp_sender_t sender, const void* msg, int len) {
   return octets_sent;
 }
 
-unsigned int
+int
 rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len) {
   int octets_recvd;
   err_status_t stat;

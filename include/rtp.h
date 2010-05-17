@@ -66,10 +66,10 @@ typedef struct rtp_sender_ctx_t *rtp_sender_t;
 
 typedef struct rtp_receiver_ctx_t *rtp_receiver_t;
 
-unsigned int
+int
 rtp_sendto(rtp_sender_t sender, const void* msg, int len);
 
-unsigned int
+int
 rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len);
 
 int
