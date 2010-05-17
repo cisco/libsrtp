@@ -350,6 +350,7 @@ main (int argc, char *argv[]) {
     policy.ssrc.value = ssrc;
     policy.key  = (uint8_t *) key;
     policy.next = NULL;
+    policy.window_size = 128;
     policy.rtp.sec_serv = sec_servs;
     policy.rtcp.sec_serv = sec_serv_none;  /* we don't do RTCP anyway */
 
@@ -402,6 +403,7 @@ main (int argc, char *argv[]) {
     policy.rtcp.auth_key_len   = 0;
     policy.rtcp.auth_tag_len   = 0;
     policy.rtcp.sec_serv       = sec_serv_none;   
+    policy.window_size         = 0;
     policy.next                = NULL;
   }
 

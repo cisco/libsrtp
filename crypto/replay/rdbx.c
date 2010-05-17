@@ -45,7 +45,6 @@
 
 #include "rdbx.h"
 
-#define rdbx_high_bit_in_bitmask 127
 
 /*
  * from RFC 3711:
@@ -180,17 +179,32 @@ index_guess(const xtd_seq_num_t *local,
 
 
 /*
- *  rdbx_init(&r) initalizes the rdbx_t pointed to by r 
+ *  rdbx_init(&r, ws) initializes the rdbx_t pointed to by r with window size ws
  */
 
 err_status_t
-rdbx_init(rdbx_t *rdbx) {
-  v128_set_to_zero(&rdbx->bitmask);
+rdbx_init(rdbx_t *rdbx, unsigned long ws) {
+  if (ws == 0)
+    return err_status_bad_param;
+
+  if (bitvector_alloc(&rdbx->bitmask, ws) != 0)
+    return err_status_alloc_fail;
+
   index_init(&rdbx->index);
 
   return err_status_ok;
 }
 
+/*
+ *  rdbx_dealloc(&r) frees memory for the rdbx_t pointed to by r
+ */
+
+err_status_t
+rdbx_dealloc(rdbx_t *rdbx) {
+  bitvector_dealloc(&rdbx->bitmask);
+
+  return err_status_ok;
+}
 
 /*
  * rdbx_set_roc(rdbx, roc) initalizes the rdbx_t at the location rdbx
@@ -202,7 +216,7 @@ rdbx_init(rdbx_t *rdbx) {
 
 err_status_t
 rdbx_set_roc(rdbx_t *rdbx, uint32_t roc) {
-  v128_set_to_zero(&rdbx->bitmask);
+  bitvector_set_to_zero(&rdbx->bitmask);
 
 #ifdef NO_64BIT_MATH
   #error not yet implemented
@@ -231,6 +245,17 @@ rdbx_get_packet_index(const rdbx_t *rdbx) {
 }
 
 /*
+ * rdbx_get_window_size(rdbx) returns the value of the window size
+ * for the rdbx_t pointed to by rdbx
+ * 
+ */
+
+unsigned long
+rdbx_get_window_size(const rdbx_t *rdbx) {
+  return bitvector_get_length(&rdbx->bitmask);
+}
+
+/*
  * rdbx_check(&r, delta) checks to see if the xtd_seq_num_t
  * which is at rdbx->index + delta is in the rdb
  */
@@ -240,11 +265,11 @@ rdbx_check(const rdbx_t *rdbx, int delta) {
   
   if (delta > 0) {       /* if delta is positive, it's good */
     return err_status_ok;
-  } else if (rdbx_high_bit_in_bitmask + delta < 0) {   
+  } else if ((int)(bitvector_get_length(&rdbx->bitmask) - 1) + delta < 0) {   
                          /* if delta is lower than the bitmask, it's bad */
     return err_status_replay_old; 
-  } else if (v128_get_bit(&rdbx->bitmask, 
-			  rdbx_high_bit_in_bitmask + delta) == 1) {
+  } else if (bitvector_get_bit(&rdbx->bitmask, 
+			       (int)(bitvector_get_length(&rdbx->bitmask) - 1) + delta) == 1) {
                          /* delta is within the window, so check the bitmask */
     return err_status_replay_fail;    
   }
@@ -268,11 +293,11 @@ rdbx_add_index(rdbx_t *rdbx, int delta) {
   if (delta > 0) {
     /* shift forward by delta */
     index_advance(&rdbx->index, delta);
-    v128_left_shift(&rdbx->bitmask, delta);
-    v128_set_bit(&rdbx->bitmask, 127);
+    bitvector_left_shift(&rdbx->bitmask, delta);
+    bitvector_set_bit(&rdbx->bitmask, bitvector_get_length(&rdbx->bitmask) - 1);
   } else {
     /* delta is in window */
-    v128_set_bit(&rdbx->bitmask, rdbx_high_bit_in_bitmask + delta);
+    bitvector_set_bit(&rdbx->bitmask, bitvector_get_length(&rdbx->bitmask) -1 + delta);
   }
 
   /* note that we need not consider the case that delta == 0 */

@@ -223,6 +223,8 @@ typedef struct srtp_policy_t {
 				*    this stream.                        */
   ekt_policy_t ekt;            /**< Pointer to the EKT policy structure
                                 *   for this stream (if any)             */ 
+  unsigned long window_size;   /**< The window size to use for replay
+				*   protection. */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;
 

@@ -46,19 +46,29 @@ typedef uint64_t xtd_seq_num_t;
 
 typedef struct {
   xtd_seq_num_t index;
-  v128_t bitmask;
+  bitvector_t bitmask;
 } rdbx_t;
 
 
 /*
- * rdbx_init(rdbx_ptr)
+ * rdbx_init(rdbx_ptr, ws)
  *
- * initializes the rdbx pointed to by its argument, setting the
- * rollover counter and sequence number to zero
+ * initializes the rdbx pointed to by its argument with the window size ws,
+ * setting the rollover counter and sequence number to zero
  */
 
 err_status_t
-rdbx_init(rdbx_t *rdbx);
+rdbx_init(rdbx_t *rdbx, unsigned long ws);
+
+
+/*
+ * rdbx_dealloc(rdbx_ptr)
+ *
+ * frees memory associated with the rdbx
+ */
+
+err_status_t
+rdbx_dealloc(rdbx_t *rdbx);
 
 
 /*
@@ -126,6 +136,15 @@ rdbx_get_packet_index(const rdbx_t *rdbx);
  * shouldn't be used to manipulate rdbx internal values.  use the rdbx
  * api instead!
  */
+
+/*
+ * rdbx_get_ws(rdbx_ptr)
+ *
+ * gets the window size which was used to initialize the rdbx
+ */
+
+unsigned long
+rdbx_get_window_size(const rdbx_t *rdbx);
 
 
 /* index_init(&pi) initializes a packet index pi (sets it to zero) */

@@ -55,10 +55,10 @@
 #include "ut_sim.h"
 
 err_status_t 
-test_replay_dbx(int num_trials);
+test_replay_dbx(int num_trials, unsigned long ws);
 
 double
-rdbx_check_adds_per_second(int num_trials);
+rdbx_check_adds_per_second(int num_trials, unsigned long ws);
 
 void
 usage(char *prog_name) {
@@ -99,9 +99,18 @@ main (int argc, char *argv[]) {
     usage(argv[0]);
 
   if (do_validation) {
-  printf("testing rdbx_t...\n");
+    printf("testing rdbx_t (ws=128)...\n");
 
-    status = test_replay_dbx(1 << 12);
+    status = test_replay_dbx(1 << 12, 128);
+    if (status) {
+      printf("failed\n");
+      exit(1);
+    }
+    printf("passed\n");
+
+    printf("testing rdbx_t (ws=1024)...\n");
+
+    status = test_replay_dbx(1 << 12, 1024);
     if (status) {
       printf("failed\n");
       exit(1);
@@ -110,8 +119,10 @@ main (int argc, char *argv[]) {
   }
 
   if (do_timing_test) {
-    rate = rdbx_check_adds_per_second(1 << 18);
-    printf("rdbx_check/replay_adds per second: %e\n", rate);
+    rate = rdbx_check_adds_per_second(1 << 18, 128);
+    printf("rdbx_check/replay_adds per second (ws=128): %e\n", rate);
+    rate = rdbx_check_adds_per_second(1 << 18, 1024);
+    printf("rdbx_check/replay_adds per second (ws=1024): %e\n", rate);
   }
   
   return 0;
@@ -119,8 +130,11 @@ main (int argc, char *argv[]) {
 
 void
 print_rdbx(rdbx_t *rdbx) {
+  char buf[2048];
   printf("rdbx: {%llu, %s}\n",
-	 (unsigned long long)(rdbx->index), v128_bit_string(&rdbx->bitmask));
+	 (unsigned long long)(rdbx->index),
+	 bitvector_bit_string(&rdbx->bitmask, buf, sizeof(buf))
+);
 }
 
 
@@ -206,17 +220,15 @@ rdbx_check_add_unordered(rdbx_t *rdbx, uint32_t idx) {
   return err_status_ok;
 }
 
-#define MAX_IDX 160
-
 err_status_t
-test_replay_dbx(int num_trials) {
+test_replay_dbx(int num_trials, unsigned long ws) {
   rdbx_t rdbx;
   uint32_t idx, ircvd;
   ut_connection utc;
   err_status_t status;
   int num_fp_trials;
 
-  status = rdbx_init(&rdbx);
+  status = rdbx_init(&rdbx, ws);
   if (status) {
     printf("replay_init failed with error code %d\n", status);
     exit(1);
@@ -253,7 +265,9 @@ test_replay_dbx(int num_trials) {
   printf("passed\n");
 
   /* re-initialize */
-  if (rdbx_init(&rdbx) != err_status_ok) {
+  rdbx_dealloc(&rdbx);
+
+  if (rdbx_init(&rdbx, ws) != err_status_ok) {
     printf("replay_init failed\n");
     return err_status_init_fail;
   }
@@ -279,7 +293,9 @@ test_replay_dbx(int num_trials) {
   printf("passed\n");
 
   /* re-initialize */
-  if (rdbx_init(&rdbx) != err_status_ok) {
+  rdbx_dealloc(&rdbx);
+
+  if (rdbx_init(&rdbx, ws) != err_status_ok) {
     printf("replay_init failed\n");
     return err_status_init_fail;
   }
@@ -299,6 +315,8 @@ test_replay_dbx(int num_trials) {
   }
   printf("passed\n");
 
+  rdbx_dealloc(&rdbx);
+
   return err_status_ok;
 }
 
@@ -308,7 +326,7 @@ test_replay_dbx(int num_trials) {
 #include <stdlib.h>     /* for random() */
 
 double
-rdbx_check_adds_per_second(int num_trials) {
+rdbx_check_adds_per_second(int num_trials, unsigned long ws) {
   uint32_t i;
   int delta;
   rdbx_t rdbx;
@@ -316,7 +334,7 @@ rdbx_check_adds_per_second(int num_trials) {
   clock_t timer;
   int failures;                    /* count number of failures        */
   
-  if (rdbx_init(&rdbx) != err_status_ok) {
+  if (rdbx_init(&rdbx, ws) != err_status_ok) {
     printf("replay_init failed\n");
     exit(1);
   }  
@@ -336,6 +354,8 @@ rdbx_check_adds_per_second(int num_trials) {
   timer = clock() - timer;
 
   printf("number of failures: %d \n", failures);
+
+  rdbx_dealloc(&rdbx);
 
   return (double) CLOCKS_PER_SEC * num_trials / timer;
 }

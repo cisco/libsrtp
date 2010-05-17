@@ -329,6 +329,8 @@ main (int argc, char *argv[]) {
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xdecafbad;
     policy.key  = test_key;
+    policy.ekt = NULL;
+    policy.window_size = 128;
     policy.next = NULL;
 
     printf("mips estimate: %e\n", mips);
@@ -1026,14 +1028,16 @@ srtp_session_print_policy(srtp_t srtp) {
 	   "# rtp services:  %s\r\n" 
            "# rtcp cipher:   %s\r\n"
 	   "# rtcp auth:     %s\r\n"
-	   "# rtcp services: %s\r\n",
+	   "# rtcp services: %s\r\n"
+	   "# window size:   %lu\r\n",
 	   direction[stream->direction],
 	   stream->rtp_cipher->type->description,
 	   stream->rtp_auth->type->description,
 	   serv_descr[stream->rtp_services],
 	   stream->rtcp_cipher->type->description,
 	   stream->rtcp_auth->type->description,
-	   serv_descr[stream->rtcp_services]);
+	   serv_descr[stream->rtcp_services],
+	   rdbx_get_window_size(&stream->rtp_rdbx));
   }
 
   /* loop over streams in session, printing the policy of each */
@@ -1048,14 +1052,16 @@ srtp_session_print_policy(srtp_t srtp) {
 	   "# rtp services:  %s\r\n" 
            "# rtcp cipher:   %s\r\n"
 	   "# rtcp auth:     %s\r\n"
-	   "# rtcp services: %s\r\n",
+	   "# rtcp services: %s\r\n"
+	   "# window size:   %lu\r\n",
 	   stream->ssrc,
 	   stream->rtp_cipher->type->description,
 	   stream->rtp_auth->type->description,
 	   serv_descr[stream->rtp_services],
 	   stream->rtcp_cipher->type->description,
 	   stream->rtcp_auth->type->description,
-	   serv_descr[stream->rtcp_services]);
+	   serv_descr[stream->rtcp_services],
+	   rdbx_get_window_size(&stream->rtp_rdbx));
 
     /* advance to next stream in the list */
     stream = stream->next;
@@ -1209,6 +1215,8 @@ srtp_validate() {
   policy.ssrc.type  = ssrc_specific;
   policy.ssrc.value = 0xcafebabe;
   policy.key  = test_key;
+  policy.ekt = NULL;
+  policy.window_size = 128;
   policy.next = NULL;
 
   status = srtp_create(&srtp_snd, &policy);
@@ -1394,6 +1402,7 @@ const srtp_policy_t default_policy = {
   },
   test_key,
   NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
   NULL
 };
 
@@ -1417,6 +1426,7 @@ const srtp_policy_t aes_tmmh_policy = {
   },
   test_key,
   NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
   NULL
 };
 
@@ -1440,6 +1450,7 @@ const srtp_policy_t tmmh_only_policy = {
   },
   test_key,
   NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
   NULL
 };
 
@@ -1463,6 +1474,7 @@ const srtp_policy_t aes_only_policy = {
   },
   test_key,
   NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
   NULL
 };
 
@@ -1486,6 +1498,7 @@ const srtp_policy_t hmac_only_policy = {
   },
   test_key,
   NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
   NULL
 };
 
@@ -1509,6 +1522,7 @@ const srtp_policy_t null_policy = {
   },
   test_key,
   NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
   NULL
 };
 
@@ -1546,6 +1560,7 @@ const srtp_policy_t hmac_only_with_ekt_policy = {
   },
   test_key,
   &ekt_test_policy,        /* indicates that EKT is not in use */
+  128,                     /* replay window size */
   NULL
 };
 
@@ -1598,5 +1613,6 @@ const srtp_policy_t wildcard_policy = {
   },
   test_key,
   NULL,
+  128,                   /* replay window size */
   NULL
 };

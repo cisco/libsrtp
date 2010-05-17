@@ -231,6 +231,10 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
       return status;
   }
 
+  status = rdbx_dealloc(&stream->rtp_rdbx);
+  if (status)
+    return status;
+
   /* DAM - need to deallocate EKT here */
   
   /* deallocate srtp stream context */
@@ -275,7 +279,10 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     return status;
 
   /* initialize replay databases */
-  rdbx_init(&str->rtp_rdbx);
+  status = rdbx_init(&str->rtp_rdbx,
+		     rdbx_get_window_size(&stream_template->rtp_rdbx));
+  if (status)
+    return status;
   rdb_init(&str->rtcp_rdb);
   
   /* set ssrc to that provided */
@@ -491,7 +498,18 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 	       p->ssrc.value);
 
    /* initialize replay database */
-   rdbx_init(&srtp->rtp_rdbx);
+   /* window size MUST be at least 64.  MAY be larger.  Values more than
+    * 2^15 aren't meaningful due to how extended sequence numbers are
+    * calculated.   Let a window size of 0 imply the default value. */
+
+   if (p->window_size != 0 && (p->window_size < 64 || p->window_size >= 0x8000))
+     return err_status_bad_param;
+
+   if (p->window_size != 0)
+     err = rdbx_init(&srtp->rtp_rdbx, p->window_size);
+   else
+     err = rdbx_init(&srtp->rtp_rdbx, 128);
+   if (err) return err;
 
    /* initialize key limit to maximum value */
 #ifdef NO_64BIT_MATH
@@ -525,14 +543,20 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 
    /* initialize keys */
    err = srtp_stream_init_keys(srtp, p->key);
-   if (err) return err;
+   if (err) {
+     rdbx_dealloc(&srtp->rtp_rdbx);
+     return err;
+   }
 
    /* 
     * if EKT is in use, then initialize the EKT data associated with
     * the stream
     */
    err = ekt_stream_init_from_policy(srtp->ekt, p->ekt);
-   if (err) return err;
+   if (err) {
+     rdbx_dealloc(&srtp->rtp_rdbx);
+     return err;
+   }
 
    return err_status_ok;  
  }
@@ -1218,6 +1242,9 @@ srtp_dealloc(srtp_t session) {
     if (status) 
       return status; 
     status = auth_dealloc(session->stream_template->rtp_auth);
+    if (status)
+      return status;
+    status = rdbx_dealloc(&session->stream_template->rtp_rdbx);
     if (status)
       return status;
     crypto_free(session->stream_template);
