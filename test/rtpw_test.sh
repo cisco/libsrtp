@@ -63,6 +63,9 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
+wait $receiver_pid
+wait $sender_pid
+
 echo $0 ": done (test passed)"
 
 else 
