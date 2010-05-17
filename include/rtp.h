@@ -103,14 +103,26 @@ int
 rtp_sender_init_srtp(rtp_sender_t sender, const srtp_policy_t *policy);
 
 int
+rtp_sender_deinit_srtp(rtp_sender_t sender);
+
+int
 rtp_receiver_init_srtp(rtp_receiver_t sender, const srtp_policy_t *policy);
+
+int
+rtp_receiver_deinit_srtp(rtp_receiver_t sender);
 
 
 rtp_sender_t 
 rtp_sender_alloc();
 
+void
+rtp_sender_dealloc(rtp_sender_t rtp_ctx);
+
 rtp_receiver_t 
 rtp_receiver_alloc();
+
+void
+rtp_receiver_dealloc(rtp_receiver_t rtp_ctx);
 
 
 /*
