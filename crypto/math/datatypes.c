@@ -387,6 +387,124 @@ v128_left_shift(v128_t *x, int index) {
 
 }
 
+/* functions manipulating bitvector_t */
+
+#ifndef DATATYPES_USE_MACROS /* little functions are not macros */
+
+int
+bitvector_get_bit(const bitvector_t *v, int bit_index)
+{
+  return _bitvector_get_bit(v, bit_index);
+}
+
+void
+bitvector_set_bit(bitvector_t *v, int bit_index)
+{
+  _bitvector_set_bit(v, bit_index);
+}
+
+void
+bitvector_clear_bit(bitvector_t *v, int bit_index)
+{
+  _bitvector_clear_bit(v, bit_index);
+}
+
+
+#endif /* DATATYPES_USE_MACROS */
+
+int
+bitvector_alloc(bitvector_t *v, unsigned long length) {
+  unsigned long l;
+
+  /* Round length up to a multiple of bits_per_word */
+  length = (length + bits_per_word - 1) & ~(unsigned long)((bits_per_word - 1));
+
+  l = length / bits_per_word * bytes_per_word;
+
+  /* allocate memory, then set parameters */
+  if (l == 0)
+    v->word = NULL;
+  else {
+    v->word = (uint32_t*)crypto_alloc(l);
+    if (v->word == NULL) {
+      v->word = NULL;
+      v->length = 0;
+      return -1;
+    }
+  }
+  v->length = length;
+
+  /* initialize bitvector to zero */
+  bitvector_set_to_zero(v);
+
+  return 0;
+}
+
+
+void
+bitvector_dealloc(bitvector_t *v) {
+  if (v->word != NULL)
+    crypto_free(v->word);
+  v->word = NULL;
+  v->length = 0;
+}
+
+void
+bitvector_set_to_zero(bitvector_t *x)
+{
+  /* C99 guarantees that memset(0) will set the value 0 for uint32_t */
+  memset(x->word, 0, x->length >> 3);
+}
+
+char *
+bitvector_bit_string(bitvector_t *x, char* buf, int len) {
+  int j, index;
+  uint32_t mask;
+  
+  for (j=index=0; j < (int)(x->length>>5) && index < len-1; j++) {
+    for (mask=0x80000000; mask > 0; mask >>= 1) {
+      if (x->word[j] & mask)
+	buf[index] = '1';
+      else
+	buf[index] = '0';
+      ++index;
+      if (index >= len-1)
+        break;
+    }
+  }
+  buf[index] = 0; /* null terminate string */
+
+  return buf;
+}
+
+void
+bitvector_left_shift(bitvector_t *x, int index) {
+  int i;
+  const int base_index = index >> 5;
+  const int bit_index = index & 31;
+  const int word_length = x->length >> 5;
+
+  if (index >= (int)x->length) {
+    bitvector_set_to_zero(x);
+    return;
+  } 
+  
+  if (bit_index == 0) {
+    for (i=0; i < word_length - base_index; i++)
+      x->word[i] = x->word[i+base_index];
+  } else {
+    for (i=0; i < word_length - base_index - 1; i++)
+      x->word[i] = (x->word[i+base_index] >> bit_index) ^
+	(x->word[i+base_index+1] << (32 - bit_index));
+    x->word[word_length - base_index-1] = x->word[word_length-1] >> bit_index;
+  }
+
+  /* now wrap up the final portion */
+  for (i = word_length - base_index; i < word_length; i++) 
+    x->word[i] = 0;
+
+}
+
 
 int
 octet_string_is_eq(uint8_t *a, uint8_t *b, int len) {

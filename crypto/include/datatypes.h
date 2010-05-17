@@ -424,4 +424,83 @@ static inline uint64_t be64_to_cpu(uint64_t v) {
 
 #endif /* WORDS_BIGENDIAN */
 
+/*
+ * functions manipulating bitvector_t 
+ *
+ * A bitvector_t consists of an array of words and an integer
+ * representing the number of significant bits stored in the array.
+ * The bits are packed as follows: the least significant bit is that
+ * of word[0], while the most significant bit is the nth most
+ * significant bit of word[m], where length = bits_per_word * m + n.
+ * 
+ */
+
+#define bits_per_word  32
+#define bytes_per_word 4
+
+typedef struct {
+  uint32_t length;   
+  uint32_t *word;
+} bitvector_t;
+
+
+#define _bitvector_get_bit(v, bit_index)				\
+(									\
+ ((((v)->word[((bit_index) >> 5)]) >> ((bit_index) & 31)) & 1)		\
+)
+
+
+#define _bitvector_set_bit(v, bit_index)				\
+(									\
+ (((v)->word[((bit_index) >> 5)] |= ((uint32_t)1 << ((bit_index) & 31)))) \
+)
+
+#define _bitvector_clear_bit(v, bit_index)				\
+(									\
+ (((v)->word[((bit_index) >> 5)] &= ~((uint32_t)1 << ((bit_index) & 31)))) \
+)
+
+#define _bitvector_get_length(v)					\
+(									\
+ ((v)->length)								\
+)
+
+#ifdef DATATYPES_USE_MACROS  /* little functions are really macros */
+
+#define bitvector_get_bit(v, bit_index) _bitvector_get_bit(v, bit_index)
+#define bitvector_set_bit(v, bit_index) _bitvector_set_bit(v, bit_index)
+#define bitvector_clear_bit(v, bit_index) _bitvector_clear_bit(v, bit_index)
+#define bitvector_get_length(v) _bitvector_get_length(v)
+
+#else
+
+int
+bitvector_get_bit(const bitvector_t *v, int bit_index);
+
+void
+bitvector_set_bit(bitvector_t *v, int bit_index);
+
+void
+bitvector_clear_bit(bitvector_t *v, int bit_index);
+
+unsigned long
+bitvector_get_length(const bitvector_t *v);
+
+#endif
+
+int
+bitvector_alloc(bitvector_t *v, unsigned long length);
+
+void
+bitvector_dealloc(bitvector_t *v);
+
+void
+bitvector_set_to_zero(bitvector_t *x);
+
+void
+bitvector_left_shift(bitvector_t *x, int index);
+
+char *
+bitvector_bit_string(bitvector_t *x, char* buf, int len);
+
 #endif /* _DATATYPES_H */
