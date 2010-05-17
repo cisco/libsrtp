@@ -66,7 +66,7 @@ aes_cbc_alloc(cipher_t **c, int key_len) {
   if (key_len != 16)
     return err_status_bad_param;
   
-  /* allocate memory a cipher of type aes_icm */
+  /* allocate memory a cipher of type aes_cbc */
   tmp = (sizeof(aes_cbc_ctx_t) + sizeof(cipher_t));
   pointer = (uint8_t*)crypto_alloc(tmp);
   if (pointer == NULL) 

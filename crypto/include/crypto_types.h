@@ -113,10 +113,10 @@
 #define SEAL               2            
 
 /** 
- * @brief AES-128 Integer Counter Mode (AES ICM)             
+ * @brief AES-128 Cipher Block Chaining (AES CBC)             
  *
- * AES-128 ICM is the variant of counter mode that is used by Secure RTP.  
- * This cipher uses a 16-octet key and a 30-octet offset (or salt) value.
+ * AES-128 CBC is the AES Cipher Block Chaining mode.
+ * This cipher uses a 16-octet key.
  */
 #define AES_128_CBC        3            
 
