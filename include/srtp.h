@@ -225,6 +225,12 @@ typedef struct srtp_policy_t {
                                 *   for this stream (if any)             */ 
   unsigned long window_size;   /**< The window size to use for replay
 				*   protection. */
+  int        allow_repeat_tx;  /**< Whether retransmissions of
+				*   packets with the same sequence number
+				*   are allowed.  (Note that such repeated
+				*   transmissions must have the same RTP
+				*   payload, or a severe security weakness
+				*   is introduced!)                      */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;
 

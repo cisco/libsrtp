@@ -284,6 +284,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   if (status)
     return status;
   rdb_init(&str->rtcp_rdb);
+  str->allow_repeat_tx = stream_template->allow_repeat_tx;
   
   /* set ssrc to that provided */
   str->ssrc = ssrc;
@@ -539,6 +540,14 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    /* initialize SRTCP replay database */
    rdb_init(&srtp->rtcp_rdb);
 
+   /* initialize allow_repeat_tx */
+   /* guard against uninitialized memory: allow only 0 or 1 here */
+   if (p->allow_repeat_tx != 0 && p->allow_repeat_tx != 1) {
+     rdbx_dealloc(&srtp->rtp_rdbx);
+     return err_status_bad_param;
+   }
+   srtp->allow_repeat_tx = p->allow_repeat_tx;
+
    /* DAM - no RTCP key limit at present */
 
    /* initialize keys */
@@ -746,9 +755,12 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     */
    delta = rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
    status = rdbx_check(&stream->rtp_rdbx, delta);
-   if (status)
-     return status;  /* we've been asked to reuse an index */
-   rdbx_add_index(&stream->rtp_rdbx, delta);
+   if (status) {
+     if (status != err_status_replay_fail || !stream->allow_repeat_tx)
+       return status;  /* we've been asked to reuse an index */
+   }
+   else
+     rdbx_add_index(&stream->rtp_rdbx, delta);
 
 #ifdef NO_64BIT_MATH
    debug_print2(mod_srtp, "estimated packet index: %08x%08x", 

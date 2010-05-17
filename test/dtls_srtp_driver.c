@@ -192,6 +192,7 @@ test_dtls_srtp(void) {
   policy.ssrc.type  = ssrc_any_inbound;
   policy.ekt = NULL;
   policy.window_size = 128;
+  policy.allow_repeat_tx = 0;
   policy.next = NULL;
     
   err = srtp_add_stream(s, &policy);
