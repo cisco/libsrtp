@@ -978,7 +978,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 #else
     iv.v64[1] = be64_to_cpu(est << 16);
 #endif
-    status = aes_icm_set_iv((aes_icm_ctx_t*)stream->rtp_cipher->state, &iv);
+    status = cipher_set_iv(stream->rtp_cipher, &iv);
   } else {  
     
     /* no particular format - set the iv to the pakcet index */  
@@ -1631,7 +1631,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = hdr->ssrc;  /* still in network order! */
     iv.v32[2] = htonl(seq_num >> 16);
     iv.v32[3] = htonl(seq_num << 16);
-    status = aes_icm_set_iv((aes_icm_ctx_t*)stream->rtcp_cipher->state, &iv);
+    status = cipher_set_iv(stream->rtcp_cipher, &iv);
 
   } else {  
     v128_t iv;
@@ -1819,7 +1819,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = hdr->ssrc; /* still in network order! */
     iv.v32[2] = htonl(seq_num >> 16);
     iv.v32[3] = htonl(seq_num << 16);
-    status = aes_icm_set_iv((aes_icm_ctx_t*)stream->rtcp_cipher->state, &iv);
+    status = cipher_set_iv(stream->rtcp_cipher, &iv);
 
   } else {  
     v128_t iv;
