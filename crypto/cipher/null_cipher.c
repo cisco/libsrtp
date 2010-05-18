@@ -99,7 +99,7 @@ null_cipher_dealloc(cipher_t *c) {
 }
 
 err_status_t
-null_cipher_init(null_cipher_ctx_t *ctx, const uint8_t *key) {
+null_cipher_init(null_cipher_ctx_t *ctx, const uint8_t *key, int key_len) {
 
   debug_print(mod_cipher, "initializing null cipher", NULL);
 

@@ -104,7 +104,7 @@ aes_cbc_dealloc(cipher_t *c) {
 }
 
 err_status_t
-aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, 
+aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len,
 		     cipher_direction_t dir) {
   v128_t tmp_key;
 

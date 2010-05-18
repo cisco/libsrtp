@@ -25,7 +25,8 @@ typedef struct {
 
 err_status_t
 aes_icm_context_init(aes_icm_ctx_t *c,
-		     const unsigned char *key); 
+		     const unsigned char *key,
+		     int key_len); 
 
 err_status_t
 aes_icm_set_iv(aes_icm_ctx_t *c, void *iv);

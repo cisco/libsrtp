@@ -162,7 +162,7 @@ aes_icm_dealloc(cipher_t *c) {
  */
 
 err_status_t
-aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key) {
+aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
   v128_t tmp_key;
 
   /* set counter and initial values to 'offset' value */

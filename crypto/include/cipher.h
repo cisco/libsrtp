@@ -86,7 +86,7 @@ typedef err_status_t (*cipher_alloc_func_t)
  */
 
 typedef err_status_t (*cipher_init_func_t)
-  (void *state, const uint8_t *key, cipher_direction_t dir);
+(void *state, const uint8_t *key, int key_len, cipher_direction_t dir);
 
 /* a cipher_dealloc_func_t de-allocates a cipher_t */
 
@@ -168,7 +168,7 @@ typedef struct cipher_t {
 
 #define cipher_dealloc(c) (((c)->type)->dealloc(c))
 
-#define cipher_init(c, k, dir) (((c)->type)->init(((c)->state), (k), (dir)))
+#define cipher_init(c, k, dir) (((c)->type)->init(((c)->state), (k), ((c)->key_len), (dir)))
 
 #define cipher_encrypt(c, buf, len) \
         (((c)->type)->encrypt(((c)->state), (buf), (len)))
