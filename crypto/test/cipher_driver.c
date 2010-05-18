@@ -348,6 +348,9 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
   err_status_t status;
   uint8_t *key;
   cipher_t **cipher_array;
+  /* pad klen allocation, to handle aes_icm reading 16 bytes for the
+     14-byte salt */
+  int klen_pad = ((klen + 15) >> 4) << 4;
 
   /* allocate array of pointers to ciphers */
   cipher_array = (cipher_t **) malloc(sizeof(cipher_t *) * num_ciphers);
@@ -358,7 +361,7 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
   *ca = cipher_array;
 
   /* allocate key */
-  key = crypto_alloc(klen);
+  key = crypto_alloc(klen_pad);
   if (key == NULL) {
     free(cipher_array);
     return err_status_alloc_fail;
@@ -375,6 +378,8 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
     /* generate random key and initialize cipher */
     for (j=0; j < klen; j++)
       key[j] = (uint8_t) rand();
+    for (; j < klen_pad; j++)
+      key[j] = 0;
     status = cipher_init(*cipher_array, key, direction_encrypt);
     if (status)
       return status;
@@ -386,6 +391,8 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
     /* advance cipher array pointer */
     cipher_array++;
   }
+
+  crypto_free(key);
 
   return err_status_ok;
 }
@@ -423,24 +430,28 @@ cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher,
   v128_t nonce;
   clock_t timer;
   unsigned char *enc_buf;
-  int cipher_index = 0;
+  int cipher_index = rand() % num_cipher;
 
-
-  enc_buf = crypto_alloc(octets_in_buffer);
+  /* Over-alloc, for NIST CBC padding */
+  enc_buf = crypto_alloc(octets_in_buffer+17);
   if (enc_buf == NULL)
     return 0;  /* indicate bad parameters by returning null */
+  memset(enc_buf, 0, octets_in_buffer);
   
   /* time repeated trials */
   v128_set_to_zero(&nonce);
   timer = clock();
   for(i=0; i < num_trials; i++, nonce.v32[3] = i) {
-
-    /* choose a cipher at random from the array*/
-    cipher_index = (*((uint32_t *)enc_buf)) % num_cipher;
+    /* length parameter to cipher_encrypt is in/out -- out is total, padded
+     * length -- so reset it each time. */
+    unsigned octets_to_encrypt = octets_in_buffer;
 
     /* encrypt buffer with cipher */
     cipher_set_iv(cipher_array[cipher_index], &nonce);
-    cipher_encrypt(cipher_array[cipher_index], enc_buf, &octets_in_buffer);
+    cipher_encrypt(cipher_array[cipher_index], enc_buf, &octets_to_encrypt);
+
+    /* choose a cipher at random from the array*/
+    cipher_index = (*((uint32_t *)enc_buf)) % num_cipher;
   }
   timer = clock() - timer;
 
@@ -451,7 +462,7 @@ cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher,
     return 0;
   }
 
-  return CLOCKS_PER_SEC * num_trials * 8 * octets_in_buffer / timer;
+  return (uint64_t)CLOCKS_PER_SEC * num_trials * 8 * octets_in_buffer / timer;
 }
 
 void
