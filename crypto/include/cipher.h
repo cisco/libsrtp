@@ -108,8 +108,7 @@ typedef err_status_t (*cipher_decrypt_func_t)
      (void *state, uint8_t *buffer, unsigned int *octets_to_decrypt);
 
 /* 
- * a cipher_set_nonce_seq_func_t function sets both the nonce
- * and the extended sequence number
+ * a cipher_set_iv_func_t function sets the current initialization vector
  */
 
 typedef err_status_t (*cipher_set_iv_func_t)
