@@ -309,14 +309,15 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
  *
  * srtp_kdf_t is a key derivation context
  *
- * srtp_kdf_init(&kdf, k) initializes kdf with the key k
+ * srtp_kdf_init(&kdf, cipher_id, k, keylen) initializes kdf to use cipher
+ * described by cipher_id, with the master key k with length in octets keylen.
  * 
  * srtp_kdf_generate(&kdf, l, kl, keylen) derives the key
  * corresponding to label l and puts it into kl; the length
  * of the key in octets is provided as keylen.  this function
  * should be called once for each subkey that is derived.
  *
- * srtp_kdf_clear(&kdf) zeroizes the kdf state
+ * srtp_kdf_clear(&kdf) zeroizes and deallocates the kdf state
  */
 
 typedef enum {
@@ -335,40 +336,57 @@ typedef enum {
  */
 
 typedef struct { 
-  aes_icm_ctx_t c;    /* cipher used for key derivation  */  
+  cipher_t *cipher;    /* cipher used for key derivation  */  
 } srtp_kdf_t;
 
 err_status_t
-srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t key[30]) {
+srtp_kdf_init(srtp_kdf_t *kdf, cipher_type_id_t cipher_id, const uint8_t *key, int length) {
 
-  aes_icm_context_init(&kdf->c, key);
+  err_status_t stat;
+  stat = crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, length);
+  if (stat)
+    return stat;
+
+  stat = cipher_init(kdf->cipher, key, direction_encrypt);
+  if (stat) {
+    cipher_dealloc(kdf->cipher);
+    return stat;
+  }
 
   return err_status_ok;
 }
 
 err_status_t
 srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
-		  uint8_t *key, int length) {
+		  uint8_t *key, unsigned length) {
 
   v128_t nonce;
+  err_status_t status;
   
   /* set eigth octet of nonce to <label>, set the rest of it to zero */
   v128_set_to_zero(&nonce);
   nonce.v8[7] = label;
  
-  aes_icm_set_iv(&kdf->c, &nonce);  
+  status = cipher_set_iv(kdf->cipher, &nonce);
+  if (status)
+    return status;
   
   /* generate keystream output */
-  aes_icm_output(&kdf->c, key, length);
+  octet_string_set_to_zero(key, length);
+  status = cipher_encrypt(kdf->cipher, key, &length);
+  if (status)
+    return status;
 
   return err_status_ok;
 }
 
 err_status_t
 srtp_kdf_clear(srtp_kdf_t *kdf) {
-  
-  /* zeroize aes context */
-  octet_string_set_to_zero((uint8_t *)kdf, sizeof(srtp_kdf_t));
+  err_status_t status;
+  status = cipher_dealloc(kdf->cipher);
+  if (status)
+    return status;
+  kdf->cipher = NULL;
 
   return err_status_ok;  
 }
@@ -387,7 +405,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   uint8_t tmp_key[MAX_SRTP_KEY_LEN];
   
   /* initialize KDF state     */
-  srtp_kdf_init(&kdf, (const uint8_t *)key);
+  srtp_kdf_init(&kdf, AES_128_ICM, (const uint8_t *)key, 30);
   
   /* generate encryption key  */
   srtp_kdf_generate(&kdf, label_rtp_encryption, 
