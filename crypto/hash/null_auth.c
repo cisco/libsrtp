@@ -156,6 +156,7 @@ null_auth  = {
   (char *)               null_auth_description,
   (int)                  0,  /* instance count */
   (auth_test_case_t *)   &null_auth_test_case_0,
-  (debug_module_t *)     NULL
+  (debug_module_t *)     NULL,
+  (auth_type_id_t)       NULL_AUTH
 };
 

@@ -147,6 +147,7 @@ cipher_type_t null_cipher = {
   (char *)                      null_cipher_description,
   (int)                         0,
   (cipher_test_case_t *)       &null_cipher_test_0,
-  (debug_module_t *)            NULL
+  (debug_module_t *)            NULL,
+  (cipher_type_id_t)            NULL_CIPHER
 };
 

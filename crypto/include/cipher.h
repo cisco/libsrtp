@@ -49,6 +49,8 @@
 #include "datatypes.h"          
 #include "rdbx.h"               /* for xtd_seq_num_t */
 #include "err.h"                /* for error codes  */
+#include "crypto.h"		/* for cipher_type_id_t */
+#include "crypto_types.h"	/* for values of cipher_type_id_t */
 
 
 /**
@@ -146,6 +148,7 @@ typedef struct cipher_type_t {
   int                         ref_count;
   cipher_test_case_t         *test_data;
   debug_module_t             *debug;
+  cipher_type_id_t            id;
 } cipher_type_t;
 
 /*

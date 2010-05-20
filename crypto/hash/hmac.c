@@ -262,6 +262,7 @@ hmac  = {
   (char *)               hmac_description,
   (int)                  0,  /* instance count */
   (auth_test_case_t *)  &hmac_test_case_0,
-  (debug_module_t *)    &mod_hmac
+  (debug_module_t *)    &mod_hmac,
+  (auth_type_id_t)       HMAC_SHA1
 };
 

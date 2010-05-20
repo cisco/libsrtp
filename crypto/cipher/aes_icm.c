@@ -555,6 +555,7 @@ cipher_type_t aes_icm = {
   (char *)                       aes_icm_description,
   (int)                          0,   /* instance count */
   (cipher_test_case_t *)        &aes_icm_test_case_1,
-  (debug_module_t *)            &mod_aes_icm
+  (debug_module_t *)            &mod_aes_icm,
+  (cipher_type_id_t)             AES_ICM
 };
 

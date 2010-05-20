@@ -533,7 +533,8 @@ cipher_type_t aes_cbc = {
   (char *)                       aes_cbc_description,
   (int)                          0,   /* instance count */
   (cipher_test_case_t *)        &aes_cbc_test_case_3,
-  (debug_module_t *)            &mod_aes_cbc
+  (debug_module_t *)            &mod_aes_cbc,
+  (cipher_type_id_t)             AES_CBC
 };
 
 

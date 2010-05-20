@@ -306,6 +306,9 @@ crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
   if (new_ct == NULL)
     return err_status_bad_param;
 
+  if (new_ct->id != id)
+    return err_status_bad_param;
+
   /* check cipher type by running self-test */
   status = cipher_type_self_test(new_ct);
   if (status) {
@@ -349,6 +352,9 @@ crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
 
   /* defensive coding */
   if (new_at == NULL)
+    return err_status_bad_param;
+
+  if (new_at->id != id)
     return err_status_bad_param;
 
   /* check auth type by running self-test */
