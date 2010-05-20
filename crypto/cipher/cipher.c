@@ -71,8 +71,8 @@ cipher_get_key_length(const cipher_t *c) {
 }
 
 /* 
- * cipher_type_self_test(ct) tests a cipher of type ct against test cases
- * provided in an array of values of key, salt, xtd_seq_num_t,
+ * cipher_type_test(ct, test_data) tests a cipher of type ct against
+ * test cases provided in a list test_data of values of key, salt, iv,
  * plaintext, and ciphertext that is known to be good
  */
 
@@ -81,8 +81,8 @@ cipher_get_key_length(const cipher_t *c) {
 #define MAX_KEY_LEN          64
 
 err_status_t
-cipher_type_self_test(const cipher_type_t *ct) {
-  const cipher_test_case_t *test_case = ct->test_data;
+cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
+  const cipher_test_case_t *test_case = test_data;
   cipher_t *c;
   err_status_t status;
   uint8_t buffer[SELF_TEST_BUF_OCTETS];
@@ -260,7 +260,7 @@ cipher_type_self_test(const cipher_type_t *ct) {
   /* now run some random invertibility tests */
 
   /* allocate cipher, using paramaters from the first test case */
-  test_case = ct->test_data;
+  test_case = test_data;
   status = cipher_type_alloc(ct, &c, test_case->key_length_octets);
   if (status)
       return status;
@@ -367,6 +367,16 @@ cipher_type_self_test(const cipher_type_t *ct) {
   return err_status_ok;
 }
 
+
+/* 
+ * cipher_type_self_test(ct) performs cipher_type_test on ct's internal
+ * list of test data.
+ */
+
+err_status_t
+cipher_type_self_test(const cipher_type_t *ct) {
+  return cipher_type_test(ct, ct->test_data);
+}
 
 /*
  * cipher_bits_per_second(c, l, t) computes (an estimate of) the

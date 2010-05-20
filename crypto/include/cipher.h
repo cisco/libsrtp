@@ -203,6 +203,16 @@ err_status_t
 cipher_type_self_test(const cipher_type_t *ct);
 
 
+/* 
+ * cipher_type_test() tests a cipher against external test cases provided in 
+ * an array of values of key/xtd_seq_num_t/plaintext/ciphertext 
+ * that is known to be good
+ */
+
+err_status_t
+cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data);
+
+
 /*
  * cipher_bits_per_second(c, l, t) computes (and estimate of) the
  * number of bits that a cipher implementation can encrypt in a second
