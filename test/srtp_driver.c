@@ -63,6 +63,9 @@ err_status_t
 srtp_validate(void);
 
 err_status_t
+srtp_validate_aes_256(void);
+
+err_status_t
 srtp_create_big_policy(srtp_policy_t **list);
 
 err_status_t
@@ -279,6 +282,19 @@ main (int argc, char *argv[]) {
     printf("testing srtp_protect and srtp_unprotect against "
 	   "reference packets\n");
     if (srtp_validate() == err_status_ok) 
+      printf("passed\n\n");
+    else {
+      printf("failed\n");
+       exit(1); 
+    }
+
+    /*
+     * run validation test against the reference packets for
+     * AES-256
+     */
+    printf("testing srtp_protect and srtp_unprotect against "
+	   "reference packets (AES-256)\n");
+    if (srtp_validate_aes_256() == err_status_ok) 
       printf("passed\n\n");
     else {
       printf("failed\n");
@@ -1276,6 +1292,114 @@ srtp_validate() {
 }
 
 
+/*
+ * srtp_validate_aes_256() verifies the correctness of libsrtp by comparing
+ * some computed packets against some pre-computed reference values.
+ * These packets were made with the AES-CM-256/HMAC-SHA-1-80 policy.
+ */
+
+
+err_status_t
+srtp_validate_aes_256() {
+  unsigned char test_key[46] = {
+    0xf0, 0xf0, 0x49, 0x14, 0xb5, 0x13, 0xf2, 0x76,
+    0x3a, 0x1b, 0x1f, 0xa1, 0x30, 0xf1, 0x0e, 0x29,
+    0x98, 0xf6, 0xf6, 0xe4, 0x3e, 0x43, 0x09, 0xd1,
+    0xe6, 0x22, 0xa0, 0xe3, 0x32, 0xb9, 0xf1, 0xb6,
+
+    0x3b, 0x04, 0x80, 0x3d, 0xe5, 0x1e, 0xe7, 0xc9,
+    0x64, 0x23, 0xab, 0x5b, 0x78, 0xd2
+  };
+  uint8_t srtp_plaintext_ref[28] = {
+    0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
+    0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+    0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 
+    0xab, 0xab, 0xab, 0xab
+  };
+  uint8_t srtp_plaintext[38] = {
+    0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
+    0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+    0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 
+    0xab, 0xab, 0xab, 0xab, 0x00, 0x00, 0x00, 0x00, 
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  };
+  uint8_t srtp_ciphertext[38] = {
+    0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
+    0xca, 0xfe, 0xba, 0xbe, 0xf1, 0xd9, 0xde, 0x17, 
+    0xff, 0x25, 0x1f, 0xf1, 0xaa, 0x00, 0x77, 0x74, 
+    0xb0, 0xb4, 0xb4, 0x0d, 0xa0, 0x8d, 0x9d, 0x9a, 
+    0x5b, 0x3a, 0x55, 0xd8, 0x87, 0x3b
+  };
+  srtp_t srtp_snd, srtp_recv;
+  err_status_t status;
+  int len;
+  srtp_policy_t policy;
+  
+  /*
+   * create a session with a single stream using the default srtp
+   * policy and with the SSRC value 0xcafebabe
+   */
+  crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
+  crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtcp);
+  policy.ssrc.type  = ssrc_specific;
+  policy.ssrc.value = 0xcafebabe;
+  policy.key  = test_key;
+  policy.ekt = NULL;
+  policy.window_size = 128;
+  policy.allow_repeat_tx = 0;
+  policy.next = NULL;
+
+  status = srtp_create(&srtp_snd, &policy);
+  if (status)
+    return status;
+ 
+  /* 
+   * protect plaintext, then compare with ciphertext 
+   */
+  len = 28;
+  status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+  if (status || (len != 38))
+    return err_status_fail;
+
+  debug_print(mod_driver, "ciphertext:\n  %s", 	      
+	      octet_string_hex_string(srtp_plaintext, len));
+  debug_print(mod_driver, "ciphertext reference:\n  %s", 	      
+	      octet_string_hex_string(srtp_ciphertext, len));
+
+  if (octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len))
+    return err_status_fail;
+  
+  /*
+   * create a receiver session context comparable to the one created
+   * above - we need to do this so that the replay checking doesn't
+   * complain
+   */
+  status = srtp_create(&srtp_recv, &policy);
+  if (status)
+    return status;
+
+  /*
+   * unprotect ciphertext, then compare with plaintext 
+   */
+  status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+  if (status || (len != 28))
+    return status;
+  
+  if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len))
+    return err_status_fail;
+
+  status = srtp_dealloc(srtp_snd);
+  if (status)
+    return status;
+
+  status = srtp_dealloc(srtp_recv);
+  if (status)
+    return status;
+
+  return err_status_ok;
+}
+
+
 err_status_t
 srtp_create_big_policy(srtp_policy_t **list) {
   extern const srtp_policy_t *policy_array[];
@@ -1538,6 +1662,41 @@ const srtp_policy_t null_policy = {
   NULL
 };
 
+unsigned char test_256_key[46] = {
+	0xf0, 0xf0, 0x49, 0x14, 0xb5, 0x13, 0xf2, 0x76,
+	0x3a, 0x1b, 0x1f, 0xa1, 0x30, 0xf1, 0x0e, 0x29,
+	0x98, 0xf6, 0xf6, 0xe4, 0x3e, 0x43, 0x09, 0xd1,
+	0xe6, 0x22, 0xa0, 0xe3, 0x32, 0xb9, 0xf1, 0xb6,
+
+	0x3b, 0x04, 0x80, 0x3d, 0xe5, 0x1e, 0xe7, 0xc9,
+	0x64, 0x23, 0xab, 0x5b, 0x78, 0xd2
+};
+
+const srtp_policy_t aes_256_hmac_policy = {
+  { ssrc_any_outbound, 0 },  /* SSRC                           */
+  {                      /* SRTP policy                    */                  
+    AES_ICM,                /* cipher type                 */
+    46,                     /* cipher key length in octets */
+    HMAC_SHA1,              /* authentication func type    */
+    20,                     /* auth key length in octets   */
+    10,                     /* auth tag length in octets   */
+    sec_serv_conf_and_auth  /* security services flag      */
+  },
+  {                      /* SRTCP policy                   */
+    AES_ICM,                /* cipher type                 */
+    46,                     /* cipher key length in octets */
+    HMAC_SHA1,              /* authentication func type    */
+    20,                     /* auth key length in octets   */
+    10,                     /* auth tag length in octets   */
+    sec_serv_conf_and_auth  /* security services flag      */
+  },
+  test_256_key,
+  NULL,        /* indicates that EKT is not in use */
+  128,         /* replay window size */
+  0,           /* retransmission not allowed */
+  NULL
+};
+
 uint8_t ekt_test_key[16] = {
   0x77, 0x26, 0x9d, 0xac, 0x16, 0xa3, 0x28, 0xca, 
   0x8e, 0xc9, 0x68, 0x4b, 0xcc, 0xc4, 0xd2, 0x1b
@@ -1602,6 +1761,7 @@ policy_array[] = {
 #endif
   &default_policy,
   &null_policy,
+  &aes_256_hmac_policy,
   &hmac_only_with_ekt_policy,
   NULL
 };

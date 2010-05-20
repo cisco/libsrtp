@@ -398,36 +398,76 @@ srtp_kdf_clear(srtp_kdf_t *kdf) {
 #define MAX_SRTP_KEY_LEN 256
 
 
+/* Get the base key length corresponding to a given combined key+salt
+ * length for the given cipher.
+ * Assumption is that for AES-ICM a key length < 30 is Ismacryp using
+ * AES-128 and short salts; everything else uses a salt length of 14.
+ * TODO: key and salt lengths should be separate fields in the policy.  */
+inline int base_key_length(const cipher_type_t *cipher, int key_length)
+{
+  if (cipher != &aes_icm)
+    return key_length;
+  else if (key_length > 16 && key_length < 30)
+    return 16;
+  return key_length - 14;
+}
+
 err_status_t
 srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   err_status_t stat;
   srtp_kdf_t kdf;
   uint8_t tmp_key[MAX_SRTP_KEY_LEN];
-  
+  int kdf_keylen = 30, rtp_keylen, rtcp_keylen;
+  int rtp_base_key_len, rtp_salt_len;
+  int rtcp_base_key_len, rtcp_salt_len;
+
+  /* If RTP or RTCP have a key length > AES-128, assume matching kdf. */
+  /* TODO: kdf algorithm, master key length, and master salt length should
+   * be part of srtp_policy_t. */
+  rtp_keylen = cipher_get_key_length(srtp->rtp_cipher);
+  if (rtp_keylen > kdf_keylen)
+    kdf_keylen = rtp_keylen;
+
+  rtcp_keylen = cipher_get_key_length(srtp->rtcp_cipher);
+  if (rtcp_keylen > kdf_keylen)
+    kdf_keylen = rtcp_keylen;
+
   /* initialize KDF state     */
-  srtp_kdf_init(&kdf, AES_128_ICM, (const uint8_t *)key, 30);
+  stat = srtp_kdf_init(&kdf, AES_ICM, (const uint8_t *)key, kdf_keylen);
+  if (stat) {
+    return err_status_init_fail;
+  }
+
+  rtp_base_key_len = base_key_length(srtp->rtp_cipher->type, rtp_keylen);
+  rtp_salt_len = rtp_keylen - rtp_base_key_len;
   
   /* generate encryption key  */
-  srtp_kdf_generate(&kdf, label_rtp_encryption, 
-		    tmp_key, cipher_get_key_length(srtp->rtp_cipher));
+  stat = srtp_kdf_generate(&kdf, label_rtp_encryption, 
+			   tmp_key, rtp_base_key_len);
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
   /* 
-   * if the cipher in the srtp context is aes_icm, then we need
+   * if the cipher in the srtp context uses a salt, then we need
    * to generate the salt value
    */
-  if (srtp->rtp_cipher->type == &aes_icm) {
-    /* FIX!!! this is really the cipher key length; rest is salt */
-    int base_key_len = 16;
-    int salt_len = cipher_get_key_length(srtp->rtp_cipher) - base_key_len;
-    
-    debug_print(mod_srtp, "found aes_icm, generating salt", NULL);
+  if (rtp_salt_len > 0) {
+    debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt", NULL);
 
     /* generate encryption salt, put after encryption key */
-    srtp_kdf_generate(&kdf, label_rtp_salt, 
-		      tmp_key + base_key_len, salt_len);
+    stat = srtp_kdf_generate(&kdf, label_rtp_salt, 
+			     tmp_key + rtp_base_key_len, rtp_salt_len);
+    if (stat) {
+      /* zeroize temp buffer */
+      octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+      return err_status_init_fail;
+    }
   }
   debug_print(mod_srtp, "cipher key: %s", 
-	      octet_string_hex_string(tmp_key, 
-		      cipher_get_key_length(srtp->rtp_cipher)));  
+	      octet_string_hex_string(tmp_key, rtp_keylen));
 
   /* initialize cipher */
   stat = cipher_init(srtp->rtp_cipher, tmp_key, direction_any);
@@ -438,8 +478,13 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* generate authentication key */
-  srtp_kdf_generate(&kdf, label_rtp_msg_auth,
-		    tmp_key, auth_get_key_length(srtp->rtp_auth));
+  stat = srtp_kdf_generate(&kdf, label_rtp_msg_auth,
+			   tmp_key, auth_get_key_length(srtp->rtp_auth));
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
   debug_print(mod_srtp, "auth key:   %s",
 	      octet_string_hex_string(tmp_key, 
 				      auth_get_key_length(srtp->rtp_auth))); 
@@ -456,27 +501,37 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
    * ...now initialize SRTCP keys
    */
 
+  rtcp_base_key_len = base_key_length(srtp->rtcp_cipher->type, rtcp_keylen);
+  rtcp_salt_len = rtcp_keylen - rtcp_base_key_len;
+  
   /* generate encryption key  */
-  srtp_kdf_generate(&kdf, label_rtcp_encryption, 
-		    tmp_key, cipher_get_key_length(srtp->rtcp_cipher));
+  stat = srtp_kdf_generate(&kdf, label_rtcp_encryption, 
+			   tmp_key, rtcp_base_key_len);
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
   /* 
-   * if the cipher in the srtp context is aes_icm, then we need
+   * if the cipher in the srtp context uses a salt, then we need
    * to generate the salt value
    */
-  if (srtp->rtcp_cipher->type == &aes_icm) {
-    /* FIX!!! this is really the cipher key length; rest is salt */
-    int base_key_len = 16;
-    int salt_len = cipher_get_key_length(srtp->rtcp_cipher) - base_key_len;
-
-    debug_print(mod_srtp, "found aes_icm, generating rtcp salt", NULL);
+  if (rtcp_salt_len > 0) {
+    debug_print(mod_srtp, "found rtcp_salt_len > 0, generating rtcp salt",
+		NULL);
 
     /* generate encryption salt, put after encryption key */
-    srtp_kdf_generate(&kdf, label_rtcp_salt, 
-		      tmp_key + base_key_len, salt_len);
+    stat = srtp_kdf_generate(&kdf, label_rtcp_salt, 
+			     tmp_key + rtcp_base_key_len, rtcp_salt_len);
+    if (stat) {
+      /* zeroize temp buffer */
+      octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+      return err_status_init_fail;
+    }
   }
   debug_print(mod_srtp, "rtcp cipher key: %s", 
-	      octet_string_hex_string(tmp_key, 
-		   cipher_get_key_length(srtp->rtcp_cipher)));  
+	      octet_string_hex_string(tmp_key, rtcp_keylen));  
 
   /* initialize cipher */
   stat = cipher_init(srtp->rtcp_cipher, tmp_key, direction_any);
@@ -487,8 +542,14 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* generate authentication key */
-  srtp_kdf_generate(&kdf, label_rtcp_msg_auth,
-		    tmp_key, auth_get_key_length(srtp->rtcp_auth));
+  stat = srtp_kdf_generate(&kdf, label_rtcp_msg_auth,
+			   tmp_key, auth_get_key_length(srtp->rtcp_auth));
+  if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+    return err_status_init_fail;
+  }
+
   debug_print(mod_srtp, "rtcp auth key:   %s",
 	      octet_string_hex_string(tmp_key, 
 		     auth_get_key_length(srtp->rtcp_auth))); 
@@ -502,8 +563,10 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* clear memory then return */
-  srtp_kdf_clear(&kdf);
+  stat = srtp_kdf_clear(&kdf);
   octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);  
+  if (stat)
+    return err_status_init_fail;
 
   return err_status_ok;
 }
@@ -1433,7 +1496,7 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
 void
 crypto_policy_set_rtp_default(crypto_policy_t *p) {
 
-  p->cipher_type     = AES_128_ICM;           
+  p->cipher_type     = AES_ICM;           
   p->cipher_key_len  = 30;                /* default 128 bits per RFC 3711 */
   p->auth_type       = HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
@@ -1445,7 +1508,7 @@ crypto_policy_set_rtp_default(crypto_policy_t *p) {
 void
 crypto_policy_set_rtcp_default(crypto_policy_t *p) {
 
-  p->cipher_type     = AES_128_ICM;           
+  p->cipher_type     = AES_ICM;           
   p->cipher_key_len  = 30;                 /* default 128 bits per RFC 3711 */
   p->auth_type       = HMAC_SHA1;             
   p->auth_key_len    = 20;                 /* default 160 bits per RFC 3711 */
@@ -1463,7 +1526,7 @@ crypto_policy_set_aes_cm_128_hmac_sha1_32(crypto_policy_t *p) {
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
 
-  p->cipher_type     = AES_128_ICM;           
+  p->cipher_type     = AES_ICM;           
   p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
   p->auth_type       = HMAC_SHA1;             
   p->auth_key_len    = 20;                /* 160 bit key               */
@@ -1482,7 +1545,7 @@ crypto_policy_set_aes_cm_128_null_auth(crypto_policy_t *p) {
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
 
-  p->cipher_type     = AES_128_ICM;           
+  p->cipher_type     = AES_ICM;           
   p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
   p->auth_type       = NULL_AUTH;             
   p->auth_key_len    = 0; 
@@ -1506,6 +1569,40 @@ crypto_policy_set_null_cipher_hmac_sha1_80(crypto_policy_t *p) {
   p->auth_tag_len    = 10; 
   p->sec_serv        = sec_serv_auth;
   
+}
+
+
+void
+crypto_policy_set_aes_cm_256_hmac_sha1_80(crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-avt-big-aes-03.txt
+   */
+
+  p->cipher_type     = AES_ICM;           
+  p->cipher_key_len  = 46;
+  p->auth_type       = HMAC_SHA1;             
+  p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
+  p->auth_tag_len    = 10;                /* default 80 bits per RFC 3711 */
+  p->sec_serv        = sec_serv_conf_and_auth;
+}
+
+
+void
+crypto_policy_set_aes_cm_256_hmac_sha1_32(crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-avt-big-aes-03.txt
+   *
+   * note that this crypto policy is intended for SRTP, but not SRTCP
+   */
+
+  p->cipher_type     = AES_ICM;           
+  p->cipher_key_len  = 46;
+  p->auth_type       = HMAC_SHA1;             
+  p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
+  p->auth_tag_len    = 4;                 /* default 80 bits per RFC 3711 */
+  p->sec_serv        = sec_serv_conf_and_auth;
 }
 
 
@@ -1958,10 +2055,16 @@ crypto_policy_set_from_profile_for_rtp(crypto_policy_t *policy,
     crypto_policy_set_null_cipher_hmac_sha1_80(policy);
     crypto_policy_set_null_cipher_hmac_sha1_80(policy);
     break;
+  case srtp_profile_aes256_cm_sha1_80:
+    crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
+    crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
+    break;
+  case srtp_profile_aes256_cm_sha1_32:
+    crypto_policy_set_aes_cm_256_hmac_sha1_32(policy);
+    crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
+    break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
-  case srtp_profile_aes256_cm_sha1_80:
-  case srtp_profile_aes256_cm_sha1_32:
   default:
     return err_status_bad_param;
   }
@@ -1984,10 +2087,14 @@ crypto_policy_set_from_profile_for_rtcp(crypto_policy_t *policy,
   case srtp_profile_null_sha1_80:
     crypto_policy_set_null_cipher_hmac_sha1_80(policy);
     break;
+  case srtp_profile_aes256_cm_sha1_80:
+    crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
+    break;
+  case srtp_profile_aes256_cm_sha1_32:
+    crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
+    break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
-  case srtp_profile_aes256_cm_sha1_80:
-  case srtp_profile_aes256_cm_sha1_32:
   default:
     return err_status_bad_param;
   }
@@ -2016,10 +2123,14 @@ srtp_profile_get_master_key_length(srtp_profile_t profile) {
   case srtp_profile_null_sha1_80:
     return 16;
     break;
+  case srtp_profile_aes256_cm_sha1_80:
+    return 32;
+    break;
+  case srtp_profile_aes256_cm_sha1_32:
+    return 32;
+    break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
-  case srtp_profile_aes256_cm_sha1_80:
-  case srtp_profile_aes256_cm_sha1_32:
   default:
     return 0;  /* indicate error by returning a zero */
   }
@@ -2038,10 +2149,14 @@ srtp_profile_get_master_salt_length(srtp_profile_t profile) {
   case srtp_profile_null_sha1_80:
     return 14;
     break;
+  case srtp_profile_aes256_cm_sha1_80:
+    return 14;
+    break;
+  case srtp_profile_aes256_cm_sha1_32:
+    return 14;
+    break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
-  case srtp_profile_aes256_cm_sha1_80:
-  case srtp_profile_aes256_cm_sha1_32:
   default:
     return 0;  /* indicate error by returning a zero */
   }

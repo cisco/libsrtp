@@ -151,10 +151,10 @@ crypto_kernel_init() {
   status = crypto_kernel_load_cipher_type(&null_cipher, NULL_CIPHER);
   if (status) 
     return status;
-  status = crypto_kernel_load_cipher_type(&aes_icm, AES_128_ICM);
+  status = crypto_kernel_load_cipher_type(&aes_icm, AES_ICM);
   if (status) 
     return status;
-  status = crypto_kernel_load_cipher_type(&aes_cbc, AES_128_CBC);
+  status = crypto_kernel_load_cipher_type(&aes_cbc, AES_CBC);
   if (status) 
     return status;
 
