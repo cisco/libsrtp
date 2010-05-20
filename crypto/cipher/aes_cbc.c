@@ -333,7 +333,7 @@ char
 aes_cbc_description[] = "aes cipher block chaining (cbc) mode";
 
 /*
- * Test case 0 is derived from FIPS 197 Appendix A; it uses an
+ * Test case 0 is derived from FIPS 197 Appendix C; it uses an
  * all-zero IV, so that the first block encryption matches the test
  * case in that appendix.  This property provides a check of the base
  * AES encryption and decryption algorithms; if CBC fails on some
