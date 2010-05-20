@@ -297,8 +297,9 @@ crypto_kernel_shutdown() {
   return err_status_ok;
 }
 
-err_status_t
-crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
+inline err_status_t
+crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id,
+				  int replace) {
   kernel_cipher_type_t *ctype, *new_ctype;
   err_status_t status;
 
@@ -318,24 +319,35 @@ crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
   /* walk down list, checking if this type is in the list already  */
   ctype = crypto_kernel.cipher_type_list;
   while (ctype != NULL) {
-    if ((new_ct == ctype->cipher_type) || (id == ctype->id))
+    if (id == ctype->id) {
+      if (!replace)
+	return err_status_bad_param;
+      status = cipher_type_test(new_ct, ctype->cipher_type->test_data);
+      if (status)
+	return status;
+      new_ctype = ctype;
+      break;
+    }
+    else if (new_ct == ctype->cipher_type)
       return err_status_bad_param;    
     ctype = ctype->next;
   }
 
-  /* put new_ct at the head of the list */
+  /* if not found, put new_ct at the head of the list */
+  if (ctype == NULL) {
   /* allocate memory */
-  new_ctype = (kernel_cipher_type_t *) crypto_alloc(sizeof(kernel_cipher_type_t));
-  if (new_ctype == NULL)
-    return err_status_alloc_fail;
+    new_ctype = (kernel_cipher_type_t *) crypto_alloc(sizeof(kernel_cipher_type_t));
+    if (new_ctype == NULL)
+      return err_status_alloc_fail;
+    new_ctype->next = crypto_kernel.cipher_type_list;
+
+    /* set head of list to new cipher type */
+    crypto_kernel.cipher_type_list = new_ctype;    
+  }
     
   /* set fields */
   new_ctype->cipher_type = new_ct;
   new_ctype->id = id;
-  new_ctype->next = crypto_kernel.cipher_type_list;
-
-  /* set head of list to new cipher type */
-  crypto_kernel.cipher_type_list = new_ctype;    
 
   /* load debug module, if there is one present */
   if (new_ct->debug != NULL)
@@ -346,7 +358,18 @@ crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
 }
 
 err_status_t
-crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
+crypto_kernel_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
+  return crypto_kernel_do_load_cipher_type(new_ct, id, 0);
+}
+
+err_status_t
+crypto_kernel_replace_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id) {
+  return crypto_kernel_do_load_cipher_type(new_ct, id, 1);
+}
+
+err_status_t
+crypto_kernel_do_load_auth_type(auth_type_t *new_at, auth_type_id_t id,
+				int replace) {
   kernel_auth_type_t *atype, *new_atype;
   err_status_t status;
 
@@ -366,24 +389,35 @@ crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
   /* walk down list, checking if this type is in the list already  */
   atype = crypto_kernel.auth_type_list;
   while (atype != NULL) {
-    if ((new_at == atype->auth_type) || (id == atype->id))
+    if (id == atype->id) {
+      if (!replace)
+	return err_status_bad_param;
+      status = auth_type_test(new_at, atype->auth_type->test_data);
+      if (status)
+	return status;
+      new_atype = atype;
+      break;
+    }
+    else if (new_at == atype->auth_type)
       return err_status_bad_param;    
     atype = atype->next;
   }
 
-  /* put new_at at the head of the list */
-  /* allocate memory */
-  new_atype = (kernel_auth_type_t *)crypto_alloc(sizeof(kernel_auth_type_t));
-  if (new_atype == NULL)
-    return err_status_alloc_fail;
+  /* if not found, put new_at at the head of the list */
+  if (atype == NULL) {
+    /* allocate memory */
+    new_atype = (kernel_auth_type_t *)crypto_alloc(sizeof(kernel_auth_type_t));
+    if (new_atype == NULL)
+      return err_status_alloc_fail;
+
+    new_atype->next = crypto_kernel.auth_type_list;
+    /* set head of list to new auth type */
+    crypto_kernel.auth_type_list = new_atype;
+  }
     
   /* set fields */
   new_atype->auth_type = new_at;
   new_atype->id = id;
-  new_atype->next = crypto_kernel.auth_type_list;
-
-  /* set head of list to new auth type */
-  crypto_kernel.auth_type_list = new_atype;    
 
   /* load debug module, if there is one present */
   if (new_at->debug != NULL)
@@ -392,6 +426,16 @@ crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
 
   return err_status_ok;
 
+}
+
+err_status_t
+crypto_kernel_load_auth_type(auth_type_t *new_at, auth_type_id_t id) {
+  return crypto_kernel_do_load_auth_type(new_at, id, 0);
+}
+
+err_status_t
+crypto_kernel_replace_auth_type(auth_type_t *new_at, auth_type_id_t id) {
+  return crypto_kernel_do_load_auth_type(new_at, id, 1);
 }
 
 
