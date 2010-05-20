@@ -32,10 +32,12 @@ usage(char *prog_name) {
 
 int
 main (int argc, char *argv[]) {
-  v128_t data, key;
+  v128_t data;
+  uint8_t key[AES_KEY_LEN];
   aes_expanded_key_t exp_key;
   int len;
   int verbose;
+  err_status_t status;
 
   if (argc == 3) {
     /* we're not in verbose mode */
@@ -61,7 +63,7 @@ main (int argc, char *argv[]) {
 	    AES_KEY_LEN*2, (unsigned)strlen(argv[1]));
     exit(1);    
   }
-  len = hex_string_to_octet_string((char *)&key, argv[1], AES_KEY_LEN*2);
+  len = hex_string_to_octet_string((char*)key, argv[1], AES_KEY_LEN*2);
   /* check that hex string is the right length */
   if (len < AES_KEY_LEN*2) {
     fprintf(stderr, 
@@ -95,13 +97,18 @@ main (int argc, char *argv[]) {
   }
 
   /* encrypt plaintext */
-  aes_expand_encryption_key(&key, exp_key);
+  status = aes_expand_encryption_key(key, 16, &exp_key);
+  if (status) {
+    fprintf(stderr,
+	    "error: AES key expansion failed.\n");
+    exit(1);
+  }
 
-  aes_encrypt(&data, exp_key);
+  aes_encrypt(&data, &exp_key);
 
   /* write ciphertext to output */
   if (verbose) {
-    printf("key:\t\t%s\n", v128_hex_string(&key));
+    printf("key:\t\t%s\n", octet_string_hex_string(key, 16));
     printf("ciphertext:\t");
   }
   printf("%s\n", v128_hex_string(&data));

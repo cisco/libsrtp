@@ -163,8 +163,7 @@ aes_icm_dealloc(cipher_t *c) {
 
 err_status_t
 aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
-  v128_t tmp_key;
-
+  err_status_t status;
   /* set counter and initial values to 'offset' value */
   /* FIX!!! this assumes the salt is at key + 16, and thus that the */
   /* FIX!!! cipher key length is 16!  Also note this copies past the
@@ -176,16 +175,18 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
   c->offset.v8[14] = c->offset.v8[15] = 0;
   c->counter.v8[14] = c->counter.v8[15] = 0;
   
-  /* set tmp_key (for alignment) */
-  v128_copy_octet_string(&tmp_key, key);
-
   debug_print(mod_aes_icm, 
-	      "key:  %s", v128_hex_string(&tmp_key)); 
+	      "key:  %s", octet_string_hex_string(key, 16)); 
   debug_print(mod_aes_icm, 
 	      "offset: %s", v128_hex_string(&c->offset)); 
 
   /* expand key */
-  aes_expand_encryption_key(&tmp_key, c->expanded_key);
+  status = aes_expand_encryption_key(key, 16, &c->expanded_key);
+  if (status) {
+    v128_set_to_zero(&c->counter);
+    v128_set_to_zero(&c->offset);
+    return status;
+  }
 
   /* indicate that the keystream_buffer is empty */
   c->bytes_in_buffer = 0;
@@ -231,7 +232,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
   /* fill keystream buffer, if needed */
   if (tail_num) {
     v128_copy(&c->keystream_buffer, &c->counter);
-    aes_encrypt(&c->keystream_buffer, c->expanded_key);
+    aes_encrypt(&c->keystream_buffer, &c->expanded_key);
     c->bytes_in_buffer = sizeof(v128_t);
 
     debug_print(mod_aes_icm, "counter:    %s", 
@@ -287,7 +288,7 @@ inline void
 aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
   /* fill buffer with new keystream */
   v128_copy(&c->keystream_buffer, &c->counter);
-  aes_encrypt(&c->keystream_buffer, c->expanded_key);
+  aes_encrypt(&c->keystream_buffer, &c->expanded_key);
   c->bytes_in_buffer = sizeof(v128_t);
 
   debug_print(mod_aes_icm, "counter:    %s", 

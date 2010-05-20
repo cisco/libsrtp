@@ -106,21 +106,22 @@ aes_cbc_dealloc(cipher_t *c) {
 err_status_t
 aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len,
 		     cipher_direction_t dir) {
-  v128_t tmp_key;
-
-  /* set tmp_key (for alignment) */
-  v128_copy_octet_string(&tmp_key, key);
+  err_status_t status;
 
   debug_print(mod_aes_cbc, 
-	      "key:  %s", v128_hex_string(&tmp_key)); 
+	      "key:  %s", octet_string_hex_string(key, key_len)); 
 
   /* expand key for the appropriate direction */
   switch (dir) {
   case (direction_encrypt):
-    aes_expand_encryption_key(&tmp_key, c->expanded_key);
+    status = aes_expand_encryption_key(key, key_len, &c->expanded_key);
+    if (status)
+      return status;
     break;
   case (direction_decrypt):
-    aes_expand_decryption_key(&tmp_key, c->expanded_key);
+    status = aes_expand_decryption_key(key, key_len, &c->expanded_key);
+    if (status)
+      return status;
     break;
   default:
     return err_status_bad_param;
@@ -181,7 +182,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
     debug_print(mod_aes_cbc, "inblock:  %s", 
 	      v128_hex_string(&c->state));
 
-    aes_encrypt(&c->state, c->expanded_key);
+    aes_encrypt(&c->state, &c->expanded_key);
 
     debug_print(mod_aes_cbc, "outblock: %s", 
 	      v128_hex_string(&c->state));
@@ -236,7 +237,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
 	      v128_hex_string(&state));
     
     /* decrypt state */
-    aes_decrypt(&state, c->expanded_key);
+    aes_decrypt(&state, &c->expanded_key);
 
     debug_print(mod_aes_cbc, "outblock: %s", 
 	      v128_hex_string(&state));
