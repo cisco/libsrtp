@@ -45,7 +45,6 @@
 
 #include "srtp.h"
 #include "ekt.h"             /* for SRTP Encrypted Key Transport */
-#include "aes_icm.h"         /* aes_icm is used in the KDF  */
 #include "alloc.h"           /* for crypto_alloc()          */
 
 #ifndef SRTP_KERNEL
@@ -57,9 +56,6 @@
 # endif
 #endif /* ! SRTP_KERNEL */
 
-
-extern cipher_type_t aes_icm;
-extern auth_type_t   tmmhv2;
 
 /* the debug module for srtp */
 
@@ -405,7 +401,7 @@ srtp_kdf_clear(srtp_kdf_t *kdf) {
  * TODO: key and salt lengths should be separate fields in the policy.  */
 inline int base_key_length(const cipher_type_t *cipher, int key_length)
 {
-  if (cipher != &aes_icm)
+  if (cipher->id != AES_ICM)
     return key_length;
   else if (key_length > 16 && key_length < 30)
     return 16;
@@ -853,7 +849,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    /* 
     * if we're using rindael counter mode, set nonce and seq 
     */
-   if (stream->rtp_cipher->type == &aes_icm) {
+   if (stream->rtp_cipher->type->id == AES_ICM) {
      v128_t iv;
 
      iv.v32[0] = 0;
@@ -1030,7 +1026,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
    * set the cipher's IV properly, depending on whatever cipher we
    * happen to be using
    */
-  if (stream->rtp_cipher->type == &aes_icm) {
+  if (stream->rtp_cipher->type->id == AES_ICM) {
 
     /* aes counter mode */
     iv.v32[0] = 0;
@@ -1721,7 +1717,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   /* 
    * if we're using rindael counter mode, set nonce and seq 
    */
-  if (stream->rtcp_cipher->type == &aes_icm) {
+  if (stream->rtcp_cipher->type->id == AES_ICM) {
     v128_t iv;
     
     iv.v32[0] = 0;
@@ -1909,7 +1905,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* 
    * if we're using aes counter mode, set nonce and seq 
    */
-  if (stream->rtcp_cipher->type == &aes_icm) {
+  if (stream->rtcp_cipher->type->id == AES_ICM) {
     v128_t iv;
 
     iv.v32[0] = 0;
