@@ -225,7 +225,7 @@ cipher_driver_test_throughput(cipher_t *c) {
   int i;
   int min_enc_len = 32;     
   int max_enc_len = 2048;   /* should be a power of two */
-  int num_trials = 100000;  
+  int num_trials = 1000000;  
   
   printf("timing %s throughput:\n", c->type->description);
   fflush(stdout);
@@ -470,7 +470,7 @@ cipher_array_test_throughput(cipher_t *ca[], int num_cipher) {
   int i;
   int min_enc_len = 16;     
   int max_enc_len = 2048;   /* should be a power of two */
-  int num_trials = 10000;
+  int num_trials = 1000000;
 
   printf("timing %s throughput with array size %d:\n", 
 	 (ca[0])->type->description, num_cipher);
