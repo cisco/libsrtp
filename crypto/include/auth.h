@@ -151,6 +151,15 @@ typedef struct auth_t {
 err_status_t
 auth_type_self_test(const auth_type_t *at);
 
+/* 
+ * auth_type_test() tests an auth_type against external test cases
+ * provided in an array of values of key/message/tag that is known to
+ * be good
+ */
+
+err_status_t
+auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data);
+
 /*
  * auth_type_get_ref_count(at) returns the reference count (the number
  * of instantiations) of the auth_type_t at
