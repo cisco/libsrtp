@@ -105,7 +105,7 @@ rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len) {
 
 int
 rtp_sender_init(rtp_sender_t sender, 
-		int socket, 
+		int sock, 
 		struct sockaddr_in addr,
 		unsigned int ssrc) {
 
@@ -121,7 +121,7 @@ rtp_sender_init(rtp_sender_t sender,
   sender->message.header.cc      = 0;
 
   /* set other stuff */
-  sender->socket = socket;
+  sender->socket = sock;
   sender->addr = addr;
 
   return 0;
@@ -129,7 +129,7 @@ rtp_sender_init(rtp_sender_t sender,
 
 int
 rtp_receiver_init(rtp_receiver_t rcvr, 
-		  int socket, 
+		  int sock, 
 		  struct sockaddr_in addr,
 		  unsigned int ssrc) {
   
@@ -145,7 +145,7 @@ rtp_receiver_init(rtp_receiver_t rcvr,
   rcvr->message.header.cc      = 0;
 
   /* set other stuff */
-  rcvr->socket = socket;
+  rcvr->socket = sock;
   rcvr->addr = addr;
 
   return 0;

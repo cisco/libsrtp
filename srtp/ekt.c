@@ -96,7 +96,7 @@ srtcp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
   
   spi_location = packet_start + (pkt_octet_len - EKT_SPI_LEN);
   
-  return *((ekt_spi_t *)spi_location);
+  return *((const ekt_spi_t *)spi_location);
 }
 
 inline uint32_t
@@ -105,7 +105,7 @@ srtcp_packet_get_ekt_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
   
   roc_location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_ROC);
   
-  return *((uint32_t *)roc_location);
+  return *((const uint32_t *)roc_location);
 }
 
 inline const uint8_t *
@@ -182,6 +182,9 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
 
   /* decrypt the Encrypted Master Key field */
   master_key = srtcp_packet_get_emk_location(srtcp_hdr, pkt_octet_len);
+  /* FIX!? This decrypts the master key in-place, and never uses it */
+  /* FIX!? It's also passing to ekt_dec_key (which is an aes_expanded_key_t)
+   * to a function which expects a raw (unexpanded) key */
   aes_decrypt_with_raw_key((void*)master_key, &stream->ekt->data->ekt_dec_key, 16);
 
   /* set the SRTP ROC */

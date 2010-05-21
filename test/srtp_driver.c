@@ -525,7 +525,6 @@ srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy) {
   
   timer = clock();
   for (i=0; i < num_trials; i++) {
-    err_status_t status;
     len = msg_len_octets + 12;  /* add in rtp header length */
     
     /* srtp protect message */
@@ -536,8 +535,11 @@ srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy) {
     }
 
     /* increment message number */
-    mesg->seq = htons(ntohs(mesg->seq) + 1);
-
+    {
+      /* hack sequence to avoid problems with macros for htons/ntohs on some systems */
+      short new_seq = ntohs(mesg->seq) + 1;
+      mesg->seq = htons(new_seq);
+    }
   }
   timer = clock() - timer;
 
@@ -1196,12 +1198,6 @@ mips_estimate(int num_trials, int *ignore) {
 
 err_status_t
 srtp_validate() {
-  unsigned char test_key[30] = {
-    0xe1, 0xf9, 0x7a, 0x0d, 0x3e, 0x01, 0x8b, 0xe0,
-    0xd6, 0x4f, 0xa3, 0x2c, 0x06, 0xde, 0x41, 0x39,
-    0x0e, 0xc6, 0x75, 0xad, 0x49, 0x8a, 0xfe, 0xeb,
-    0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6
-  };
   uint8_t srtp_plaintext_ref[28] = {
     0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad, 
     0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
@@ -1301,7 +1297,7 @@ srtp_validate() {
 
 err_status_t
 srtp_validate_aes_256() {
-  unsigned char test_key[46] = {
+  unsigned char aes_256_test_key[46] = {
     0xf0, 0xf0, 0x49, 0x14, 0xb5, 0x13, 0xf2, 0x76,
     0x3a, 0x1b, 0x1f, 0xa1, 0x30, 0xf1, 0x0e, 0x29,
     0x98, 0xf6, 0xf6, 0xe4, 0x3e, 0x43, 0x09, 0xd1,
@@ -1343,7 +1339,7 @@ srtp_validate_aes_256() {
   crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtcp);
   policy.ssrc.type  = ssrc_specific;
   policy.ssrc.value = 0xcafebabe;
-  policy.key  = test_key;
+  policy.key  = aes_256_test_key;
   policy.ekt = NULL;
   policy.window_size = 128;
   policy.allow_repeat_tx = 0;

@@ -73,11 +73,11 @@ int
 rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len);
 
 int
-rtp_receiver_init(rtp_receiver_t rcvr, int socket, 
+rtp_receiver_init(rtp_receiver_t rcvr, int sock, 
 		  struct sockaddr_in addr, unsigned int ssrc);
 
 int
-rtp_sender_init(rtp_sender_t sender, int socket, 
+rtp_sender_init(rtp_sender_t sender, int sock, 
 		struct sockaddr_in addr, unsigned int ssrc);
 
 /*

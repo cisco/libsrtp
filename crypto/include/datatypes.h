@@ -155,10 +155,10 @@ void
 v128_copy_octet_string(v128_t *x, const uint8_t s[16]);
 
 void
-v128_left_shift(v128_t *x, int index);
+v128_left_shift(v128_t *x, int shift_index);
 
 void
-v128_right_shift(v128_t *x, int index);
+v128_right_shift(v128_t *x, int shift_index);
 
 /*
  * the following macros define the data manipulation functions

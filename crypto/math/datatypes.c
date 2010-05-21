@@ -207,16 +207,16 @@ v128_hex_string(v128_t *x) {
 
 char *
 v128_bit_string(v128_t *x) {
-  int j, index;
+  int j, i;
   uint32_t mask;
   
-  for (j=index=0; j < 4; j++) {
+  for (j=i=0; j < 4; j++) {
     for (mask=0x80000000; mask > 0; mask >>= 1) {
       if (x->v32[j] & mask)
-	bit_string[index] = '1';
+	bit_string[i] = '1';
       else
-	bit_string[index] = '0';
-      ++index;
+	bit_string[i] = '0';
+      ++i;
     }
   }
   bit_string[128] = 0; /* null terminate string */
@@ -323,13 +323,13 @@ v128_set_bit_to(v128_t *x, int i, int y){
 #endif /* DATATYPES_USE_MACROS */
 
 void
-v128_right_shift(v128_t *x, int index) {
-  const int base_index = index >> 5;
-  const int bit_index = index & 31;
+v128_right_shift(v128_t *x, int shift) {
+  const int base_index = shift >> 5;
+  const int bit_index = shift & 31;
   int i, from;
   uint32_t b;
     
-  if (index > 127) {
+  if (shift > 127) {
     v128_set_to_zero(x);
     return;
   }
@@ -361,12 +361,12 @@ v128_right_shift(v128_t *x, int index) {
 }
 
 void
-v128_left_shift(v128_t *x, int index) {
+v128_left_shift(v128_t *x, int shift) {
   int i;
-  const int base_index = index >> 5;
-  const int bit_index = index & 31;
+  const int base_index = shift >> 5;
+  const int bit_index = shift & 31;
 
-  if (index > 127) {
+  if (shift > 127) {
     v128_set_to_zero(x);
     return;
   } 
@@ -458,33 +458,33 @@ bitvector_set_to_zero(bitvector_t *x)
 
 char *
 bitvector_bit_string(bitvector_t *x, char* buf, int len) {
-  int j, index;
+  int j, i;
   uint32_t mask;
   
-  for (j=index=0; j < (int)(x->length>>5) && index < len-1; j++) {
+  for (j=i=0; j < (int)(x->length>>5) && i < len-1; j++) {
     for (mask=0x80000000; mask > 0; mask >>= 1) {
       if (x->word[j] & mask)
-	buf[index] = '1';
+	buf[i] = '1';
       else
-	buf[index] = '0';
-      ++index;
-      if (index >= len-1)
+	buf[i] = '0';
+      ++i;
+      if (i >= len-1)
         break;
     }
   }
-  buf[index] = 0; /* null terminate string */
+  buf[i] = 0; /* null terminate string */
 
   return buf;
 }
 
 void
-bitvector_left_shift(bitvector_t *x, int index) {
+bitvector_left_shift(bitvector_t *x, int shift) {
   int i;
-  const int base_index = index >> 5;
-  const int bit_index = index & 31;
+  const int base_index = shift >> 5;
+  const int bit_index = shift & 31;
   const int word_length = x->length >> 5;
 
-  if (index >= (int)x->length) {
+  if (shift >= (int)x->length) {
     bitvector_set_to_zero(x);
     return;
   } 
