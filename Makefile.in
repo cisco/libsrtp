@@ -186,7 +186,7 @@ tags:
 libsrtpdoc:
 	$(MAKE) -C doc
 
-.PHONY: clean superclean install
+.PHONY: clean superclean distclean install
 
 install:
 	@if [ -r $(DESTDIR)$(includedir)/srtp/srtp.h ]; then \
@@ -219,8 +219,11 @@ clean:
 
 superclean: clean
 	rm -rf crypto/include/config.h config.log config.cache config.status \
-               Makefile .gdb_history test/.gdb_history .DS_Store
+               Makefile crypto/Makefile doc/Makefile \
+               .gdb_history test/.gdb_history .DS_Store
 	rm -rf autom4te.cache
+
+distclean: superclean
 
 distname = srtp-$(shell cat VERSION)
 
