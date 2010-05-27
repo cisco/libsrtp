@@ -1464,7 +1464,11 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
     return err_status_no_ctx;
 
   /* remove stream from the list */
-  last_stream->next = stream->next;
+  if (last_stream == stream)
+    /* stream was first in list */
+    session->stream_list = stream->next;
+  else
+    last_stream->next = stream->next;
 
   /* deallocate the stream */
   status = srtp_stream_dealloc(session, stream);
