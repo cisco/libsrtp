@@ -1444,7 +1444,7 @@ srtp_dealloc_big_policy(srtp_policy_t *list) {
 err_status_t
 srtp_test_remove_stream() { 
   err_status_t status;
-  srtp_policy_t *policy_list;
+  srtp_policy_t *policy_list, policy;
   srtp_t session;
   srtp_stream_t stream;
   /* 
@@ -1490,6 +1490,33 @@ srtp_test_remove_stream() {
     return status;
 
   status = srtp_dealloc_big_policy(policy_list);
+  if (status != err_status_ok)
+    return status;
+
+  /* Now test adding and removing a single stream */
+  crypto_policy_set_rtp_default(&policy.rtp);
+  crypto_policy_set_rtcp_default(&policy.rtcp);
+  policy.ssrc.type  = ssrc_specific;
+  policy.ssrc.value = 0xcafebabe;
+  policy.key  = test_key;
+  policy.ekt = NULL;
+  policy.window_size = 128;
+  policy.allow_repeat_tx = 0;
+  policy.next = NULL;
+
+  status = srtp_create(&session, NULL);
+  if (status != err_status_ok)
+    return status;
+  
+  status = srtp_add_stream(session, &policy);
+  if (status != err_status_ok)
+    return status;
+
+  status = srtp_remove_stream(session, htonl(0xcafebabe));
+  if (status != err_status_ok)
+    return status;
+
+  status = srtp_dealloc(session);
   if (status != err_status_ok)
     return status;
 
