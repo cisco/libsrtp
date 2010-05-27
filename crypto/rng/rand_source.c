@@ -105,8 +105,15 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
    * written 
    */
 #ifdef DEV_URANDOM
-  if (read(dev_random_fdes, dest, len) != len)
-    return err_status_fail;
+  uint8_t *dst = (uint8_t *)dest;
+  while (len)
+  {
+    ssize_t num_read = read(dev_random_fdes, dst, len);
+    if (num_read <= 0 || num_read > len)
+      return err_status_fail;
+    len -= num_read;
+    dst += num_read;
+  }
 #elif defined(HAVE_RAND_S)
   uint8_t *dst = (uint8_t *)dest;
   while (len)
