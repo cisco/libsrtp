@@ -1158,9 +1158,9 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     break;
   }
 
-  /* if we're encrypting, add keystream into ciphertext */
+  /* if we're decrypting, add keystream into ciphertext */
   if (enc_start) {
-    status = cipher_encrypt(stream->rtp_cipher, 
+    status = cipher_decrypt(stream->rtp_cipher, 
 			    (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return err_status_cipher_fail;
@@ -1964,7 +1964,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
 
   /* if we're decrypting, exor keystream into the message */
   if (enc_start) {
-    status = cipher_encrypt(stream->rtcp_cipher, 
+    status = cipher_decrypt(stream->rtcp_cipher, 
 			    (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return err_status_cipher_fail;
