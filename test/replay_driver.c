@@ -195,6 +195,27 @@ test_rdb_db() {
       return err;
   }
 
+  /* re-initialize */
+  if (rdb_init(&rdb) != err_status_ok) {
+    printf("rdb_init failed\n");
+    return err_status_fail;
+  }
+
+  /* test loss of first 513 packets */
+  for (idx=0; idx < num_trials; idx++) {
+    err = rdb_check_add(&rdb, idx + 513);
+    if (err) 
+      return err;
+  }
+
+  /* test for false positives */
+  for (idx=0; idx < num_trials + 513; idx++) {
+    err = rdb_check_expect_failure(&rdb, idx);
+    if (err) 
+      return err;
+  }
+
+
   return err_status_ok;
 }
 
