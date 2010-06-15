@@ -50,10 +50,6 @@
 extern "C" {
 #endif
 
-#ifdef _MSC_VER
-#pragma pack(4)
-#endif
-
 #include "crypto_kernel.h" 
 
 /**
@@ -1002,10 +998,6 @@ srtp_install_event_handler(srtp_event_handler_func_t func);
 /* for byte-access */
 #define SRTCP_E_BYTE_BIT 0x80
 #define SRTCP_INDEX_MASK 0x7fffffff
-
-#ifdef _MSC_VER
-#pragma pack()
-#endif
 
 #ifdef __cplusplus
 }
