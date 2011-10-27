@@ -399,7 +399,7 @@ srtp_kdf_clear(srtp_kdf_t *kdf) {
  * Assumption is that for AES-ICM a key length < 30 is Ismacryp using
  * AES-128 and short salts; everything else uses a salt length of 14.
  * TODO: key and salt lengths should be separate fields in the policy.  */
-inline int base_key_length(const cipher_type_t *cipher, int key_length)
+static inline int base_key_length(const cipher_type_t *cipher, int key_length)
 {
   if (cipher->id != AES_ICM)
     return key_length;

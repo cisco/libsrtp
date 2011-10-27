@@ -297,7 +297,7 @@ crypto_kernel_shutdown() {
   return err_status_ok;
 }
 
-inline err_status_t
+static inline err_status_t
 crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, cipher_type_id_t id,
 				  int replace) {
   kernel_cipher_type_t *ctype, *new_ctype;
