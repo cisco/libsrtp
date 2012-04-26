@@ -138,6 +138,12 @@ roc_test(int num_trials) {
 	   ref, local, est, ircvd, delta);
 #endif
     
+    if (local + delta != est) {
+      printf(" *bad delta*: local %llu + delta %d != est %llu\n",
+	     (unsigned long long)local, delta, (unsigned long long)est);
+      return err_status_algo_fail;
+    }
+
     /* now update local xtd_seq_num_t as necessary */
     if (delta > 0) 
       index_advance(&local, delta);

@@ -145,18 +145,18 @@ index_guess(const xtd_seq_num_t *local,
   if (local_seq < seq_num_median) {
     if (s - local_seq > seq_num_median) {
       guess_roc = local_roc - 1;
-      difference = seq_num_max - s + local_seq;
+      difference = s - local_seq - seq_num_max;
     } else {
       guess_roc = local_roc;
       difference = s - local_seq;
     }
   } else {
     if (local_seq - seq_num_median > s) {
-      guess_roc = local_roc+1;
-      difference = seq_num_max - local_seq + s;
+      guess_roc = local_roc + 1;
+      difference = s - local_seq + seq_num_max;
     } else {
-      difference = s - local_seq;
       guess_roc = local_roc;
+      difference = s - local_seq;
     }
   }
   guess_seq = s;
