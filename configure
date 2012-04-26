@@ -2707,7 +2707,7 @@ host_os=`echo $ac_cv_host | sed 's/^\([^-]*\)-\([^-]*\)-\(.*\)$/\3/'`
 
 
 case $host_cpu in
-     i*86 )
+     i*86 | x86_64 )
 
 cat >>confdefs.h <<\_ACEOF
 #define CPU_CISC 1

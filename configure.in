@@ -19,7 +19,7 @@ AC_CANONICAL_HOST
 
 dnl check host_cpu type, set defines appropriately
 case $host_cpu in
-     i*86 )
+     i*86 | x86_64 )
 	AC_DEFINE(CPU_CISC, 1,
 	   [Define if building for a CISC machine (e.g. Intel).])
         AC_DEFINE(HAVE_X86, 1,
