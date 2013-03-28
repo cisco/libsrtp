@@ -15,3 +15,11 @@
 *.exe
 *.out
 *.app
+
+# srtp things
+Debug
+Makefile
+Root
+autom4te.cache
+config.log
+config.status
