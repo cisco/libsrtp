@@ -48,7 +48,11 @@
 #include <string.h>          /* for memset() */
 #include <unistd.h>          /* for getopt() */
 #include "cipher.h"
+#ifdef OPENSSL
+#include "aes_icm_ossl.h"
+#else
 #include "aes_icm.h"
+#endif
 #include "null_cipher.h"
 
 #define PRINT_DEBUG 0
