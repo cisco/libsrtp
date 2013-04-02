@@ -1,14 +1,14 @@
 /*
- * hmac.c
+ * hmac_ossl.c
  *
- * implementation of hmac auth_type_t
+ * Implementation of hmac auth_type_t that leverages OpenSSL
  *
- * David A. McGrew
+ * John A. Foley
  * Cisco Systems, Inc.
  */
 /*
  *
- * Copyright(c) 2001-2013 Cisco Systems, Inc.
+ * Copyright(c) 2013, Cisco Systems, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
