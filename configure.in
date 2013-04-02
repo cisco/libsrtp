@@ -146,12 +146,13 @@ if test "$enable_openssl" = "yes"; then
    AC_CHECK_LIB([crypto], [EVP_EncryptInit], [],
              [AC_MSG_FAILURE([can't find openssl crypto lib])])
    AC_DEFINE(OPENSSL, 1, [Define this to use OpenSSL crypto.])
-   AES_ICM_OBJ=aes_icm_ossl.o
-   AC_SUBST(AES_ICM_OBJ)                              
+   AES_ICM_OBJS=crypto/cipher/aes_icm_ossl.o
    RNG_OBJS=rand_source_ossl.o
+   HMAC_OBJS=crypto/hash/hmac_ossl.o
+   USE_OPENSSL=1
+   AC_SUBST(USE_OPENSSL)
 else
-   AES_ICM_OBJ=aes_icm.o
-   AC_SUBST(AES_ICM_OBJ)                              
+   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o crypto/cipher/aes_cbc.o"
    AC_MSG_CHECKING(which random device to use)
    if test "$enable_kernel_linux" = "yes"; then
       RNG_OBJS=rand_linux_kernel.o
@@ -166,9 +167,12 @@ else
       fi
    fi
    RNG_EXTRA_OBJS="crypto/rng/prng.o crypto/rng/ctr_prng.o"
+   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
+AC_SUBST(AES_ICM_OBJS)                              
 AC_SUBST(RNG_OBJS)
 AC_SUBST(RNG_EXTRA_OBJS)
+AC_SUBST(HMAC_OBJS)
 AC_MSG_RESULT($enable_openssl)
 
 AC_MSG_CHECKING(whether to use syslog for error reporting)

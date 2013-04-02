@@ -622,9 +622,11 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 GDOI_OBJS
+HMAC_OBJS
 RNG_EXTRA_OBJS
 RNG_OBJS
-AES_ICM_OBJ
+AES_ICM_OBJS
+USE_OPENSSL
 EXE
 host_os
 host_vendor
@@ -4879,12 +4881,13 @@ fi
 
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
-   AES_ICM_OBJ=aes_icm_ossl.o
-
+   AES_ICM_OBJS=crypto/cipher/aes_icm_ossl.o
    RNG_OBJS=rand_source_ossl.o
-else
-   AES_ICM_OBJ=aes_icm.o
+   HMAC_OBJS=crypto/hash/hmac_ossl.o
+   USE_OPENSSL=1
 
+else
+   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o crypto/cipher/aes_cbc.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
    if test "$enable_kernel_linux" = "yes"; then
@@ -4907,7 +4910,10 @@ $as_echo "standard rand() function..." >&6; }
       fi
    fi
    RNG_EXTRA_OBJS="crypto/rng/prng.o crypto/rng/ctr_prng.o"
+   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
+
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl" >&5

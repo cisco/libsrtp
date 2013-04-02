@@ -53,8 +53,10 @@ EXE	= @EXE@
 gdoi	= @GDOI_OBJS@
 # Random source.
 RNG_OBJS = @RNG_OBJS@
+HMAC_OBJS = @HMAC_OBJS@
 RNG_EXTRA_OBJS = @RNG_EXTRA_OBJS@
-AES_ICM_OBJ = @AES_ICM_OBJ@
+AES_ICM_OBJS = @AES_ICM_OBJS@
+USE_OPENSSL = @USE_OPENSSL@
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -77,11 +79,10 @@ libdir = @libdir@
 
 # libcrypt.a (the crypto engine) 
 ciphers = crypto/cipher/cipher.o crypto/cipher/null_cipher.o      \
-          crypto/cipher/aes.o crypto/cipher/$(AES_ICM_OBJ)        \
-          crypto/cipher/aes_cbc.o
+          $(AES_ICM_OBJS)     
 
-hashes  = crypto/hash/null_auth.o crypto/hash/sha1.o \
-          crypto/hash/hmac.o crypto/hash/auth.o # crypto/hash/tmmhv2.o 
+hashes  = crypto/hash/null_auth.o  crypto/hash/auth.o            \
+	  $(HMAC_OBJS)
 
 replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
           crypto/replay/ut_sim.o 
@@ -119,8 +120,11 @@ libcryptomath.a: $(cryptomath)
 
 
 # test applications 
+ifneq (1, $(USE_OPENSSL))
+AES_CALC = crypto/test/aes_calc$(EXE)
+endif
 
-crypto_testapp = crypto/test/aes_calc$(EXE) crypto/test/cipher_driver$(EXE) \
+crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 	crypto/test/datatypes_driver$(EXE) crypto/test/kernel_driver$(EXE) \
 	crypto/test/rand_gen$(EXE) crypto/test/sha1_driver$(EXE) \
 	crypto/test/stat_driver$(EXE)

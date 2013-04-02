@@ -69,7 +69,9 @@ extern debug_module_t mod_alloc;
 
 extern cipher_type_t null_cipher;
 extern cipher_type_t aes_icm;
+#ifndef OPENSSL
 extern cipher_type_t aes_cbc;
+#endif
 
 
 /*
@@ -156,9 +158,11 @@ crypto_kernel_init() {
   status = crypto_kernel_load_cipher_type(&aes_icm, AES_ICM);
   if (status) 
     return status;
+#ifndef OPENSSL
   status = crypto_kernel_load_cipher_type(&aes_cbc, AES_CBC);
   if (status) 
     return status;
+#endif
 
   /* load auth func types */
   status = crypto_kernel_load_auth_type(&null_auth, NULL_AUTH);

@@ -118,7 +118,9 @@ check_status(err_status_t s) {
 
 extern cipher_type_t null_cipher;
 extern cipher_type_t aes_icm;
+#ifndef OPENSSL
 extern cipher_type_t aes_cbc;
+#endif
 
 int
 main(int argc, char *argv[]) {
@@ -178,17 +180,21 @@ main(int argc, char *argv[]) {
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&aes_icm, 46, num_cipher); 
 
+#ifndef OPENSSL
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&aes_cbc, 16, num_cipher); 
  
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&aes_cbc, 32, num_cipher); 
+#endif
   }
 
   if (do_validation) {
     cipher_driver_self_test(&null_cipher);
     cipher_driver_self_test(&aes_icm);
+#ifndef OPENSSL
     cipher_driver_self_test(&aes_cbc);
+#endif
   }
 
   /* do timing and/or buffer_test on null_cipher */
