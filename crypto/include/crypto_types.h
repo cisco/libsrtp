@@ -141,6 +141,18 @@
  */
 #define STRONGHOLD_CIPHER  AES_ICM  
 
+/** 
+ * @brief AES-192 Integer Counter Mode (AES ICM)             
+ * AES-192 ICM is a deprecated alternate name for AES ICM.
+ */
+#define AES_192_ICM        4 
+
+/** 
+ * @brief AES-256 Integer Counter Mode (AES ICM)             
+ * AES-256 ICM is a deprecated alternate name for AES ICM.
+ */
+#define AES_256_ICM        5 
+
 /**
  * @}
  */
