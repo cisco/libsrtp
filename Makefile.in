@@ -48,9 +48,11 @@ INSTALL	= @INSTALL@
 # EXE defines the suffix on executables - it's .exe for Windows, and
 # null on linux, bsd, and OS X and other OSes.
 EXE	= @EXE@
+
 # gdoi is the group domain of interpretation for isakmp, a group key
 # management system which can provide keys for srtp
 gdoi	= @GDOI_OBJS@
+
 # Random source.
 RNG_OBJS = @RNG_OBJS@
 
@@ -225,13 +227,13 @@ superclean: clean
 
 distclean: superclean
 
-distname = srtp-$(shell cat VERSION)
+distname = libsrtp-$(shell cat VERSION)
 
 distribution: runtest superclean 
 	if ! [ -f VERSION ]; then exit 1; fi
 	if [ -f ../$(distname).tgz ]; then               \
            mv ../$(distname).tgz ../$(distname).tgz.bak; \
         fi
-	cd ..; tar cvzf $(distname).tgz srtp
+	cd ..; tar cvzf $(distname).tgz libsrtp
 
 # EOF
