@@ -69,7 +69,9 @@ extern debug_module_t mod_alloc;
 
 extern cipher_type_t null_cipher;
 extern cipher_type_t aes_icm;
+#ifndef OPENSSL
 extern cipher_type_t aes_cbc;
+#endif
 
 
 /*
@@ -137,6 +139,7 @@ crypto_kernel_init() {
   if (status)
     return status;
 
+#ifndef OPENSSL
   /* initialize pseudorandom number generator */
   status = ctr_prng_init(rand_source_get_octet_string);
   if (status)
@@ -146,6 +149,7 @@ crypto_kernel_init() {
   status = stat_test_rand_source_with_repetition(ctr_prng_get_octet_string, MAX_RNG_TRIALS);
   if (status)
     return status;
+#endif
  
   /* load cipher types */
   status = crypto_kernel_load_cipher_type(&null_cipher, NULL_CIPHER);
@@ -154,9 +158,11 @@ crypto_kernel_init() {
   status = crypto_kernel_load_cipher_type(&aes_icm, AES_ICM);
   if (status) 
     return status;
+#ifndef OPENSSL
   status = crypto_kernel_load_cipher_type(&aes_cbc, AES_CBC);
   if (status) 
     return status;
+#endif
 
   /* load auth func types */
   status = crypto_kernel_load_auth_type(&null_auth, NULL_AUTH);
@@ -567,7 +573,11 @@ crypto_kernel_set_debug_module(char *name, int on) {
 err_status_t
 crypto_get_random(unsigned char *buffer, unsigned int length) {
   if (crypto_kernel.state == crypto_kernel_state_secure)
+#ifdef OPENSSL
+    return rand_source_get_octet_string(buffer, length);
+#else
     return ctr_prng_get_octet_string(buffer, length);
+#endif
   else
     return err_status_fail;
 }
