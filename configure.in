@@ -144,7 +144,9 @@ AC_ARG_ENABLE(openssl,
   [], enable_openssl=no)
 if test "$enable_openssl" = "yes"; then
    AC_CHECK_LIB([crypto], [EVP_EncryptInit], [],
-             [AC_MSG_FAILURE([can't find openssl crypto lib])])
+             [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
+   AC_CHECK_LIB([crypto], [EVP_aes_128_ctr], [],
+             [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
    AC_DEFINE(OPENSSL, 1, [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS=crypto/cipher/aes_icm_ossl.o
    RNG_OBJS=rand_source_ossl.o

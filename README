@@ -26,6 +26,7 @@ The configure script accepts the following options:
    --enable-syslog     use syslog for error reporting
    --disable-stdout    use stdout for error reporting
    --enable-console    use /dev/console for error reporting
+   --enable-openssl    use OpenSSL crypto primitives
    --gdoi              use GDOI key management (disabled at present)
 
 By default, debbuging is enabled and stdout is used for debugging.
