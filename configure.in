@@ -143,6 +143,10 @@ AC_ARG_ENABLE(openssl,
 		  [compile in OpenSSL crypto engine])],
   [], enable_openssl=no)
 if test "$enable_openssl" = "yes"; then
+
+   LDFLAGS="$LDFLAGS -L/usr/local/ssl/lib ";
+   CFLAGS="$CFLAGS -I/usr/local/ssl/include ";
+
    AC_CHECK_LIB([crypto], [EVP_EncryptInit], [],
              [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
    AC_CHECK_LIB([crypto], [EVP_aes_128_ctr], [],
