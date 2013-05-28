@@ -163,6 +163,7 @@ typedef struct cipher_t {
 #ifdef FORCE_64BIT_ALIGN
   int            pad;
 #endif
+  int		 algorithm;
 } cipher_t;
 
 /* some syntactic sugar on these function types */
