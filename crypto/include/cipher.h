@@ -160,9 +160,6 @@ typedef struct cipher_t {
   cipher_type_t *type;
   void          *state;
   int            key_len;
-#ifdef FORCE_64BIT_ALIGN
-  int            pad;
-#endif
   int		 algorithm;
 } cipher_t;
 
