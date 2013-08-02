@@ -8,7 +8,7 @@
  */
 /*
  *	
- * Copyright(c) 2001-2006 Cisco Systems, Inc.
+ * Copyright(c) 2001-2006,2013 Cisco Systems, Inc.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -152,6 +152,22 @@
  * AES-256 ICM is a deprecated alternate name for AES ICM.
  */
 #define AES_256_ICM        5 
+
+/** 
+ * @brief AES-128_GCM Galois Counter Mode (AES GCM)             
+ *
+ * AES-128 GCM is the variant of galois counter mode that is used by 
+ * Secure RTP.  This cipher uses a 16-octet key.
+ */
+#define AES_128_GCM        6            
+
+/** 
+ * @brief AES-256_GCM Galois Counter Mode (AES GCM)             
+ *
+ * AES-256 GCM is the variant of galois counter mode that is used by 
+ * Secure RTP.  This cipher uses a 32-octet key.
+ */
+#define AES_256_GCM        7            
 
 /**
  * @}

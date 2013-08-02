@@ -378,6 +378,8 @@ cipher_test_case_t aes_icm_test_case_0 = {
     aes_icm_test_case_0_plaintext,         /* plaintext                */
     32,                                    /* octets in ciphertext     */
     aes_icm_test_case_0_ciphertext,        /* ciphertext               */
+    0,
+    NULL,
     NULL                                   /* pointer to next testcase */
 };
 
@@ -420,6 +422,8 @@ cipher_test_case_t aes_icm_192_test_case_1 = {
     aes_icm_192_test_case_1_plaintext,     /* plaintext                */
     32,                                    /* octets in ciphertext     */
     aes_icm_192_test_case_1_ciphertext,    /* ciphertext               */
+    0,
+    NULL,
     NULL                                   /* pointer to next testcase */
 };
 
@@ -464,6 +468,8 @@ cipher_test_case_t aes_icm_256_test_case_2 = {
     aes_icm_256_test_case_2_plaintext,     /* plaintext                */
     32,                                    /* octets in ciphertext     */
     aes_icm_256_test_case_2_ciphertext,    /* ciphertext               */
+    0,
+    NULL,
     NULL                                   /* pointer to next testcase */
 };
 
@@ -475,9 +481,11 @@ cipher_type_t aes_icm = {
     (cipher_alloc_func_t)          aes_icm_openssl_alloc,
     (cipher_dealloc_func_t)        aes_icm_openssl_dealloc,
     (cipher_init_func_t)           aes_icm_openssl_context_init,
+    (cipher_set_aad_func_t)        0,
     (cipher_encrypt_func_t)        aes_icm_openssl_encrypt,
     (cipher_decrypt_func_t)        aes_icm_openssl_encrypt,
     (cipher_set_iv_func_t)         aes_icm_openssl_set_iv,
+    (cipher_get_tag_func_t)        0,
     (char*)                        aes_icm_openssl_description,
     (int)                          0,            /* instance count */
     (cipher_test_case_t*)          &aes_icm_test_case_0,
@@ -493,9 +501,11 @@ cipher_type_t aes_icm_192 = {
     (cipher_alloc_func_t)          aes_icm_openssl_alloc,
     (cipher_dealloc_func_t)        aes_icm_openssl_dealloc,
     (cipher_init_func_t)           aes_icm_openssl_context_init,
+    (cipher_set_aad_func_t)        0,
     (cipher_encrypt_func_t)        aes_icm_openssl_encrypt,
     (cipher_decrypt_func_t)        aes_icm_openssl_encrypt,
     (cipher_set_iv_func_t)         aes_icm_openssl_set_iv,
+    (cipher_get_tag_func_t)        0,
     (char*)                        aes_icm_192_openssl_description,
     (int)                          0,                /* instance count */
     (cipher_test_case_t*)          &aes_icm_192_test_case_1,
@@ -511,9 +521,11 @@ cipher_type_t aes_icm_256 = {
     (cipher_alloc_func_t)          aes_icm_openssl_alloc,
     (cipher_dealloc_func_t)        aes_icm_openssl_dealloc,
     (cipher_init_func_t)           aes_icm_openssl_context_init,
+    (cipher_set_aad_func_t)        0,
     (cipher_encrypt_func_t)        aes_icm_openssl_encrypt,
     (cipher_decrypt_func_t)        aes_icm_openssl_encrypt,
     (cipher_set_iv_func_t)         aes_icm_openssl_set_iv,
+    (cipher_get_tag_func_t)        0,
     (char*)                        aes_icm_256_openssl_description,
     (int)                          0,                /* instance count */
     (cipher_test_case_t*)          &aes_icm_256_test_case_2,

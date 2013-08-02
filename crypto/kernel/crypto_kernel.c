@@ -8,7 +8,7 @@
  */
 /*
  *	
- * Copyright(c) 2001-2006 Cisco Systems, Inc.
+ * Copyright(c) 2001-2006,2013 Cisco Systems, Inc.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -71,6 +71,9 @@ extern cipher_type_t null_cipher;
 extern cipher_type_t aes_icm;
 #ifndef OPENSSL
 extern cipher_type_t aes_cbc;
+#else
+extern cipher_type_t aes_gcm_128_openssl;
+extern cipher_type_t aes_gcm_256_openssl;
 #endif
 
 
@@ -162,6 +165,15 @@ crypto_kernel_init() {
   status = crypto_kernel_load_cipher_type(&aes_cbc, AES_CBC);
   if (status) 
     return status;
+#else
+  status = crypto_kernel_load_cipher_type(&aes_gcm_128_openssl, AES_128_GCM);
+  if (status) {
+      return status;
+  }
+  status = crypto_kernel_load_cipher_type(&aes_gcm_256_openssl, AES_256_GCM);
+  if (status) {
+      return status;
+  }
 #endif
 
   /* load auth func types */

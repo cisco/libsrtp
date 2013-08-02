@@ -343,7 +343,7 @@ srtp_kdf_init(srtp_kdf_t *kdf, cipher_type_id_t cipher_id, const uint8_t *key, i
   if (stat)
     return stat;
 
-  stat = cipher_init(kdf->cipher, key, direction_encrypt);
+  stat = cipher_init(kdf->cipher, key);
   if (stat) {
     cipher_dealloc(kdf->cipher);
     return stat;
@@ -363,7 +363,7 @@ srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
   v128_set_to_zero(&nonce);
   nonce.v8[7] = label;
  
-  status = cipher_set_iv(kdf->cipher, &nonce);
+  status = cipher_set_iv(kdf->cipher, &nonce, direction_encrypt);
   if (status)
     return status;
   
@@ -470,7 +470,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* initialize cipher */
-  stat = cipher_init(srtp->rtp_cipher, tmp_key, direction_any);
+  stat = cipher_init(srtp->rtp_cipher, tmp_key);
   if (stat) {
     /* zeroize temp buffer */
     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -538,7 +538,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* initialize cipher */
-  stat = cipher_init(srtp->rtcp_cipher, tmp_key, direction_any);
+  stat = cipher_init(srtp->rtcp_cipher, tmp_key);
   if (stat) {
     /* zeroize temp buffer */
     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -868,7 +868,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 #else
      iv.v64[1] = be64_to_cpu(est << 16);
 #endif
-     status = cipher_set_iv(stream->rtp_cipher, &iv);
+     status = cipher_set_iv(stream->rtp_cipher, &iv, direction_encrypt);
 
    } else {  
      v128_t iv;
@@ -881,7 +881,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      iv.v64[0] = 0;
 #endif
      iv.v64[1] = be64_to_cpu(est);
-     status = cipher_set_iv(stream->rtp_cipher, &iv);
+     status = cipher_set_iv(stream->rtp_cipher, &iv, direction_encrypt);
    }
    if (status)
      return err_status_cipher_fail;
@@ -1045,7 +1045,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 #else
     iv.v64[1] = be64_to_cpu(est << 16);
 #endif
-    status = cipher_set_iv(stream->rtp_cipher, &iv);
+    status = cipher_set_iv(stream->rtp_cipher, &iv, direction_decrypt);
   } else {  
     
     /* no particular format - set the iv to the pakcet index */  
@@ -1056,7 +1056,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     iv.v64[0] = 0;
 #endif
     iv.v64[1] = be64_to_cpu(est);
-    status = cipher_set_iv(stream->rtp_cipher, &iv);
+    status = cipher_set_iv(stream->rtp_cipher, &iv, direction_decrypt);
   }
   if (status)
     return err_status_cipher_fail;
@@ -1736,7 +1736,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = hdr->ssrc;  /* still in network order! */
     iv.v32[2] = htonl(seq_num >> 16);
     iv.v32[3] = htonl(seq_num << 16);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv);
+    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_encrypt);
 
   } else {  
     v128_t iv;
@@ -1746,7 +1746,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = 0;
     iv.v32[2] = 0;
     iv.v32[3] = htonl(seq_num);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv);
+    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_encrypt);
   }
   if (status)
     return err_status_cipher_fail;
@@ -1934,7 +1934,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = hdr->ssrc; /* still in network order! */
     iv.v32[2] = htonl(seq_num >> 16);
     iv.v32[3] = htonl(seq_num << 16);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv);
+    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_decrypt);
 
   } else {  
     v128_t iv;
@@ -1944,7 +1944,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = 0;
     iv.v32[2] = 0;
     iv.v32[3] = htonl(seq_num);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv);
+    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_decrypt);
 
   }
   if (status)
