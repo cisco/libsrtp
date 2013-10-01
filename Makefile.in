@@ -13,6 +13,8 @@
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
 
+USE_OPENSSL = @USE_OPENSSL@
+
 .PHONY: all test build_table_apps
 
 all: test 
@@ -27,6 +29,9 @@ runtest: build_table_apps test
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
 	cd test; $(abspath $(srcdir))/test/rtpw_test.sh >/dev/null	
+ifeq (1, $(USE_OPENSSL))
+	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh >/dev/null	
+endif
 	@echo "libsrtp test applications passed."
 	$(MAKE) -C crypto runtest
 
@@ -58,7 +63,6 @@ RNG_OBJS = @RNG_OBJS@
 HMAC_OBJS = @HMAC_OBJS@
 RNG_EXTRA_OBJS = @RNG_EXTRA_OBJS@
 AES_ICM_OBJS = @AES_ICM_OBJS@
-USE_OPENSSL = @USE_OPENSSL@
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
