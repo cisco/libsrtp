@@ -9,6 +9,7 @@
 # test		builds test applications
 # libcrypt.a	static library implementing crypto engine
 # libsrtp.a	static library implementing srtp
+# libsrtp.so	shared library implementing srtp
 # clean		removes objects, libs, and executables
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
@@ -114,6 +115,10 @@ libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
 	ar cr libsrtp.a $^
 	$(RANLIB) libsrtp.a
 
+libsrtp.so: $(srtpobj) $(cryptobj) $(gdoi) 
+	$(CC) -shared -Wl,-soname,libsrtp.so $(LDFLAGS) \
+	    -o libsrtp.so $^
+
 # libcryptomath.a contains general-purpose routines that are used to
 # generate tables and verify cryptoalgorithm implementations - this
 # library is not meant to be included in production code
@@ -210,15 +215,17 @@ install:
 	cp $(srcdir)/crypto/include/*.h $(DESTDIR)$(includedir)/srtp
 	if [ "$(srcdir)" != "." ]; then cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp; fi
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp.so ]; then cp libsrtp.so $(DESTDIR)$(libdir)/; fi
 
 uninstall:
 	rm -f $(DESTDIR)$(includedir)/srtp/*.h
 	rm -f $(DESTDIR)$(libdir)/libsrtp.a
+	rm -f $(DESTDIR)$(libdir)/libsrtp.so
 	-rmdir $(DESTDIR)$(includedir)/srtp
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
-        libcryptomath.a libsrtp.a core *.core test/core
+        libcryptomath.a libsrtp.a libsrtp.so core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;
