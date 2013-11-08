@@ -218,12 +218,14 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
  */
 err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key)
 {
-    /* set counter and initial values to 'offset' value */
-    /* FIX!!! this assumes the salt is at key + 16, and thus that the */
-    /* FIX!!! cipher key length is 16!  Also note this copies past the
-              end of the 'key' array by 2 bytes! */
-    v128_copy_octet_string(&c->counter, key + c->key_size);
-    v128_copy_octet_string(&c->offset, key + c->key_size);
+    /*
+     * set counter and initial values to 'offset' value, being careful not to
+     * go past the end of the key buffer
+     */
+    v128_set_to_zero(&c->counter);
+    v128_set_to_zero(&c->offset);
+    memcpy(&c->counter, key + c->key_size, SALT_SIZE);
+    memcpy(&c->offset, key + c->key_size, SALT_SIZE);
 
     /* force last two octets of the offset to zero (for srtp compatibility) */
     c->offset.v8[SALT_SIZE] = c->offset.v8[SALT_SIZE + 1] = 0;
