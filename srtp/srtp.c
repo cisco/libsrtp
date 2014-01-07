@@ -281,6 +281,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     return status;
   rdb_init(&str->rtcp_rdb);
   str->allow_repeat_tx = stream_template->allow_repeat_tx;
+  str->allow_repeat_rx = stream_template->allow_repeat_rx;
   
   /* set ssrc to that provided */
   str->ssrc = ssrc;
@@ -632,6 +633,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      return err_status_bad_param;
    }
    srtp->allow_repeat_tx = p->allow_repeat_tx;
+   srtp->allow_repeat_rx = p->allow_repeat_rx;
 
    /* DAM - no RTCP key limit at present */
 
@@ -1017,8 +1019,13 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     
     /* check replay database */
     status = rdbx_check(&stream->rtp_rdbx, delta);
-    if (status)
-      return status;
+    if (status) {
+	if (status == err_status_replay_fail && stream->allow_repeat_rx) {
+	    /* we do allow receiving an already received packet (as long it fits into our window_size) */
+	} else {
+    	     return status;
+    	}
+    }
   }
 
 #ifdef NO_64BIT_MATH

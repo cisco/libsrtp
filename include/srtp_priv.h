@@ -219,6 +219,7 @@ typedef struct srtp_stream_ctx_t {
   key_limit_ctx_t *limit;
   direction_t direction;
   int        allow_repeat_tx;
+  int        allow_repeat_rx;
   ekt_stream_t ekt; 
   struct srtp_stream_ctx_t *next;   /* linked list of streams */
 } srtp_stream_ctx_t;
