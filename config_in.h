@@ -141,6 +141,9 @@
 /* Define to use GDOI. */
 #undef SRTP_GDOI
 
+/* Define to use OpenSSL crypto. */
+#undef OPENSSL
+
 /* Define to compile for kernel contexts. */
 #undef SRTP_KERNEL
 
