@@ -2357,7 +2357,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 if test -z "$CFLAGS"; then
-      CFLAGS="-Wall -O4 -fexpensive-optimizations -funroll-loops"
+      CFLAGS="-fPIC -Wall -O4 -fexpensive-optimizations -funroll-loops"
 fi
 
 if test -n "$ac_tool_prefix"; then
@@ -4828,9 +4828,9 @@ else
 fi
 
 if test "$enable_openssl" = "yes"; then
-
-   LDFLAGS="$LDFLAGS -L/usr/local/ssl/lib ";
-   CFLAGS="$CFLAGS -I/usr/local/ssl/include ";
+   echo $enable_openssl
+   LDFLAGS="$LDFLAGS $(pkg-config --libs openssl)";
+   CFLAGS="$CFLAGS $(pkg-config --cflags openssl)";
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
 $as_echo_n "checking for EVP_EncryptInit in -lcrypto... " >&6; }
@@ -4991,6 +4991,7 @@ $as_echo "#define OPENSSL 1" >>confdefs.h
    USE_OPENSSL=1
 
 else
+   echo $enable_openssl
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o crypto/cipher/aes_cbc.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
