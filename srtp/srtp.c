@@ -880,20 +880,16 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * encrypted - the encrypted portion starts after the rtp header
      * extension, if present; otherwise, it starts after the last csrc,
      * if any are present
-     *
-     * if we're not providing confidentiality, set enc_start to NULL
      */
-    if (stream->rtp_services & sec_serv_conf) {
-        enc_start = (uint32_t*)hdr + uint32s_in_rtp_header + hdr->cc;
-        if (hdr->x == 1) {
-            srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
-            enc_start += (ntohs(xtn_hdr->length) + 1);
-        }
-        enc_octet_len = (unsigned int)(*pkt_octet_len - 
-		        ((enc_start - (uint32_t*)hdr) << 2));
-    } else {
-        enc_start = NULL;
-    }
+     enc_start = (uint32_t*)hdr + uint32s_in_rtp_header + hdr->cc;
+     if (hdr->x == 1) {
+         srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
+         enc_start += (ntohs(xtn_hdr->length) + 1);
+     }
+     if (!(enc_start < (uint32_t*)hdr + *pkt_octet_len))
+         return err_status_parse_err;
+     enc_octet_len = (unsigned int)(*pkt_octet_len -
+                     ((enc_start - (uint32_t*)hdr) << 2));
 
     /*
      * estimate the packet index using the start of the replay window
@@ -1017,6 +1013,8 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
         srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
         enc_start += (ntohs(xtn_hdr->length) + 1);
     }
+    if (!(enc_start < (uint32_t*)hdr + *pkt_octet_len))
+        return err_status_parse_err;
     /*
      * We pass the tag down to the cipher when doing GCM mode 
      */
@@ -1240,6 +1238,8 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      if (hdr->x == 1) {
        srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
        enc_start += (ntohs(xtn_hdr->length) + 1);
+       if (!(enc_start < (uint32_t*)hdr + *pkt_octet_len))
+         return err_status_parse_err;
      }
      enc_octet_len = (unsigned int)(*pkt_octet_len 
 				    - ((enc_start - (uint32_t *)hdr) << 2));
@@ -1521,6 +1521,8 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
       srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
       enc_start += (ntohs(xtn_hdr->length) + 1);
     }  
+    if (!(enc_start < (uint32_t*)hdr + *pkt_octet_len))
+      return err_status_parse_err;
     enc_octet_len = (uint32_t)(*pkt_octet_len - tag_len 
 			       - ((enc_start - (uint32_t *)hdr) << 2));
   } else {
@@ -2378,12 +2380,6 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     /* get tag length from stream context */
     tag_len = auth_get_tag_length(stream->rtcp_auth);
 
-    /* Validate packet length */
-    if (*pkt_octet_len < (octets_in_rtcp_header + tag_len + 
-                          sizeof(srtcp_trailer_t))) {
-        return err_status_bad_param;
-    }
-
     /*
      * set encryption start, encryption length, and trailer
      */
@@ -2556,6 +2552,11 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   uint32_t seq_num;
 
   /* we assume the hdr is 32-bit aligned to start */
+
+  /* check the packet length - it must at least contain a full header */
+  if (*pkt_octet_len < octets_in_rtcp_header)
+    return err_status_bad_param;
+
   /*
    * look up ssrc in srtp_stream list, and process the packet with 
    * the appropriate stream.  if we haven't seen this stream before,
@@ -2789,6 +2790,16 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     } 
   }
   
+  /* get tag length from stream context */
+  tag_len = auth_get_tag_length(stream->rtcp_auth);
+
+  /* check the packet length - it must contain at least a full RTCP
+     header, an auth tag (if applicable), and the SRTCP encrypted flag
+     and 31-bit index value */
+  if (*pkt_octet_len < (octets_in_rtcp_header + tag_len +
+                        sizeof(srtcp_trailer_t)))
+    return err_status_bad_param;
+
   /*
    * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
    * the request to our AEAD handler.
@@ -2800,9 +2811,6 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
 
   sec_serv_confidentiality = stream->rtcp_services == sec_serv_conf ||
       stream->rtcp_services == sec_serv_conf_and_auth;
-
-  /* get tag length from stream context */
-  tag_len = auth_get_tag_length(stream->rtcp_auth); 
 
   /*
    * set encryption start, encryption length, and trailer
