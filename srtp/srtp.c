@@ -2754,6 +2754,13 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   int sec_serv_confidentiality; /* whether confidentiality was requested */
 
   /* we assume the hdr is 32-bit aligned to start */
+
+  /* check that the length value is sane; we'll check again once we
+     know the tag length, but we at least want to know that it is
+     a positive value */
+  if (*pkt_octet_len < octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))
+    return err_status_bad_param;
+
   /*
    * look up ssrc in srtp_stream list, and process the packet with 
    * the appropriate stream.  if we haven't seen this stream before,
