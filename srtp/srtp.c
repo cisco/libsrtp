@@ -1018,8 +1018,8 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     /*
      * We pass the tag down to the cipher when doing GCM mode 
      */
-    enc_octet_len = (unsigned int) *pkt_octet_len - 
-                    ((enc_start - (uint32_t *)hdr) << 2);
+    enc_octet_len = (unsigned int)(*pkt_octet_len - 
+                    ((enc_start - (uint32_t *)hdr) << 2));
 
     /*
      * Sanity check the encrypted payload length against
