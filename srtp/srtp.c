@@ -889,7 +889,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
          return err_status_parse_err;
      enc_octet_len = (unsigned int)(*pkt_octet_len -
-                     ((enc_start - (uint32_t*)hdr) << 2));
+                                    ((uint8_t*)enc_start - (uint8_t*)hdr));
 
     /*
      * estimate the packet index using the start of the replay window
@@ -1019,7 +1019,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * We pass the tag down to the cipher when doing GCM mode 
      */
     enc_octet_len = (unsigned int)(*pkt_octet_len - 
-                    ((enc_start - (uint32_t *)hdr) << 2));
+                                   ((uint8_t*)enc_start - (uint8_t*)hdr));
 
     /*
      * Sanity check the encrypted payload length against
@@ -1241,8 +1241,8 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
        if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
          return err_status_parse_err;
      }
-     enc_octet_len = (unsigned int)(*pkt_octet_len 
-				    - ((enc_start - (uint32_t *)hdr) << 2));
+     enc_octet_len = (unsigned int)(*pkt_octet_len -
+                                    ((uint8_t*)enc_start - (uint8_t*)hdr));
    } else {
      enc_start = NULL;
    }
@@ -1523,8 +1523,8 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     }  
     if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
       return err_status_parse_err;
-    enc_octet_len = (uint32_t)(*pkt_octet_len - tag_len 
-			       - ((enc_start - (uint32_t *)hdr) << 2));
+    enc_octet_len = (uint32_t)(*pkt_octet_len - tag_len -
+                               ((uint8_t*)enc_start - (uint8_t*)hdr));
   } else {
     enc_start = NULL;
   }
