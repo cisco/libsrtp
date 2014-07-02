@@ -88,7 +88,7 @@ typedef struct {
   unsigned char x:1;	/* header extension flag  */
   unsigned char cc:4;	/* CSRC count             */
   unsigned char m:1;	/* marker bit             */
-  unsigned pt:7;	/* payload type           */
+  unsigned char pt:7;	/* payload type           */
   uint16_t seq;		/* sequence number        */
   uint32_t ts;		/* timestamp              */
   uint32_t ssrc;	/* synchronization source */
