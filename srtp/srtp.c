@@ -2755,12 +2755,6 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
 
   /* we assume the hdr is 32-bit aligned to start */
 
-  /* check that the length value is sane; we'll check again once we
-     know the tag length, but we at least want to know that it is
-     a positive value */
-  if (*pkt_octet_len < octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))
-    return err_status_bad_param;
-
   /*
    * look up ssrc in srtp_stream list, and process the packet with 
    * the appropriate stream.  if we haven't seen this stream before,
@@ -2803,9 +2797,9 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* check the packet length - it must contain at least a full RTCP
      header, an auth tag (if applicable), and the SRTCP encrypted flag
      and 31-bit index value */
-  if (*pkt_octet_len < (octets_in_rtcp_header + tag_len +
-                        sizeof(srtcp_trailer_t)))
+  if (*pkt_octet_len < (octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))) {
     return err_status_bad_param;
+  }
 
   /*
    * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
