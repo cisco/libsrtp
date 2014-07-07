@@ -37,6 +37,7 @@ crypto/test/kernel_driver
 crypto/test/rand_gen
 crypto/test/sha1_driver
 crypto/test/stat_driver
+crypto/test/rand_gen_soak
 tables/aes_tables
 test/dtls_srtp_driver
 test/rdbx_driver

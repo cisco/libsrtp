@@ -476,6 +476,10 @@ aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output) {
   return aes_icm_encrypt(c, buffer, &len);
 }
 
+uint16_t
+aes_icm_bytes_encrypted(aes_icm_ctx_t *c) {
+    return htons(c->counter.v16[7]);
+}
 
 char 
 aes_icm_description[] = "aes integer counter mode";
