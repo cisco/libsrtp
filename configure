@@ -4827,8 +4827,9 @@ else
   enable_openssl=no
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl" >&5
+$as_echo "$enable_openssl" >&6; }
 if test "$enable_openssl" = "yes"; then
-   echo $enable_openssl
    LDFLAGS="$LDFLAGS $(pkg-config --libs openssl)";
    CFLAGS="$CFLAGS $(pkg-config --cflags openssl)";
 
@@ -4991,7 +4992,6 @@ $as_echo "#define OPENSSL 1" >>confdefs.h
    USE_OPENSSL=1
 
 else
-   echo $enable_openssl
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o crypto/cipher/aes_cbc.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
@@ -5021,8 +5021,6 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl" >&5
-$as_echo "$enable_openssl" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use syslog for error reporting" >&5
 $as_echo_n "checking whether to use syslog for error reporting... " >&6; }

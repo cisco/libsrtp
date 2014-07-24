@@ -117,8 +117,8 @@ libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
 	$(RANLIB) libsrtp.a
 
 libsrtp.so: $(srtpobj) $(cryptobj) $(gdoi) 
-	$(CC) -shared -Wl,-soname,libsrtp.so $(LDFLAGS) \
-	    -o libsrtp.so $^
+	$(CC) -shared -Wl,-soname,libsrtp.so \
+	    -o libsrtp.so $^ $(LDFLAGS)
 
 # libcryptomath.a contains general-purpose routines that are used to
 # generate tables and verify cryptoalgorithm implementations - this
