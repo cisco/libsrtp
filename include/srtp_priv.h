@@ -233,6 +233,7 @@ typedef struct srtp_stream_ctx_t {
 typedef struct srtp_ctx_t {
   srtp_stream_ctx_t *stream_list;     /* linked list of streams            */
   srtp_stream_ctx_t *stream_template; /* act as template for other streams */
+  void *user_data;                    /* user custom data */
 } srtp_ctx_t;
 
 
