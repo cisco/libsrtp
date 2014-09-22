@@ -1875,6 +1875,7 @@ srtp_create(srtp_t *session,               /* handle for session     */
    */
   ctx->stream_template = NULL;
   ctx->stream_list = NULL;
+  ctx->user_data = NULL;
   while (policy != NULL) {    
 
     stat = srtp_add_stream(ctx, policy);
@@ -3005,6 +3006,20 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   return err_status_ok;  
 }
 
+
+/*
+ * user data within srtp_t context
+ */
+
+void
+srtp_set_user_data(srtp_t ctx, void *data) {
+  ctx->user_data = data;
+}
+
+void*
+srtp_get_user_data(srtp_t ctx) {
+  return ctx->user_data;
+}
 
 
 /*
