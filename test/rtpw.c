@@ -51,6 +51,10 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "datatypes.h"
 #include "getopt_s.h"       /* for local getopt()  */
 

@@ -42,6 +42,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "err.h"
 
 #ifdef ERR_REPORTING_SYSLOG

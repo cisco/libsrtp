@@ -46,8 +46,6 @@
 #ifndef _AES_H
 #define _AES_H
 
-#include "config.h"
-
 #include "datatypes.h"
 #include "gf2_8.h"
 #include "err.h"

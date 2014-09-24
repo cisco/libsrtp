@@ -43,6 +43,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include <stdio.h>           /* for printf() */
 #include <stdlib.h>          /* for rand() */
 #include <string.h>          /* for memset() */

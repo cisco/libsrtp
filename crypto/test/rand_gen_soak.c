@@ -1,6 +1,10 @@
 /*
  * Soak test the RNG for exhaustion failures
  */
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include <stdio.h>           /* for printf() */
 #include <unistd.h>          /* for getopt() */
 #include "crypto_kernel.h"
