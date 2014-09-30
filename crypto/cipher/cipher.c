@@ -44,6 +44,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "cipher.h"
 #include "crypto_types.h"
 #include "rand_source.h"        /* used in invertibiltiy tests        */

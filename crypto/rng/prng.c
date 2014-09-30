@@ -43,6 +43,10 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "prng.h"
 
 /* single, global prng structure */

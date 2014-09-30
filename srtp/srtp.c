@@ -43,7 +43,7 @@
  */
 
 
-#include "srtp.h"
+#include "srtp_priv.h"
 #include "ekt.h"             /* for SRTP Encrypted Key Transport */
 #include "alloc.h"           /* for crypto_alloc()          */
 #ifdef OPENSSL

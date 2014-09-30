@@ -45,6 +45,7 @@
 #ifndef SRTP_PRIV_H
 #define SRTP_PRIV_H
 
+#include "config.h"
 #include "srtp.h"
 #include "rdbx.h"
 #include "rdb.h"

@@ -42,6 +42,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "alloc.h"
 #include "crypto_kernel.h"
 

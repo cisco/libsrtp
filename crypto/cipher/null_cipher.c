@@ -44,6 +44,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "datatypes.h"
 #include "null_cipher.h"
 #include "alloc.h"

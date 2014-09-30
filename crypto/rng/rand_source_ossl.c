@@ -42,6 +42,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "rand_source.h"
 #include <openssl/rand.h>
 
