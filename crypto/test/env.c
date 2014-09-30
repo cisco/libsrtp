@@ -49,7 +49,9 @@
 int 
 main(void) {
   int err_count = 0;
+#ifndef OPENSSL
   char *str;
+#endif
 
 #ifdef WORDS_BIGENDIAN
   printf("CPU set to big-endian\t\t\t(WORDS_BIGENDIAN == 1)\n");
