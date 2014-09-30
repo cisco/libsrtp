@@ -44,6 +44,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include <openssl/evp.h>
 #include "aes_icm_ossl.h"
 #include "aes_gcm_ossl.h"
