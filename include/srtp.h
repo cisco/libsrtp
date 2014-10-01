@@ -50,6 +50,8 @@
 extern "C" {
 #endif
 
+#include <stddef.h> 
+#include <stdint.h>
 #include "crypto_kernel.h" 
 
 /**
