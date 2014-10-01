@@ -2,6 +2,7 @@
 *~
 old
 old?
+*.pc
 
 # Object files
 *.o
