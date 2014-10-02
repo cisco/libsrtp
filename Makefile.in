@@ -15,6 +15,7 @@
 # tags          builds etags file from all .c and .h files
 
 USE_OPENSSL = @USE_OPENSSL@
+HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 
 .PHONY: all test build_table_apps
 
@@ -75,6 +76,10 @@ exec_prefix = @exec_prefix@
 includedir = @includedir@
 libdir = @libdir@
 
+ifeq (1, $(HAVE_PKG_CONFIG))
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libsrtp.pc
+endif
 
 # implicit rules for object files and test apps
 
@@ -217,12 +222,19 @@ install:
 	if [ "$(srcdir)" != "." ]; then cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp; fi
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
 	if [ -f libsrtp.so ]; then cp libsrtp.so $(DESTDIR)$(libdir)/; fi
+	if [ "$(pkgconfig_DATA)" != "" ]; then \
+		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
+		cp $(srcdir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
+	fi
 
 uninstall:
 	rm -f $(DESTDIR)$(includedir)/srtp/*.h
 	rm -f $(DESTDIR)$(libdir)/libsrtp.a
 	rm -f $(DESTDIR)$(libdir)/libsrtp.so
 	-rmdir $(DESTDIR)$(includedir)/srtp
+	if [ "$(pkgconfig_DATA)" != "" ]; then \
+		rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA); \
+	fi
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
