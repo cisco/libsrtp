@@ -42,7 +42,7 @@ endif
 
 CC	= @CC@
 INCDIR	= -Icrypto/include -I$(srcdir)/include -I$(srcdir)/crypto/include
-DEFS	= @DEFS@
+DEFS	= @DEFS@ -DLIBSRTP_INTERNAL_BUILD
 CPPFLAGS= @CPPFLAGS@
 CFLAGS	= @CFLAGS@
 LIBS	= @LIBS@
