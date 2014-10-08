@@ -1239,6 +1239,18 @@ err_status_t
 srtp_install_event_handler(srtp_event_handler_func_t func);
 
 /**
+ * @brief Returns the version string of the library. 
+ * 
+ */
+char *srtp_get_version_string(void);
+
+/**
+ * @brief Returns the numeric representation of the library version. 
+ * 
+ */
+unsigned int srtp_get_version(void);
+
+/**
  * @}
  */
 /* in host order, so outside the #if */

@@ -57,6 +57,9 @@
 #include "key.h"
 #include "crypto_kernel.h"
 
+#define SRTP_VER_STRING	    PACKAGE_STRING
+#define SRTP_VERSION        PACKAGE_VERSION
+
 /*
  * an srtp_hdr_t represents the srtp header
  *
