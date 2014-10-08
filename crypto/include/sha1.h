@@ -50,6 +50,7 @@
 #include "err.h"
 #ifdef OPENSSL
 #include <openssl/evp.h>
+#include <stdint.h>
 
 typedef EVP_MD_CTX sha1_ctx_t;
 

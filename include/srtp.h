@@ -50,9 +50,10 @@
 extern "C" {
 #endif
 
-#include <stddef.h> 
 #include <stdint.h>
-#include "crypto_kernel.h" 
+#include "crypto.h" 
+#include "crypto_types.h"
+#include "err.h"
 
 /**
  * @defgroup SRTP Secure RTP
@@ -99,6 +100,7 @@ extern "C" {
 #define AES_128_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
 #define AES_192_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
 #define AES_256_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
+
 
 
 /* 

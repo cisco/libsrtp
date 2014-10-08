@@ -85,6 +85,7 @@
 
 #include "srtp.h"           
 #include "rtp.h"
+#include "crypto_kernel.h"
 
 #ifdef RTPW_USE_WINSOCK2
 # define DICT_FILE        "words.txt"

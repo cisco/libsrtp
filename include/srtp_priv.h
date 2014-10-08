@@ -50,6 +50,12 @@
 #include "rdbx.h"
 #include "rdb.h"
 #include "integers.h"
+#include "crypto.h"
+#include "cipher.h"
+#include "auth.h"
+#include "aes.h"
+#include "key.h"
+#include "crypto_kernel.h"
 
 /*
  * an srtp_hdr_t represents the srtp header

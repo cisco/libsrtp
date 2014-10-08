@@ -46,7 +46,8 @@
 #ifndef ERR_H
 #define ERR_H
 
-#include "datatypes.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 /**
  * @defgroup Error Error Codes
