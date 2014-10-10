@@ -132,8 +132,6 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
  }
   if(dcdr->srtp_ctx != NULL){
   }
-  hexdump(&dcdr->message.header.ssrc, sizeof(dcdr->message.header.ssrc));
-  hexdump(&dcdr->policy.ssrc.value, sizeof(dcdr->policy.ssrc.value));
   status = srtp_unprotect(dcdr->srtp_ctx, &dcdr->message, &octets_recvd);
   if (status){
     return;
