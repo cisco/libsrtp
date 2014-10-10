@@ -98,7 +98,7 @@
 # define DICT_FILE        "/usr/share/dict/words"
 #endif
 #define USEC_RATE        (5e5)
-#define MAX_WORD_LEN      128
+#define MAX_WORD_LEN     128 
 #define ADDR_IS_MULTICAST(a) IN_MULTICAST(htonl(a))
 #define MAX_KEY_LEN      96
 #define MAX_FILTER 256
@@ -238,11 +238,10 @@ main (int argc, char *argv[]) {
       break;
     case 't':
       tag_size = atoi(optarg_s);
-      /*
       if (tag_size != 8 && tag_size != 16) {
-        printf("error: GCM tag size must be 8 or 16 (%d)\n", tag_size);
-        exit(1);
-      }*/
+        fprintf(stderr, "error: GCM tag size must be 8 or 16 (%d)\n", tag_size);
+        //exit(1);
+      }
       break;
     case 'a':
       sec_servs |= sec_serv_auth;
