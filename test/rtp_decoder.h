@@ -3,8 +3,9 @@
  *
  * decoder structures and functions for SRTP pcap decoder
  *
- * David A. McGrew
- * Cisco Systems, Inc.
+ * Bernardo Torres <bernardo@torresautomacao.com.br>
+ *
+ * Some structure and code from https://github.com/gteissier/srtp-decrypt
  *
  */
 /*
