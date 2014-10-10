@@ -1,9 +1,15 @@
 /*
- * rtp_decoder.h
+ * rtp_decoder.c
  *
  * decoder structures and functions for SRTP pcap decoder
  *
+ * Example:
+ * $ wget --no-check-certificate https://raw.githubusercontent.com/gteissier/srtp-decrypt/master/marseillaise-srtp.pcap
+ * $ ./test/rtpw -a -t 0 -e 128 -p -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz < ~/marseillaise-srtp.pcap | text2pcap -t "%M:%S." -u 10000,10000 - - > ./marseillaise-rtp.pcap
+ *
  * Bernardo Torres <bernardo@torresautomacao.com.br>
+ *
+ * Some structure and code from https://github.com/gteissier/srtp-decrypt
  */
 /*
  *	
