@@ -692,6 +692,7 @@ base64_char_to_sextet(uint8_t c) {
  return -1;
 }
 
+#ifdef INCLUDE_DEAD_CODE
 /*
  * base64_string_to_octet_string converts a hexadecimal string
  * of length 2 * len to a raw octet string of length len
@@ -720,3 +721,4 @@ base64_string_to_octet_string(char *raw, char *base64, int len) {
   }
   return base64_len;
 }
+#endif

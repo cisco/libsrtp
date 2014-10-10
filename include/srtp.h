@@ -50,9 +50,10 @@
 extern "C" {
 #endif
 
-#include <stddef.h> 
 #include <stdint.h>
-#include "crypto_kernel.h" 
+#include "crypto.h" 
+#include "crypto_types.h"
+#include "err.h"
 
 /**
  * @defgroup SRTP Secure RTP
@@ -99,6 +100,7 @@ extern "C" {
 #define AES_128_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
 #define AES_192_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
 #define AES_256_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
+
 
 
 /* 
@@ -1235,6 +1237,18 @@ typedef void (srtp_event_handler_func_t)(srtp_event_data_t *data);
 
 err_status_t
 srtp_install_event_handler(srtp_event_handler_func_t func);
+
+/**
+ * @brief Returns the version string of the library. 
+ * 
+ */
+char *srtp_get_version_string(void);
+
+/**
+ * @brief Returns the numeric representation of the library version. 
+ * 
+ */
+unsigned int srtp_get_version(void);
 
 /**
  * @}

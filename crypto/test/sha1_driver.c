@@ -48,7 +48,9 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
 #include "sha1.h"
+#include "datatypes.h"
 
 #define SHA_PASS 0
 #define SHA_FAIL 1

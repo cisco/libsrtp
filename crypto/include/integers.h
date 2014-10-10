@@ -75,7 +75,7 @@
 #endif
 
 /* Can we do 64 bit integers? */
-#if !defined(HAVE_UINT64_T) && defined(LIBSRTP_INTERNAL_BUILD)
+#if !defined(HAVE_UINT64_T)
 # if SIZEOF_UNSIGNED_LONG == 8
 typedef unsigned long		uint64_t;
 # elif SIZEOF_UNSIGNED_LONG_LONG == 8

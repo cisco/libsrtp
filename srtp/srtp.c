@@ -72,6 +72,44 @@ debug_module_t mod_srtp = {
 #define octets_in_rtcp_header  8
 #define uint32s_in_rtcp_header 2
 
+char *srtp_get_version_string ()
+{
+    /*
+     * Simply return the autotools generated string
+     */
+    return SRTP_VER_STRING;
+}
+
+unsigned int srtp_get_version ()
+{
+    unsigned int major = 0, minor = 0, micro = 0;
+    unsigned int rv = 0;
+    int parse_rv;
+
+    /*
+     * Parse the autotools generated version 
+     */
+    parse_rv = sscanf(SRTP_VERSION, "%u.%u.%u", &major, &minor, &micro);
+    if (parse_rv != 3) {
+	/*
+	 * We're expected to parse all 3 version levels.
+	 * If not, then this must not be an official release.
+	 * Return all zeros on the version
+	 */
+	return (0);
+    }
+
+    /* 
+     * We allow 8 bits for the major and minor, while
+     * allowing 16 bits for the micro.  16 bits for the micro
+     * may be beneficial for a continuous delivery model 
+     * in the future.
+     */
+    rv |= (major & 0xFF) << 24;
+    rv |= (minor & 0xFF) << 16;
+    rv |= micro & 0xFF;
+    return rv;
+}
 
 err_status_t
 srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,

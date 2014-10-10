@@ -90,6 +90,7 @@
 #include "srtp.h"           
 #include "rtp.h"
 #include "rtp_decoder.h"
+#include "crypto_kernel.h"
 
 #ifdef RTPW_USE_WINSOCK2
 # define DICT_FILE        "words.txt"
@@ -197,6 +198,8 @@ main (int argc, char *argv[]) {
     exit(1);
   }
 #endif
+
+  printf("Using %s [0x%x]\n", srtp_get_version_string(), srtp_get_version());
 
   if (setup_signal_handler(argv[0]) != 0) {
     exit(1);

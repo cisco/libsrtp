@@ -383,7 +383,7 @@ void
 octet_string_set_to_zero(uint8_t *s, int len);
 
 
-#if !defined(SRTP_KERNEL_LINUX) && defined(HAVE_CONFIG_H) && defined(LIBSRTP_INTERNAL_BUILD) 
+#if !defined(SRTP_KERNEL_LINUX) && defined(HAVE_CONFIG_H) 
 
 /* 
  * Convert big endian integers to CPU byte order.
