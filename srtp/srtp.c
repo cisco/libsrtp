@@ -84,11 +84,20 @@ unsigned int srtp_get_version ()
 {
     unsigned int major = 0, minor = 0, micro = 0;
     unsigned int rv = 0;
+    int parse_rv;
 
     /*
      * Parse the autotools generated version 
      */
-    sscanf(SRTP_VERSION, "%u.%u.%u", &major, &minor, &micro);
+    parse_rv = sscanf(SRTP_VERSION, "%u.%u.%u", &major, &minor, &micro);
+    if (parse_rv != 3) {
+	/*
+	 * We're expected to parse all 3 version levels.
+	 * If not, then this must not be an official release.
+	 * Return all zeros on the version
+	 */
+	return (0);
+    }
 
     /* 
      * We allow 8 bits for the major and minor, while
