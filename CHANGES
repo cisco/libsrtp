@@ -1,5 +1,23 @@
 Changelog
 
+1.5.0
+ 
+  Add support for using OpenSSL crypto using the --enable-openssl 
+  option.
+
+  Add support for AES-GCM crypto suites. 
+
+  Add support for pkg_config.
+
+  Add user data API to allow user to associate additional data with a 
+  SRTP context.
+
+  This release also includes a variety of bug fixes, which can be 
+  viewed at: https://github.com/cisco/libsrtp/commits/master
+
+  Note: The change log was not maintained between versions 1.3.20 and
+        1.4.5.
+
 1.3.20
 
   Lots of changes.  Thanks to Jeff Chan for catching a memory leak and
