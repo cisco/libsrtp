@@ -15,7 +15,7 @@
  */
 
 /*
- *  
+ *	
  * Copyright (c) 2001-2006, Cisco Systems, Inc.
  * All rights reserved.
  * 
@@ -64,7 +64,7 @@
 #include <signal.h>         /* for signal()        */
 
 #include <string.h>         /* for strncpy()       */
-#include <time.h>     /* for usleep()        */
+#include <time.h>	    /* for usleep()        */
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>         /* for close()         */
@@ -77,7 +77,7 @@
 #elif defined HAVE_WINSOCK2_H
 # include <winsock2.h>
 # include <ws2tcpip.h>
-# define RTPW_USE_WINSOCK2  1
+# define RTPW_USE_WINSOCK2	1
 #endif
 #ifdef HAVE_ARPA_INET_H
 # include <arpa/inet.h>
@@ -100,9 +100,9 @@
 
 #ifndef HAVE_USLEEP
 # ifdef HAVE_WINDOWS_H
-#  define usleep(us)  Sleep((us)/1000)
+#  define usleep(us)	Sleep((us)/1000)
 # else
-#  define usleep(us)  sleep((us)/1000000)
+#  define usleep(us)	sleep((us)/1000000)
 # endif
 #endif
 
@@ -251,8 +251,8 @@ main (int argc, char *argv[]) {
     if (do_list_mods) {
       status = crypto_kernel_list_debug_modules();
       if (status) {
-  printf("error: list of debug modules failed\n");
-  exit(1);
+	printf("error: list of debug modules failed\n");
+	exit(1);
       }
       return 0;
     } else {
@@ -318,18 +318,18 @@ main (int argc, char *argv[]) {
   if (ADDR_IS_MULTICAST(rcvr_addr.s_addr)) {
     if (prog_type == sender) {
       ret = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, 
-                   sizeof(ttl));
+  	               sizeof(ttl));
       if (ret < 0) {
-  fprintf(stderr, "%s: Failed to set TTL for multicast group", argv[0]);
-  perror("");
-  exit(1);
+	fprintf(stderr, "%s: Failed to set TTL for multicast group", argv[0]);
+	perror("");
+	exit(1);
       }
     }
 
     mreq.imr_multiaddr.s_addr = rcvr_addr.s_addr;
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);
     ret = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void*)&mreq,
-         sizeof(mreq));
+		     sizeof(mreq));
     if (ret < 0) {
       fprintf(stderr, "%s: Failed to join multicast group", argv[0]);
       perror("");
@@ -358,66 +358,66 @@ main (int argc, char *argv[]) {
     case sec_serv_conf_and_auth:
       if (gcm_on) {
 #ifdef OPENSSL
-  switch (key_size) {
-  case 128:
-    crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-    crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
-    break;
-  case 256:
-    crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-    crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
-    break;
-  }
+	switch (key_size) {
+	case 128:
+	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+	  break;
+	case 256:
+	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+	  break;
+	}
 #else
-  printf("error: GCM mode only supported when using the OpenSSL crypto engine.\n");
-  return 0;
+	printf("error: GCM mode only supported when using the OpenSSL crypto engine.\n");
+	return 0;
 #endif
       } else {
-  switch (key_size) {
-  case 128:
+	switch (key_size) {
+	case 128:
           crypto_policy_set_rtp_default(&policy.rtp);
           crypto_policy_set_rtcp_default(&policy.rtcp);
-    break;
-  case 256:
+	  break;
+	case 256:
           crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
           crypto_policy_set_rtcp_default(&policy.rtcp);
-    break;
-  }
+	  break;
+	}
       }
       break;
     case sec_serv_conf:
       if (gcm_on) {
-    printf("error: GCM mode must always be used with auth enabled\n");
-    return -1;
+	  printf("error: GCM mode must always be used with auth enabled\n");
+	  return -1;
       } else {
-  switch (key_size) {
-  case 128:
+	switch (key_size) {
+	case 128:
           crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
           crypto_policy_set_rtcp_default(&policy.rtcp);      
-    break;
-  case 256:
+	  break;
+	case 256:
           crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
           crypto_policy_set_rtcp_default(&policy.rtcp);      
-    break;
-  }
+	  break;
+	}
       }
       break;
     case sec_serv_auth:
       if (gcm_on) {
 #ifdef OPENSSL
-  switch (key_size) {
-  case 128:
-    crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
-    crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
-    break;
-  case 256:
-    crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
-    crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
-    break;
-  }
+	switch (key_size) {
+	case 128:
+	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
+	  break;
+	case 256:
+	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
+	  break;
+	}
 #else
-  printf("error: GCM mode only supported when using the OpenSSL crypto engine.\n");
-  return 0;
+	printf("error: GCM mode only supported when using the OpenSSL crypto engine.\n");
+	return 0;
 #endif
       } else {
         crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
@@ -439,7 +439,7 @@ main (int argc, char *argv[]) {
     policy.rtcp.sec_serv = sec_serv_none;  /* we don't do RTCP anyway */
 
     if (gcm_on && tag_size != 8) {
-  policy.rtp.auth_tag_len = tag_size;
+	policy.rtp.auth_tag_len = tag_size;
     }
 
     /*
@@ -450,16 +450,16 @@ main (int argc, char *argv[]) {
     /* check that hex string is the right length */
     if (len < policy.rtp.cipher_key_len*2) {
       fprintf(stderr, 
-        "error: too few digits in key/salt "
-        "(should be %d hexadecimal digits, found %d)\n",
-        policy.rtp.cipher_key_len*2, len);
+	      "error: too few digits in key/salt "
+	      "(should be %d hexadecimal digits, found %d)\n",
+	      policy.rtp.cipher_key_len*2, len);
       exit(1);    
     } 
     if (strlen(input_key) > policy.rtp.cipher_key_len*2) {
       fprintf(stderr, 
-        "error: too many digits in key/salt "
-        "(should be %d hexadecimal digits, found %u)\n",
-        policy.rtp.cipher_key_len*2, (unsigned)strlen(input_key));
+	      "error: too many digits in key/salt "
+	      "(should be %d hexadecimal digits, found %u)\n",
+	      policy.rtp.cipher_key_len*2, (unsigned)strlen(input_key));
       exit(1);    
     }
     
@@ -522,8 +522,8 @@ main (int argc, char *argv[]) {
     status = rtp_sender_init_srtp(snd, &policy);
     if (status) {
       fprintf(stderr, 
-        "error: srtp_create() failed with code %d\n", 
-        status);
+	      "error: srtp_create() failed with code %d\n", 
+	      status);
       exit(1);
     }
  
@@ -532,7 +532,7 @@ main (int argc, char *argv[]) {
     if (dict == NULL) {
       fprintf(stderr, "%s: couldn't open file %s\n", argv[0], dictfile);
       if (ADDR_IS_MULTICAST(rcvr_addr.s_addr)) {
-    leave_group(sock, mreq, argv[0]);
+  	leave_group(sock, mreq, argv[0]);
       }
       exit(1);
     }
@@ -542,9 +542,9 @@ main (int argc, char *argv[]) {
       len = strlen(word) + 1;  /* plus one for null */
       
       if (len > MAX_WORD_LEN) 
-  printf("error: word %s too large to send\n", word);
+	printf("error: word %s too large to send\n", word);
       else {
-  rtp_sendto(snd, word, len);
+	rtp_sendto(snd, word, len);
         printf("sending word: %s", word);
       }
       usleep(USEC_RATE);
@@ -562,7 +562,7 @@ main (int argc, char *argv[]) {
       fprintf(stderr, "%s: socket bind error\n", argv[0]);
       perror(NULL);
       if (ADDR_IS_MULTICAST(rcvr_addr.s_addr)) {
-      leave_group(sock, mreq, argv[0]);
+    	leave_group(sock, mreq, argv[0]);
       }
       exit(1);
     }
@@ -576,8 +576,8 @@ main (int argc, char *argv[]) {
     status = rtp_receiver_init_srtp(rcvr, &policy);
     if (status) {
       fprintf(stderr, 
-        "error: srtp_create() failed with code %d\n", 
-        status);
+	      "error: srtp_create() failed with code %d\n", 
+	      status);
       exit(1);
     }
 
@@ -585,7 +585,7 @@ main (int argc, char *argv[]) {
     while (!interrupted) {
       len = MAX_WORD_LEN;
       if (rtp_recvfrom(rcvr, word, &len) > -1)
-  printf("\tword: %s\n", word);
+	printf("\tword: %s\n", word);
     }
       
     rtp_receiver_deinit_srtp(rcvr);
@@ -624,18 +624,18 @@ void
 usage(char *string) {
 
   printf("usage: %s [-d <debug>]* [-k <key> [-a][-e]] "
-   "[-s | -r] dest_ip dest_port\n"
-   "or     %s -l\n"
-   "where  -a use message authentication\n"
-   "       -e <key size> use encryption (use 128 or 256 for key size)\n"
-   "       -g Use AES-GCM mode (must be used with -e)\n"
-   "       -t <tag size> Tag size to use in GCM mode (use 8 or 16)\n"
-   "       -k <key>  sets the srtp master key\n"
-   "       -s act as rtp sender\n"
-   "       -r act as rtp receiver\n"
-   "       -l list debug modules\n"
-   "       -d <debug> turn on debugging for module <debug>\n",
-   string, string);
+	 "[-s | -r] dest_ip dest_port\n"
+	 "or     %s -l\n"
+	 "where  -a use message authentication\n"
+	 "       -e <key size> use encryption (use 128 or 256 for key size)\n"
+	 "       -g Use AES-GCM mode (must be used with -e)\n"
+	 "       -t <tag size> Tag size to use in GCM mode (use 8 or 16)\n"
+	 "       -k <key>  sets the srtp master key\n"
+	 "       -s act as rtp sender\n"
+	 "       -r act as rtp receiver\n"
+	 "       -l list debug modules\n"
+	 "       -d <debug> turn on debugging for module <debug>\n",
+	 string, string);
   exit(1);
   
 }
@@ -646,10 +646,10 @@ leave_group(int sock, struct ip_mreq mreq, char *name) {
   int ret;
 
   ret = setsockopt(sock, IPPROTO_IP, IP_DROP_MEMBERSHIP, (void*)&mreq,
-       sizeof(mreq));
+		   sizeof(mreq));
   if (ret < 0) {
-  fprintf(stderr, "%s: Failed to leave multicast group", name);
-  perror("");
+	fprintf(stderr, "%s: Failed to leave multicast group", name);
+	perror("");
   }
 }
 
