@@ -78,6 +78,20 @@ void rtp_print_error(err_status_t status, char *message);
 void
 hexdump(const void *ptr, size_t size);
 
+/*
+ * the function usage() prints an error message describing how this
+ * program should be called, then calls exit()
+ */
+
+void
+usage(char *prog_name);
+
+/*
+ * transforms base64 key into octet
+ */
+
+char *decode_sdes(char *in, char *out);
+
 /* 
  * pcap handling
  */

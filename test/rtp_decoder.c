@@ -5,7 +5,8 @@
  *
  * Example:
  * $ wget --no-check-certificate https://raw.githubusercontent.com/gteissier/srtp-decrypt/master/marseillaise-srtp.pcap
- * $ ./test/rtpw -a -t 0 -e 128 -p -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz < ~/marseillaise-srtp.pcap | text2pcap -t "%M:%S." -u 10000,10000 - - > ./marseillaise-rtp.pcap
+ * $ ./test/rtp_decoder -a -t 0 -e 128 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz \
+ *    < ~/marseillaise-srtp.pcap | text2pcap -t "%M:%S." -u 10000,10000 - - > ./marseillaise-rtp.pcap
  *
  * Bernardo Torres <bernardo@torresautomacao.com.br>
  *
@@ -46,8 +47,380 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#include "getopt_s.h"       /* for local getopt()  */
+#include <assert.h>         /* for assert()  */
+
 #include <pcap.h>
 #include "rtp_decoder.h"
+
+#define MAX_KEY_LEN      96
+#define MAX_FILTER 256
+
+int
+main (int argc, char *argv[]) {
+  char errbuf[PCAP_ERRBUF_SIZE];
+  bpf_u_int32 pcap_net = 0;
+  pcap_t *pcap_handle;
+#if BEW
+  struct sockaddr_in local;
+#endif 
+  sec_serv_t sec_servs = sec_serv_none;
+  int c;
+  int key_size = 128;
+  int tag_size = 8;
+  int gcm_on = 0;
+  char *input_key = NULL;
+  char key[MAX_KEY_LEN];
+  struct bpf_program fp;
+  char filter_exp[MAX_FILTER] = "";
+  rtp_decoder_t dec;
+  srtp_policy_t policy;
+  err_status_t status;
+  int len;
+  int do_list_mods = 0;
+
+  fprintf(stderr, "Using %s [0x%x]\n", srtp_get_version_string(), srtp_get_version());
+
+  /* initialize srtp library */
+  status = srtp_init();
+  if (status) {
+    fprintf(stderr, "error: srtp initialization failed with error code %d\n", status);
+    exit(1);
+  }
+
+  /* check args */
+  while (1) {
+    c = getopt_s(argc, argv, "b:k:gt:ae:ld:");
+    if (c == -1) {
+      break;
+    }
+    switch (c) {
+	case 'b':
+	  fprintf(stderr, "Decoding\n");
+		decode_sdes(optarg_s, input_key);
+		fprintf(stderr, "Decoded\n");
+		break;
+    case 'k':
+      input_key = optarg_s;
+      break;
+    case 'e':
+      key_size = atoi(optarg_s);
+      if (key_size != 128 && key_size != 256) {
+        fprintf(stderr, "error: encryption key size must be 128 or 256 (%d)\n", key_size);
+        exit(1);
+      }
+      input_key = malloc(key_size);
+      sec_servs |= sec_serv_conf;
+      break;
+    case 't':
+      tag_size = atoi(optarg_s);
+      if (tag_size != 8 && tag_size != 16) {
+        fprintf(stderr, "error: GCM tag size must be 8 or 16 (%d)\n", tag_size);
+        //exit(1);
+      }
+      break;
+    case 'a':
+      sec_servs |= sec_serv_auth;
+      break;
+    case 'g':
+      gcm_on = 1;
+      sec_servs |= sec_serv_auth;
+      break;
+    case 'd':
+      status = crypto_kernel_set_debug_module(optarg_s, 1);
+      if (status) {
+        fprintf(stderr, "error: set debug module (%s) failed\n", optarg_s);
+        exit(1);
+      }
+      break;
+    case 'l':
+      do_list_mods = 1;
+      break;
+    default:
+      usage(argv[0]);
+    }
+  }
+
+  if (do_list_mods) {
+    status = crypto_kernel_list_debug_modules();
+    if (status) {
+      fprintf(stderr, "error: list of debug modules failed\n");
+	  exit(1);
+    }
+    return 0;
+  }
+   
+  if ((sec_servs && !input_key) || (!sec_servs && input_key)) {
+    /* 
+     * a key must be provided if and only if security services have
+     * been requested 
+     */
+	  if(input_key == NULL){
+		  fprintf(stderr, "key not provided\n");
+	  }
+	  if(!sec_servs){
+		  fprintf(stderr, "no secservs\n");
+	  }
+    fprintf(stderr, "provided\n");
+    usage(argv[0]);
+  }
+   
+
+
+  /* report security services selected on the command line */
+  fprintf(stderr, "security services: ");
+  if (sec_servs & sec_serv_conf)
+    fprintf(stderr, "confidentiality ");
+  if (sec_servs & sec_serv_auth)
+    fprintf(stderr, "message authentication");
+  if (sec_servs == sec_serv_none)
+    fprintf(stderr, "none");
+  fprintf(stderr, "\n");
+  
+  /* set up the srtp policy and master key */    
+  if (sec_servs) {
+    /* 
+     * create policy structure, using the default mechanisms but 
+     * with only the security services requested on the command line,
+     * using the right SSRC value
+     */
+    switch (sec_servs) {
+    case sec_serv_conf_and_auth:
+      if (gcm_on) {
+#ifdef OPENSSL
+	switch (key_size) {
+	case 128:
+	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+	  break;
+	case 256:
+	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+	  break;
+	}
+#else
+	fprintf(stderr, "error: GCM mode only supported when using the OpenSSL crypto engine.\n");
+	return 0;
+#endif
+      } else {
+	switch (key_size) {
+	case 128:
+          crypto_policy_set_rtp_default(&policy.rtp);
+          crypto_policy_set_rtcp_default(&policy.rtcp);
+	  break;
+	case 256:
+          crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
+          crypto_policy_set_rtcp_default(&policy.rtcp);
+	  break;
+	}
+      }
+      break;
+    case sec_serv_conf:
+      if (gcm_on) {
+	  fprintf(stderr, "error: GCM mode must always be used with auth enabled\n");
+	  return -1;
+      } else {
+	switch (key_size) {
+	case 128:
+          crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
+          crypto_policy_set_rtcp_default(&policy.rtcp);      
+	  break;
+	case 256:
+          crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
+          crypto_policy_set_rtcp_default(&policy.rtcp);      
+	  break;
+	}
+      }
+      break;
+    case sec_serv_auth:
+      if (gcm_on) {
+#ifdef OPENSSL
+	switch (key_size) {
+	case 128:
+	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
+	  break;
+	case 256:
+	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
+	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
+	  break;
+	}
+#else
+	printf("error: GCM mode only supported when using the OpenSSL crypto engine.\n");
+	return 0;
+#endif
+      } else {
+        crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
+        crypto_policy_set_rtcp_default(&policy.rtcp);
+      }
+      break;
+    default:
+      fprintf(stderr, "error: unknown security service requested\n");
+      return -1;
+    } 
+
+    policy.key  = (uint8_t *) key;
+    policy.ekt  = NULL;
+    policy.next = NULL;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.rtp.sec_serv = sec_servs;
+    policy.rtcp.sec_serv = sec_servs; //sec_serv_none;  /* we don't do RTCP anyway */
+      fprintf(stderr, "setting tag len %d\n", tag_size);
+policy.rtp.auth_tag_len = tag_size;
+  
+    if (gcm_on && tag_size != 8) {
+      fprintf(stderr, "setted tag len %d\n", tag_size);
+	policy.rtp.auth_tag_len = tag_size;
+    }
+
+    /*
+     * read key from hexadecimal on command line into an octet string
+     */
+    len = hex_string_to_octet_string(key, input_key, policy.rtp.cipher_key_len*2);
+    
+    /* check that hex string is the right length */
+    if (len < policy.rtp.cipher_key_len*2) {
+      fprintf(stderr, 
+	      "error: too few digits in key/salt "
+	      "(should be %d hexadecimal digits, found %d)\n",
+	      policy.rtp.cipher_key_len*2, len);
+      exit(1);    
+    } 
+    if (strlen(input_key) > policy.rtp.cipher_key_len*2) {
+      fprintf(stderr, 
+	      "error: too many digits in key/salt "
+	      "(should be %d hexadecimal digits, found %u)\n",
+	      policy.rtp.cipher_key_len*2, (unsigned)strlen(input_key));
+      exit(1);    
+    }
+    
+    fprintf(stderr, "set master key/salt to %s/", octet_string_hex_string(key, 16));
+    fprintf(stderr, "%s\n", octet_string_hex_string(key+16, 14));
+  
+  } else {
+    /*
+     * we're not providing security services, so set the policy to the
+     * null policy
+     *
+     * Note that this policy does not conform to the SRTP
+     * specification, since RTCP authentication is required.  However,
+     * the effect of this policy is to turn off SRTP, so that this
+     * application is now a vanilla-flavored RTP application.
+     */
+    policy.key                 = (uint8_t *)key;
+    policy.ssrc.type           = ssrc_specific;
+    policy.rtp.cipher_type     = NULL_CIPHER;
+    policy.rtp.cipher_key_len  = 0; 
+    policy.rtp.auth_type       = NULL_AUTH;
+    policy.rtp.auth_key_len    = 0;
+    policy.rtp.auth_tag_len    = 0;
+    policy.rtp.sec_serv        = sec_serv_none;   
+    policy.rtcp.cipher_type    = NULL_CIPHER;
+    policy.rtcp.cipher_key_len = 0; 
+    policy.rtcp.auth_type      = NULL_AUTH;
+    policy.rtcp.auth_key_len   = 0;
+    policy.rtcp.auth_tag_len   = 0;
+    policy.rtcp.sec_serv       = sec_serv_none;   
+    policy.window_size         = 0;
+    policy.allow_repeat_tx     = 0;
+    policy.ekt                 = NULL;
+    policy.next                = NULL;
+  }
+
+	pcap_handle = pcap_open_offline("-", errbuf);
+
+	if (!pcap_handle) {
+	    fprintf(stderr, "libpcap failed to open file '%s'\n", errbuf);
+	    exit(1);
+	}
+	assert(pcap_handle != NULL);
+	if ((pcap_compile(pcap_handle, &fp, filter_exp, 1, pcap_net)) == -1){
+	    fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp,
+	        pcap_geterr(pcap_handle));
+	    return (2);
+	}
+	if (pcap_setfilter(pcap_handle, &fp) == -1){
+	  fprintf(stderr, "couldn't install filter %s: %s\n", filter_exp,
+	      pcap_geterr(pcap_handle));
+	  return (2);
+	}
+	dec = rtp_decoder_alloc();
+	if (dec == NULL) {
+	  fprintf(stderr, "error: malloc() failed\n");
+	  exit(1);
+	}
+	fprintf(stderr, "Starting decoder\n");
+	rtp_decoder_init(dec, policy);
+
+	pcap_loop(pcap_handle, 0, rtp_decoder_handle_pkt, (u_char *)dec);
+
+	rtp_decoder_deinit_srtp(dec);
+	rtp_decoder_dealloc(dec);
+
+  status = srtp_shutdown();
+  if (status) {
+    fprintf(stderr, "error: srtp shutdown failed with error code %d\n", status);
+    exit(1);
+  }
+
+  return 0;
+}
+
+
+void
+usage(char *string) {
+
+  fprintf(stderr, "usage: %s [-d <debug>]* [[-k][-b] <key> [-a][-e]]\n"
+	 "or     %s -l\n"
+	 "where  -a use message authentication\n"
+	 "       -e <key size> use encryption (use 128 or 256 for key size)\n"
+	 "       -g Use AES-GCM mode (must be used with -e)\n"
+	 "       -t <tag size> Tag size to use in GCM mode (use 8 or 16)\n"
+	 "       -k <key>  sets the srtp master key\n"
+	 "       -b <key>  sets the srtp master key as base64\n"
+	 "       -l list debug modules\n"
+	 "       -d <debug> turn on debugging for module <debug>\n",
+	 string, string);
+  exit(1);
+  
+}
+
+static const char b64chars[] =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+unsigned char shiftb64(unsigned char c) {
+  char *p = strchr(b64chars, c);
+  assert(p);
+  return p-b64chars;
+}
+
+void decode_block(char *in, unsigned char *out) {
+  unsigned char shifts[4];
+  int i;
+
+  for (i = 0; i < 4; i++) {
+    shifts[i] = shiftb64(in[i]);
+  }
+
+  out[0] = (shifts[0]<<2)|(shifts[1]>>4);
+  out[1] = (shifts[1]<<4)|(shifts[2]>>2);
+  out[2] = (shifts[2]<<6)|shifts[3];
+}
+
+char *decode_sdes(char *in, char *out) {
+  int i;
+  size_t len = strlen((char *) in);
+  assert(len == 40);
+  unsigned char raw[30];
+
+  for (i = 0; 4*i < len; i++) {
+    decode_block(in+4*i, raw+3*i);
+  } 
+
+  memcpy(out, octet_string_hex_string(raw, 30), 60);
+  return out;
+}
 
 rtp_decoder_t
 rtp_decoder_alloc(void) {

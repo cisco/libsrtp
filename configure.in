@@ -183,8 +183,13 @@ AC_SUBST(RNG_EXTRA_OBJS)
 AC_SUBST(HMAC_OBJS)
 
 dnl Checking for PCAP
-AC_CHECK_LIB([pcap],[pcap_create])
-AC_CHECK_HEADERS([pcap/pcap.h])
+AC_CHECK_LIB([pcap],[pcap_create],
+    [PCAP=1
+     LIBS="-lpcap $LIBS"
+     HAVE_PCAP=1
+     AC_DEFINE(HAVE_PCAP, 1, [Define to 1 if you have the `pcap' library (-lpcap)])
+     AC_SUBST(HAVE_PCAP)
+])
 
 AC_MSG_CHECKING(whether to use syslog for error reporting)
 AC_ARG_ENABLE(syslog,

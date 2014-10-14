@@ -626,6 +626,7 @@ LIBOBJS
 HAVE_PKG_CONFIG
 PKG_CONFIG
 GDOI_OBJS
+HAVE_PCAP
 HMAC_OBJS
 RNG_EXTRA_OBJS
 RNG_OBJS
@@ -5069,25 +5070,15 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcap_pcap_create" >&5
 $as_echo "$ac_cv_lib_pcap_pcap_create" >&6; }
 if test "x$ac_cv_lib_pcap_pcap_create" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBPCAP 1
-_ACEOF
+  PCAP=1
+     LIBS="-lpcap $LIBS"
+     HAVE_PCAP=1
 
-  LIBS="-lpcap $LIBS"
+$as_echo "#define HAVE_PCAP 1" >>confdefs.h
 
-fi
 
-for ac_header in pcap/pcap.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "pcap/pcap.h" "ac_cv_header_pcap_pcap_h" "$ac_includes_default"
-if test "x$ac_cv_header_pcap_pcap_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_PCAP_PCAP_H 1
-_ACEOF
 
 fi
-
-done
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use syslog for error reporting" >&5
