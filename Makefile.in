@@ -151,13 +151,16 @@ testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
 	  test/dtls_srtp_driver$(EXE)
 
+ifeq (1, $(HAVE_PCAP))
+testapp += test/rtp_decoder$(EXE)
+endif
+
 $(testapp): libsrtp.a
 
 test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 ifeq (1, $(HAVE_PCAP))
-testapp += test/rtp_decoder$(EXE)
 test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 endif
