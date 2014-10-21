@@ -37,7 +37,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c,
 
 err_status_t
 aes_icm_output(aes_icm_ctx_t *c,
-	       unsigned char *buf, int bytes_to_output);
+	       unsigned char *buf, unsigned int bytes_to_output);
 
 err_status_t 
 aes_icm_dealloc(cipher_t *c);

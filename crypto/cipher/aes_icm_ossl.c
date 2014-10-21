@@ -74,7 +74,7 @@ extern cipher_type_t aes_icm_256;
  * 16 bits
  * <----->
  * +------+------+------+------+------+------+------+------+
- * |           nonce           |    pakcet index    |  ctr |---+
+ * |           nonce           |    packet index    |  ctr |---+
  * +------+------+------+------+------+------+------+------+   |
  *                                                             |
  * +------+------+------+------+------+------+------+------+   v
@@ -317,26 +317,12 @@ err_status_t aes_icm_openssl_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsi
     }
     *enc_len = len;
 
-    if (!EVP_EncryptFinal_ex(&c->ctx, buf, (int*)&len)) {
+    if (!EVP_EncryptFinal_ex(&c->ctx, buf, &len)) {
         return err_status_cipher_fail;
     }
     *enc_len += len;
 
     return err_status_ok;
-}
-
-/*
- * Abstraction layer for encrypt.
- */
-err_status_t aes_icm_output (aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output)
-{
-    unsigned int len = num_octets_to_output;
-
-    /* zeroize the buffer */
-    octet_string_set_to_zero(buffer, num_octets_to_output);
-
-    /* exor keystream into buffer */
-    return aes_icm_openssl_encrypt(c, buffer, &len);
 }
 
 /*
