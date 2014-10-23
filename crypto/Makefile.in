@@ -9,7 +9,7 @@ top_builddir = @top_builddir@
 VPATH = @srcdir@
 
 CC	= @CC@
-INCDIR	= -Iinclude -I$(srcdir)/include 
+INCDIR	= -Iinclude -I$(srcdir)/include
 DEFS	= @DEFS@
 CPPFLAGS= @CPPFLAGS@
 CFLAGS	= @CFLAGS@

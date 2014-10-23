@@ -469,7 +469,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len) {
 }
 
 err_status_t
-aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output) {
+aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, unsigned int num_octets_to_output) {
   unsigned int len = num_octets_to_output;
   
   /* zeroize the buffer */

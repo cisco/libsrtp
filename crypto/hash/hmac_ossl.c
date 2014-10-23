@@ -50,6 +50,8 @@
 #include "alloc.h"
 #include <openssl/evp.h>
 
+#define HMAC_KEYLEN_MAX		20
+
 /* the debug module for authentiation */
 
 debug_module_t mod_hmac = {
@@ -72,12 +74,12 @@ hmac_alloc (auth_t **a, int key_len, int out_len)
      * check key length - note that we don't support keys larger
      * than 20 bytes yet
      */
-    if (key_len > 20) {
+    if (key_len > HMAC_KEYLEN_MAX) {
         return err_status_bad_param;
     }
 
     /* check output length - should be less than 20 bytes */
-    if (out_len > 20) {
+    if (out_len > HMAC_KEYLEN_MAX) {
         return err_status_bad_param;
     }
 
@@ -140,7 +142,7 @@ hmac_init (hmac_ctx_t *state, const uint8_t *key, int key_len)
      * check key length - note that we don't support keys larger
      * than 20 bytes yet
      */
-    if (key_len > 20) {
+    if (key_len > HMAC_KEYLEN_MAX) {
         return err_status_bad_param;
     }
 
@@ -153,19 +155,19 @@ hmac_init (hmac_ctx_t *state, const uint8_t *key, int key_len)
         state->opad[i] = key[i] ^ 0x5c;
     }
     /* set the rest of ipad, opad to constant values */
-    for (; i < 64; i++) {
+    for (; i < sizeof(ipad); i++) {
         ipad[i] = 0x36;
         ((uint8_t*)state->opad)[i] = 0x5c;
     }
 
-    debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(ipad, 64));
+    debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(ipad, sizeof(ipad)));
 
     /* initialize sha1 context */
     sha1_init(&state->init_ctx);
     state->init_ctx_initialized = 1;
 
     /* hash ipad ^ key */
-    sha1_update(&state->init_ctx, ipad, 64);
+    sha1_update(&state->init_ctx, ipad, sizeof(ipad));
     return (hmac_start(state));
 }
 
@@ -186,7 +188,6 @@ hmac_start (hmac_ctx_t *state)
 err_status_t
 hmac_update (hmac_ctx_t *state, const uint8_t *message, int msg_octets)
 {
-
     debug_print(mod_hmac, "input: %s",
                 octet_string_hex_string(message, msg_octets));
 
@@ -205,7 +206,7 @@ hmac_compute (hmac_ctx_t *state, const void *message,
     int i;
 
     /* check tag length, return error if we can't provide the value expected */
-    if (tag_len > 20) {
+    if (tag_len > HMAC_KEYLEN_MAX) {
         return err_status_bad_param;
     }
 
@@ -218,16 +219,16 @@ hmac_compute (hmac_ctx_t *state, const void *message,
      * function hmac_update() already did that for us
      */
     debug_print(mod_hmac, "intermediate state: %s",
-                octet_string_hex_string((uint8_t*)H, 20));
+                octet_string_hex_string((uint8_t*)H, sizeof(H)));
 
     /* re-initialize hash context */
     sha1_init(&state->ctx);
 
     /* hash opad ^ key  */
-    sha1_update(&state->ctx, (uint8_t*)state->opad, 64);
+    sha1_update(&state->ctx, (uint8_t*)state->opad, sizeof(state->opad));
 
     /* hash the result of the inner hash */
-    sha1_update(&state->ctx, (uint8_t*)H, 20);
+    sha1_update(&state->ctx, (uint8_t*)H, sizeof(H));
 
     /* the result is returned in the array hash_value[] */
     sha1_final(&state->ctx, hash_value);
@@ -247,7 +248,7 @@ hmac_compute (hmac_ctx_t *state, const void *message,
 /* begin test case 0 */
 
 uint8_t
-    hmac_test_case_0_key[20] = {
+    hmac_test_case_0_key[HMAC_KEYLEN_MAX] = {
     0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
     0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
     0x0b, 0x0b, 0x0b, 0x0b
@@ -259,7 +260,7 @@ uint8_t
 };
 
 uint8_t
-    hmac_test_case_0_tag[20] = {
+    hmac_test_case_0_tag[HMAC_KEYLEN_MAX] = {
     0xb6, 0x17, 0x31, 0x86, 0x55, 0x05, 0x72, 0x64,
     0xe2, 0x8b, 0xc0, 0xb6, 0xfb, 0x37, 0x8c, 0x8e,
     0xf1, 0x46, 0xbe, 0x00
@@ -267,13 +268,13 @@ uint8_t
 
 auth_test_case_t
     hmac_test_case_0 = {
-    20,                      /* octets in key            */
-    hmac_test_case_0_key,    /* key                      */
-    8,                       /* octets in data           */
-    hmac_test_case_0_data,   /* data                     */
-    20,                      /* octets in tag            */
-    hmac_test_case_0_tag,    /* tag                      */
-    NULL                     /* pointer to next testcase */
+    sizeof(hmac_test_case_0_key),    /* octets in key            */
+    hmac_test_case_0_key,            /* key                      */
+    sizeof(hmac_test_case_0_data),   /* octets in data           */
+    hmac_test_case_0_data,           /* data                     */
+    sizeof(hmac_test_case_0_tag),    /* octets in tag            */
+    hmac_test_case_0_tag,            /* tag                      */
+    NULL                             /* pointer to next testcase */
 };
 
 /* end test case 0 */
