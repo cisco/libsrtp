@@ -72,7 +72,7 @@ debug_module_t mod_srtp = {
 #define octets_in_rtcp_header  8
 #define uint32s_in_rtcp_header 2
 
-char *srtp_get_version_string ()
+const char *srtp_get_version_string ()
 {
     /*
      * Simply return the autotools generated string

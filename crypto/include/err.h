@@ -119,7 +119,7 @@ typedef enum {
  */
 
 err_status_t
-err_reporting_init(char *ident);
+err_reporting_init(const char *ident);
 
 #ifdef SRTP_KERNEL_LINUX
 extern err_reporting_level_t err_level;
@@ -136,7 +136,7 @@ extern err_reporting_level_t err_level;
  */
 
 void
-err_report(int priority, char *format, ...);
+err_report(int priority, const char *format, ...);
 #endif /* ! SRTP_KERNEL_LINUX */
 
 
@@ -146,7 +146,7 @@ err_report(int priority, char *format, ...);
 
 typedef struct {
   int   on;          /* 1 if debugging is on, 0 if it is off */
-  char *name;        /* printable name for debug module      */
+  const char *name;  /* printable name for debug module      */
 } debug_module_t;
 
 #ifdef ENABLE_DEBUGGING
