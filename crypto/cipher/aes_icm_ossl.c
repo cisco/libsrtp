@@ -221,12 +221,16 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
  * the salt is unpredictable (but not necessarily secret) data which
  * randomizes the starting point in the keystream
  */
-err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key)
+err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key, int len)
 {
     /*
      * set counter and initial values to 'offset' value, being careful not to
      * go past the end of the key buffer
      */
+
+    if (c->key_size + SALT_SIZE != len)
+        return err_status_bad_param;
+
     v128_set_to_zero(&c->counter);
     v128_set_to_zero(&c->offset);
     memcpy(&c->counter, key + c->key_size, SALT_SIZE);
@@ -323,6 +327,11 @@ err_status_t aes_icm_openssl_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsi
     *enc_len += len;
 
     return err_status_ok;
+}
+
+uint16_t aes_icm_bytes_encrypted(aes_icm_ctx_t *c)
+{
+    return htons(c->counter.v16[7]);
 }
 
 /*

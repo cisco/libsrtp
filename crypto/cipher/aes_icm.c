@@ -337,11 +337,6 @@ aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
   }
 }
 
-static inline void aes_icm_advance(aes_icm_ctx_t *c) {
-  aes_icm_advance_ismacryp(c, 0);
-}
-
-
 /*e
  * icm_encrypt deals with the following cases:
  *
