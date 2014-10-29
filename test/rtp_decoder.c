@@ -70,6 +70,7 @@ main (int argc, char *argv[]) {
   int tag_size = 8;
   int gcm_on = 0;
   char *input_key = NULL;
+  int b64_input = 0;
   char key[MAX_KEY_LEN];
   struct bpf_program fp;
   char filter_exp[MAX_FILTER] = "";
@@ -77,6 +78,7 @@ main (int argc, char *argv[]) {
   srtp_policy_t policy;
   err_status_t status;
   int len;
+  int expected_len;
   int do_list_mods = 0;
 
   fprintf(stderr, "Using %s [0x%x]\n", srtp_get_version_string(), srtp_get_version());
@@ -96,10 +98,8 @@ main (int argc, char *argv[]) {
     }
     switch (c) {
 	case 'b':
-	  fprintf(stderr, "Decoding\n");
-		decode_sdes(optarg_s, input_key);
-		fprintf(stderr, "Decoded\n");
-		break;
+      b64_input = 1;
+      /* fall thru */
     case 'k':
       input_key = optarg_s;
       break;
@@ -275,16 +275,26 @@ policy.rtp.auth_tag_len = tag_size;
     }
 
     /*
-     * read key from hexadecimal on command line into an octet string
+     * read key from hexadecimal or base64 on command line into an octet string
      */
-    len = hex_string_to_octet_string(key, input_key, policy.rtp.cipher_key_len*2);
-    
+    if (b64_input) {
+      int pad;
+      expected_len = policy.rtp.cipher_key_len*4/3;
+      len = base64_string_to_octet_string(key, &pad, input_key, expected_len);
+      if (pad != 0) {
+        fprintf(stderr, "error: padding in base64 unexpected\n");
+        exit(1);
+      }
+    } else {
+      expected_len = policy.rtp.cipher_key_len*2;
+      len = hex_string_to_octet_string(key, input_key, expected_len);
+    }
     /* check that hex string is the right length */
-    if (len < policy.rtp.cipher_key_len*2) {
+    if (len < expected_len) {
       fprintf(stderr, 
 	      "error: too few digits in key/salt "
-	      "(should be %d hexadecimal digits, found %d)\n",
-	      policy.rtp.cipher_key_len*2, len);
+	      "(should be %d digits, found %d)\n",
+	      expected_len, len);
       exit(1);    
     } 
     if (strlen(input_key) > policy.rtp.cipher_key_len*2) {
@@ -377,49 +387,13 @@ usage(char *string) {
 	 "       -e <key size> use encryption (use 128 or 256 for key size)\n"
 	 "       -g Use AES-GCM mode (must be used with -e)\n"
 	 "       -t <tag size> Tag size to use in GCM mode (use 8 or 16)\n"
-	 "       -k <key>  sets the srtp master key\n"
-	 "       -b <key>  sets the srtp master key as base64\n"
+	 "       -k <key>  sets the srtp master key given in hexadecimal\n"
+	 "       -b <key>  sets the srtp master key given in base64\n"
 	 "       -l list debug modules\n"
 	 "       -d <debug> turn on debugging for module <debug>\n",
 	 string, string);
   exit(1);
   
-}
-
-static const char b64chars[] =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-unsigned char shiftb64(unsigned char c) {
-  char *p = strchr(b64chars, c);
-  assert(p);
-  return p-b64chars;
-}
-
-void decode_block(char *in, unsigned char *out) {
-  unsigned char shifts[4];
-  int i;
-
-  for (i = 0; i < 4; i++) {
-    shifts[i] = shiftb64(in[i]);
-  }
-
-  out[0] = (shifts[0]<<2)|(shifts[1]>>4);
-  out[1] = (shifts[1]<<4)|(shifts[2]>>2);
-  out[2] = (shifts[2]<<6)|shifts[3];
-}
-
-char *decode_sdes(char *in, char *out) {
-  int i;
-  size_t len = strlen((char *) in);
-  assert(len == 40);
-  unsigned char raw[30];
-
-  for (i = 0; 4*i < len; i++) {
-    decode_block(in+4*i, raw+3*i);
-  } 
-
-  memcpy(out, octet_string_hex_string(raw, 30), 60);
-  return out;
 }
 
 rtp_decoder_t

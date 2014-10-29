@@ -8,9 +8,9 @@ RTPW=./rtpw
 DEST_PORT=9999
 DURATION=3
 
-key=2b2edc5034f61a72345ca5986d7bfd0189aa6dc2ecab32fd9af74df6dfc6
+key=Ky7cUDT2GnI0XKWYbXv9AYmqbcLsqzL9mvdN9t/G
 
-ARGS="-k $key -a -e 128"
+ARGS="-b $key -a -e 128"
 
 # First, we run "killall" to get rid of all existing rtpw processes.
 # This step also enables this script to clean up after itself; if this

@@ -161,6 +161,7 @@ main (int argc, char *argv[]) {
   int tag_size = 8;
   int gcm_on = 0;
   char *input_key = NULL;
+  int b64_input = 0;
   char *address = NULL;
   char key[MAX_KEY_LEN];
   unsigned short port = 0;
@@ -168,6 +169,7 @@ main (int argc, char *argv[]) {
   srtp_policy_t policy;
   err_status_t status;
   int len;
+  int expected_len;
   int do_list_mods = 0;
   uint32_t ssrc = 0xdeadbeef; /* ssrc value hardcoded for now */
 #ifdef RTPW_USE_WINSOCK2
@@ -196,11 +198,14 @@ main (int argc, char *argv[]) {
 
   /* check args */
   while (1) {
-    c = getopt_s(argc, argv, "k:rsgt:ae:ld:");
+    c = getopt_s(argc, argv, "b:k:rsgt:ae:ld:");
     if (c == -1) {
       break;
     }
     switch (c) {
+	case 'b':
+      b64_input = 1;
+      /* fall thru */
     case 'k':
       input_key = optarg_s;
       break;
@@ -443,16 +448,26 @@ main (int argc, char *argv[]) {
     }
 
     /*
-     * read key from hexadecimal on command line into an octet string
+     * read key from hexadecimal or base64 on command line into an octet string
      */
-    len = hex_string_to_octet_string(key, input_key, policy.rtp.cipher_key_len*2);
-    
+    if (b64_input) {
+        int pad;
+        expected_len = (policy.rtp.cipher_key_len*4)/3;
+        len = base64_string_to_octet_string(key, &pad, input_key, expected_len);
+        if (pad != 0) {
+          fprintf(stderr, "error: padding in base64 unexpected\n");
+          exit(1);
+        }
+    } else {
+        expected_len = policy.rtp.cipher_key_len*2;
+        len = hex_string_to_octet_string(key, input_key, expected_len);
+    }
     /* check that hex string is the right length */
-    if (len < policy.rtp.cipher_key_len*2) {
+    if (len < expected_len) {
       fprintf(stderr, 
 	      "error: too few digits in key/salt "
-	      "(should be %d hexadecimal digits, found %d)\n",
-	      policy.rtp.cipher_key_len*2, len);
+	      "(should be %d digits, found %d)\n",
+	      expected_len, len);
       exit(1);    
     } 
     if (strlen(input_key) > policy.rtp.cipher_key_len*2) {
@@ -630,7 +645,8 @@ usage(char *string) {
 	 "       -e <key size> use encryption (use 128 or 256 for key size)\n"
 	 "       -g Use AES-GCM mode (must be used with -e)\n"
 	 "       -t <tag size> Tag size to use in GCM mode (use 8 or 16)\n"
-	 "       -k <key>  sets the srtp master key\n"
+	 "       -k <key>  sets the srtp master key given in hexadecimal\n"
+	 "       -b <key>  sets the srtp master key given in base64\n"
 	 "       -s act as rtp sender\n"
 	 "       -r act as rtp receiver\n"
 	 "       -l list debug modules\n"
