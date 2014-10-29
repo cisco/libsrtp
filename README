@@ -78,7 +78,7 @@ Applications
   Manual srtp keying uses the -k option; automated key management
   using gdoi will be added later.
 
-usage: rtpw [-d <debug>]* [-k <key> [-a][-e <key size>][-g]] [-s | -r] dest_ip dest_port
+usage: rtpw [-d <debug>]* [-k|b <key> [-a][-e <key size>][-g]] [-s | -r] dest_ip dest_port
 or     rtpw -l
 
   Either the -s (sender) or -r (receiver) option must be chosen.
@@ -95,6 +95,8 @@ or     rtpw -l
   -k <key>      use srtp master key <key>, where the
 		key is a hexadecimal value (without the
                 leading "0x")
+
+  -b <key>      same as -k but with base64 encoded key
 
   -e <keysize>  encrypt/decrypt (for data confidentiality)
                 (requires use of -k option as well)

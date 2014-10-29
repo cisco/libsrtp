@@ -157,12 +157,14 @@ endif
 
 $(testapp): libsrtp.a
 
-test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c
-	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c \
+        crypto/math/datatypes.c
+	$(COMPILE) -DTESTAPP_SOURCE=1 $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 ifeq (1, $(HAVE_PCAP))
-test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/getopt_s.c
-	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/getopt_s.c \
+        crypto/math/datatypes.c
+	$(COMPILE) -DTESTAPP_SOURCE=1 $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 endif
 
 test/srtp_driver$(EXE): test/srtp_driver.c test/getopt_s.c
