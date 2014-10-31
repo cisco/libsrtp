@@ -48,6 +48,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include "srtp.h"
 
 /**
  * @defgroup Error Error Codes
@@ -57,42 +58,6 @@
  * @{
  */
 
-
-/*
- * @brief err_status_t defines error codes.
- *
- * The enumeration err_status_t defines error codes.  Note that the
- * value of err_status_ok is equal to zero, which can simplify error
- * checking somewhat.
- *
- */
-typedef enum {
-  err_status_ok           = 0,  /**< nothing to report                       */
-  err_status_fail         = 1,  /**< unspecified failure                     */
-  err_status_bad_param    = 2,  /**< unsupported parameter                   */
-  err_status_alloc_fail   = 3,  /**< couldn't allocate memory                */
-  err_status_dealloc_fail = 4,  /**< couldn't deallocate properly            */
-  err_status_init_fail    = 5,  /**< couldn't initialize                     */
-  err_status_terminus     = 6,  /**< can't process as much data as requested */
-  err_status_auth_fail    = 7,  /**< authentication failure                  */
-  err_status_cipher_fail  = 8,  /**< cipher failure                          */
-  err_status_replay_fail  = 9,  /**< replay check failed (bad index)         */
-  err_status_replay_old   = 10, /**< replay check failed (index too old)     */
-  err_status_algo_fail    = 11, /**< algorithm failed test routine           */
-  err_status_no_such_op   = 12, /**< unsupported operation                   */
-  err_status_no_ctx       = 13, /**< no appropriate context found            */
-  err_status_cant_check   = 14, /**< unable to perform desired validation    */
-  err_status_key_expired  = 15, /**< can't use key any more                  */
-  err_status_socket_err   = 16, /**< error in use of socket                  */
-  err_status_signal_err   = 17, /**< error in use POSIX signals              */
-  err_status_nonce_bad    = 18, /**< nonce check failed                      */
-  err_status_read_fail    = 19, /**< couldn't read data                      */
-  err_status_write_fail   = 20, /**< couldn't write data                     */
-  err_status_parse_err    = 21, /**< error parsing data                      */
-  err_status_encode_err   = 22, /**< error encoding data                     */
-  err_status_semaphore_err = 23,/**< error while using semaphores            */
-  err_status_pfkey_err    = 24  /**< error while using pfkey                 */
-} err_status_t;
 
 /**
  * @}

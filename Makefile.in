@@ -229,9 +229,9 @@ install:
 	fi
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
 	$(INSTALL) -d $(DESTDIR)$(libdir)
-	cp $(srcdir)/include/*.h $(DESTDIR)$(includedir)/srtp  
-	cp $(srcdir)/crypto/include/*.h $(DESTDIR)$(includedir)/srtp
-	if [ "$(srcdir)" != "." ]; then cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp; fi
+	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp  
+	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp  
+	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp  
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
 	if [ -f libsrtp.so ]; then cp libsrtp.so $(DESTDIR)$(libdir)/; fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \

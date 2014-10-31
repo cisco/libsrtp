@@ -51,9 +51,6 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "crypto.h" 
-#include "crypto_types.h"
-#include "err.h"
 
 /**
  * @defgroup SRTP Secure RTP
@@ -101,7 +98,180 @@ extern "C" {
 #define AES_192_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
 #define AES_256_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
 
+/*
+ * an srtp_hdr_t represents the srtp header
+ *
+ * in this implementation, an srtp_hdr_t is assumed to be 32-bit aligned
+ * 
+ * (note that this definition follows that of RFC 1889 Appendix A, but
+ * is not identical)
+ */
+ 
+#ifndef WORDS_BIGENDIAN
 
+/*
+ * srtp_hdr_t represents an RTP or SRTP header.  The bit-fields in
+ * this structure should be declared "unsigned int" instead of 
+ * "unsigned char", but doing so causes the MS compiler to not
+ * fully pack the bit fields.
+ */
+
+typedef struct {
+  unsigned char cc:4;	/* CSRC count             */
+  unsigned char x:1;	/* header extension flag  */
+  unsigned char p:1;	/* padding flag           */
+  unsigned char version:2; /* protocol version    */
+  unsigned char pt:7;	/* payload type           */
+  unsigned char m:1;	/* marker bit             */
+  uint16_t seq;		/* sequence number        */
+  uint32_t ts;		/* timestamp              */
+  uint32_t ssrc;	/* synchronization source */
+} srtp_hdr_t;
+
+#else /*  BIG_ENDIAN */
+
+typedef struct {
+  unsigned char version:2; /* protocol version    */
+  unsigned char p:1;	/* padding flag           */
+  unsigned char x:1;	/* header extension flag  */
+  unsigned char cc:4;	/* CSRC count             */
+  unsigned char m:1;	/* marker bit             */
+  unsigned char pt:7;	/* payload type           */
+  uint16_t seq;		/* sequence number        */
+  uint32_t ts;		/* timestamp              */
+  uint32_t ssrc;	/* synchronization source */
+} srtp_hdr_t;
+
+#endif
+
+typedef struct {
+  uint16_t profile_specific;    /* profile-specific info               */
+  uint16_t length;              /* number of 32-bit words in extension */
+} srtp_hdr_xtnd_t;
+
+
+/*
+ * srtcp_hdr_t represents a secure rtcp header 
+ *
+ * in this implementation, an srtcp header is assumed to be 32-bit
+ * alinged
+ */
+
+#ifndef WORDS_BIGENDIAN
+
+typedef struct {
+  unsigned char rc:5;		/* reception report count */
+  unsigned char p:1;		/* padding flag           */
+  unsigned char version:2;	/* protocol version       */
+  unsigned char pt:8;		/* payload type           */
+  uint16_t len;			/* length                 */
+  uint32_t ssrc;	       	/* synchronization source */
+} srtcp_hdr_t;
+
+typedef struct {
+  unsigned int index:31;    /* srtcp packet index in network order! */
+  unsigned int e:1;         /* encrypted? 1=yes */
+  /* optional mikey/etc go here */
+  /* and then the variable-length auth tag */
+} srtcp_trailer_t;
+
+
+#else /*  BIG_ENDIAN */
+
+typedef struct {
+  unsigned char version:2;	/* protocol version       */
+  unsigned char p:1;		/* padding flag           */
+  unsigned char rc:5;		/* reception report count */
+  unsigned char pt:8;		/* payload type           */
+  uint16_t len;			/* length                 */
+  uint32_t ssrc;	       	/* synchronization source */
+} srtcp_hdr_t;
+
+typedef struct {
+  unsigned int version:2;  /* protocol version                     */
+  unsigned int p:1;        /* padding flag                         */
+  unsigned int count:5;    /* varies by packet type                */
+  unsigned int pt:8;       /* payload type                         */
+  uint16_t length;         /* len of uint32s of packet less header */
+} rtcp_common_t;
+
+typedef struct {
+  unsigned int e:1;         /* encrypted? 1=yes */
+  unsigned int index:31;    /* srtcp packet index */
+  /* optional mikey/etc go here */
+  /* and then the variable-length auth tag */
+} srtcp_trailer_t;
+
+#endif
+
+
+
+/** 
+ *  @brief A cipher_type_id_t is an identifier for a particular cipher
+ *  type.
+ *
+ *  A cipher_type_id_t is an integer that represents a particular
+ *  cipher type, e.g. the Advanced Encryption Standard (AES).  A
+ *  NULL_CIPHER is avaliable; this cipher leaves the data unchanged,
+ *  and can be selected to indicate that no encryption is to take
+ *  place.
+ * 
+ *  @ingroup Ciphers
+ */
+typedef uint32_t cipher_type_id_t; 
+
+/**
+ *  @brief An auth_type_id_t is an identifier for a particular authentication
+ *   function.
+ *
+ *  An auth_type_id_t is an integer that represents a particular
+ *  authentication function type, e.g. HMAC-SHA1.  A NULL_AUTH is
+ *  avaliable; this authentication function performs no computation,
+ *  and can be selected to indicate that no authentication is to take
+ *  place.
+ *  
+ *  @ingroup Authentication
+ */
+typedef uint32_t auth_type_id_t;
+
+/*
+ * @brief err_status_t defines error codes.
+ *
+ * The enumeration err_status_t defines error codes.  Note that the
+ * value of err_status_ok is equal to zero, which can simplify error
+ * checking somewhat.
+ *
+ */
+typedef enum {
+  err_status_ok           = 0,  /**< nothing to report                       */
+  err_status_fail         = 1,  /**< unspecified failure                     */
+  err_status_bad_param    = 2,  /**< unsupported parameter                   */
+  err_status_alloc_fail   = 3,  /**< couldn't allocate memory                */
+  err_status_dealloc_fail = 4,  /**< couldn't deallocate properly            */
+  err_status_init_fail    = 5,  /**< couldn't initialize                     */
+  err_status_terminus     = 6,  /**< can't process as much data as requested */
+  err_status_auth_fail    = 7,  /**< authentication failure                  */
+  err_status_cipher_fail  = 8,  /**< cipher failure                          */
+  err_status_replay_fail  = 9,  /**< replay check failed (bad index)         */
+  err_status_replay_old   = 10, /**< replay check failed (index too old)     */
+  err_status_algo_fail    = 11, /**< algorithm failed test routine           */
+  err_status_no_such_op   = 12, /**< unsupported operation                   */
+  err_status_no_ctx       = 13, /**< no appropriate context found            */
+  err_status_cant_check   = 14, /**< unable to perform desired validation    */
+  err_status_key_expired  = 15, /**< can't use key any more                  */
+  err_status_socket_err   = 16, /**< error in use of socket                  */
+  err_status_signal_err   = 17, /**< error in use POSIX signals              */
+  err_status_nonce_bad    = 18, /**< nonce check failed                      */
+  err_status_read_fail    = 19, /**< couldn't read data                      */
+  err_status_write_fail   = 20, /**< couldn't write data                     */
+  err_status_parse_err    = 21, /**< error parsing data                      */
+  err_status_encode_err   = 22, /**< error encoding data                     */
+  err_status_semaphore_err = 23,/**< error while using semaphores            */
+  err_status_pfkey_err    = 24  /**< error while using pfkey                 */
+} err_status_t;
+
+typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
+typedef struct srtp_ctx_t_ srtp_ctx_t;
 
 /* 
  * nota bene: since libSRTP doesn't support the use of the MKI, the
@@ -261,7 +431,7 @@ typedef struct srtp_policy_t {
  * streams, each of which originates with a different participant.
  */
 
-typedef struct srtp_ctx_t *srtp_t;
+typedef srtp_ctx_t *srtp_t;
 
 
 /**
@@ -276,7 +446,7 @@ typedef struct srtp_ctx_t *srtp_t;
  * a set of streams.  
  *
  */
-typedef struct srtp_stream_ctx_t *srtp_stream_t;
+typedef srtp_stream_ctx_t *srtp_stream_t;
 
 
 

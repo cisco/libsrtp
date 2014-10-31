@@ -55,7 +55,6 @@
 #include "err.h"
 #include "crypto_types.h"
 #include "key.h"
-#include "crypto.h"
 
 /*
  * crypto_kernel_state_t defines the possible states:

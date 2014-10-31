@@ -60,7 +60,40 @@
 # include <winsock2.h>
 #endif
 
+//#include "srtp_priv.h"
 #include "srtp.h"
+/*
+ * RTP_HEADER_LEN indicates the size of an RTP header
+ */
+#define RTP_HEADER_LEN   12
+
+/* 
+ * RTP_MAX_BUF_LEN defines the largest RTP packet in the rtp.c implementation
+ */
+#define RTP_MAX_BUF_LEN  16384
+
+
+typedef srtp_hdr_t rtp_hdr_t;
+
+typedef struct {
+  srtp_hdr_t header;        
+  char body[RTP_MAX_BUF_LEN];  
+} rtp_msg_t;
+
+typedef struct rtp_sender_ctx_t {
+  rtp_msg_t message;         
+  int socket;
+  srtp_ctx_t *srtp_ctx;
+  struct sockaddr_in addr;   /* reciever's address */
+} rtp_sender_ctx_t;
+
+typedef struct rtp_receiver_ctx_t {
+  rtp_msg_t message;
+  int socket;
+  srtp_ctx_t *srtp_ctx;
+  struct sockaddr_in addr;   /* receiver's address */
+} rtp_receiver_ctx_t;
+
 
 typedef struct rtp_sender_ctx_t *rtp_sender_t;
 
@@ -124,16 +157,6 @@ rtp_receiver_alloc(void);
 void
 rtp_receiver_dealloc(rtp_receiver_t rtp_ctx);
 
-
-/*
- * RTP_HEADER_LEN indicates the size of an RTP header
- */
-#define RTP_HEADER_LEN   12
-
-/* 
- * RTP_MAX_BUF_LEN defines the largest RTP packet in the rtp.c implementation
- */
-#define RTP_MAX_BUF_LEN  16384
 
 
 #endif /* RTP_H */

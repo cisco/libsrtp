@@ -50,7 +50,6 @@
 #include "rdbx.h"
 #include "rdb.h"
 #include "integers.h"
-#include "crypto.h"
 #include "cipher.h"
 #include "auth.h"
 #include "aes.h"
@@ -59,113 +58,6 @@
 
 #define SRTP_VER_STRING	    PACKAGE_STRING
 #define SRTP_VERSION        PACKAGE_VERSION
-
-/*
- * an srtp_hdr_t represents the srtp header
- *
- * in this implementation, an srtp_hdr_t is assumed to be 32-bit aligned
- * 
- * (note that this definition follows that of RFC 1889 Appendix A, but
- * is not identical)
- */
- 
-#ifndef WORDS_BIGENDIAN
-
-/*
- * srtp_hdr_t represents an RTP or SRTP header.  The bit-fields in
- * this structure should be declared "unsigned int" instead of 
- * "unsigned char", but doing so causes the MS compiler to not
- * fully pack the bit fields.
- */
-
-typedef struct {
-  unsigned char cc:4;	/* CSRC count             */
-  unsigned char x:1;	/* header extension flag  */
-  unsigned char p:1;	/* padding flag           */
-  unsigned char version:2; /* protocol version    */
-  unsigned char pt:7;	/* payload type           */
-  unsigned char m:1;	/* marker bit             */
-  uint16_t seq;		/* sequence number        */
-  uint32_t ts;		/* timestamp              */
-  uint32_t ssrc;	/* synchronization source */
-} srtp_hdr_t;
-
-#else /*  BIG_ENDIAN */
-
-typedef struct {
-  unsigned char version:2; /* protocol version    */
-  unsigned char p:1;	/* padding flag           */
-  unsigned char x:1;	/* header extension flag  */
-  unsigned char cc:4;	/* CSRC count             */
-  unsigned char m:1;	/* marker bit             */
-  unsigned char pt:7;	/* payload type           */
-  uint16_t seq;		/* sequence number        */
-  uint32_t ts;		/* timestamp              */
-  uint32_t ssrc;	/* synchronization source */
-} srtp_hdr_t;
-
-#endif
-
-typedef struct {
-  uint16_t profile_specific;    /* profile-specific info               */
-  uint16_t length;              /* number of 32-bit words in extension */
-} srtp_hdr_xtnd_t;
-
-
-/*
- * srtcp_hdr_t represents a secure rtcp header 
- *
- * in this implementation, an srtcp header is assumed to be 32-bit
- * alinged
- */
-
-#ifndef WORDS_BIGENDIAN
-
-typedef struct {
-  unsigned char rc:5;		/* reception report count */
-  unsigned char p:1;		/* padding flag           */
-  unsigned char version:2;	/* protocol version       */
-  unsigned char pt:8;		/* payload type           */
-  uint16_t len;			/* length                 */
-  uint32_t ssrc;	       	/* synchronization source */
-} srtcp_hdr_t;
-
-typedef struct {
-  unsigned int index:31;    /* srtcp packet index in network order! */
-  unsigned int e:1;         /* encrypted? 1=yes */
-  /* optional mikey/etc go here */
-  /* and then the variable-length auth tag */
-} srtcp_trailer_t;
-
-
-#else /*  BIG_ENDIAN */
-
-typedef struct {
-  unsigned char version:2;	/* protocol version       */
-  unsigned char p:1;		/* padding flag           */
-  unsigned char rc:5;		/* reception report count */
-  unsigned char pt:8;		/* payload type           */
-  uint16_t len;			/* length                 */
-  uint32_t ssrc;	       	/* synchronization source */
-} srtcp_hdr_t;
-
-typedef struct {
-  unsigned int version:2;  /* protocol version                     */
-  unsigned int p:1;        /* padding flag                         */
-  unsigned int count:5;    /* varies by packet type                */
-  unsigned int pt:8;       /* payload type                         */
-  uint16_t length;         /* len of uint32s of packet less header */
-} rtcp_common_t;
-
-typedef struct {
-  unsigned int e:1;         /* encrypted? 1=yes */
-  unsigned int index:31;    /* srtcp packet index */
-  /* optional mikey/etc go here */
-  /* and then the variable-length auth tag */
-} srtcp_trailer_t;
-
-#endif
-
 
 /*
  * the following declarations are libSRTP internal functions 
@@ -216,7 +108,7 @@ typedef enum direction_t {
  * cipher_t and auth_t pointers will point to the same structures
  */
 
-typedef struct srtp_stream_ctx_t {
+typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
   cipher_t  *rtp_cipher;
   auth_t    *rtp_auth;
@@ -232,19 +124,19 @@ typedef struct srtp_stream_ctx_t {
   ekt_stream_t ekt; 
   uint8_t    salt[SRTP_AEAD_SALT_LEN];   /* used with GCM mode for SRTP */
   uint8_t    c_salt[SRTP_AEAD_SALT_LEN]; /* used with GCM mode for SRTCP */
-  struct srtp_stream_ctx_t *next;   /* linked list of streams */
-} srtp_stream_ctx_t;
+  struct srtp_stream_ctx_t_ *next;   /* linked list of streams */
+} strp_stream_ctx_t_;
 
 
 /*
  * an srtp_ctx_t holds a stream list and a service description
  */
 
-typedef struct srtp_ctx_t {
-  srtp_stream_ctx_t *stream_list;     /* linked list of streams            */
-  srtp_stream_ctx_t *stream_template; /* act as template for other streams */
+typedef struct srtp_ctx_t_ {
+  struct srtp_stream_ctx_t_ *stream_list;     /* linked list of streams            */
+  struct srtp_stream_ctx_t_ *stream_template; /* act as template for other streams */
   void *user_data;                    /* user custom data */
-} srtp_ctx_t;
+} srtp_ctx_t_;
 
 
 
