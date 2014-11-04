@@ -700,7 +700,6 @@ enable_kernel_linux
 enable_debug
 enable_generic_aesicm
 enable_openssl
-enable_syslog
 enable_stdout
 enable_console
 enable_gdoi
@@ -1331,7 +1330,6 @@ Optional Features:
   --disable-debug         do not compile in dynamic debugging system
   --enable-generic-aesicm compile in changes for ISMAcryp
   --enable-openssl        compile in OpenSSL crypto engine
-  --enable-syslog         use syslog for error reporting
   --disable-stdout        don't use stdout for error reporting
   --enable-console        use /dev/console for error reporting
   --enable-gdoi           enable GDOI key management
@@ -4425,19 +4423,6 @@ fi
 done
 
 
-for ac_header in syslog.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "syslog.h" "ac_cv_header_syslog_h" "$ac_includes_default"
-if test "x$ac_cv_header_syslog_h" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_SYSLOG_H 1
-_ACEOF
-
-fi
-
-done
-
-
 ac_fn_c_check_type "$LINENO" "int8_t" "ac_cv_type_int8_t" "$ac_includes_default"
 if test "x$ac_cv_type_int8_t" = xyes; then :
 
@@ -5080,23 +5065,6 @@ $as_echo "#define HAVE_PCAP 1" >>confdefs.h
 
 fi
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use syslog for error reporting" >&5
-$as_echo_n "checking whether to use syslog for error reporting... " >&6; }
-# Check whether --enable-syslog was given.
-if test "${enable_syslog+set}" = set; then :
-  enableval=$enable_syslog;
-else
-  enable_syslog=no
-fi
-
-if test "$enable_syslog" = "yes"; then
-
-$as_echo "#define USE_SYSLOG 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_syslog" >&5
-$as_echo "$enable_syslog" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use stdout for error reporting" >&5
 $as_echo_n "checking whether to use stdout for error reporting... " >&6; }

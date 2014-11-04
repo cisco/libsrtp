@@ -48,12 +48,6 @@
 
 #include "err.h"
 
-#ifdef ERR_REPORTING_SYSLOG
-# ifdef HAVE_SYSLOG_H
-#  include <syslog.h>
-# endif
-#endif
-
 
 /*  err_level reflects the level of errors that are reported  */
 
@@ -74,9 +68,6 @@ static FILE *err_file = NULL;
 
 err_status_t
 err_reporting_init(const char *ident) {
-#ifdef ERR_REPORTING_SYSLOG
-  openlog(ident, LOG_PID, LOG_AUTHPRIV);
-#endif
   
   /*
    * Believe it or not, openlog doesn't return an error on failure.
@@ -106,41 +97,6 @@ err_report(int priority, const char *format, ...) {
       vfprintf(err_file, format, args);
 	  /*      fprintf(err_file, "\n"); */
     }
-#ifdef ERR_REPORTING_SYSLOG
-    if (1) { /* FIXME: Make this a runtime option. */
-      int syslogpri;
-
-      switch (priority) {
-      case err_level_emergency:
-	syslogpri = LOG_EMERG;
-	break;
-      case err_level_alert:
-	syslogpri = LOG_ALERT;
-	break;
-      case err_level_critical:
-	syslogpri = LOG_CRIT;
-	break;
-      case err_level_error:
-	syslogpri = LOG_ERR;
-	break;
-      case err_level_warning:
-	syslogpri = LOG_WARNING;
-	break;
-      case err_level_notice:
-	syslogpri = LOG_NOTICE;
-	break;
-      case err_level_info:
-	syslogpri = LOG_INFO;
-	break;
-      case err_level_debug:
-      case err_level_none:
-      default:
-	syslogpri = LOG_DEBUG;
-	break;
-      }
-
-      vsyslog(syslogpri, format, args);
-#endif
     va_end(args);
   }
 }
