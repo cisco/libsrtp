@@ -77,17 +77,17 @@ uint32_t SHA_K2 = 0x8F1BBCDC;   /* Kt for 40 <= t <= 59 */
 uint32_t SHA_K3 = 0xCA62C1D6;   /* Kt for 60 <= t <= 79 */
 
 void
-sha1(const uint8_t *msg,  int octets_in_msg, uint32_t hash_value[5]) {
-  sha1_ctx_t ctx;
+srtp_sha1(const uint8_t *msg,  int octets_in_msg, uint32_t hash_value[5]) {
+  srtp_sha1_ctx_t ctx;
 
-  sha1_init(&ctx);
-  sha1_update(&ctx, msg, octets_in_msg);
-  sha1_final(&ctx, hash_value);
+  srtp_sha1_init(&ctx);
+  srtp_sha1_update(&ctx, msg, octets_in_msg);
+  srtp_sha1_final(&ctx, hash_value);
 
 }
 
 /*
- *  sha1_core(M, H) computes the core compression function, where M is
+ *  srtp_sha1_core(M, H) computes the core compression function, where M is
  *  the next part of the message (in network byte order) and H is the
  *  intermediate state { H0, H1, ...} (in host byte order)
  *
@@ -99,7 +99,7 @@ sha1(const uint8_t *msg,  int octets_in_msg, uint32_t hash_value[5]) {
  */
 
 void
-sha1_core(const uint32_t M[16], uint32_t hash_value[5]) {
+srtp_sha1_core(const uint32_t M[16], uint32_t hash_value[5]) {
   uint32_t H0;
   uint32_t H1;
   uint32_t H2;
@@ -186,7 +186,7 @@ sha1_core(const uint32_t M[16], uint32_t hash_value[5]) {
 }
 
 void
-sha1_init(sha1_ctx_t *ctx) {
+srtp_sha1_init(srtp_sha1_ctx_t *ctx) {
 
   /* initialize state vector */
   ctx->H[0] = 0x67452301;
@@ -204,7 +204,7 @@ sha1_init(sha1_ctx_t *ctx) {
 }
 
 void
-sha1_update(sha1_ctx_t *ctx, const uint8_t *msg, int octets_in_msg) {
+srtp_sha1_update(srtp_sha1_ctx_t *ctx, const uint8_t *msg, int octets_in_msg) {
   int i;
   uint8_t *buf = (uint8_t *)ctx->M;
 
@@ -227,13 +227,13 @@ sha1_update(sha1_ctx_t *ctx, const uint8_t *msg, int octets_in_msg) {
 
       /* process a whole block */
 
-      debug_print(mod_sha1, "(update) running sha1_core()", NULL);
+      debug_print(mod_sha1, "(update) running srtp_sha1_core()", NULL);
 
-      sha1_core(ctx->M, ctx->H);
+      srtp_sha1_core(ctx->M, ctx->H);
 
     } else {
 
-      debug_print(mod_sha1, "(update) not running sha1_core()", NULL);
+      debug_print(mod_sha1, "(update) not running srtp_sha1_core()", NULL);
 
       for (i=ctx->octets_in_buffer; 
 	   i < (ctx->octets_in_buffer + octets_in_msg); i++)
@@ -247,12 +247,12 @@ sha1_update(sha1_ctx_t *ctx, const uint8_t *msg, int octets_in_msg) {
 }
 
 /*
- * sha1_final(ctx, output) computes the result for ctx and copies it
+ * srtp_sha1_final(ctx, output) computes the result for ctx and copies it
  * into the twenty octets located at *output
  */
 
 void
-sha1_final(sha1_ctx_t *ctx, uint32_t *output) {
+srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t *output) {
   uint32_t A, B, C, D, E, TEMP;
   uint32_t W[80];  
   int i, t;
@@ -339,11 +339,11 @@ sha1_final(sha1_ctx_t *ctx, uint32_t *output) {
 
   }
 
-  debug_print(mod_sha1, "(final) running sha1_core()", NULL);
+  debug_print(mod_sha1, "(final) running srtp_sha1_core()", NULL);
 
   if (ctx->octets_in_buffer >= 56) {
 
-    debug_print(mod_sha1, "(final) running sha1_core() again", NULL);
+    debug_print(mod_sha1, "(final) running srtp_sha1_core() again", NULL);
 
     /* we need to do one final run of the compression algo */
 

@@ -102,7 +102,7 @@ hash_test_case_add(hash_test_case_t **list_ptr,
 
 err_status_t
 sha1_test_case_validate(const hash_test_case_t *test_case) {
-  sha1_ctx_t ctx;
+  srtp_sha1_ctx_t ctx;
   uint32_t hash_value[5];
 
   if (test_case == NULL)
@@ -113,9 +113,9 @@ sha1_test_case_validate(const hash_test_case_t *test_case) {
   if (test_case->data_len > MAX_HASH_DATA_LEN)
     return err_status_bad_param;
 
-  sha1_init(&ctx);
-  sha1_update(&ctx, test_case->data, test_case->data_len);
-  sha1_final(&ctx, hash_value);
+  srtp_sha1_init(&ctx);
+  srtp_sha1_update(&ctx, test_case->data, test_case->data_len);
+  srtp_sha1_final(&ctx, hash_value);
   if (0 == memcmp(test_case->hash, hash_value, 20)) {
 #if VERBOSE
     printf("PASSED: reference value: %s\n", 

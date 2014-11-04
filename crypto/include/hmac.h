@@ -51,8 +51,8 @@
 
 typedef struct {
   uint8_t    opad[64];
-  sha1_ctx_t ctx;
-  sha1_ctx_t init_ctx;
+  srtp_sha1_ctx_t ctx;
+  srtp_sha1_ctx_t init_ctx;
 #ifdef OPENSSL
   int ctx_initialized;
   int init_ctx_initialized;

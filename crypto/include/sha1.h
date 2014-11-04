@@ -52,15 +52,15 @@
 #include <openssl/evp.h>
 #include <stdint.h>
 
-typedef EVP_MD_CTX sha1_ctx_t;
+typedef EVP_MD_CTX srtp_sha1_ctx_t;
 
 /*
- * sha1_init(&ctx) initializes the SHA1 context ctx
+ * srtp_sha1_init(&ctx) initializes the SHA1 context ctx
  *
- * sha1_update(&ctx, msg, len) hashes the len octets starting at msg
+ * srtp_sha1_update(&ctx, msg, len) hashes the len octets starting at msg
  * into the SHA1 context
  *
- * sha1_final(&ctx, output) performs the final processing of the SHA1
+ * srtp_sha1_final(&ctx, output) performs the final processing of the SHA1
  * context and writes the result to the 20 octets at output
  *
  * Return values are ignored on the EVP functions since all three
@@ -68,18 +68,18 @@ typedef EVP_MD_CTX sha1_ctx_t;
  *
  */
 
-inline void sha1_init (sha1_ctx_t *ctx)
+inline void srtp_sha1_init (srtp_sha1_ctx_t *ctx)
 {
     EVP_MD_CTX_init(ctx);
     EVP_DigestInit(ctx, EVP_sha1());
 }
 
-inline void sha1_update (sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg)
+inline void srtp_sha1_update (srtp_sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg)
 {
     EVP_DigestUpdate(ctx, M, octets_in_msg);
 }
 
-inline void sha1_final (sha1_ctx_t *ctx, uint32_t *output)
+inline void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
 {
     unsigned int len = 0;
 
@@ -93,7 +93,7 @@ typedef struct {
   uint32_t M[16];            /* message buffer                  */
   int octets_in_buffer;      /* octets of message in buffer     */
   uint32_t num_bits_in_msg;  /* total number of bits in message */
-} sha1_ctx_t;
+} srtp_sha1_ctx_t;
 
 /*
  * sha1(&ctx, msg, len, output) hashes the len octets starting at msg
@@ -106,33 +106,33 @@ void
 sha1(const uint8_t *message,  int octets_in_msg, uint32_t output[5]);
 
 /*
- * sha1_init(&ctx) initializes the SHA1 context ctx
+ * srtp_sha1_init(&ctx) initializes the SHA1 context ctx
  * 
- * sha1_update(&ctx, msg, len) hashes the len octets starting at msg
+ * srtp_sha1_update(&ctx, msg, len) hashes the len octets starting at msg
  * into the SHA1 context
  * 
- * sha1_final(&ctx, output) performs the final processing of the SHA1
+ * srtp_sha1_final(&ctx, output) performs the final processing of the SHA1
  * context and writes the result to the 20 octets at output
  *
  */
 
 void
-sha1_init(sha1_ctx_t *ctx);
+srtp_sha1_init(srtp_sha1_ctx_t *ctx);
 
 void
-sha1_update(sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg);
+srtp_sha1_update(srtp_sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg);
 
 void
-sha1_final(sha1_ctx_t *ctx, uint32_t output[5]);
+srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t output[5]);
 
 /*
- * The sha1_core function is INTERNAL to SHA-1, but it is declared
+ * The srtp_sha1_core function is INTERNAL to SHA-1, but it is declared
  * here because it is also used by the cipher SEAL 3.0 in its key
  * setup algorithm.  
  */
 
 /*
- *  sha1_core(M, H) computes the core sha1 compression function, where M is
+ *  srtp_sha1_core(M, H) computes the core sha1 compression function, where M is
  *  the next part of the message and H is the intermediate state {H0,
  *  H1, ...}
  *
@@ -141,7 +141,7 @@ sha1_final(sha1_ctx_t *ctx, uint32_t output[5]);
  */
 
 void
-sha1_core(const uint32_t M[16], uint32_t hash_value[5]);
+srtp_sha1_core(const uint32_t M[16], uint32_t hash_value[5]);
 
 #endif /* else OPENSSL */
      

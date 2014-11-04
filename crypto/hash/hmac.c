@@ -135,11 +135,11 @@ hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len) {
   debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(ipad, 64));
   
   /* initialize sha1 context */
-  sha1_init(&state->init_ctx);
+  srtp_sha1_init(&state->init_ctx);
 
   /* hash ipad ^ key */
-  sha1_update(&state->init_ctx, ipad, 64);
-  memcpy(&state->ctx, &state->init_ctx, sizeof(sha1_ctx_t)); 
+  srtp_sha1_update(&state->init_ctx, ipad, 64);
+  memcpy(&state->ctx, &state->init_ctx, sizeof(srtp_sha1_ctx_t)); 
 
   return err_status_ok;
 }
@@ -147,7 +147,7 @@ hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len) {
 err_status_t
 hmac_start(hmac_ctx_t *state) {
     
-  memcpy(&state->ctx, &state->init_ctx, sizeof(sha1_ctx_t));
+  memcpy(&state->ctx, &state->init_ctx, sizeof(srtp_sha1_ctx_t));
 
   return err_status_ok;
 }
@@ -159,7 +159,7 @@ hmac_update(hmac_ctx_t *state, const uint8_t *message, int msg_octets) {
 	      octet_string_hex_string(message, msg_octets));
   
   /* hash message into sha1 context */
-  sha1_update(&state->ctx, message, msg_octets);
+  srtp_sha1_update(&state->ctx, message, msg_octets);
 
   return err_status_ok;
 }
@@ -177,7 +177,7 @@ hmac_compute(hmac_ctx_t *state, const void *message,
   
   /* hash message, copy output into H */
   hmac_update(state, (const uint8_t*)message, msg_octets);
-  sha1_final(&state->ctx, H);
+  srtp_sha1_final(&state->ctx, H);
 
   /*
    * note that we don't need to debug_print() the input, since the
@@ -187,16 +187,16 @@ hmac_compute(hmac_ctx_t *state, const void *message,
 	      octet_string_hex_string((uint8_t *)H, 20));
 
   /* re-initialize hash context */
-  sha1_init(&state->ctx);
+  srtp_sha1_init(&state->ctx);
   
   /* hash opad ^ key  */
-  sha1_update(&state->ctx, (uint8_t *)state->opad, 64);
+  srtp_sha1_update(&state->ctx, (uint8_t *)state->opad, 64);
 
   /* hash the result of the inner hash */
-  sha1_update(&state->ctx, (uint8_t *)H, 20);
+  srtp_sha1_update(&state->ctx, (uint8_t *)H, 20);
   
   /* the result is returned in the array hash_value[] */
-  sha1_final(&state->ctx, hash_value);
+  srtp_sha1_final(&state->ctx, hash_value);
 
   /* copy hash_value to *result */
   for (i=0; i < tag_len; i++)    
