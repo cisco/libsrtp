@@ -254,27 +254,4 @@ crypto_kernel_alloc_auth(auth_type_id_t id,
 err_status_t
 crypto_kernel_set_debug_module(char *mod_name, int v);
 
-/**
- * @brief writes a random octet string.
- *
- * The function call crypto_get_random(dest, len) writes len octets of
- * random data to the location to which dest points, and returns an
- * error code.  This error code @b must be checked, and if a failure is
- * reported, the data in the buffer @b must @b not be used.
- * 
- * @warning If the return code is not checked, then non-random
- *          data may be in the buffer.  This function will fail
- *          unless it is called after crypto_kernel_init().
- *
- * @return
- *     - err_status_ok    if no problems occured.
- *     - [other]          a problem occured, and no assumptions should
- *                        be made about the contents of the destination
- *                        buffer.
- *
- * @ingroup SRTP
- */
-err_status_t
-crypto_get_random(unsigned char *buffer, unsigned int length);
-     
 #endif /* CRYPTO_KERNEL */

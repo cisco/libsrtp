@@ -31,7 +31,6 @@ runtest: build_table_apps test
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
-	crypto/test/rand_gen_soak$(EXE) -v >/dev/null
 	cd test; $(abspath $(srcdir))/test/rtpw_test.sh >/dev/null	
 ifeq (1, $(USE_OPENSSL))
 	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh >/dev/null	
@@ -140,8 +139,8 @@ endif
 
 crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 	crypto/test/datatypes_driver$(EXE) crypto/test/kernel_driver$(EXE) \
-	crypto/test/rand_gen$(EXE) crypto/test/sha1_driver$(EXE) \
-	crypto/test/stat_driver$(EXE) crypto/test/rand_gen_soak$(EXE)
+	crypto/test/sha1_driver$(EXE) \
+	crypto/test/stat_driver$(EXE) 
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \

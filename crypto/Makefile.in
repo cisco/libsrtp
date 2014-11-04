@@ -46,7 +46,7 @@ endif
 
 testapp = test/cipher_driver$(EXE) test/datatypes_driver$(EXE) \
 	  test/stat_driver$(EXE) test/sha1_driver$(EXE) \
-	  test/kernel_driver$(EXE) $(AES_CALC) test/rand_gen$(EXE) \
+	  test/kernel_driver$(EXE) $(AES_CALC) \
 	  test/env$(EXE)
 
 # data values used to test the aes_calc application for AES-128
@@ -73,7 +73,6 @@ endif
 	test/stat_driver$(EXE) >/dev/null
 	test/sha1_driver$(EXE) -v >/dev/null
 	test/kernel_driver$(EXE) -v >/dev/null
-	test/rand_gen$(EXE) -n 256 >/dev/null
 	@echo "crypto test applications passed."
 
 

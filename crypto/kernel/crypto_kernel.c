@@ -584,15 +584,3 @@ crypto_kernel_set_debug_module(char *name, int on) {
 
   return err_status_fail;
 }
-
-err_status_t
-crypto_get_random(unsigned char *buffer, unsigned int length) {
-  if (crypto_kernel.state == crypto_kernel_state_secure)
-#ifdef OPENSSL
-    return rand_source_get_octet_string(buffer, length);
-#else
-    return ctr_prng_get_octet_string(buffer, length);
-#endif
-  else
-    return err_status_fail;
-}
