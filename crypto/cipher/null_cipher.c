@@ -78,9 +78,6 @@ null_cipher_alloc(cipher_t **c, int key_len, int tlen) {
   /* set key size */
   (*c)->key_len = key_len;
 
-  /* increment ref_count */
-  null_cipher.ref_count++;
-  
   return err_status_ok;
   
 }
@@ -96,9 +93,6 @@ null_cipher_dealloc(cipher_t *c) {
   /* free memory of type null_cipher */
   crypto_free(c);
 
-  /* decrement reference count */
-  null_cipher.ref_count--;
-  
   return err_status_ok;
   
 }
@@ -155,7 +149,6 @@ cipher_type_t null_cipher = {
   (cipher_set_iv_func_t)        null_cipher_set_iv,
   (cipher_get_tag_func_t)       0,
   (char *)                      null_cipher_description,
-  (int)                         0,
   (cipher_test_case_t *)       &null_cipher_test_0,
   (debug_module_t *)            NULL,
   (cipher_type_id_t)            NULL_CIPHER

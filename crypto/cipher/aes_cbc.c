@@ -81,9 +81,6 @@ aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
   (*c)->type = &aes_cbc;
   (*c)->state = pointer + sizeof(cipher_t);
 
-  /* increment ref_count */
-  aes_cbc.ref_count++;
-
   /* set key size        */
   (*c)->key_len = key_len;
 
@@ -101,9 +98,6 @@ aes_cbc_dealloc(cipher_t *c) {
   /* free memory */
   crypto_free(c);
 
-  /* decrement ref_count */
-  aes_cbc.ref_count--;
-  
   return err_status_ok;  
 }
 
@@ -556,7 +550,6 @@ cipher_type_t aes_cbc = {
   (cipher_set_iv_func_t)         aes_cbc_set_iv,
   (cipher_get_tag_func_t)        0,
   (char *)                       aes_cbc_description,
-  (int)                          0,   /* instance count */
   (cipher_test_case_t *)        &aes_cbc_test_case_3,
   (debug_module_t *)            &mod_aes_cbc,
   (cipher_type_id_t)             AES_CBC

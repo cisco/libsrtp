@@ -99,9 +99,6 @@ hmac_alloc (auth_t **a, int key_len, int out_len)
     new_hmac_ctx = (hmac_ctx_t*)((*a)->state);
     memset(new_hmac_ctx, 0, sizeof(hmac_ctx_t));
 
-    /* increment global count of all hmac uses */
-    hmac.ref_count++;
-
     return err_status_ok;
 }
 
@@ -125,9 +122,6 @@ hmac_dealloc (auth_t *a)
 
     /* free memory */
     crypto_free(a);
-
-    /* decrement global count of all hmac uses */
-    hmac.ref_count--;
 
     return err_status_ok;
 }
@@ -294,7 +288,6 @@ auth_type_t
     (auth_update_func)	hmac_update,
     (auth_start_func)	hmac_start,
     (char*)		hmac_description,
-    (int)		0,           /* instance count */
     (auth_test_case_t*)	&hmac_test_case_0,
     (debug_module_t*)	&mod_hmac,
     (auth_type_id_t)    HMAC_SHA1

@@ -138,24 +138,21 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     (*c)->state = allptr + sizeof(cipher_t);
     icm = (aes_icm_ctx_t*)(*c)->state;
 
-    /* increment ref_count */
+    /* setup cipher parameters */
     switch (key_len) {
     case AES_128_KEYSIZE_WSALT:
         (*c)->algorithm = AES_128_ICM;
         (*c)->type = &aes_icm;
-        aes_icm.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_128_KEYSIZE;
         break;
     case AES_192_KEYSIZE_WSALT:
         (*c)->algorithm = AES_192_ICM;
         (*c)->type = &aes_icm_192;
-        aes_icm_192.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_192_KEYSIZE;
         break;
     case AES_256_KEYSIZE_WSALT:
         (*c)->algorithm = AES_256_ICM;
         (*c)->type = &aes_icm_256;
-        aes_icm_256.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_256_KEYSIZE;
         break;
     }
@@ -185,21 +182,6 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
     ctx = (aes_icm_ctx_t*)c->state;
     if (ctx != NULL) {
         EVP_CIPHER_CTX_cleanup(&ctx->ctx);
-        /* decrement ref_count for the appropriate engine */
-        switch (ctx->key_size) {
-        case AES_256_KEYSIZE:
-            aes_icm_256.ref_count--;
-            break;
-        case AES_192_KEYSIZE:
-            aes_icm_192.ref_count--;
-            break;
-        case AES_128_KEYSIZE:
-            aes_icm.ref_count--;
-            break;
-        default:
-            return err_status_dealloc_fail;
-            break;
-        }
     }
 
     /* zeroize entire state*/
@@ -492,7 +474,6 @@ cipher_type_t aes_icm = {
     (cipher_set_iv_func_t)         aes_icm_openssl_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        aes_icm_openssl_description,
-    (int)                          0,            /* instance count */
     (cipher_test_case_t*)          &aes_icm_test_case_0,
     (debug_module_t*)              &mod_aes_icm,
     (cipher_type_id_t)             AES_ICM
@@ -512,7 +493,6 @@ cipher_type_t aes_icm_192 = {
     (cipher_set_iv_func_t)         aes_icm_openssl_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        aes_icm_192_openssl_description,
-    (int)                          0,                /* instance count */
     (cipher_test_case_t*)          &aes_icm_192_test_case_1,
     (debug_module_t*)              &mod_aes_icm,
     (cipher_type_id_t)             AES_192_ICM
@@ -532,7 +512,6 @@ cipher_type_t aes_icm_256 = {
     (cipher_set_iv_func_t)         aes_icm_openssl_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        aes_icm_256_openssl_description,
-    (int)                          0,                /* instance count */
     (cipher_test_case_t*)          &aes_icm_256_test_case_2,
     (debug_module_t*)              &mod_aes_icm,
     (cipher_type_id_t)             AES_256_ICM

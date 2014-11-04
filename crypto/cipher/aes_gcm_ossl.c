@@ -116,19 +116,17 @@ err_status_t aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     (*c)->state = allptr + sizeof(cipher_t);
     gcm = (aes_gcm_ctx_t *)(*c)->state;
 
-    /* increment ref_count */
+    /* setup cipher attributes */
     switch (key_len) {
     case AES_128_GCM_KEYSIZE_WSALT:
         (*c)->type = &aes_gcm_128_openssl;
         (*c)->algorithm = AES_128_GCM;
-        aes_gcm_128_openssl.ref_count++;
         ((aes_gcm_ctx_t*)(*c)->state)->key_size = AES_128_KEYSIZE;
         ((aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;  
         break;
     case AES_256_GCM_KEYSIZE_WSALT:
         (*c)->type = &aes_gcm_256_openssl;
         (*c)->algorithm = AES_256_GCM;
-        aes_gcm_256_openssl.ref_count++;
         ((aes_gcm_ctx_t*)(*c)->state)->key_size = AES_256_KEYSIZE;
         ((aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;  
         break;
@@ -152,18 +150,6 @@ err_status_t aes_gcm_openssl_dealloc (cipher_t *c)
     ctx = (aes_gcm_ctx_t*)c->state;
     if (ctx) {
 	EVP_CIPHER_CTX_cleanup(&ctx->ctx);
-        /* decrement ref_count for the appropriate engine */
-        switch (ctx->key_size) {
-        case AES_256_KEYSIZE:
-            aes_gcm_256_openssl.ref_count--;
-            break;
-        case AES_128_KEYSIZE:
-            aes_gcm_128_openssl.ref_count--;
-            break;
-        default:
-            return (err_status_dealloc_fail);
-            break;
-        }
     }
 
     /* zeroize entire state*/
@@ -544,7 +530,6 @@ cipher_type_t aes_gcm_128_openssl = {
     (cipher_set_iv_func_t)	aes_gcm_openssl_set_iv,
     (cipher_get_tag_func_t)     aes_gcm_openssl_get_tag,
     (char*)			aes_gcm_128_openssl_description,
-    (int)			0,         /* instance count */
     (cipher_test_case_t*)	&aes_gcm_test_case_0,
     (debug_module_t*)		&mod_aes_gcm,
     (cipher_type_id_t)          AES_128_GCM
@@ -563,7 +548,6 @@ cipher_type_t aes_gcm_256_openssl = {
     (cipher_set_iv_func_t)	aes_gcm_openssl_set_iv,
     (cipher_get_tag_func_t)     aes_gcm_openssl_get_tag,
     (char*)			aes_gcm_256_openssl_description,
-    (int)			0,         /* instance count */
     (cipher_test_case_t*)	&aes_gcm_test_case_1,
     (debug_module_t*)		&mod_aes_gcm,
     (cipher_type_id_t)          AES_256_GCM

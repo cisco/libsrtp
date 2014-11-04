@@ -164,7 +164,6 @@ typedef struct cipher_type_t {
   cipher_set_iv_func_t        set_iv;
   cipher_get_tag_func_t       get_tag;
   char                       *description;
-  int                         ref_count;
   cipher_test_case_t         *test_data;
   debug_module_t             *debug;
   cipher_type_id_t            id;

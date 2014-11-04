@@ -214,7 +214,6 @@ crypto_kernel_status() {
   /* for each cipher type, describe and test */
   while(ctype != NULL) {
     printf("cipher: %s\n", ctype->cipher_type->description);
-    printf("  instance count: %d\n", ctype->cipher_type->ref_count);
     printf("  self-test: ");
     status = cipher_type_self_test(ctype->cipher_type);
     if (status) {
@@ -228,7 +227,6 @@ crypto_kernel_status() {
   /* for each auth type, describe and test */
   while(atype != NULL) {
     printf("auth func: %s\n", atype->auth_type->description);
-    printf("  instance count: %d\n", atype->auth_type->ref_count);
     printf("  self-test: ");
     status = auth_type_self_test(atype->auth_type);
     if (status) {

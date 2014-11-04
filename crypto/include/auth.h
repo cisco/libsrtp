@@ -128,7 +128,6 @@ typedef struct auth_type_t {
   auth_update_func     update;
   auth_start_func      start;
   char                *description;
-  int                  ref_count;
   auth_test_case_t    *test_data;
   debug_module_t      *debug;
   auth_type_id_t       id;
@@ -159,13 +158,5 @@ auth_type_self_test(const auth_type_t *at);
 
 err_status_t
 auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data);
-
-/*
- * auth_type_get_ref_count(at) returns the reference count (the number
- * of instantiations) of the auth_type_t at
- */
-
-int
-auth_type_get_ref_count(const auth_type_t *at);
 
 #endif /* AUTH_H */

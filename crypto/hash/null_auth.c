@@ -76,9 +76,6 @@ null_auth_alloc(auth_t **a, int key_len, int out_len) {
   (*a)->prefix_len = out_len;
   (*a)->key_len = key_len;
 
-  /* increment global count of all null_auth uses */
-  null_auth.ref_count++;
-
   return err_status_ok;
 }
 
@@ -93,9 +90,6 @@ null_auth_dealloc(auth_t *a) {
   /* free memory */
   crypto_free(a);
   
-  /* decrement global count of all null_auth uses */
-  null_auth.ref_count--;
-
   return err_status_ok;
 }
 
@@ -157,7 +151,6 @@ null_auth  = {
   (auth_update_func)     null_auth_update,
   (auth_start_func)      null_auth_start,
   (char *)               null_auth_description,
-  (int)                  0,  /* instance count */
   (auth_test_case_t *)   &null_auth_test_case_0,
   (debug_module_t *)     NULL,
   (auth_type_id_t)       NULL_AUTH

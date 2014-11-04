@@ -135,9 +135,6 @@ aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
   (*c)->type = &aes_icm;
   (*c)->state = pointer + sizeof(cipher_t);
 
-  /* increment ref_count */
-  aes_icm.ref_count++;
-
   /* set key size        */
   (*c)->key_len = key_len;
 
@@ -159,9 +156,6 @@ aes_icm_dealloc(cipher_t *c) {
   /* free memory */
   crypto_free(c);
 
-  /* decrement ref_count */
-  aes_icm.ref_count--;
-  
   return err_status_ok;  
 }
 
@@ -580,7 +574,6 @@ cipher_type_t aes_icm = {
   (cipher_set_iv_func_t)         aes_icm_set_iv,
   (cipher_get_tag_func_t)        0,
   (char *)                       aes_icm_description,
-  (int)                          0,   /* instance count */
   (cipher_test_case_t *)        &aes_icm_test_case_1,
   (debug_module_t *)            &mod_aes_icm,
   (cipher_type_id_t)             AES_ICM

@@ -72,11 +72,6 @@ auth_get_prefix_length(const auth_t *a) {
   return a->prefix_len;
 }
 
-int
-auth_type_get_ref_count(const auth_type_t *at) {
-  return at->ref_count;
-}
-
 /*
  * auth_type_test() tests an auth function of type ct against
  * test cases provided in a list test_data of values of key, data, and tag
