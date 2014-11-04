@@ -191,8 +191,8 @@ AC_CHECK_LIB([pcap],[pcap_create],
 
 AC_MSG_CHECKING(whether to use stdout for error reporting)
 AC_ARG_ENABLE(stdout,
-  [AS_HELP_STRING([--disable-stdout], [don't use stdout for error reporting])],
-  [], enable_stdout=yes)
+  [AS_HELP_STRING([--enable-stdout], [use stdout for debug/error reporting])],
+  [], enable_stdout=no)
 if test "$enable_stdout" = "yes"; then
    AC_DEFINE(ERR_REPORTING_STDOUT, 1, [Define to use logging to stdout.])
 fi
@@ -207,17 +207,6 @@ if test "$enable_console" = "yes"; then
    AC_DEFINE(ERR_REPORTING_FILE, "/dev/console", [Report errors to this file.])
 fi
 AC_MSG_RESULT($enable_console)
-
-AC_MSG_CHECKING(whether to use GDOI key management)
-AC_ARG_ENABLE(gdoi,
-  [AS_HELP_STRING([--enable-gdoi], [enable GDOI key management])],
-  [], enable_gdoi=no)
-if test "$enable_gdoi" = "yes"; then
-   AC_DEFINE(SRTP_GDOI, 1, [Define to use GDOI.])
-   GDOI_OBJS=gdoi/srtp+gdoi.o
-   AC_SUBST(GDOI_OBJS)                              
-fi
-AC_MSG_RESULT($enable_gdoi)
 
 AC_CONFIG_HEADER(crypto/include/config.h:config_in.h)
 

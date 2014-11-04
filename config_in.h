@@ -138,9 +138,6 @@
 /* The size of a `unsigned long long', as computed by sizeof. */
 #undef SIZEOF_UNSIGNED_LONG_LONG
 
-/* Define to use GDOI. */
-#undef SRTP_GDOI
-
 /* Define to use OpenSSL crypto. */
 #undef OPENSSL
 

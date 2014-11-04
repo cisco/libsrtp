@@ -58,10 +58,6 @@ INSTALL	= @INSTALL@
 # null on linux, bsd, and OS X and other OSes.
 EXE	= @EXE@
 
-# gdoi is the group domain of interpretation for isakmp, a group key
-# management system which can provide keys for srtp
-gdoi	= @GDOI_OBJS@
-
 # Random source.
 RNG_OBJS = @RNG_OBJS@
 HMAC_OBJS = @HMAC_OBJS@
@@ -118,11 +114,11 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
 
 srtpobj = srtp/srtp.o srtp/ekt.o
 
-libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
+libsrtp.a: $(srtpobj) $(cryptobj) 
 	ar cr libsrtp.a $^
 	$(RANLIB) libsrtp.a
 
-libsrtp.so: $(srtpobj) $(cryptobj) $(gdoi) 
+libsrtp.so: $(srtpobj) $(cryptobj) 
 	$(CC) -shared -Wl,-soname,libsrtp.so \
 	    -o libsrtp.so $^ $(LDFLAGS)
 

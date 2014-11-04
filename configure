@@ -625,7 +625,6 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 HAVE_PKG_CONFIG
 PKG_CONFIG
-GDOI_OBJS
 HAVE_PCAP
 HMAC_OBJS
 RNG_EXTRA_OBJS
@@ -702,7 +701,6 @@ enable_generic_aesicm
 enable_openssl
 enable_stdout
 enable_console
-enable_gdoi
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1330,9 +1328,8 @@ Optional Features:
   --disable-debug         do not compile in dynamic debugging system
   --enable-generic-aesicm compile in changes for ISMAcryp
   --enable-openssl        compile in OpenSSL crypto engine
-  --disable-stdout        don't use stdout for error reporting
+  --enable-stdout         use stdout for debug/error reporting
   --enable-console        use /dev/console for error reporting
-  --enable-gdoi           enable GDOI key management
 
 Some influential environment variables:
   CC          C compiler command
@@ -5072,7 +5069,7 @@ $as_echo_n "checking whether to use stdout for error reporting... " >&6; }
 if test "${enable_stdout+set}" = set; then :
   enableval=$enable_stdout;
 else
-  enable_stdout=yes
+  enable_stdout=no
 fi
 
 if test "$enable_stdout" = "yes"; then
@@ -5102,25 +5099,6 @@ $as_echo "#define ERR_REPORTING_FILE \"/dev/console\"" >>confdefs.h
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_console" >&5
 $as_echo "$enable_console" >&6; }
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use GDOI key management" >&5
-$as_echo_n "checking whether to use GDOI key management... " >&6; }
-# Check whether --enable-gdoi was given.
-if test "${enable_gdoi+set}" = set; then :
-  enableval=$enable_gdoi;
-else
-  enable_gdoi=no
-fi
-
-if test "$enable_gdoi" = "yes"; then
-
-$as_echo "#define SRTP_GDOI 1" >>confdefs.h
-
-   GDOI_OBJS=gdoi/srtp+gdoi.o
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_gdoi" >&5
-$as_echo "$enable_gdoi" >&6; }
 
 ac_config_headers="$ac_config_headers crypto/include/config.h:config_in.h"
 
