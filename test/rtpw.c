@@ -154,7 +154,7 @@ main (int argc, char *argv[]) {
   struct sockaddr_in local;
 #endif 
   program_type prog_type = unknown;
-  sec_serv_t sec_servs = sec_serv_none;
+  srtp_sec_serv_t sec_servs = sec_serv_none;
   unsigned char ttl = 5;
   int c;
   int key_size = 128;
@@ -167,7 +167,7 @@ main (int argc, char *argv[]) {
   unsigned short port = 0;
   rtp_sender_t snd;
   srtp_policy_t policy;
-  err_status_t status;
+  srtp_err_status_t status;
   int len;
   int expected_len;
   int do_list_mods = 0;
@@ -365,12 +365,12 @@ main (int argc, char *argv[]) {
 #ifdef OPENSSL
 	switch (key_size) {
 	case 128:
-	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
 	  break;
 	case 256:
-	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
 	  break;
 	}
 #else
@@ -380,12 +380,12 @@ main (int argc, char *argv[]) {
       } else {
 	switch (key_size) {
 	case 128:
-          crypto_policy_set_rtp_default(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);
+          srtp_crypto_policy_set_rtp_default(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 	  break;
 	case 256:
-          crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);
+          srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 	  break;
 	}
       }
@@ -397,12 +397,12 @@ main (int argc, char *argv[]) {
       } else {
 	switch (key_size) {
 	case 128:
-          crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);      
+          srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
 	  break;
 	case 256:
-          crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);      
+          srtp_crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
 	  break;
 	}
       }
@@ -412,12 +412,12 @@ main (int argc, char *argv[]) {
 #ifdef OPENSSL
 	switch (key_size) {
 	case 128:
-	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
 	  break;
 	case 256:
-	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
 	  break;
 	}
 #else
@@ -425,8 +425,8 @@ main (int argc, char *argv[]) {
 	return 0;
 #endif
       } else {
-        crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
-        crypto_policy_set_rtcp_default(&policy.rtcp);
+        srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
+        srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
       }
       break;
     default:

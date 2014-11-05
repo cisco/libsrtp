@@ -62,7 +62,7 @@ main (int argc, char *argv[]) {
   extern char *optarg;
   int q;
   int do_validation      = 0;
-  err_status_t status;
+  srtp_err_status_t status;
 
   if (argc == 1)
     usage(argv[0]);
@@ -121,10 +121,10 @@ main (int argc, char *argv[]) {
  * of the crypto_kernel
  */
 
-err_status_t
+srtp_err_status_t
 crypto_kernel_cipher_test(void) {
 
   /* not implemented yet! */
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }

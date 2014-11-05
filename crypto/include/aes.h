@@ -57,15 +57,15 @@ typedef struct {
   int num_rounds;
 } aes_expanded_key_t;
 
-err_status_t
-aes_expand_encryption_key(const uint8_t *key,
-			  int key_len,
-			  aes_expanded_key_t *expanded_key);
+srtp_err_status_t aes_expand_encryption_key(
+	const uint8_t *key,
+	int key_len,
+	aes_expanded_key_t *expanded_key);
 
-err_status_t
-aes_expand_decryption_key(const uint8_t *key,
-			  int key_len,
-			  aes_expanded_key_t *expanded_key);
+srtp_err_status_t aes_expand_decryption_key(
+	const uint8_t *key,
+	int key_len,
+	aes_expanded_key_t *expanded_key);
 
 void
 aes_encrypt(v128_t *plaintext, const aes_expanded_key_t *exp_key);

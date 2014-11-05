@@ -25,7 +25,7 @@ debug_module_t mod_stat = {
 
 #define STAT_TEST_DATA_LEN 2500
 
-err_status_t
+srtp_err_status_t
 stat_test_monobit(uint8_t *data) {
   uint8_t *data_end = data + STAT_TEST_DATA_LEN;
   uint16_t ones_count;
@@ -39,12 +39,12 @@ stat_test_monobit(uint8_t *data) {
   debug_print(mod_stat, "bit count: %d", ones_count);
   
   if ((ones_count < 9725) || (ones_count > 10275))
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 stat_test_poker(uint8_t *data) {
   int i;
   uint8_t *data_end = data + STAT_TEST_DATA_LEN;
@@ -70,9 +70,9 @@ stat_test_poker(uint8_t *data) {
   debug_print(mod_stat, "poker test: %f\n", poker);
     
   if ((poker < 2.16) || (poker > 46.17))
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -80,7 +80,7 @@ stat_test_poker(uint8_t *data) {
  * runs[i] holds the number of runs of size (i-1)
  */
 
-err_status_t
+srtp_err_status_t
 stat_test_runs(uint8_t *data) {
   uint8_t *data_end = data + STAT_TEST_DATA_LEN;
   uint16_t runs[6] = { 0, 0, 0, 0, 0, 0 }; 
@@ -111,7 +111,7 @@ stat_test_runs(uint8_t *data) {
 	  /* check for long runs */ 
 	  if (state > 25) {
 		debug_print(mod_stat, ">25 runs: %d", state);
-		return err_status_algo_fail;
+		return srtp_err_status_algo_fail;
 	  }
 
 	} else if (state < 0) {
@@ -119,7 +119,7 @@ stat_test_runs(uint8_t *data) {
 	  /* prefix is a gap  */
 	  if (state < -25) {
 		debug_print(mod_stat, ">25 gaps: %d", state);
-	    return err_status_algo_fail;    /* long-runs test failed   */
+	    return srtp_err_status_algo_fail;    /* long-runs test failed   */
 	  }
 	  if (state < -6) {
 	    state = -6;                     /* group together gaps > 5 */
@@ -139,7 +139,7 @@ stat_test_runs(uint8_t *data) {
 	  /* prefix is a run */
 	  if (state > 25) {
 		debug_print(mod_stat, ">25 runs (2): %d", state);
-	    return err_status_algo_fail;    /* long-runs test failed   */
+	    return srtp_err_status_algo_fail;    /* long-runs test failed   */
 	  }
 	  if (state > 6) {
 	    state = 6;                      /* group together runs > 5 */
@@ -154,7 +154,7 @@ stat_test_runs(uint8_t *data) {
 	  /* check for long gaps */ 
 	  if (state < -25) {
 		debug_print(mod_stat, ">25 gaps (2): %d", state);
-	    return err_status_algo_fail;
+	    return srtp_err_status_algo_fail;
 	  }
 
 	} else {
@@ -181,10 +181,10 @@ stat_test_runs(uint8_t *data) {
   for (i=0; i < 6; i++) 
     if (   (runs[i] < lo_value[i] ) || (runs[i] > hi_value[i])
 	|| (gaps[i] < lo_value[i] ) || (gaps[i] > hi_value[i]))
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
 
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -196,7 +196,7 @@ stat_test_runs(uint8_t *data) {
 
 #define RAND_SRC_BUF_OCTETS 50 /* this value MUST divide 2500! */ 
 
-err_status_t
+srtp_err_status_t
 stat_test_rand_source(rand_source_func_t get_rand_bytes) {
   int i;
   double poker;
@@ -206,7 +206,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
     0, 0, 0, 0, 0, 0, 0, 0
   };
   uint8_t buffer[RAND_SRC_BUF_OCTETS];
-  err_status_t status;
+  srtp_err_status_t status;
   int ones_count = 0;
   uint16_t runs[6] = { 0, 0, 0, 0, 0, 0 }; 
   uint16_t gaps[6] = { 0, 0, 0, 0, 0, 0 };
@@ -257,7 +257,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
 	    /* check for long runs */ 
 	    if (state > 25) {
 		  debug_print(mod_stat, ">25 runs (3): %d", state);
-	      return err_status_algo_fail;
+	      return srtp_err_status_algo_fail;
 		}
 	    
 	  } else if (state < 0) {
@@ -265,7 +265,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
 	    /* prefix is a gap  */
 	    if (state < -25) {
 		  debug_print(mod_stat, ">25 gaps (3): %d", state);
-	      return err_status_algo_fail;    /* long-runs test failed   */
+	      return srtp_err_status_algo_fail;    /* long-runs test failed   */
 	    }
 	    if (state < -6) {
 	      state = -6;                     /* group together gaps > 5 */
@@ -285,7 +285,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
 	    /* prefix is a run */
 	    if (state > 25) {
 		  debug_print(mod_stat, ">25 runs (4): %d", state);
-	      return err_status_algo_fail;    /* long-runs test failed   */
+	      return srtp_err_status_algo_fail;    /* long-runs test failed   */
 	    }
 	    if (state > 6) {
 	      state = 6;                      /* group together runs > 5 */
@@ -300,7 +300,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
 	    /* check for long gaps */ 
 	    if (state < -25) {
 		  debug_print(mod_stat, ">25 gaps (4): %d", state);
-	      return err_status_algo_fail;
+	      return srtp_err_status_algo_fail;
 		}
 	    
 	  } else {
@@ -324,7 +324,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
   
   if ((ones_count < 9725) || (ones_count > 10275)) {
     debug_print(mod_stat, "stat: failed monobit test %d", ones_count);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }
   
   /* check poker test data */
@@ -339,7 +339,7 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
     
   if ((poker < 2.16) || (poker > 46.17)) {
     debug_print(mod_stat, "stat: failed poker test", NULL);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }
 
   /* check run and gap counts against the fixed limits */
@@ -347,22 +347,22 @@ stat_test_rand_source(rand_source_func_t get_rand_bytes) {
     if ((runs[i] < lo_value[i] ) || (runs[i] > hi_value[i])
 	 || (gaps[i] < lo_value[i] ) || (gaps[i] > hi_value[i])) {
       debug_print(mod_stat, "stat: failed run/gap test", NULL);
-      return err_status_algo_fail; 
+      return srtp_err_status_algo_fail; 
     }
 
   debug_print(mod_stat, "passed random stat test", NULL);
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 stat_test_rand_source_with_repetition(rand_source_func_t source, unsigned num_trials) {
   unsigned int i;
-  err_status_t err = err_status_algo_fail;
+  srtp_err_status_t err = srtp_err_status_algo_fail;
 
   for (i=0; i < num_trials; i++) {
     err = stat_test_rand_source(source);
-    if (err == err_status_ok) {
-      return err_status_ok;  
+    if (err == srtp_err_status_ok) {
+      return srtp_err_status_ok;  
     }
     debug_print(mod_stat, "failed stat test (try number %d)\n", i);
   }

@@ -92,7 +92,7 @@ debug_module_t mod_aes_icm = {
  *
  */
 
-err_status_t
+srtp_err_status_t
 aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
   extern cipher_type_t aes_icm;
   uint8_t *pointer;
@@ -111,13 +111,13 @@ aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
    */
   if (!(forIsmacryp && key_len > 16 && key_len < 30) &&
       key_len != 30 && key_len != 38 && key_len != 46)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   /* allocate memory a cipher of type aes_icm */
   tmp = (sizeof(aes_icm_ctx_t) + sizeof(cipher_t));
   pointer = (uint8_t*)crypto_alloc(tmp);
   if (pointer == NULL) 
-    return err_status_alloc_fail;
+    return srtp_err_status_alloc_fail;
 
   /* set pointers */
   *c = (cipher_t *)pointer;
@@ -138,14 +138,14 @@ aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
   /* set key size        */
   (*c)->key_len = key_len;
 
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }
 
-err_status_t aes_icm_alloc(cipher_t **c, int key_len, int forIsmacryp) {
+srtp_err_status_t aes_icm_alloc(cipher_t **c, int key_len, int forIsmacryp) {
   return aes_icm_alloc_ismacryp(c, key_len, 0);
 }
 
-err_status_t
+srtp_err_status_t
 aes_icm_dealloc(cipher_t *c) {
   extern cipher_type_t aes_icm;
 
@@ -156,7 +156,7 @@ aes_icm_dealloc(cipher_t *c) {
   /* free memory */
   crypto_free(c);
 
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }
 
 
@@ -170,9 +170,9 @@ aes_icm_dealloc(cipher_t *c) {
  * randomizes the starting point in the keystream
  */
 
-err_status_t
+srtp_err_status_t
 aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
-  err_status_t status;
+  srtp_err_status_t status;
   int base_key_len, copy_len;
 
   if (key_len > 16 && key_len < 30) /* Ismacryp */
@@ -180,7 +180,7 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
   else if (key_len == 30 || key_len == 38 || key_len == 46)
     base_key_len = key_len - 14;
   else
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   /*
    * set counter and initial values to 'offset' value, being careful not to
@@ -213,7 +213,7 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
   /* indicate that the keystream_buffer is empty */
   c->bytes_in_buffer = 0;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
@@ -222,7 +222,7 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
  * is the ith octet
  */
 
-err_status_t
+srtp_err_status_t
 aes_icm_set_octet(aes_icm_ctx_t *c,
 		  uint64_t octet_num) {
 
@@ -271,7 +271,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
     c->bytes_in_buffer = 0;
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
@@ -279,7 +279,7 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
  * the offset
  */
 
-err_status_t
+srtp_err_status_t
 aes_icm_set_iv(aes_icm_ctx_t *c, void *iv, int direction) {
   v128_t *nonce = (v128_t *) iv;
 
@@ -294,7 +294,7 @@ aes_icm_set_iv(aes_icm_ctx_t *c, void *iv, int direction) {
   /* indicate that the keystream_buffer is empty */
   c->bytes_in_buffer = 0;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -344,7 +344,7 @@ aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
  *  - fill buffer then add in remaining (< 16) bytes of keystream 
  */
 
-err_status_t
+srtp_err_status_t
 aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
               unsigned char *buf, unsigned int *enc_len, 
               int forIsmacryp) {
@@ -354,7 +354,7 @@ aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
 
   /* check that there's enough segment left but not for ismacryp*/
   if (!forIsmacryp && (bytes_to_encr + htons(c->counter.v16[7])) > 0xffff)
-    return err_status_terminus;
+    return srtp_err_status_terminus;
 
  debug_print(mod_aes_icm, "block index: %d", 
            htons(c->counter.v16[7]));
@@ -370,7 +370,7 @@ aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
     c->bytes_in_buffer -= bytes_to_encr;
 
     /* return now to avoid the main loop */
-    return err_status_ok;
+    return srtp_err_status_ok;
 
   } else {
     
@@ -449,15 +449,15 @@ aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c,
 
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 aes_icm_encrypt(aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len) {
   return aes_icm_encrypt_ismacryp(c, buf, enc_len, 0);
 }
 
-err_status_t
+srtp_err_status_t
 aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, unsigned int num_octets_to_output) {
   unsigned int len = num_octets_to_output;
   
@@ -576,6 +576,6 @@ cipher_type_t aes_icm = {
   (char *)                       aes_icm_description,
   (cipher_test_case_t *)        &aes_icm_test_case_1,
   (debug_module_t *)            &mod_aes_icm,
-  (cipher_type_id_t)             AES_ICM
+  (srtp_cipher_type_id_t)        AES_ICM
 };
 

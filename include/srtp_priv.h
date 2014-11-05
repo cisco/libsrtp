@@ -67,27 +67,20 @@
  * srtp_get_stream(ssrc) returns a pointer to the stream corresponding
  * to ssrc, or NULL if no stream exists for that ssrc
  */
-
-srtp_stream_t 
-srtp_get_stream(srtp_t srtp, uint32_t ssrc);
+srtp_stream_t srtp_get_stream(srtp_t srtp, uint32_t ssrc);
 
 
 /*
  * srtp_stream_init_keys(s, k) (re)initializes the srtp_stream_t s by
  * deriving all of the needed keys using the KDF and the key k.
  */
-
-
-err_status_t
-srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
+srtp_err_status_t srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
 
 /*
  * srtp_stream_init(s, p) initializes the srtp_stream_t s to 
  * use the policy at the location p
  */
-err_status_t
-srtp_stream_init(srtp_stream_t srtp, 
-		 const srtp_policy_t *p);
+srtp_err_status_t srtp_stream_init(srtp_stream_t srtp, const srtp_policy_t *p);
 
 
 /*
@@ -113,11 +106,11 @@ typedef struct srtp_stream_ctx_t_ {
   cipher_t  *rtp_cipher;
   auth_t    *rtp_auth;
   rdbx_t     rtp_rdbx;
-  sec_serv_t rtp_services;
+  srtp_sec_serv_t rtp_services;
   cipher_t  *rtcp_cipher;
   auth_t    *rtcp_auth;
   rdb_t      rtcp_rdb;
-  sec_serv_t rtcp_services;
+  srtp_sec_serv_t rtcp_services;
   key_limit_ctx_t *limit;
   direction_t direction;
   int        allow_repeat_tx;

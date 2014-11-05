@@ -80,7 +80,7 @@
  *
  */
                     
-typedef err_status_t (*cryptoalg_func_t) 
+typedef srtp_err_status_t (*cryptoalg_func_t) 
      (void *key,            
       const void *clear,          
       unsigned clear_len,   
@@ -88,8 +88,7 @@ typedef err_status_t (*cryptoalg_func_t)
       void *protect,         
       unsigned *protected_len);
 
-typedef 
-err_status_t (*cryptoalg_inv_t)
+typedef srtp_err_status_t (*cryptoalg_inv_t)
      (void *key,            /* location of secret key                  */
       const void *clear,     /* data to be authenticated only           */
       unsigned clear_len,   /* length of data to be authenticated only */

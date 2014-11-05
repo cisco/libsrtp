@@ -190,14 +190,14 @@ aes_compute_inv_tables(void) {
 
 
 /*
- * aes_test_inverse() returns err_status_ok if aes
+ * aes_test_inverse() returns srtp_err_status_ok if aes
  * encryption and decryption are true inverses of each other, and
- * returns err_status_algo_fail otherwise
+ * returns srtp_err_status_algo_fail otherwise
  */
 
 #include "err.h"
 
-err_status_t
+srtp_err_status_t
 aes_test_inverse(void);
 
 #define TABLES_32BIT 1
@@ -303,7 +303,7 @@ main(void) {
    */
     
   printf("aes inverse test: ");
-  if (aes_test_inverse() == err_status_ok)
+  if (aes_test_inverse() == srtp_err_status_ok)
     printf("passed\n");
   else {
     printf("failed\n");
@@ -316,7 +316,7 @@ main(void) {
 
 #if AES_INVERSE_TEST
 
-err_status_t
+srtp_err_status_t
 aes_test_inverse(void) {
   v128_t x, y;
   aes_expanded_key_t expanded_key, decrypt_key;
@@ -342,8 +342,8 @@ aes_test_inverse(void) {
   v128_copy_octet_string(&y, plaintext);
 
   if (v128_is_eq(&x, &y))
-    return err_status_ok;
-  return err_status_algo_fail;
+    return srtp_err_status_ok;
+  return srtp_err_status_algo_fail;
   
 }
  

@@ -64,7 +64,7 @@ main (int argc, char *argv[]) {
 #if BEW
   struct sockaddr_in local;
 #endif 
-  sec_serv_t sec_servs = sec_serv_none;
+  srtp_sec_serv_t sec_servs = sec_serv_none;
   int c;
   int key_size = 128;
   int tag_size = 8;
@@ -76,7 +76,7 @@ main (int argc, char *argv[]) {
   char filter_exp[MAX_FILTER] = "";
   rtp_decoder_t dec;
   srtp_policy_t policy;
-  err_status_t status;
+  srtp_err_status_t status;
   int len;
   int expected_len;
   int do_list_mods = 0;
@@ -190,12 +190,12 @@ main (int argc, char *argv[]) {
 #ifdef OPENSSL
 	switch (key_size) {
 	case 128:
-	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
 	  break;
 	case 256:
-	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
 	  break;
 	}
 #else
@@ -205,12 +205,12 @@ main (int argc, char *argv[]) {
       } else {
 	switch (key_size) {
 	case 128:
-          crypto_policy_set_rtp_default(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);
+          srtp_crypto_policy_set_rtp_default(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 	  break;
 	case 256:
-          crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);
+          srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 	  break;
 	}
       }
@@ -222,12 +222,12 @@ main (int argc, char *argv[]) {
       } else {
 	switch (key_size) {
 	case 128:
-          crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);      
+          srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
 	  break;
 	case 256:
-          crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
-          crypto_policy_set_rtcp_default(&policy.rtcp);      
+          srtp_crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
 	  break;
 	}
       }
@@ -237,12 +237,12 @@ main (int argc, char *argv[]) {
 #ifdef OPENSSL
 	switch (key_size) {
 	case 128:
-	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
 	  break;
 	case 256:
-	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
-	  crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
+	  srtp_crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtcp);
 	  break;
 	}
 #else
@@ -250,8 +250,8 @@ main (int argc, char *argv[]) {
 	return 0;
 #endif
       } else {
-        crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
-        crypto_policy_set_rtcp_default(&policy.rtcp);
+        srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
+        srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
       }
       break;
     default:
@@ -406,7 +406,7 @@ rtp_decoder_dealloc(rtp_decoder_t rtp_ctx) {
   free(rtp_ctx);
 }
 
-err_status_t
+srtp_err_status_t
 rtp_decoder_init_srtp(rtp_decoder_t decoder, unsigned int ssrc) {
   decoder->policy.ssrc.value = htonl(ssrc);
   return srtp_create(&decoder->srtp_ctx, &decoder->policy);
@@ -453,7 +453,7 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
   int pktsize;
   struct timeval delta;
   int octets_recvd;
-  err_status_t status;
+  srtp_err_status_t status;
   dcdr->frame_nr++;
 
   if (dcdr->start_tv.tv_sec == 0 && dcdr->start_tv.tv_sec == 0) {
@@ -494,13 +494,13 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
   hexdump(&dcdr->message, pktsize);
 }
 
-void rtp_print_error(err_status_t status, char *message){
+void rtp_print_error(srtp_err_status_t status, char *message){
     fprintf(stderr,
             "error: %s %d%s\n", message, status,
-            status == err_status_replay_fail ? " (replay check failed)" :
-            status == err_status_bad_param ? " (bad param)" :
-            status == err_status_no_ctx ? " (no context)" :
-            status == err_status_cipher_fail ? " (cipher failed)" :
-            status == err_status_key_expired ? " (key expired)" :
-            status == err_status_auth_fail ? " (auth check failed)" : "");
+            status == srtp_err_status_replay_fail ? " (replay check failed)" :
+            status == srtp_err_status_bad_param ? " (bad param)" :
+            status == srtp_err_status_no_ctx ? " (no context)" :
+            status == srtp_err_status_cipher_fail ? " (cipher failed)" :
+            status == srtp_err_status_key_expired ? " (key expired)" :
+            status == srtp_err_status_auth_fail ? " (auth check failed)" : "");
 }

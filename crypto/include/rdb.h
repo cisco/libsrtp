@@ -13,7 +13,7 @@
 
 #include "integers.h"         /* for uint32_t     */
 #include "datatypes.h"        /* for v128_t       */
-#include "err.h"              /* for err_status_t */
+#include "err.h"              /* for srtp_err_status_t */
 
 /*
  * if the ith least significant bit is one, then the packet index
@@ -32,11 +32,9 @@ typedef struct {
  *
  * initalizes rdb
  *
- * returns err_status_ok on success, err_status_t_fail otherwise
+ * returns srtp_err_status_ok on success, srtp_err_status_t_fail otherwise
  */
-
-err_status_t
-rdb_init(rdb_t *rdb);
+srtp_err_status_t rdb_init(rdb_t *rdb);
 
 
 /*
@@ -44,24 +42,20 @@ rdb_init(rdb_t *rdb);
  *
  * checks to see if index appears in rdb
  *
- * returns err_status_fail if the index already appears in rdb,
- * returns err_status_ok otherwise
+ * returns srtp_err_status_fail if the index already appears in rdb,
+ * returns srtp_err_status_ok otherwise
  */
-
-err_status_t
-rdb_check(const rdb_t *rdb, uint32_t rdb_index);  
+srtp_err_status_t rdb_check(const rdb_t *rdb, uint32_t rdb_index);  
 
 /*
  * rdb_add_index
  *
  * adds index to rdb_t (and does *not* check if index appears in db)
  *
- * returns err_status_ok on success, err_status_fail otherwise
+ * returns srtp_err_status_ok on success, srtp_err_status_fail otherwise
  *
  */
-
-err_status_t
-rdb_add_index(rdb_t *rdb, uint32_t rdb_index);
+srtp_err_status_t rdb_add_index(rdb_t *rdb, uint32_t rdb_index);
 
 /*
  * the functions rdb_increment() and rdb_get_value() are for use by 
@@ -76,12 +70,11 @@ rdb_add_index(rdb_t *rdb, uint32_t rdb_index);
  *
  * return values:
  * 
- *    err_status_ok            no problem
- *    err_status_key_expired   sequence number too high
+ *    srtp_err_status_ok            no problem
+ *    srtp_err_status_key_expired   sequence number too high
  *
  */
-err_status_t
-rdb_increment(rdb_t *rdb);
+srtp_err_status_t rdb_increment(rdb_t *rdb);
 
 /*
  * rdb_get_value(db) returns the current sequence number of db

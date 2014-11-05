@@ -41,7 +41,7 @@ main (int argc, char *argv[]) {
   aes_expanded_key_t exp_key;
   int key_len, len;
   int verbose = 0;
-  err_status_t status;
+  srtp_err_status_t status;
 
   if (argc == 3) {
     /* we're not in verbose mode */

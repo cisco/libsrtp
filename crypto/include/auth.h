@@ -54,25 +54,24 @@
 typedef struct auth_type_t *auth_type_pointer;
 typedef struct auth_t      *auth_pointer_t;
 
-typedef err_status_t (*auth_alloc_func)
+typedef srtp_err_status_t (*auth_alloc_func)
      (auth_pointer_t *ap, int key_len, int out_len);
 
-typedef err_status_t (*auth_init_func)
+typedef srtp_err_status_t (*auth_init_func)
      (void *state, const uint8_t *key, int key_len);
 
-typedef err_status_t (*auth_dealloc_func)(auth_pointer_t ap);
+typedef srtp_err_status_t (*auth_dealloc_func)(auth_pointer_t ap);
 
-typedef err_status_t (*auth_compute_func)
+typedef srtp_err_status_t (*auth_compute_func)
      (void *state, uint8_t *buffer, int octets_to_auth, 
       int tag_len, uint8_t *tag);
 
-typedef err_status_t (*auth_update_func)
+typedef srtp_err_status_t (*auth_update_func)
      (void *state, uint8_t *buffer, int octets_to_auth);
 
-typedef err_status_t (*auth_start_func)(void *state);
+typedef srtp_err_status_t (*auth_start_func)(void *state);
      
 /* some syntactic sugar on these function types */
-
 #define auth_type_alloc(at, a, klen, outlen)                        \
                  ((at)->alloc((a), (klen), (outlen)))
 
@@ -90,7 +89,6 @@ typedef err_status_t (*auth_start_func)(void *state);
 #define auth_dealloc(c) (((c)->type)->dealloc(c))
 
 /* functions to get information about a particular auth_t */
-
 int
 auth_get_key_length(const struct auth_t *a);
 
@@ -107,7 +105,6 @@ auth_get_prefix_length(const struct auth_t *a);
  * correcness of the implementation.  (see the auth_type_self_test()
  * function below)
  */
-
 typedef struct auth_test_case_t {
   int key_length_octets;                    /* octets in key            */
   uint8_t *key;                             /* key                      */
@@ -119,7 +116,6 @@ typedef struct auth_test_case_t {
 } auth_test_case_t;
 
 /* auth_type_t */
-
 typedef struct auth_type_t {
   auth_alloc_func      alloc;
   auth_dealloc_func    dealloc;
@@ -130,7 +126,7 @@ typedef struct auth_type_t {
   char                *description;
   auth_test_case_t    *test_data;
   debug_module_t      *debug;
-  auth_type_id_t       id;
+  srtp_auth_type_id_t  id;
 } auth_type_t;
 
 typedef struct auth_t {
@@ -146,17 +142,13 @@ typedef struct auth_t {
  * provided in an array of values of key/message/tag that is known to
  * be good
  */
-
-err_status_t
-auth_type_self_test(const auth_type_t *at);
+srtp_err_status_t auth_type_self_test(const auth_type_t *at);
 
 /* 
  * auth_type_test() tests an auth_type against external test cases
  * provided in an array of values of key/message/tag that is known to
  * be good
  */
-
-err_status_t
-auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data);
+srtp_err_status_t auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data);
 
 #endif /* AUTH_H */

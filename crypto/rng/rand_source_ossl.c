@@ -50,21 +50,21 @@
 #include <openssl/rand.h>
 
 
-err_status_t rand_source_init (void)
+srtp_err_status_t rand_source_init (void)
 {
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
-err_status_t rand_source_get_octet_string (void *dest, uint32_t len)
+srtp_err_status_t rand_source_get_octet_string (void *dest, uint32_t len)
 {
     if (RAND_bytes(dest, len) == 1) {
-        return err_status_ok;
+        return srtp_err_status_ok;
     } else {
-        return err_status_fail;
+        return srtp_err_status_fail;
     }
 }
 
-err_status_t rand_source_deinit (void)
+srtp_err_status_t rand_source_deinit (void)
 {
-    return err_status_ok;
+    return srtp_err_status_ok;
 }

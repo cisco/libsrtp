@@ -62,7 +62,6 @@
  *    insecure - not yet initialized
  *    secure   - initialized and passed self-tests
  */
-
 typedef enum {
   crypto_kernel_state_insecure,
   crypto_kernel_state_secure
@@ -71,9 +70,8 @@ typedef enum {
 /* 
  * linked list of cipher types 
  */
-
 typedef struct kernel_cipher_type {
-  cipher_type_id_t  id;
+  srtp_cipher_type_id_t  id;
   cipher_type_t    *cipher_type;
   struct kernel_cipher_type *next;
 } kernel_cipher_type_t;
@@ -81,9 +79,8 @@ typedef struct kernel_cipher_type {
 /* 
  * linked list of auth types 
  */
-
 typedef struct kernel_auth_type {
-  auth_type_id_t  id;
+  srtp_auth_type_id_t  id;
   auth_type_t    *auth_type;
   struct kernel_auth_type *next;
 } kernel_auth_type_t;
@@ -91,7 +88,6 @@ typedef struct kernel_auth_type {
 /*
  * linked list of debug modules 
  */
-
 typedef struct kernel_debug_module {
   debug_module_t *mod;
   struct kernel_debug_module *next;
@@ -104,7 +100,6 @@ typedef struct kernel_debug_module {
  * note that there is *exactly one* instance of this data type,
  * a global variable defined in crypto_kernel.c
  */
-
 typedef struct {
   crypto_kernel_state_t state;              /* current state of kernel     */
   kernel_cipher_type_t *cipher_type_list;   /* list of all cipher types    */
@@ -129,9 +124,7 @@ typedef struct {
  * If any value other than err_status_ok is returned, the
  * crypto_kernel MUST NOT be used.  
  */
-
-err_status_t
-crypto_kernel_init(void);
+srtp_err_status_t crypto_kernel_init(void);
 
 
 /*
@@ -144,9 +137,7 @@ crypto_kernel_init(void);
  *    <other>           shutdown failure 
  *
  */
-
-err_status_t
-crypto_kernel_shutdown(void);
+srtp_err_status_t crypto_kernel_shutdown(void);
 
 /*
  * The function crypto_kernel_stats() checks the the crypto_kernel,
@@ -157,29 +148,22 @@ crypto_kernel_shutdown(void);
  *    <other>           a test failed 
  *
  */
-
-err_status_t
-crypto_kernel_status(void);
+srtp_err_status_t crypto_kernel_status(void);
 
 
 /*
  * crypto_kernel_list_debug_modules() outputs a list of debugging modules
  *
  */
-
-err_status_t
-crypto_kernel_list_debug_modules(void);
+srtp_err_status_t crypto_kernel_list_debug_modules(void);
 
 /*
  * crypto_kernel_load_cipher_type()
  *
  */
+srtp_err_status_t crypto_kernel_load_cipher_type(cipher_type_t *ct, srtp_cipher_type_id_t id);
 
-err_status_t
-crypto_kernel_load_cipher_type(cipher_type_t *ct, cipher_type_id_t id);
-
-err_status_t
-crypto_kernel_load_auth_type(auth_type_t *ct, auth_type_id_t id);
+srtp_err_status_t crypto_kernel_load_auth_type(auth_type_t *ct, srtp_auth_type_id_t id);
 
 /*
  * crypto_kernel_replace_cipher_type(ct, id)
@@ -188,8 +172,7 @@ crypto_kernel_load_auth_type(auth_type_t *ct, auth_type_id_t id);
  * with a new one passed in externally.  The new cipher must pass all the
  * existing cipher_type's self tests as well as its own.
  */
-err_status_t
-crypto_kernel_replace_cipher_type(cipher_type_t *ct, cipher_type_id_t id);
+srtp_err_status_t crypto_kernel_replace_cipher_type(cipher_type_t *ct, srtp_cipher_type_id_t id);
 
 
 /*
@@ -199,12 +182,10 @@ crypto_kernel_replace_cipher_type(cipher_type_t *ct, cipher_type_id_t id);
  * with a new one passed in externally.  The new auth type must pass all the
  * existing auth_type's self tests as well as its own.
  */
-err_status_t
-crypto_kernel_replace_auth_type(auth_type_t *ct, auth_type_id_t id);
+srtp_err_status_t crypto_kernel_replace_auth_type(auth_type_t *ct, srtp_auth_type_id_t id);
 
 
-err_status_t
-crypto_kernel_load_debug_module(debug_module_t *new_dm);
+srtp_err_status_t crypto_kernel_load_debug_module(debug_module_t *new_dm);
 
 /*
  * crypto_kernel_alloc_cipher(id, cp, key_len); 
@@ -216,12 +197,7 @@ crypto_kernel_load_debug_module(debug_module_t *new_dm);
  *    err_status_alloc_fail   an allocation failure occured
  *    err_status_fail         couldn't find cipher with identifier 'id'
  */
-
-err_status_t
-crypto_kernel_alloc_cipher(cipher_type_id_t id, 
-			   cipher_pointer_t *cp, 
-			   int key_len,
-			   int tag_len);
+srtp_err_status_t crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id, cipher_pointer_t *cp, int key_len, int tag_len);
 
 /*
  * crypto_kernel_alloc_auth(id, ap, key_len, tag_len); 
@@ -234,12 +210,7 @@ crypto_kernel_alloc_cipher(cipher_type_id_t id,
  *    err_status_alloc_fail   an allocation failure occured
  *    err_status_fail         couldn't find auth with identifier 'id'
  */
-
-err_status_t
-crypto_kernel_alloc_auth(auth_type_id_t id, 
-			 auth_pointer_t *ap, 
-			 int key_len,
-			 int tag_len);
+srtp_err_status_t crypto_kernel_alloc_auth(srtp_auth_type_id_t id, auth_pointer_t *ap, int key_len, int tag_len);
 
 
 /*
@@ -250,8 +221,6 @@ crypto_kernel_alloc_auth(auth_type_id_t id,
  *
  * returns err_status_ok on success, err_status_fail otherwise
  */
-
-err_status_t
-crypto_kernel_set_debug_module(char *mod_name, int v);
+srtp_err_status_t crypto_kernel_set_debug_module(char *mod_name, int v);
 
 #endif /* CRYPTO_KERNEL */

@@ -56,17 +56,13 @@ typedef enum {
    key_event_hard_limit
 } key_event_t;
 
-err_status_t
-key_limit_set(key_limit_t key, const xtd_seq_num_t s);
+srtp_err_status_t key_limit_set(key_limit_t key, const xtd_seq_num_t s);
 
-err_status_t
-key_limit_clone(key_limit_t original, key_limit_t *new_key);
+srtp_err_status_t key_limit_clone(key_limit_t original, key_limit_t *new_key);
 
-err_status_t
-key_limit_check(const key_limit_t key);
+srtp_err_status_t key_limit_check(const key_limit_t key);
 
-key_event_t
-key_limit_update(key_limit_t key);
+key_event_t key_limit_update(key_limit_t key);
 
 typedef enum { 
    key_state_normal,

@@ -54,10 +54,10 @@
 err_reporting_level_t err_level = err_level_none;
 
 #ifdef SRTP_KERNEL_LINUX
-err_status_t
+srtp_err_status_t
 err_reporting_init(const char *ident) {
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 #else /* SRTP_KERNEL_LINUX */	
@@ -66,7 +66,7 @@ err_reporting_init(const char *ident) {
 
 static FILE *err_file = NULL;
 
-err_status_t
+srtp_err_status_t
 err_reporting_init(const char *ident) {
   
   /*
@@ -80,10 +80,10 @@ err_reporting_init(const char *ident) {
   /* open file for error reporting */
   err_file = fopen(ERR_REPORTING_FILE, "w");
   if (err_file == NULL)
-    return err_status_init_fail;
+    return srtp_err_status_init_fail;
 #endif
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 void

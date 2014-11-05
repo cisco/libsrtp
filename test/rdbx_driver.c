@@ -58,7 +58,7 @@
 
 #include "ut_sim.h"
 
-err_status_t 
+srtp_err_status_t 
 test_replay_dbx(int num_trials, unsigned long ws);
 
 double
@@ -73,7 +73,7 @@ usage(char *prog_name) {
 int
 main (int argc, char *argv[]) {
   double rate;
-  err_status_t status;
+  srtp_err_status_t status;
   int q;
   unsigned do_timing_test = 0;
   unsigned do_validation = 0;
@@ -146,20 +146,20 @@ print_rdbx(rdbx_t *rdbx) {
  * rdbx_check_add(rdbx, idx) checks a known-to-be-good idx against
  * rdbx, then adds it.  if a failure is detected (i.e., the check
  * indicates that the value is already in rdbx) then
- * err_status_algo_fail is returned.
+ * srtp_err_status_algo_fail is returned.
  *
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_check_add(rdbx_t *rdbx, uint32_t idx) {
   int delta;
   xtd_seq_num_t est;
   
   delta = index_guess(&rdbx->index, &est, idx);
   
-  if (rdbx_check(rdbx, delta) != err_status_ok) {
+  if (rdbx_check(rdbx, delta) != srtp_err_status_ok) {
     printf("replay_check failed at index %u\n", idx);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }
 
   /*
@@ -167,12 +167,12 @@ rdbx_check_add(rdbx_t *rdbx, uint32_t idx) {
    * the estimated value est, at this point
    */
   
-  if (rdbx_add_index(rdbx, delta) != err_status_ok) {
+  if (rdbx_add_index(rdbx, delta) != srtp_err_status_ok) {
     printf("rdbx_add_index failed at index %u\n", idx);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }  
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
@@ -182,54 +182,54 @@ rdbx_check_add(rdbx_t *rdbx, uint32_t idx) {
  * and thus will be rejected
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_check_expect_failure(rdbx_t *rdbx, uint32_t idx) {
   int delta;
   xtd_seq_num_t est;
-  err_status_t status;
+  srtp_err_status_t status;
 
   delta = index_guess(&rdbx->index, &est, idx);
 
   status = rdbx_check(rdbx, delta);
-  if (status == err_status_ok) {
+  if (status == srtp_err_status_ok) {
     printf("delta: %d ", delta);
     printf("replay_check failed at index %u (false positive)\n", idx);
-    return err_status_algo_fail; 
+    return srtp_err_status_algo_fail; 
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 rdbx_check_add_unordered(rdbx_t *rdbx, uint32_t idx) {
   int delta;
   xtd_seq_num_t est;
-  err_status_t rstat;
+  srtp_err_status_t rstat;
 
   delta = index_guess(&rdbx->index, &est, idx);
 
   rstat = rdbx_check(rdbx, delta);
-  if ((rstat != err_status_ok) && (rstat != err_status_replay_old)) {
+  if ((rstat != srtp_err_status_ok) && (rstat != srtp_err_status_replay_old)) {
     printf("replay_check_add_unordered failed at index %u\n", idx);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }
-  if (rstat == err_status_replay_old) {
-	return err_status_ok;
+  if (rstat == srtp_err_status_replay_old) {
+	return srtp_err_status_ok;
   }
-  if (rdbx_add_index(rdbx, delta) != err_status_ok) {
+  if (rdbx_add_index(rdbx, delta) != srtp_err_status_ok) {
     printf("rdbx_add_index failed at index %u\n", idx);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }  
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 test_replay_dbx(int num_trials, unsigned long ws) {
   rdbx_t rdbx;
   uint32_t idx, ircvd;
   ut_connection utc;
-  err_status_t status;
+  srtp_err_status_t status;
   int num_fp_trials;
 
   status = rdbx_init(&rdbx, ws);
@@ -271,9 +271,9 @@ test_replay_dbx(int num_trials, unsigned long ws) {
   /* re-initialize */
   rdbx_dealloc(&rdbx);
 
-  if (rdbx_init(&rdbx, ws) != err_status_ok) {
+  if (rdbx_init(&rdbx, ws) != srtp_err_status_ok) {
     printf("replay_init failed\n");
-    return err_status_init_fail;
+    return srtp_err_status_init_fail;
   }
 
   /*
@@ -299,9 +299,9 @@ test_replay_dbx(int num_trials, unsigned long ws) {
   /* re-initialize */
   rdbx_dealloc(&rdbx);
 
-  if (rdbx_init(&rdbx, ws) != err_status_ok) {
+  if (rdbx_init(&rdbx, ws) != srtp_err_status_ok) {
     printf("replay_init failed\n");
-    return err_status_init_fail;
+    return srtp_err_status_init_fail;
   }
 
   /*
@@ -321,7 +321,7 @@ test_replay_dbx(int num_trials, unsigned long ws) {
 
   rdbx_dealloc(&rdbx);
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -338,7 +338,7 @@ rdbx_check_adds_per_second(int num_trials, unsigned long ws) {
   clock_t timer;
   int failures;                    /* count number of failures        */
   
-  if (rdbx_init(&rdbx, ws) != err_status_ok) {
+  if (rdbx_init(&rdbx, ws) != srtp_err_status_ok) {
     printf("replay_init failed\n");
     exit(1);
   }  
@@ -349,10 +349,10 @@ rdbx_check_adds_per_second(int num_trials, unsigned long ws) {
     
     delta = index_guess(&rdbx.index, &est, i);
     
-    if (rdbx_check(&rdbx, delta) != err_status_ok) 
+    if (rdbx_check(&rdbx, delta) != srtp_err_status_ok) 
       ++failures;
     else
-      if (rdbx_add_index(&rdbx, delta) != err_status_ok)
+      if (rdbx_add_index(&rdbx, delta) != srtp_err_status_ok)
 	++failures;
   }
   timer = clock() - timer;

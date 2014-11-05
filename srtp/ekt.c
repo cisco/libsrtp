@@ -119,7 +119,7 @@ srtcp_packet_get_emk_location(const uint8_t *packet_start,
 }
 
 
-err_status_t 
+srtp_err_status_t 
 ekt_alloc(ekt_stream_t *stream_data, ekt_policy_t policy) {
 
   /*
@@ -128,21 +128,21 @@ ekt_alloc(ekt_stream_t *stream_data, ekt_policy_t policy) {
    */
   if (!policy) {
     *stream_data = NULL;
-    return err_status_ok;
+    return srtp_err_status_ok;
   }
 
   /* TODO */
   *stream_data = NULL;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 ekt_stream_init_from_policy(ekt_stream_t stream_data, ekt_policy_t policy) {
   if (!stream_data)
-    return err_status_ok;
+    return srtp_err_status_ok;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -162,11 +162,11 @@ aes_decrypt_with_raw_key(void *ciphertext, const void *key, int key_len) {
  * the EKT data from an SRTCP trailer.  
  */
 
-err_status_t
+srtp_err_status_t
 srtp_stream_init_from_ekt(srtp_stream_t stream,			  
 			  const void *srtcp_hdr,
 			  unsigned pkt_octet_len) {
-  err_status_t err;
+  srtp_err_status_t err;
   const uint8_t *master_key;
   srtp_policy_t srtp_policy;
   uint32_t roc;
@@ -176,10 +176,10 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
    */
   if (stream->ekt->data->spi != 
       srtcp_packet_get_ekt_spi(srtcp_hdr, pkt_octet_len))
-    return err_status_no_ctx;
+    return srtp_err_status_no_ctx;
 
   if (stream->ekt->data->ekt_cipher_type != EKT_CIPHER_AES_128_ECB)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   /* decrypt the Encrypted Master Key field */
   master_key = srtcp_packet_get_emk_location(srtcp_hdr, pkt_octet_len);
@@ -196,7 +196,7 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
   err = srtp_stream_init(stream, &srtp_policy);
   if (err) return err;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 void

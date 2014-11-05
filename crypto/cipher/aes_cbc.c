@@ -57,7 +57,7 @@ debug_module_t mod_aes_cbc = {
 
 
 
-err_status_t
+srtp_err_status_t
 aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
   extern cipher_type_t aes_cbc;
   uint8_t *pointer;
@@ -67,13 +67,13 @@ aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
 	      "allocating cipher with key length %d", key_len);
 
   if (key_len != 16 && key_len != 24 && key_len != 32)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
   
   /* allocate memory a cipher of type aes_cbc */
   tmp = (sizeof(aes_cbc_ctx_t) + sizeof(cipher_t));
   pointer = (uint8_t*)crypto_alloc(tmp);
   if (pointer == NULL) 
-    return err_status_alloc_fail;
+    return srtp_err_status_alloc_fail;
 
   /* set pointers */
   *c = (cipher_t *)pointer;
@@ -84,10 +84,10 @@ aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
   /* set key size        */
   (*c)->key_len = key_len;
 
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }
 
-err_status_t
+srtp_err_status_t
 aes_cbc_dealloc(cipher_t *c) {
   extern cipher_type_t aes_cbc;
 
@@ -98,10 +98,10 @@ aes_cbc_dealloc(cipher_t *c) {
   /* free memory */
   crypto_free(c);
 
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }
 
-err_status_t
+srtp_err_status_t
 aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len) {
 
   debug_print(mod_aes_cbc, 
@@ -114,13 +114,13 @@ aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len) {
   c->key_len = (key_len <= 32 ? key_len : 32);
   memcpy(c->key, key, c->key_len);
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
-err_status_t
+srtp_err_status_t
 aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction) {
-  err_status_t status;
+  srtp_err_status_t status;
   int i;
 /*   v128_t *input = iv; */
   uint8_t *input = (uint8_t*) iv;
@@ -146,13 +146,13 @@ aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction) {
       return status;
     break;
   default:
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 aes_cbc_encrypt(aes_cbc_ctx_t *c,
 		unsigned char *data, 
 		unsigned int *bytes_in_data) {
@@ -165,7 +165,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
    * verify that we're 16-octet aligned
    */
   if (*bytes_in_data & 0xf) 
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   /*
    * note that we assume that the initialization vector has already
@@ -199,10 +199,10 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
     bytes_to_encr -= 16;
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 aes_cbc_decrypt(aes_cbc_ctx_t *c,
 		unsigned char *data, 
 		unsigned int *bytes_in_data) {
@@ -217,7 +217,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
    * verify that we're 16-octet aligned
    */
   if (*bytes_in_data & 0x0f)
-    return err_status_bad_param;    
+    return srtp_err_status_bad_param;    
 
   /* set 'previous' block to iv*/
   for (i=0; i < 16; i++) {
@@ -261,18 +261,18 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
     bytes_to_encr -= 16;
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
-err_status_t
+srtp_err_status_t
 aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
 		     unsigned char *data, 
 		     unsigned int *bytes_in_data) {
   int i;
   unsigned char *pad_start; 
   int num_pad_bytes;
-  err_status_t status;
+  srtp_err_status_t status;
 
   /* 
    * determine the number of padding bytes that we need to add - 
@@ -297,17 +297,17 @@ aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
   if (status) 
     return status;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
-err_status_t
+srtp_err_status_t
 aes_cbc_nist_decrypt(aes_cbc_ctx_t *c,
 		     unsigned char *data, 
 		     unsigned int *bytes_in_data) {
   unsigned char *pad_end;
   int num_pad_bytes;
-  err_status_t status;
+  srtp_err_status_t status;
 
   /*
    * cbc decrypt the padded data 
@@ -330,7 +330,7 @@ aes_cbc_nist_decrypt(aes_cbc_ctx_t *c,
   /* decrement data size */
   *bytes_in_data -= num_pad_bytes;  
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -552,7 +552,7 @@ cipher_type_t aes_cbc = {
   (char *)                       aes_cbc_description,
   (cipher_test_case_t *)        &aes_cbc_test_case_3,
   (debug_module_t *)            &mod_aes_cbc,
-  (cipher_type_id_t)             AES_CBC
+  (srtp_cipher_type_id_t)        AES_CBC
 };
 
 

@@ -53,7 +53,7 @@
 /**
  * @defgroup Error Error Codes
  * 
- * Error status codes are represented by the enumeration err_status_t.
+ * Error status codes are represented by the enumeration srtp_err_status_t.
  * 
  * @{
  */
@@ -83,8 +83,7 @@ typedef enum {
  * all syslog messages.  It is conventionally argv[0].
  */
 
-err_status_t
-err_reporting_init(const char *ident);
+srtp_err_status_t err_reporting_init(const char *ident);
 
 #ifdef SRTP_KERNEL_LINUX
 extern err_reporting_level_t err_level;

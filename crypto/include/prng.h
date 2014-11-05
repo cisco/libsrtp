@@ -32,11 +32,9 @@ typedef struct {
   rand_source_func_t rand; /* random source for re-initialization     */
 } x917_prng_t;
 
-err_status_t
-x917_prng_init(rand_source_func_t random_source);
+srtp_err_status_t x917_prng_init(rand_source_func_t random_source);
 
-err_status_t
-x917_prng_get_octet_string(uint8_t *dest, uint32_t len);
+srtp_err_status_t x917_prng_get_octet_string(uint8_t *dest, uint32_t len);
 
 
 /*
@@ -49,11 +47,9 @@ typedef struct {
   rand_source_func_t rand; /* random source for re-initialization     */
 } ctr_prng_t;
 
-err_status_t
-ctr_prng_init(rand_source_func_t random_source);
+srtp_err_status_t ctr_prng_init(rand_source_func_t random_source);
 
-err_status_t
-ctr_prng_get_octet_string(void *dest, uint32_t len);
+srtp_err_status_t ctr_prng_get_octet_string(void *dest, uint32_t len);
 
 
 #endif

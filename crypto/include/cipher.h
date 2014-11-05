@@ -60,7 +60,6 @@
  * operation, i.e. encryption or decryption.  For some ciphers, this
  * distinction does not matter, but for others, it is essential.
  */
-
 typedef enum { 
   direction_encrypt, /**< encryption (convert plaintext to ciphertext) */
   direction_decrypt, /**< decryption (convert ciphertext to plaintext) */
@@ -71,62 +70,54 @@ typedef enum {
  * the cipher_pointer and cipher_type_pointer definitions are needed
  * as cipher_t and cipher_type_t are not yet defined
  */
-
 typedef struct cipher_type_t *cipher_type_pointer_t;
 typedef struct cipher_t      *cipher_pointer_t;
 
 /*
  *  a cipher_alloc_func_t allocates (but does not initialize) a cipher_t 
  */
-
-typedef err_status_t (*cipher_alloc_func_t)
+typedef srtp_err_status_t (*cipher_alloc_func_t)
      (cipher_pointer_t *cp, int key_len, int tag_len);
 
 /* 
  * a cipher_init_func_t [re-]initializes a cipher_t with a given key
  */
-
-typedef err_status_t (*cipher_init_func_t)
+typedef srtp_err_status_t (*cipher_init_func_t)
 (void *state, const uint8_t *key, int key_len);
 
 /* a cipher_dealloc_func_t de-allocates a cipher_t */
-
-typedef err_status_t (*cipher_dealloc_func_t)(cipher_pointer_t cp);
+typedef srtp_err_status_t (*cipher_dealloc_func_t)(cipher_pointer_t cp);
 
 /* a cipher_set_segment_func_t sets the segment index of a cipher_t */
-
-typedef err_status_t (*cipher_set_segment_func_t)
+typedef srtp_err_status_t (*cipher_set_segment_func_t)
      (void *state, xtd_seq_num_t idx);
 
 /* 
  * a cipher_set_aad_func_t processes the AAD data for AEAD ciphers 
  */
-typedef err_status_t (*cipher_set_aad_func_t)
+typedef srtp_err_status_t (*cipher_set_aad_func_t)
      (void *state, uint8_t *aad, unsigned int aad_len);
 
 
 /* a cipher_encrypt_func_t encrypts data in-place */
-
-typedef err_status_t (*cipher_encrypt_func_t)
+typedef srtp_err_status_t (*cipher_encrypt_func_t)
      (void *state, uint8_t *buffer, unsigned int *octets_to_encrypt);
 
 /* a cipher_decrypt_func_t decrypts data in-place */
-
-typedef err_status_t (*cipher_decrypt_func_t)
+typedef srtp_err_status_t (*cipher_decrypt_func_t)
      (void *state, uint8_t *buffer, unsigned int *octets_to_decrypt);
 
 /* 
  * a cipher_set_iv_func_t function sets the current initialization vector
  */
-
-typedef err_status_t (*cipher_set_iv_func_t)
+typedef srtp_err_status_t (*cipher_set_iv_func_t)
      (cipher_pointer_t cp, void *iv, cipher_direction_t direction);
 
 /*
  * a cipher_get_tag_funct_t function is used to get the authentication
  * tag that was calculated by an AEAD cipher.
  */
-typedef err_status_t (*cipher_get_tag_func_t)
+typedef srtp_err_status_t (*cipher_get_tag_func_t)
      (void *state, void *tag, int *len);
 
 
@@ -137,7 +128,6 @@ typedef err_status_t (*cipher_get_tag_func_t)
  * in an on-the-fly self test of the correcness of the implementation.
  * (see the cipher_type_self_test() function below)
  */
-
 typedef struct cipher_test_case_t {
   int key_length_octets;                      /* octets in key            */
   uint8_t *key;                               /* key                      */
@@ -153,7 +143,6 @@ typedef struct cipher_test_case_t {
 } cipher_test_case_t;
 
 /* cipher_type_t defines the 'metadata' for a particular cipher type */
-
 typedef struct cipher_type_t {
   cipher_alloc_func_t         alloc;
   cipher_dealloc_func_t       dealloc;
@@ -166,14 +155,13 @@ typedef struct cipher_type_t {
   char                       *description;
   cipher_test_case_t         *test_data;
   debug_module_t             *debug;
-  cipher_type_id_t            id;
+  srtp_cipher_type_id_t       id;
 } cipher_type_t;
 
 /*
  * cipher_t defines an instantiation of a particular cipher, with fixed
  * key length, key and salt values
  */
-
 typedef struct cipher_t {
   cipher_type_t *type;
   void          *state;
@@ -182,7 +170,6 @@ typedef struct cipher_t {
 } cipher_t;
 
 /* some syntactic sugar on these function types */
-
 #define cipher_type_alloc(ct, c, klen, tlen) ((ct)->alloc((c), (klen), (tlen)))
 
 #define cipher_dealloc(c) (((c)->type)->dealloc(c))
@@ -200,20 +187,17 @@ typedef struct cipher_t {
 
 #define cipher_set_iv(c, n, dir)                           \
   ((c) ? (((c)->type)->set_iv(((cipher_pointer_t)(c)->state), (n), (dir))) :   \
-                                err_status_no_such_op)  
+                                srtp_err_status_no_such_op)  
 #define cipher_set_aad(c, a, l)                       \
   (((c) && (((c)->type)->set_aad)) ?                  \
   (((c)->type)->set_aad(((c)->state), (a), (l))) :    \
-                                err_status_no_such_op)  
+                                srtp_err_status_no_such_op)  
 
-err_status_t
-cipher_output(cipher_t *c, uint8_t *buffer, int num_octets_to_output);
+srtp_err_status_t cipher_output(cipher_t *c, uint8_t *buffer, int num_octets_to_output);
 
 
 /* some bookkeeping functions */
-
-int
-cipher_get_key_length(const cipher_t *c);
+int cipher_get_key_length(const cipher_t *c);
 
 
 /* 
@@ -221,9 +205,7 @@ cipher_get_key_length(const cipher_t *c);
  * an array of values of key/xtd_seq_num_t/plaintext/ciphertext 
  * that is known to be good
  */
-
-err_status_t
-cipher_type_self_test(const cipher_type_t *ct);
+srtp_err_status_t cipher_type_self_test(const cipher_type_t *ct);
 
 
 /* 
@@ -231,9 +213,7 @@ cipher_type_self_test(const cipher_type_t *ct);
  * an array of values of key/xtd_seq_num_t/plaintext/ciphertext 
  * that is known to be good
  */
-
-err_status_t
-cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data);
+srtp_err_status_t cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data);
 
 
 /*
@@ -246,8 +226,6 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data);
  *
  * if an error is encountered, then the value 0 is returned
  */
-
-uint64_t
-cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials);
+uint64_t cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials);
 
 #endif /* CIPHER_H */

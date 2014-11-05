@@ -24,11 +24,11 @@ typedef struct {
   void *state;
 } random_source_t;
 
-err_status_t
+srtp_err_status_t
 random_source_alloc(void);
 
 void
-err_check(err_status_t s) {
+err_check(srtp_err_status_t s) {
   if (s) {
     printf("error (code %d)\n", s);
     exit(1);
@@ -146,7 +146,7 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(cipher_type_alloc(&aes_gcm_128_openssl, &c, AES_128_GCM_KEYSIZE_WSALT, 8));
+    err_check(cipher_type_alloc(&aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8));
     err_check(cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
     err_check(cipher_encrypt(c, buffer, &buf_len));
@@ -175,7 +175,7 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(cipher_type_alloc(&aes_gcm_256_openssl, &c, AES_256_GCM_KEYSIZE_WSALT, 16));
+    err_check(cipher_type_alloc(&aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16));
     err_check(cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
     err_check(cipher_encrypt(c, buffer, &buf_len));

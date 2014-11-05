@@ -82,7 +82,7 @@ extern cipher_type_t aes_gcm_256_openssl;
  * key length includes the 14 byte salt value that is used when
  * initializing the KDF.
  */
-err_status_t aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
+srtp_err_status_t aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
 {
     aes_gcm_ctx_t *gcm;
     int tmp;
@@ -94,21 +94,21 @@ err_status_t aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     /*
      * Verify the key_len is valid for one of: AES-128/256
      */
-    if (key_len != AES_128_GCM_KEYSIZE_WSALT && 
-	key_len != AES_256_GCM_KEYSIZE_WSALT) {
-        return (err_status_bad_param);
+    if (key_len != SRTP_AES_128_GCM_KEYSIZE_WSALT && 
+	key_len != SRTP_AES_256_GCM_KEYSIZE_WSALT) {
+        return (srtp_err_status_bad_param);
     }
 
     if (tlen != GCM_AUTH_TAG_LEN &&
 	tlen != GCM_AUTH_TAG_LEN_8) {
-        return (err_status_bad_param);
+        return (srtp_err_status_bad_param);
     }
 
     /* allocate memory a cipher of type aes_gcm */
     tmp = sizeof(cipher_t) + sizeof(aes_gcm_ctx_t);
     allptr = crypto_alloc(tmp);
     if (allptr == NULL) {
-        return (err_status_alloc_fail);
+        return (srtp_err_status_alloc_fail);
     }
 
     /* set pointers */
@@ -118,13 +118,13 @@ err_status_t aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
 
     /* setup cipher attributes */
     switch (key_len) {
-    case AES_128_GCM_KEYSIZE_WSALT:
+    case SRTP_AES_128_GCM_KEYSIZE_WSALT:
         (*c)->type = &aes_gcm_128_openssl;
         (*c)->algorithm = AES_128_GCM;
         ((aes_gcm_ctx_t*)(*c)->state)->key_size = AES_128_KEYSIZE;
         ((aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;  
         break;
-    case AES_256_GCM_KEYSIZE_WSALT:
+    case SRTP_AES_256_GCM_KEYSIZE_WSALT:
         (*c)->type = &aes_gcm_256_openssl;
         (*c)->algorithm = AES_256_GCM;
         ((aes_gcm_ctx_t*)(*c)->state)->key_size = AES_256_KEYSIZE;
@@ -136,14 +136,14 @@ err_status_t aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     (*c)->key_len = key_len;
     EVP_CIPHER_CTX_init(&gcm->ctx);
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 
 /*
  * This function deallocates a GCM session 
  */
-err_status_t aes_gcm_openssl_dealloc (cipher_t *c)
+srtp_err_status_t aes_gcm_openssl_dealloc (cipher_t *c)
 {
     aes_gcm_ctx_t *ctx;
 
@@ -158,7 +158,7 @@ err_status_t aes_gcm_openssl_dealloc (cipher_t *c)
     /* free memory */
     crypto_free(c);
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 /*
@@ -167,7 +167,7 @@ err_status_t aes_gcm_openssl_dealloc (cipher_t *c)
  *
  * the key is the secret key
  */
-err_status_t aes_gcm_openssl_context_init (aes_gcm_ctx_t *c, const uint8_t *key)
+srtp_err_status_t aes_gcm_openssl_context_init (aes_gcm_ctx_t *c, const uint8_t *key)
 {
     c->dir = direction_any;
 
@@ -185,7 +185,7 @@ err_status_t aes_gcm_openssl_context_init (aes_gcm_ctx_t *c, const uint8_t *key)
 
     EVP_CIPHER_CTX_cleanup(&c->ctx);
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 
@@ -193,14 +193,14 @@ err_status_t aes_gcm_openssl_context_init (aes_gcm_ctx_t *c, const uint8_t *key)
  * aes_gcm_openssl_set_iv(c, iv) sets the counter value to the exor of iv with
  * the offset
  */
-err_status_t aes_gcm_openssl_set_iv (aes_gcm_ctx_t *c, void *iv,
+srtp_err_status_t aes_gcm_openssl_set_iv (aes_gcm_ctx_t *c, void *iv,
 	                             int direction)
 {
     const EVP_CIPHER *evp;
     v128_t *nonce = iv;
 
     if (direction != direction_encrypt && direction != direction_decrypt) {
-        return (err_status_bad_param);
+        return (srtp_err_status_bad_param);
     }
     c->dir = direction;
 
@@ -214,27 +214,27 @@ err_status_t aes_gcm_openssl_set_iv (aes_gcm_ctx_t *c, void *iv,
         evp = EVP_aes_128_gcm();
         break;
     default:
-        return (err_status_bad_param);
+        return (srtp_err_status_bad_param);
         break;
     }
 
     if (!EVP_CipherInit_ex(&c->ctx, evp, NULL, (const unsigned char*)&c->key.v8,
                            NULL, (c->dir == direction_encrypt ? 1 : 0))) {
-        return (err_status_init_fail);
+        return (srtp_err_status_init_fail);
     }
 
     /* set IV len  and the IV value, the followiong 3 calls are required */
     if (!EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
-        return (err_status_init_fail);
+        return (srtp_err_status_init_fail);
     }
     if (!EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_IV_FIXED, -1, iv)) {
-        return (err_status_init_fail);
+        return (srtp_err_status_init_fail);
     }
     if (!EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_IV_GEN, 0, iv)) {
-        return (err_status_init_fail);
+        return (srtp_err_status_init_fail);
     }
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 /*
@@ -245,7 +245,7 @@ err_status_t aes_gcm_openssl_set_iv (aes_gcm_ctx_t *c, void *iv,
  *	aad	Additional data to process for AEAD cipher suites
  *	aad_len	length of aad buffer
  */
-err_status_t aes_gcm_openssl_set_aad (aes_gcm_ctx_t *c, unsigned char *aad, 
+srtp_err_status_t aes_gcm_openssl_set_aad (aes_gcm_ctx_t *c, unsigned char *aad, 
 	                              unsigned int aad_len)
 {
     int rv;
@@ -258,9 +258,9 @@ err_status_t aes_gcm_openssl_set_aad (aes_gcm_ctx_t *c, unsigned char *aad,
 
     rv = EVP_Cipher(&c->ctx, NULL, aad, aad_len);
     if (rv != aad_len) {
-        return (err_status_algo_fail);
+        return (srtp_err_status_algo_fail);
     } else {
-        return (err_status_ok);
+        return (srtp_err_status_ok);
     }
 }
 
@@ -272,11 +272,11 @@ err_status_t aes_gcm_openssl_set_aad (aes_gcm_ctx_t *c, unsigned char *aad,
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-err_status_t aes_gcm_openssl_encrypt (aes_gcm_ctx_t *c, unsigned char *buf, 
+srtp_err_status_t aes_gcm_openssl_encrypt (aes_gcm_ctx_t *c, unsigned char *buf, 
 	                              unsigned int *enc_len)
 {
     if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
-        return (err_status_bad_param);
+        return (srtp_err_status_bad_param);
     }
 
     /*
@@ -284,7 +284,7 @@ err_status_t aes_gcm_openssl_encrypt (aes_gcm_ctx_t *c, unsigned char *buf,
      */
     EVP_Cipher(&c->ctx, buf, buf, *enc_len);
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 /*
@@ -298,7 +298,7 @@ err_status_t aes_gcm_openssl_encrypt (aes_gcm_ctx_t *c, unsigned char *buf,
  *	buf	data to encrypt
  *	len	length of encrypt buffer
  */
-err_status_t aes_gcm_openssl_get_tag (aes_gcm_ctx_t *c, unsigned char *buf, 
+srtp_err_status_t aes_gcm_openssl_get_tag (aes_gcm_ctx_t *c, unsigned char *buf, 
 	                              int *len)
 {
     /*
@@ -316,7 +316,7 @@ err_status_t aes_gcm_openssl_get_tag (aes_gcm_ctx_t *c, unsigned char *buf,
      */
     *len = c->tag_len;
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 
@@ -328,11 +328,11 @@ err_status_t aes_gcm_openssl_get_tag (aes_gcm_ctx_t *c, unsigned char *buf,
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-err_status_t aes_gcm_openssl_decrypt (aes_gcm_ctx_t *c, unsigned char *buf, 
+srtp_err_status_t aes_gcm_openssl_decrypt (aes_gcm_ctx_t *c, unsigned char *buf, 
 	                              unsigned int *enc_len)
 {
     if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
-        return (err_status_bad_param);
+        return (srtp_err_status_bad_param);
     }
 
     /*
@@ -346,7 +346,7 @@ err_status_t aes_gcm_openssl_decrypt (aes_gcm_ctx_t *c, unsigned char *buf,
      * Check the tag
      */
     if (EVP_Cipher(&c->ctx, NULL, NULL, 0)) {
-        return (err_status_auth_fail);
+        return (srtp_err_status_auth_fail);
     }
 
     /*
@@ -355,7 +355,7 @@ err_status_t aes_gcm_openssl_decrypt (aes_gcm_ctx_t *c, unsigned char *buf,
      */
     *enc_len -= c->tag_len;
 
-    return (err_status_ok);
+    return (srtp_err_status_ok);
 }
 
 
@@ -372,7 +372,7 @@ char aes_gcm_256_openssl_description[] = "AES-256 GCM using openssl";
  * values we're derived from independent test code 
  * using OpenSSL.
  */
-uint8_t aes_gcm_test_case_0_key[AES_128_GCM_KEYSIZE_WSALT] = {
+uint8_t aes_gcm_test_case_0_key[SRTP_AES_128_GCM_KEYSIZE_WSALT] = {
     0xfe, 0xff, 0xe9, 0x92, 0x86, 0x65, 0x73, 0x1c,
     0x6d, 0x6a, 0x8f, 0x94, 0x67, 0x30, 0x83, 0x08,
     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -416,7 +416,7 @@ uint8_t aes_gcm_test_case_0_ciphertext[76] = {
 };
 
 cipher_test_case_t aes_gcm_test_case_0a = {
-    AES_128_GCM_KEYSIZE_WSALT,             /* octets in key            */
+    SRTP_AES_128_GCM_KEYSIZE_WSALT,        /* octets in key            */
     aes_gcm_test_case_0_key,               /* key                      */
     aes_gcm_test_case_0_iv,                /* packet index             */
     60,                                    /* octets in plaintext      */
@@ -430,7 +430,7 @@ cipher_test_case_t aes_gcm_test_case_0a = {
 };
 
 cipher_test_case_t aes_gcm_test_case_0 = {
-    AES_128_GCM_KEYSIZE_WSALT,             /* octets in key            */
+    SRTP_AES_128_GCM_KEYSIZE_WSALT,        /* octets in key            */
     aes_gcm_test_case_0_key,               /* key                      */
     aes_gcm_test_case_0_iv,                /* packet index             */
     60,                                    /* octets in plaintext      */
@@ -443,7 +443,7 @@ cipher_test_case_t aes_gcm_test_case_0 = {
     &aes_gcm_test_case_0a                  /* pointer to next testcase */
 };
 
-uint8_t aes_gcm_test_case_1_key[AES_256_GCM_KEYSIZE_WSALT] = {
+uint8_t aes_gcm_test_case_1_key[SRTP_AES_256_GCM_KEYSIZE_WSALT] = {
     0xfe, 0xff, 0xe9, 0x92, 0x86, 0x65, 0x73, 0x1c,
     0xa5, 0x59, 0x09, 0xc5, 0x54, 0x66, 0x93, 0x1c,
     0xaf, 0xf5, 0x26, 0x9a, 0x21, 0xd5, 0x14, 0xb2, 
@@ -490,7 +490,7 @@ uint8_t aes_gcm_test_case_1_ciphertext[76] = {
 };
 
 cipher_test_case_t aes_gcm_test_case_1a = {
-    AES_256_GCM_KEYSIZE_WSALT,                 /* octets in key            */
+    SRTP_AES_256_GCM_KEYSIZE_WSALT,        /* octets in key            */
     aes_gcm_test_case_1_key,               /* key                      */
     aes_gcm_test_case_1_iv,                /* packet index             */
     60,                                    /* octets in plaintext      */
@@ -504,7 +504,7 @@ cipher_test_case_t aes_gcm_test_case_1a = {
 };
 
 cipher_test_case_t aes_gcm_test_case_1 = {
-    AES_256_GCM_KEYSIZE_WSALT,                 /* octets in key            */
+    SRTP_AES_256_GCM_KEYSIZE_WSALT,        /* octets in key            */
     aes_gcm_test_case_1_key,               /* key                      */
     aes_gcm_test_case_1_iv,                /* packet index             */
     60,                                    /* octets in plaintext      */
@@ -532,7 +532,7 @@ cipher_type_t aes_gcm_128_openssl = {
     (char*)			aes_gcm_128_openssl_description,
     (cipher_test_case_t*)	&aes_gcm_test_case_0,
     (debug_module_t*)		&mod_aes_gcm,
-    (cipher_type_id_t)          AES_128_GCM
+    (srtp_cipher_type_id_t)     AES_128_GCM
 };
 
 /*
@@ -550,6 +550,6 @@ cipher_type_t aes_gcm_256_openssl = {
     (char*)			aes_gcm_256_openssl_description,
     (cipher_test_case_t*)	&aes_gcm_test_case_1,
     (debug_module_t*)		&mod_aes_gcm,
-    (cipher_type_id_t)          AES_256_GCM
+    (srtp_cipher_type_id_t)     AES_256_GCM
 };
 

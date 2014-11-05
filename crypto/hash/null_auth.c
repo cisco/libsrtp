@@ -55,7 +55,7 @@
 
 extern debug_module_t mod_auth;
 
-err_status_t
+srtp_err_status_t
 null_auth_alloc(auth_t **a, int key_len, int out_len) {
   extern auth_type_t null_auth;
   uint8_t *pointer;
@@ -66,7 +66,7 @@ null_auth_alloc(auth_t **a, int key_len, int out_len) {
   /* allocate memory for auth and null_auth_ctx_t structures */
   pointer = (uint8_t*)crypto_alloc(sizeof(null_auth_ctx_t) + sizeof(auth_t));
   if (pointer == NULL)
-    return err_status_alloc_fail;
+    return srtp_err_status_alloc_fail;
 
   /* set pointers */
   *a = (auth_t *)pointer;
@@ -76,10 +76,10 @@ null_auth_alloc(auth_t **a, int key_len, int out_len) {
   (*a)->prefix_len = out_len;
   (*a)->key_len = key_len;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 null_auth_dealloc(auth_t *a) {
   extern auth_type_t null_auth;
   
@@ -90,34 +90,34 @@ null_auth_dealloc(auth_t *a) {
   /* free memory */
   crypto_free(a);
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 null_auth_init(null_auth_ctx_t *state, const uint8_t *key, int key_len) {
 
   /* accept any length of key, and do nothing */
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 null_auth_compute(null_auth_ctx_t *state, uint8_t *message,
 		   int msg_octets, int tag_len, uint8_t *result) {
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 null_auth_update(null_auth_ctx_t *state, uint8_t *message,
 		   int msg_octets) {
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 null_auth_start(null_auth_ctx_t *state) {
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
@@ -153,6 +153,6 @@ null_auth  = {
   (char *)               null_auth_description,
   (auth_test_case_t *)   &null_auth_test_case_0,
   (debug_module_t *)     NULL,
-  (auth_type_id_t)       NULL_AUTH
+  (srtp_auth_type_id_t)  NULL_AUTH
 };
 

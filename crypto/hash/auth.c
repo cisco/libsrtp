@@ -81,11 +81,11 @@ auth_get_prefix_length(const auth_t *a) {
 /* should be big enough for most occasions */
 #define SELF_TEST_TAG_BUF_OCTETS 32
 
-err_status_t
+srtp_err_status_t
 auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data) {
   const auth_test_case_t *test_case = test_data;
   auth_t *a;
-  err_status_t status;
+  srtp_err_status_t status;
   uint8_t tag[SELF_TEST_TAG_BUF_OCTETS];
   int i, case_num = 0;
 
@@ -97,14 +97,14 @@ auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data) {
    * return an error if we don't - we need to be paranoid here
    */
   if (test_case == NULL)
-    return err_status_cant_check;
+    return srtp_err_status_cant_check;
 
   /* loop over all test cases */  
   while (test_case != NULL) {
 
     /* check test case parameters */
     if (test_case->tag_length_octets > SELF_TEST_TAG_BUF_OCTETS)
-      return err_status_bad_param;
+      return srtp_err_status_bad_param;
     
     /* allocate auth */
     status = auth_type_alloc(at, &a, test_case->key_length_octets,
@@ -141,16 +141,16 @@ auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data) {
 				   test_case->tag_length_octets));
 
     /* check the result */
-    status = err_status_ok;
+    status = srtp_err_status_ok;
     for (i=0; i < test_case->tag_length_octets; i++)
       if (tag[i] != test_case->tag[i]) {
-	status = err_status_algo_fail;
+	status = srtp_err_status_algo_fail;
 	debug_print(mod_auth, "test case %d failed", case_num);
 	debug_print(mod_auth, "  (mismatch at octet %d)", i);
       }
     if (status) {
       auth_dealloc(a);
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
     }
     
     /* deallocate the auth function */
@@ -166,7 +166,7 @@ auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data) {
     ++case_num;
   }
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -175,7 +175,7 @@ auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data) {
  * list of test data.
  */
 
-err_status_t
+srtp_err_status_t
 auth_type_self_test(const auth_type_t *at) {
   return auth_type_test(at, at->test_data);
 }

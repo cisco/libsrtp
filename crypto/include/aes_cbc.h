@@ -22,31 +22,17 @@ typedef struct {
   aes_expanded_key_t expanded_key; /* the cipher key                   */
 } aes_cbc_ctx_t;
 
-err_status_t
-aes_cbc_set_key(aes_cbc_ctx_t *c,
-		const unsigned char *key); 
+srtp_err_status_t aes_cbc_set_key(aes_cbc_ctx_t *c, const unsigned char *key); 
 
-err_status_t
-aes_cbc_encrypt(aes_cbc_ctx_t *c, 
-		unsigned char *buf, 
-		unsigned int  *bytes_in_data);
+srtp_err_status_t aes_cbc_encrypt(aes_cbc_ctx_t *c, unsigned char *buf, unsigned int  *bytes_in_data);
 
-err_status_t
-aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, 
-		     int key_len);
+srtp_err_status_t aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len);
 
-err_status_t
-aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction);
+srtp_err_status_t aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction);
 
-err_status_t
-aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
-		     unsigned char *data, 
-		     unsigned int *bytes_in_data);
+srtp_err_status_t aes_cbc_nist_encrypt(aes_cbc_ctx_t *c, unsigned char *data, unsigned int *bytes_in_data);
 
-err_status_t
-aes_cbc_nist_decrypt(aes_cbc_ctx_t *c,
-		     unsigned char *data, 
-		     unsigned int *bytes_in_data);
+srtp_err_status_t aes_cbc_nist_decrypt(aes_cbc_ctx_t *c, unsigned char *data, unsigned int *bytes_in_data);
 
 #endif /* AES_CBC_H */
 

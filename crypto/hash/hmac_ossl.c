@@ -60,7 +60,7 @@ debug_module_t mod_hmac = {
 };
 
 
-err_status_t
+srtp_err_status_t
 hmac_alloc (auth_t **a, int key_len, int out_len)
 {
     extern auth_type_t hmac;
@@ -75,18 +75,18 @@ hmac_alloc (auth_t **a, int key_len, int out_len)
      * than 20 bytes yet
      */
     if (key_len > HMAC_KEYLEN_MAX) {
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     /* check output length - should be less than 20 bytes */
     if (out_len > HMAC_KEYLEN_MAX) {
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     /* allocate memory for auth and hmac_ctx_t structures */
     pointer = (uint8_t*)crypto_alloc(sizeof(hmac_ctx_t) + sizeof(auth_t));
     if (pointer == NULL) {
-        return err_status_alloc_fail;
+        return srtp_err_status_alloc_fail;
     }
 
     /* set pointers */
@@ -99,10 +99,10 @@ hmac_alloc (auth_t **a, int key_len, int out_len)
     new_hmac_ctx = (hmac_ctx_t*)((*a)->state);
     memset(new_hmac_ctx, 0, sizeof(hmac_ctx_t));
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 hmac_dealloc (auth_t *a)
 {
     extern auth_type_t hmac;
@@ -123,10 +123,10 @@ hmac_dealloc (auth_t *a)
     /* free memory */
     crypto_free(a);
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 hmac_init (hmac_ctx_t *state, const uint8_t *key, int key_len)
 {
     int i;
@@ -137,7 +137,7 @@ hmac_init (hmac_ctx_t *state, const uint8_t *key, int key_len)
      * than 20 bytes yet
      */
     if (key_len > HMAC_KEYLEN_MAX) {
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     /*
@@ -165,21 +165,21 @@ hmac_init (hmac_ctx_t *state, const uint8_t *key, int key_len)
     return (hmac_start(state));
 }
 
-err_status_t
+srtp_err_status_t
 hmac_start (hmac_ctx_t *state)
 {
     if (state->ctx_initialized) {
         EVP_MD_CTX_cleanup(&state->ctx);
     }
     if (!EVP_MD_CTX_copy(&state->ctx, &state->init_ctx)) {
-        return err_status_auth_fail;
+        return srtp_err_status_auth_fail;
     } else {
         state->ctx_initialized = 1;
-        return err_status_ok;
+        return srtp_err_status_ok;
     }
 }
 
-err_status_t
+srtp_err_status_t
 hmac_update (hmac_ctx_t *state, const uint8_t *message, int msg_octets)
 {
     debug_print(mod_hmac, "input: %s",
@@ -188,10 +188,10 @@ hmac_update (hmac_ctx_t *state, const uint8_t *message, int msg_octets)
     /* hash message into sha1 context */
     srtp_sha1_update(&state->ctx, message, msg_octets);
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 hmac_compute (hmac_ctx_t *state, const void *message,
               int msg_octets, int tag_len, uint8_t *result)
 {
@@ -201,7 +201,7 @@ hmac_compute (hmac_ctx_t *state, const void *message,
 
     /* check tag length, return error if we can't provide the value expected */
     if (tag_len > HMAC_KEYLEN_MAX) {
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     /* hash message, copy output into H */
@@ -235,7 +235,7 @@ hmac_compute (hmac_ctx_t *state, const void *message,
     debug_print(mod_hmac, "output: %s",
                 octet_string_hex_string((uint8_t*)hash_value, tag_len));
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
 
@@ -290,6 +290,6 @@ auth_type_t
     (char*)		hmac_description,
     (auth_test_case_t*)	&hmac_test_case_0,
     (debug_module_t*)	&mod_hmac,
-    (auth_type_id_t)    HMAC_SHA1
+    (srtp_auth_type_id_t) HMAC_SHA1
 };
 

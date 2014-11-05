@@ -58,7 +58,7 @@ debug_module_t mod_cipher = {
   "cipher"           /* printable module name       */
 };
 
-err_status_t
+srtp_err_status_t
 cipher_output(cipher_t *c, uint8_t *buffer, int num_octets_to_output) {
   
   /* zeroize the buffer */
@@ -85,11 +85,11 @@ cipher_get_key_length(const cipher_t *c) {
 #define NUM_RAND_TESTS       128
 #define MAX_KEY_LEN          64
 
-err_status_t
+srtp_err_status_t
 cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
   const cipher_test_case_t *test_case = test_data;
   cipher_t *c;
-  err_status_t status;
+  srtp_err_status_t status;
   uint8_t buffer[SELF_TEST_BUF_OCTETS];
   uint8_t buffer2[SELF_TEST_BUF_OCTETS];
   int tag_len;
@@ -104,7 +104,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
    * return an error if we don't - we need to be paranoid here
    */
   if (test_case == NULL)
-    return err_status_cant_check;
+    return srtp_err_status_cant_check;
 
   /*
    * loop over all test cases, perform known-answer tests of both the
@@ -131,7 +131,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     /* copy plaintext into test buffer */
     if (test_case->ciphertext_length_octets > SELF_TEST_BUF_OCTETS) {
       cipher_dealloc(c);    
-      return err_status_bad_param;
+      return srtp_err_status_bad_param;
     }
     for (i=0; i < test_case->plaintext_length_octets; i++)
       buffer[i] = test_case->plaintext[i];
@@ -191,11 +191,11 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
 
     /* compare the resulting ciphertext with that in the test case */
     if (len != test_case->ciphertext_length_octets)
-      return err_status_algo_fail;
-    status = err_status_ok;
+      return srtp_err_status_algo_fail;
+    status = srtp_err_status_ok;
     for (i=0; i < test_case->ciphertext_length_octets; i++)
       if (buffer[i] != test_case->ciphertext[i]) {
-	status = err_status_algo_fail;
+	status = srtp_err_status_algo_fail;
 	debug_print(mod_cipher, "test case %d failed", case_num);
 	debug_print(mod_cipher, "(failure at byte %d)", i);
 	break;
@@ -210,7 +210,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
 			  2*test_case->plaintext_length_octets));
 
       cipher_dealloc(c);
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
     }
 
     /*
@@ -228,7 +228,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     /* copy ciphertext into test buffer */
     if (test_case->ciphertext_length_octets > SELF_TEST_BUF_OCTETS) {
       cipher_dealloc(c);    
-      return err_status_bad_param;
+      return srtp_err_status_bad_param;
     }
     for (i=0; i < test_case->ciphertext_length_octets; i++)
       buffer[i] = test_case->ciphertext[i];
@@ -273,11 +273,11 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
 
     /* compare the resulting plaintext with that in the test case */
     if (len != test_case->plaintext_length_octets)
-      return err_status_algo_fail;
-    status = err_status_ok;
+      return srtp_err_status_algo_fail;
+    status = srtp_err_status_ok;
     for (i=0; i < test_case->plaintext_length_octets; i++)
       if (buffer[i] != test_case->plaintext[i]) {
-	status = err_status_algo_fail;
+	status = srtp_err_status_algo_fail;
 	debug_print(mod_cipher, "test case %d failed", case_num);
 	debug_print(mod_cipher, "(failure at byte %d)", i);
       }
@@ -291,7 +291,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
 			  2*test_case->plaintext_length_octets));
 
       cipher_dealloc(c);
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
     }
 
     /* deallocate the cipher */
@@ -338,7 +338,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     
     /* choose a key at random */
     if (test_case->key_length_octets > MAX_KEY_LEN)
-      return err_status_cant_check;
+      return srtp_err_status_cant_check;
     status = rand_source_get_octet_string(key, test_case->key_length_octets);
     if (status) return status;
 
@@ -435,18 +435,18 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
 
     /* compare the resulting plaintext with the original one */
     if (length != plaintext_len) {
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
     }
-    status = err_status_ok;
+    status = srtp_err_status_ok;
     for (i=0; i < plaintext_len; i++)
       if (buffer[i] != buffer2[i]) {
-	status = err_status_algo_fail;
+	status = srtp_err_status_algo_fail;
 	debug_print(mod_cipher, "random test case %d failed", case_num);
 	debug_print(mod_cipher, "(failure at byte %d)", i);
       }
     if (status) {
       cipher_dealloc(c);
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
     }
         
   }
@@ -455,7 +455,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
   if (status)
     return status;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
@@ -464,7 +464,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
  * list of test data.
  */
 
-err_status_t
+srtp_err_status_t
 cipher_type_self_test(const cipher_type_t *ct) {
   return cipher_type_test(ct, ct->test_data);
 }

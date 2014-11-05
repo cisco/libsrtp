@@ -68,7 +68,7 @@ typedef struct hash_test_case_t {
 
 hash_test_case_t *sha1_test_case_list;
 
-err_status_t
+srtp_err_status_t
 hash_test_case_add(hash_test_case_t **list_ptr, 
 		   char *hex_data, 
 		   unsigned data_len, 
@@ -80,15 +80,15 @@ hash_test_case_add(hash_test_case_t **list_ptr,
 
   test_case = malloc(sizeof(hash_test_case_t));
   if (test_case == NULL)
-    return err_status_alloc_fail;
+    return srtp_err_status_alloc_fail;
   
   tmp_len = hex_string_to_octet_string((char *)test_case->data, hex_data, data_len*2);
   if (tmp_len != data_len*2)
-    return err_status_parse_err;
+    return srtp_err_status_parse_err;
 
   tmp_len = hex_string_to_octet_string((char *)test_case->hash, hex_hash, hash_len*2);
   if (tmp_len != hash_len*2)
-    return err_status_parse_err;
+    return srtp_err_status_parse_err;
 
   test_case->data_len = data_len;
   test_case->hash_len = hash_len;
@@ -97,21 +97,21 @@ hash_test_case_add(hash_test_case_t **list_ptr,
   test_case->next_test_case = list_head;
   *list_ptr = test_case;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 sha1_test_case_validate(const hash_test_case_t *test_case) {
   srtp_sha1_ctx_t ctx;
   uint32_t hash_value[5];
 
   if (test_case == NULL)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   if (test_case->hash_len != 20)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
   if (test_case->data_len > MAX_HASH_DATA_LEN)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   srtp_sha1_init(&ctx);
   srtp_sha1_update(&ctx, test_case->data, test_case->data_len);
@@ -123,7 +123,7 @@ sha1_test_case_validate(const hash_test_case_t *test_case) {
     printf("PASSED: computed value:  %s\n", 
 	   octet_string_hex_string((const uint8_t *)hash_value, 20));   
 #endif 
-    return err_status_ok;
+    return srtp_err_status_ok;
   }
 
   printf("reference value: %s\n", 
@@ -131,7 +131,7 @@ sha1_test_case_validate(const hash_test_case_t *test_case) {
   printf("computed value:  %s\n", 
 	 octet_string_hex_string((const uint8_t *)hash_value, 20));
 
-  return err_status_algo_fail;
+  return srtp_err_status_algo_fail;
   
 }
 
@@ -141,10 +141,10 @@ struct hex_sha1_test_case_t {
   char hex_hash[40];
 };
 
-err_status_t
+srtp_err_status_t
 sha1_add_test_cases(void) {
   int i;
-  err_status_t err;
+  srtp_err_status_t err;
 
   /*
    * these test cases are taken from the "SHA-1 Sample Vectors"
@@ -488,10 +488,10 @@ sha1_add_test_cases(void) {
     }
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 sha1_dealloc_test_cases(void) {
   hash_test_case_t *t, *next;
 
@@ -502,15 +502,15 @@ sha1_dealloc_test_cases(void) {
 
   sha1_test_case_list = NULL;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
 
-err_status_t
+srtp_err_status_t
 sha1_validate(void) {
   hash_test_case_t *test_case;
-  err_status_t err;
+  srtp_err_status_t err;
 
   err = sha1_add_test_cases();
   if (err) {
@@ -519,7 +519,7 @@ sha1_validate(void) {
   }  
 
   if (sha1_test_case_list == NULL)
-    return err_status_cant_check;
+    return srtp_err_status_cant_check;
   
   test_case = sha1_test_case_list;
   while (test_case != NULL) {
@@ -533,14 +533,14 @@ sha1_validate(void) {
 
   sha1_dealloc_test_cases();
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 
 
 int
 main (void) {
-  err_status_t err;
+  srtp_err_status_t err;
 
   printf("sha1 test driver\n");
 

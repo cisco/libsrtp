@@ -110,7 +110,7 @@ extern cipher_type_t aes_icm_256;
  * value.  The tlen argument is for the AEAD tag length, which
  * isn't used in counter mode.
  */
-err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
+srtp_err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
 {
     aes_icm_ctx_t *icm;
     int tmp;
@@ -123,14 +123,14 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
      */
     if (key_len != AES_128_KEYSIZE_WSALT && key_len != AES_192_KEYSIZE_WSALT &&
         key_len != AES_256_KEYSIZE_WSALT) {
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     /* allocate memory a cipher of type aes_icm */
     tmp = sizeof(cipher_t) + sizeof(aes_icm_ctx_t);
     allptr = (uint8_t*)crypto_alloc(tmp);
     if (allptr == NULL) {
-        return err_status_alloc_fail;
+        return srtp_err_status_alloc_fail;
     }
 
     /* set pointers */
@@ -161,19 +161,19 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     (*c)->key_len = key_len;
     EVP_CIPHER_CTX_init(&icm->ctx);
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
 
 /*
  * This function deallocates an instance of this engine
  */
-err_status_t aes_icm_openssl_dealloc (cipher_t *c)
+srtp_err_status_t aes_icm_openssl_dealloc (cipher_t *c)
 {
     aes_icm_ctx_t *ctx;
 
     if (c == NULL) {
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     /*
@@ -191,7 +191,7 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
     /* free memory */
     crypto_free(c);
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
 /*
@@ -203,7 +203,7 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
  * the salt is unpredictable (but not necessarily secret) data which
  * randomizes the starting point in the keystream
  */
-err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key, int len)
+srtp_err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key, int len)
 {
     /*
      * set counter and initial values to 'offset' value, being careful not to
@@ -211,7 +211,7 @@ err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key,
      */
 
     if (c->key_size + SALT_SIZE != len)
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
 
     v128_set_to_zero(&c->counter);
     v128_set_to_zero(&c->offset);
@@ -242,7 +242,7 @@ err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key,
 
     EVP_CIPHER_CTX_cleanup(&c->ctx);
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
 
@@ -250,7 +250,7 @@ err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key,
  * aes_icm_set_iv(c, iv) sets the counter value to the exor of iv with
  * the offset
  */
-err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
+srtp_err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
 {
     const EVP_CIPHER *evp;
     v128_t *nonce = (v128_t*)iv;
@@ -272,15 +272,15 @@ err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
         evp = EVP_aes_128_ctr();
         break;
     default:
-        return err_status_bad_param;
+        return srtp_err_status_bad_param;
         break;
     }
 
     if (!EVP_EncryptInit_ex(&c->ctx, evp,
                             NULL, c->key.v8, c->counter.v8)) {
-        return err_status_fail;
+        return srtp_err_status_fail;
     } else {
-        return err_status_ok;
+        return srtp_err_status_ok;
     }
 }
 
@@ -292,23 +292,23 @@ err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-err_status_t aes_icm_openssl_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
+srtp_err_status_t aes_icm_openssl_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
 {
     int len = 0;
 
     debug_print(mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
     if (!EVP_EncryptUpdate(&c->ctx, buf, &len, buf, *enc_len)) {
-        return err_status_cipher_fail;
+        return srtp_err_status_cipher_fail;
     }
     *enc_len = len;
 
     if (!EVP_EncryptFinal_ex(&c->ctx, buf, &len)) {
-        return err_status_cipher_fail;
+        return srtp_err_status_cipher_fail;
     }
     *enc_len += len;
 
-    return err_status_ok;
+    return srtp_err_status_ok;
 }
 
 uint16_t aes_icm_bytes_encrypted(aes_icm_ctx_t *c)
@@ -476,7 +476,7 @@ cipher_type_t aes_icm = {
     (char*)                        aes_icm_openssl_description,
     (cipher_test_case_t*)          &aes_icm_test_case_0,
     (debug_module_t*)              &mod_aes_icm,
-    (cipher_type_id_t)             AES_ICM
+    (srtp_cipher_type_id_t)        AES_ICM
 };
 
 /*
@@ -495,7 +495,7 @@ cipher_type_t aes_icm_192 = {
     (char*)                        aes_icm_192_openssl_description,
     (cipher_test_case_t*)          &aes_icm_192_test_case_1,
     (debug_module_t*)              &mod_aes_icm,
-    (cipher_type_id_t)             AES_192_ICM
+    (srtp_cipher_type_id_t)        AES_192_ICM
 };
 
 /*
@@ -514,6 +514,6 @@ cipher_type_t aes_icm_256 = {
     (char*)                        aes_icm_256_openssl_description,
     (cipher_test_case_t*)          &aes_icm_256_test_case_2,
     (debug_module_t*)              &mod_aes_icm,
-    (cipher_type_id_t)             AES_256_ICM
+    (srtp_cipher_type_id_t)        AES_256_ICM
 };
 

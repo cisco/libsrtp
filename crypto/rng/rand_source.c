@@ -75,17 +75,17 @@
 static int dev_random_fdes = RAND_SOURCE_NOT_READY;
 
 
-err_status_t
+srtp_err_status_t
 rand_source_init(void) {
   if (dev_random_fdes >= 0) {
     /* already open */
-    return err_status_ok;
+    return srtp_err_status_ok;
   }
 #ifdef DEV_URANDOM
   /* open random source for reading */
   dev_random_fdes = open(DEV_URANDOM, O_RDONLY);
   if (dev_random_fdes < 0)
-    return err_status_init_fail;
+    return srtp_err_status_init_fail;
 #elif defined(HAVE_RAND_S)
   dev_random_fdes = RAND_SOURCE_READY;
 #else
@@ -93,10 +93,10 @@ rand_source_init(void) {
   fprintf(stderr, "WARNING: no real random source present!\n");
   dev_random_fdes = RAND_SOURCE_READY;
 #endif
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 rand_source_get_octet_string(void *dest, uint32_t len) {
 
   /* 
@@ -110,7 +110,7 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
   {
     ssize_t num_read = read(dev_random_fdes, dst, len);
     if (num_read <= 0 || num_read > len)
-      return err_status_fail;
+      return srtp_err_status_fail;
     len -= num_read;
     dst += num_read;
   }
@@ -122,7 +122,7 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
     errno_t err = rand_s(&val);
 
     if (err != 0)
-      return err_status_fail;
+      return srtp_err_status_fail;
   
     *dst++ = val & 0xff;
     len--;
@@ -141,18 +141,18 @@ rand_source_get_octet_string(void *dest, uint32_t len) {
 	  len--;
   }
 #endif
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
  
-err_status_t
+srtp_err_status_t
 rand_source_deinit(void) {
   if (dev_random_fdes < 0)
-    return err_status_dealloc_fail;  /* well, we haven't really failed, *
+    return srtp_err_status_dealloc_fail;  /* well, we haven't really failed, *
 				      * but there is something wrong    */
 #ifdef DEV_URANDOM
   close(dev_random_fdes);  
 #endif
   dev_random_fdes = RAND_SOURCE_NOT_READY;
   
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }

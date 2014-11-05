@@ -24,7 +24,7 @@
 int
 rtp_sendto(rtp_sender_t sender, const void* msg, int len) {
   int octets_sent;
-  err_status_t stat;
+  srtp_err_status_t stat;
   int pkt_len = len + RTP_HEADER_LEN;
 
   /* marshal data */
@@ -64,7 +64,7 @@ rtp_sendto(rtp_sender_t sender, const void* msg, int len) {
 int
 rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len) {
   int octets_recvd;
-  err_status_t stat;
+  srtp_err_status_t stat;
   
   octets_recvd = recvfrom(receiver->socket, (void *)&receiver->message,
 			 *len, 0, (struct sockaddr *) NULL, 0);
@@ -94,8 +94,8 @@ rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len) {
   if (stat) {
     fprintf(stderr,
 	    "error: srtp unprotection failed with code %d%s\n", stat,
-	    stat == err_status_replay_fail ? " (replay check failed)" :
-	    stat == err_status_auth_fail ? " (auth check failed)" : "");
+	    stat == srtp_err_status_replay_fail ? " (replay check failed)" :
+	    stat == srtp_err_status_auth_fail ? " (auth check failed)" : "");
     return -1;
   }
   strncpy(msg, receiver->message.body, octets_recvd);

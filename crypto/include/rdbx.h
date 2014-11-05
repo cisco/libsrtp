@@ -56,9 +56,7 @@ typedef struct {
  * initializes the rdbx pointed to by its argument with the window size ws,
  * setting the rollover counter and sequence number to zero
  */
-
-err_status_t
-rdbx_init(rdbx_t *rdbx, unsigned long ws);
+srtp_err_status_t rdbx_init(rdbx_t *rdbx, unsigned long ws);
 
 
 /*
@@ -66,9 +64,7 @@ rdbx_init(rdbx_t *rdbx, unsigned long ws);
  *
  * frees memory associated with the rdbx
  */
-
-err_status_t
-rdbx_dealloc(rdbx_t *rdbx);
+srtp_err_status_t rdbx_dealloc(rdbx_t *rdbx);
 
 
 /*
@@ -92,9 +88,7 @@ rdbx_estimate_index(const rdbx_t *rdbx,
  * which is at rdbx->window_start + delta is in the rdb
  *
  */
-
-err_status_t
-rdbx_check(const rdbx_t *rdbx, int difference);
+srtp_err_status_t rdbx_check(const rdbx_t *rdbx, int difference);
 
 /*
  * replay_add_index(rdbx, delta)
@@ -106,21 +100,17 @@ rdbx_check(const rdbx_t *rdbx, int difference);
  * indicated that the index does not appear in the rdbx, and a mutex
  * should protect the rdbx between these calls if necessary.
  */
-
-err_status_t
-rdbx_add_index(rdbx_t *rdbx, int delta);
+srtp_err_status_t rdbx_add_index(rdbx_t *rdbx, int delta);
 
 
 /*
  * rdbx_set_roc(rdbx, roc) initalizes the rdbx_t at the location rdbx
  * to have the rollover counter value roc.  If that value is less than
  * the current rollover counter value, then the function returns
- * err_status_replay_old; otherwise, err_status_ok is returned.
+ * srtp_err_status_replay_old; otherwise, srtp_err_status_ok is returned.
  * 
  */
-
-err_status_t
-rdbx_set_roc(rdbx_t *rdbx, uint32_t roc);
+srtp_err_status_t rdbx_set_roc(rdbx_t *rdbx, uint32_t roc);
 
 /*
  * rdbx_get_roc(rdbx) returns the value of the rollover counter for

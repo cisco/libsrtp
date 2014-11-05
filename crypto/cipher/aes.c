@@ -1476,32 +1476,32 @@ aes_256_expand_encryption_key(const unsigned char *key,
   }
 }
 
-err_status_t
+srtp_err_status_t
 aes_expand_encryption_key(const uint8_t *key, 
 			  int key_len,
 			  aes_expanded_key_t *expanded_key) {
   if (key_len == 16) {
     aes_128_expand_encryption_key(key, expanded_key);
-    return err_status_ok;
+    return srtp_err_status_ok;
   }
   else if (key_len == 24) {
     /* AES-192 not yet supported */
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
   }
   else if (key_len == 32) {
     aes_256_expand_encryption_key(key, expanded_key);
-    return err_status_ok;
+    return srtp_err_status_ok;
   }
   else
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 }
 
-err_status_t
+srtp_err_status_t
 aes_expand_decryption_key(const uint8_t *key, 
 			  int key_len,
 			  aes_expanded_key_t *expanded_key) {
   int i;
-  err_status_t status;
+  srtp_err_status_t status;
   int num_rounds = expanded_key->num_rounds;
 
   status = aes_expand_encryption_key(key, key_len, expanded_key);
@@ -1587,7 +1587,7 @@ aes_expand_decryption_key(const uint8_t *key,
 #endif     
   }
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 #ifdef CPU_CISC

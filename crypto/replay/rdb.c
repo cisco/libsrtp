@@ -62,34 +62,34 @@
 
 /* rdb_init initalizes rdb */
 
-err_status_t
+srtp_err_status_t
 rdb_init(rdb_t *rdb) {
   v128_set_to_zero(&rdb->bitmask);
   rdb->window_start = 0;
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
  * rdb_check checks to see if index appears in rdb
  */
 
-err_status_t
+srtp_err_status_t
 rdb_check(const rdb_t *rdb, uint32_t p_index) {
   
   /* if the index appears after (or at very end of) the window, its good */
   if (p_index >= rdb->window_start + rdb_bits_in_bitmask)
-    return err_status_ok;
+    return srtp_err_status_ok;
   
   /* if the index appears before the window, its bad */
   if (p_index < rdb->window_start)
-    return err_status_replay_old;
+    return srtp_err_status_replay_old;
 
   /* otherwise, the index appears within the window, so check the bitmask */
   if (v128_get_bit(&rdb->bitmask, (p_index - rdb->window_start)) == 1)
-    return err_status_replay_fail;    
+    return srtp_err_status_replay_fail;    
       
   /* otherwise, the index is okay */
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
@@ -101,7 +101,7 @@ rdb_check(const rdb_t *rdb, uint32_t p_index) {
  * should protect the rdb between these calls
  */
 
-err_status_t
+srtp_err_status_t
 rdb_add_index(rdb_t *rdb, uint32_t p_index) {
   int delta;  
 
@@ -124,15 +124,15 @@ rdb_add_index(rdb_t *rdb, uint32_t p_index) {
 
   }    
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 rdb_increment(rdb_t *rdb) {
 
   if (rdb->window_start++ > 0x7fffffff)
-    return err_status_key_expired;
-  return err_status_ok;
+    return srtp_err_status_key_expired;
+  return srtp_err_status_ok;
 }
 
 uint32_t

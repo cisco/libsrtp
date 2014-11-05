@@ -53,10 +53,10 @@
 
 ctr_prng_t ctr_prng;
 
-err_status_t
+srtp_err_status_t
 ctr_prng_init(rand_source_func_t random_source) {
   uint8_t tmp_key[32];
-  err_status_t status;
+  srtp_err_status_t status;
 
   /* initialize output count to zero */
   ctr_prng.octet_count = 0;
@@ -78,12 +78,12 @@ ctr_prng_init(rand_source_func_t random_source) {
   if (status) 
     return status;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 ctr_prng_get_octet_string(void *dest, uint32_t len) {
-  err_status_t status;
+  srtp_err_status_t status;
 
   /* 
    * if we need to re-initialize the prng, do so now 
@@ -102,13 +102,13 @@ ctr_prng_get_octet_string(void *dest, uint32_t len) {
   if (status)
     return status;
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 ctr_prng_deinit(void) {
 
   /* nothing */
   
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }

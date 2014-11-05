@@ -53,10 +53,10 @@
 
 x917_prng_t x917_prng;
 
-err_status_t
+srtp_err_status_t
 x917_prng_init(rand_source_func_t random_source) {
   uint8_t tmp_key[16];
-  err_status_t status;
+  srtp_err_status_t status;
 
   /* initialize output count to zero */
   x917_prng.octet_count = 0;
@@ -77,15 +77,15 @@ x917_prng_init(rand_source_func_t random_source) {
   if (status) 
     return status;
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
   uint32_t t;
   v128_t buffer;
   uint32_t i, tail_len;
-  err_status_t status;
+  srtp_err_status_t status;
 
   /* 
    * if we need to re-initialize the prng, do so now 
@@ -174,11 +174,11 @@ x917_prng_get_octet_string(uint8_t *dest, uint32_t len) {
 
   }
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
-err_status_t
+srtp_err_status_t
 x917_prng_deinit(void) {
   
-  return err_status_ok;  
+  return srtp_err_status_ok;  
 }

@@ -61,12 +61,12 @@
 #include "rdbx.h"
 #include "ut_sim.h"
 
-err_status_t
+srtp_err_status_t
 roc_test(int num_trials);
 
 int
 main (void) {
-  err_status_t status;
+  srtp_err_status_t status;
 
   printf("rollover counter test driver\n"
 	 "David A. McGrew\n"
@@ -85,7 +85,7 @@ main (void) {
 
 #define ROC_VERBOSE 0
 
-err_status_t
+srtp_err_status_t
 roc_test(int num_trials) {
   xtd_seq_num_t local, est, ref;
   ut_connection utc;
@@ -116,7 +116,7 @@ roc_test(int num_trials) {
   if (failure_rate > 0.01) {
     printf("error: failure rate too high (%d bad estimates in %d trials)\n", 
 	   num_bad_est, num_trials);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }
   printf("done\n");
 
@@ -145,7 +145,7 @@ roc_test(int num_trials) {
     if (local + delta != est) {
       printf(" *bad delta*: local %llu + delta %d != est %llu\n",
 	     (unsigned long long)local, delta, (unsigned long long)est);
-      return err_status_algo_fail;
+      return srtp_err_status_algo_fail;
     }
 
     /* now update local xtd_seq_num_t as necessary */
@@ -167,9 +167,9 @@ roc_test(int num_trials) {
   if (failure_rate > 0.01) {
     printf("error: failure rate too high (%d bad estimates in %d trials)\n", 
 	   num_bad_est, num_trials);
-    return err_status_algo_fail;
+    return srtp_err_status_algo_fail;
   }
   printf("done\n");
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }

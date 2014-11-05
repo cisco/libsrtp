@@ -186,39 +186,39 @@ index_guess(const xtd_seq_num_t *local,
  *  rdbx_init(&r, ws) initializes the rdbx_t pointed to by r with window size ws
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_init(rdbx_t *rdbx, unsigned long ws) {
   if (ws == 0)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   if (bitvector_alloc(&rdbx->bitmask, ws) != 0)
-    return err_status_alloc_fail;
+    return srtp_err_status_alloc_fail;
 
   index_init(&rdbx->index);
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
  *  rdbx_dealloc(&r) frees memory for the rdbx_t pointed to by r
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_dealloc(rdbx_t *rdbx) {
   bitvector_dealloc(&rdbx->bitmask);
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
  * rdbx_set_roc(rdbx, roc) initalizes the rdbx_t at the location rdbx
  * to have the rollover counter value roc.  If that value is less than
  * the current rollover counter value, then the function returns
- * err_status_replay_old; otherwise, err_status_ok is returned.
+ * srtp_err_status_replay_old; otherwise, srtp_err_status_ok is returned.
  * 
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_set_roc(rdbx_t *rdbx, uint32_t roc) {
   bitvector_set_to_zero(&rdbx->bitmask);
 
@@ -228,13 +228,13 @@ rdbx_set_roc(rdbx_t *rdbx, uint32_t roc) {
 
   /* make sure that we're not moving backwards */
   if (roc < (rdbx->index >> 16))
-    return err_status_replay_old;
+    return srtp_err_status_replay_old;
 
   rdbx->index &= 0xffff;   /* retain lowest 16 bits */
   rdbx->index |= ((uint64_t)roc) << 16;  /* set ROC */
 #endif
 
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 /*
@@ -264,22 +264,22 @@ rdbx_get_window_size(const rdbx_t *rdbx) {
  * which is at rdbx->index + delta is in the rdb
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_check(const rdbx_t *rdbx, int delta) {
   
   if (delta > 0) {       /* if delta is positive, it's good */
-    return err_status_ok;
+    return srtp_err_status_ok;
   } else if ((int)(bitvector_get_length(&rdbx->bitmask) - 1) + delta < 0) {   
                          /* if delta is lower than the bitmask, it's bad */
-    return err_status_replay_old; 
+    return srtp_err_status_replay_old; 
   } else if (bitvector_get_bit(&rdbx->bitmask, 
 			       (int)(bitvector_get_length(&rdbx->bitmask) - 1) + delta) == 1) {
                          /* delta is within the window, so check the bitmask */
-    return err_status_replay_fail;    
+    return srtp_err_status_replay_fail;    
   }
  /* otherwise, the index is okay */
 
-  return err_status_ok; 
+  return srtp_err_status_ok; 
 }
 
 /*
@@ -291,7 +291,7 @@ rdbx_check(const rdbx_t *rdbx, int delta) {
  * should protect the rdbx between these calls if need be
  */
 
-err_status_t
+srtp_err_status_t
 rdbx_add_index(rdbx_t *rdbx, int delta) {
   
   if (delta > 0) {
@@ -306,7 +306,7 @@ rdbx_add_index(rdbx_t *rdbx, int delta) {
 
   /* note that we need not consider the case that delta == 0 */
   
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 

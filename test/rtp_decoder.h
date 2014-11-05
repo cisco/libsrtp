@@ -69,49 +69,36 @@ typedef struct rtp_decoder_ctx_t *rtp_decoder_t;
 /*
  * error to string
  */
-
-void rtp_print_error(err_status_t status, char *message);
+void rtp_print_error(srtp_err_status_t status, char *message);
 
 /* 
  * prints the output of a random buffer in hexadecimal
  */
-
-void
-hexdump(const void *ptr, size_t size);
+void hexdump(const void *ptr, size_t size);
 
 /*
  * the function usage() prints an error message describing how this
  * program should be called, then calls exit()
  */
-
-void
-usage(char *prog_name);
+void usage(char *prog_name);
 
 /*
  * transforms base64 key into octet
  */
-
 char *decode_sdes(char *in, char *out);
 
 /* 
  * pcap handling
  */
+void rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr, const u_char *bytes);
 
-void
-rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
-	const u_char *bytes);
+rtp_decoder_t rtp_decoder_alloc(void);
 
-rtp_decoder_t
-rtp_decoder_alloc(void);
+void rtp_decoder_dealloc(rtp_decoder_t rtp_ctx);
 
-void
-rtp_decoder_dealloc(rtp_decoder_t rtp_ctx);
+int rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy);
 
-int
-rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy);
-
-err_status_t
-rtp_decoder_init_srtp(rtp_decoder_t decoder, unsigned int ssrc);
+srtp_err_status_t rtp_decoder_init_srtp(rtp_decoder_t decoder, unsigned int ssrc);
 
 int
 rtp_decoder_deinit_srtp(rtp_decoder_t decoder);
