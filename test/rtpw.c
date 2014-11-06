@@ -55,7 +55,6 @@
     #include <config.h>
 #endif
 
-#include "datatypes.h"
 #include "getopt_s.h"       /* for local getopt()  */
 
 #include <stdio.h>          /* for printf, fprintf */
@@ -85,6 +84,8 @@
 
 #include "srtp.h"           
 #include "rtp.h"
+//FIXME: the following header file is not public.  we still need to
+//       move the crypto_kernel_*debug* API to the public header files.
 #include "crypto_kernel.h"
 
 #ifdef RTPW_USE_WINSOCK2
@@ -491,21 +492,11 @@ main (int argc, char *argv[]) {
      * the effect of this policy is to turn off SRTP, so that this
      * application is now a vanilla-flavored RTP application.
      */
+    srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtp);
+    srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtcp);
     policy.key                 = (uint8_t *)key;
     policy.ssrc.type           = ssrc_specific;
     policy.ssrc.value          = ssrc;
-    policy.rtp.cipher_type     = NULL_CIPHER;
-    policy.rtp.cipher_key_len  = 0; 
-    policy.rtp.auth_type       = NULL_AUTH;
-    policy.rtp.auth_key_len    = 0;
-    policy.rtp.auth_tag_len    = 0;
-    policy.rtp.sec_serv        = sec_serv_none;   
-    policy.rtcp.cipher_type    = NULL_CIPHER;
-    policy.rtcp.cipher_key_len = 0; 
-    policy.rtcp.auth_type      = NULL_AUTH;
-    policy.rtcp.auth_key_len   = 0;
-    policy.rtcp.auth_tag_len   = 0;
-    policy.rtcp.sec_serv       = sec_serv_none;   
     policy.window_size         = 0;
     policy.allow_repeat_tx     = 0;
     policy.ekt                 = NULL;

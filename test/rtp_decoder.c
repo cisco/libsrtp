@@ -309,33 +309,8 @@ policy.rtp.auth_tag_len = tag_size;
     fprintf(stderr, "%s\n", octet_string_hex_string(key+16, 14));
   
   } else {
-    /*
-     * we're not providing security services, so set the policy to the
-     * null policy
-     *
-     * Note that this policy does not conform to the SRTP
-     * specification, since RTCP authentication is required.  However,
-     * the effect of this policy is to turn off SRTP, so that this
-     * application is now a vanilla-flavored RTP application.
-     */
-    policy.key                 = (uint8_t *)key;
-    policy.ssrc.type           = ssrc_specific;
-    policy.rtp.cipher_type     = NULL_CIPHER;
-    policy.rtp.cipher_key_len  = 0; 
-    policy.rtp.auth_type       = NULL_AUTH;
-    policy.rtp.auth_key_len    = 0;
-    policy.rtp.auth_tag_len    = 0;
-    policy.rtp.sec_serv        = sec_serv_none;   
-    policy.rtcp.cipher_type    = NULL_CIPHER;
-    policy.rtcp.cipher_key_len = 0; 
-    policy.rtcp.auth_type      = NULL_AUTH;
-    policy.rtcp.auth_key_len   = 0;
-    policy.rtcp.auth_tag_len   = 0;
-    policy.rtcp.sec_serv       = sec_serv_none;   
-    policy.window_size         = 0;
-    policy.allow_repeat_tx     = 0;
-    policy.ekt                 = NULL;
-    policy.next                = NULL;
+      fprintf(stderr, "error: neither encryption or authentication were selected");
+      exit(1);    
   }
 
 	pcap_handle = pcap_open_offline("-", errbuf);

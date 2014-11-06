@@ -53,8 +53,8 @@
 #include "crypto_types.h"	/* for values of cipher_type_id_t */
 
 
-/**
- * @brief cipher_direction_t defines a particular cipher operation. 
+/*
+ * cipher_direction_t defines a particular cipher operation. 
  *
  * A cipher_direction_t is an enum that describes a particular cipher
  * operation, i.e. encryption or decryption.  For some ciphers, this

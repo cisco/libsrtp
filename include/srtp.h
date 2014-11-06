@@ -769,8 +769,32 @@ void srtp_crypto_policy_set_aes_cm_128_null_auth(srtp_crypto_policy_t *p);
  * @return void.
  * 
  */
-
 void srtp_crypto_policy_set_null_cipher_hmac_sha1_80(srtp_crypto_policy_t *p);
+
+/**
+ * @brief srtp_crypto_policy_set_null_cipher_hmac_null() sets a crypto
+ * policy structure to use no encryption or authentication. 
+ *
+ * @param p is a pointer to the policy structure to be set 
+ * 
+ * The function call srtp_crypto_policy_set_null_cipher_hmac_null(&p)
+ * sets the srtp_crypto_policy_t at location p to use no encryption and
+ * no authentication.  This policy should only be used for testing and
+ * troubleshootingl. 
+ * 
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the srtp_crypto_policy_t datatype.
+ *
+ * @warning This policy is NOT RECOMMENDED for SRTP unless there is a
+ * requirement to forego encryption and authentication.  
+ *
+ * @return void.
+ * 
+ */
+void srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p);
 
 
 /**

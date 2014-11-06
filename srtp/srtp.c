@@ -2059,6 +2059,22 @@ srtp_crypto_policy_set_null_cipher_hmac_sha1_80(srtp_crypto_policy_t *p) {
   
 }
 
+void
+srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p) {
+
+  /*
+   * Should only be used for testing
+   */
+
+  p->cipher_type     = NULL_CIPHER;           
+  p->cipher_key_len  = 0;
+  p->auth_type       = NULL_AUTH;             
+  p->auth_key_len    = 0; 
+  p->auth_tag_len    = 0; 
+  p->sec_serv        = sec_serv_none;
+  
+}
+
 
 void
 srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(srtp_crypto_policy_t *p) {
