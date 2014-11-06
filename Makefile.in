@@ -7,7 +7,6 @@
 #
 # runtest       runs test applications 
 # test		builds test applications
-# libcrypt.a	static library implementing crypto engine
 # libsrtp.a	static library implementing srtp
 # libsrtp.so	shared library implementing srtp
 # clean		removes objects, libs, and executables
@@ -18,11 +17,11 @@ USE_OPENSSL = @USE_OPENSSL@
 HAVE_PCAP = @HAVE_PCAP@
 HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 
-.PHONY: all test build_table_apps
+.PHONY: all test
 
 all: test 
 
-runtest: build_table_apps test
+runtest: test
 	@echo "running libsrtp test applications..."
 	crypto/test/cipher_driver$(EXE) -v >/dev/null
 	crypto/test/kernel_driver$(EXE) -v >/dev/null
@@ -85,8 +84,6 @@ endif
 %$(EXE): %.c
 	$(COMPILE) $(LDFLAGS) $< -o $@ $(SRTPLIB) $(LIBS)
 
-
-# libcrypt.a (the crypto engine) 
 ciphers = crypto/cipher/cipher.o crypto/cipher/null_cipher.o      \
           $(AES_ICM_OBJS)     
 
@@ -120,17 +117,6 @@ libsrtp.a: $(srtpobj) $(cryptobj)
 libsrtp.so: $(srtpobj) $(cryptobj) 
 	$(CC) -shared -Wl,-soname,libsrtp.so \
 	    -o libsrtp.so $^ $(LDFLAGS)
-
-# libcryptomath.a contains general-purpose routines that are used to
-# generate tables and verify cryptoalgorithm implementations - this
-# library is not meant to be included in production code
-
-cryptomath = crypto/math/math.o crypto/math/gf2_8.o 
-
-libcryptomath.a: $(cryptomath)
-	ar cr libcryptomath.a $(cryptomath)
-	$(RANLIB) libcryptomath.a
-
 
 # test applications 
 ifneq (1, $(USE_OPENSSL))
@@ -183,19 +169,6 @@ memtest: test/srtp_driver
 	@echo "passed (same number of alloc() and dealloc() calls found)"
 	@rm freed allocated tmp
 
-# tables_apps are used to generate the tables used in the crypto
-# implementations; these need only be generated during porting, not
-# for building libsrtp or the test applications
-
-table_apps = tables/aes_tables 
-
-build_table_apps: $(table_apps)
-
-# in the tables/ subdirectory, we use libcryptomath instead of libsrtp
-
-tables/%: tables/%.c libcryptomath.a 
-	$(COMPILE) $(LDFLAGS) $< -o $@ $(LIBS) libcryptomath.a
-
 # the target 'plot' runs the timing test (test/srtp_driver -t) then
 # uses gnuplot to produce plots of the results - see the script file
 # 'timing'
@@ -244,17 +217,15 @@ uninstall:
 	fi
 
 clean:
-	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
-        libcryptomath.a libsrtp.a libsrtp.so core *.core test/core
+	rm -rf $(cryptobj) $(srtpobj) TAGS \
+        libsrtp.a libsrtp.so core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;
-	for a in $(testapp) $(table_apps); do rm -rf $$a$(EXE); done
+	for a in $(testapp); do rm -rf $$a$(EXE); done
 	rm -rf *.pict *.jpg *.dat 
 	rm -rf freed allocated tmp
 	$(MAKE) -C doc clean
-	$(MAKE) -C crypto clean
-
 
 superclean: clean
 	rm -rf crypto/include/config.h config.log config.cache config.status \

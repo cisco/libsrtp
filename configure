@@ -6434,7 +6434,6 @@ fi
 
 
 # This is needed when building outside the source dir.
-as_dir=crypto/ae_xfm; as_fn_mkdir_p
 as_dir=crypto/cipher; as_fn_mkdir_p
 as_dir=crypto/hash; as_fn_mkdir_p
 as_dir=crypto/kernel; as_fn_mkdir_p
@@ -6444,5 +6443,4 @@ as_dir=crypto/rng; as_fn_mkdir_p
 as_dir=crypto/test; as_fn_mkdir_p
 as_dir=doc; as_fn_mkdir_p
 as_dir=srtp; as_fn_mkdir_p
-as_dir=tables; as_fn_mkdir_p
 as_dir=test; as_fn_mkdir_p

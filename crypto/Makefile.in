@@ -1,4 +1,4 @@
-# Makefile for libcryptomodule.a
+# Makefile for crypto test suite
 #
 # David A. McGrew
 # Cisco Systems, Inc.
@@ -89,7 +89,6 @@ all: $(testapp)
 # housekeeping functions
 
 clean:
-	rm -f libcryptomodule.a
 	rm -f $(testapp) *.o */*.o 
 	for a in * .* */*; do if [ -f "$$a~" ] ; then rm $$a~; fi; done;
 	rm -f `find . -name "*.[ch]~*~"`
@@ -97,14 +96,5 @@ clean:
 
 superclean: clean
 	rm -f *core TAGS ktrace.out
-
-
-# the target 'package' builds a compressed tar archive of the source code
-
-distname = crypto-$(shell cat VERSION)
-
-package: superclean
-	cd ..; tar cvzf $(distname).tgz crypto/
-
 
 # EOF

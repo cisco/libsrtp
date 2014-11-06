@@ -222,7 +222,6 @@ AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile])
 AC_OUTPUT
 
 # This is needed when building outside the source dir.
-AS_MKDIR_P(crypto/ae_xfm)
 AS_MKDIR_P(crypto/cipher)
 AS_MKDIR_P(crypto/hash)
 AS_MKDIR_P(crypto/kernel)
@@ -232,5 +231,4 @@ AS_MKDIR_P(crypto/rng)
 AS_MKDIR_P(crypto/test)
 AS_MKDIR_P(doc)
 AS_MKDIR_P(srtp)
-AS_MKDIR_P(tables)
 AS_MKDIR_P(test)
