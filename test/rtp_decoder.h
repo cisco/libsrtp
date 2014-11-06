@@ -51,7 +51,6 @@
 #include "srtp_priv.h"
 #include "rtp_priv.h"
 #include "rtp.h"
-#include "datatypes.h"
 
 #define DEFAULT_RTP_OFFSET 42
 
