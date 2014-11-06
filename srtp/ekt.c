@@ -71,8 +71,7 @@ extern debug_module_t mod_srtp;
 #define EKT_OCTETS_AFTER_ROC       4
 #define EKT_SPI_LEN                2
 
-unsigned
-ekt_octets_after_base_tag(ekt_stream_t ekt) {
+unsigned srtp_ekt_octets_after_base_tag(srtp_ekt_stream_t ekt) {
   /*
    * if the pointer ekt is NULL, then EKT is not in effect, so we
    * indicate this by returning zero
@@ -81,7 +80,7 @@ ekt_octets_after_base_tag(ekt_stream_t ekt) {
     return 0;
 
   switch(ekt->data->ekt_cipher_type) {
-  case EKT_CIPHER_AES_128_ECB:
+  case SRTP_EKT_CIPHER_AES_128_ECB:
     return 16 + EKT_OCTETS_AFTER_EMK;
     break;
   default:
@@ -90,17 +89,15 @@ ekt_octets_after_base_tag(ekt_stream_t ekt) {
   return 0;
 }
 
-static inline ekt_spi_t
-srtcp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
+static inline srtp_ekt_spi_t srtcp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
   const uint8_t *spi_location;
   
   spi_location = packet_start + (pkt_octet_len - EKT_SPI_LEN);
   
-  return *((const ekt_spi_t *)spi_location);
+  return *((const srtp_ekt_spi_t *)spi_location);
 }
 
-static inline uint32_t
-srtcp_packet_get_ekt_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
+static inline uint32_t srtcp_packet_get_ekt_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
   const uint8_t *roc_location;
   
   roc_location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_ROC);
@@ -108,9 +105,7 @@ srtcp_packet_get_ekt_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
   return *((const uint32_t *)roc_location);
 }
 
-static inline const uint8_t *
-srtcp_packet_get_emk_location(const uint8_t *packet_start, 
-			      unsigned pkt_octet_len) {
+static inline const uint8_t * srtcp_packet_get_emk_location(const uint8_t *packet_start, unsigned pkt_octet_len) {
   const uint8_t *location;
   
   location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_BASE_TAG);
@@ -119,8 +114,7 @@ srtcp_packet_get_emk_location(const uint8_t *packet_start,
 }
 
 
-srtp_err_status_t 
-ekt_alloc(ekt_stream_t *stream_data, ekt_policy_t policy) {
+srtp_err_status_t srtp_ekt_alloc(srtp_ekt_stream_t *stream_data, srtp_ekt_policy_t policy) {
 
   /*
    * if the policy pointer is NULL, then EKT is not in use
@@ -137,8 +131,7 @@ ekt_alloc(ekt_stream_t *stream_data, ekt_policy_t policy) {
   return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-ekt_stream_init_from_policy(ekt_stream_t stream_data, ekt_policy_t policy) {
+srtp_err_status_t srtp_ekt_stream_init_from_policy(srtp_ekt_stream_t stream_data, srtp_ekt_policy_t policy) {
   if (!stream_data)
     return srtp_err_status_ok;
 
@@ -146,8 +139,7 @@ ekt_stream_init_from_policy(ekt_stream_t stream_data, ekt_policy_t policy) {
 }
 
 
-void
-aes_decrypt_with_raw_key(void *ciphertext, const void *key, int key_len) {
+void aes_decrypt_with_raw_key(void *ciphertext, const void *key, int key_len) {
 #ifndef OPENSSL
 //FIXME: need to get this working through the crypto module interface
   aes_expanded_key_t expanded_key;
@@ -162,10 +154,7 @@ aes_decrypt_with_raw_key(void *ciphertext, const void *key, int key_len) {
  * the EKT data from an SRTCP trailer.  
  */
 
-srtp_err_status_t
-srtp_stream_init_from_ekt(srtp_stream_t stream,			  
-			  const void *srtcp_hdr,
-			  unsigned pkt_octet_len) {
+srtp_err_status_t srtp_stream_init_from_ekt(srtp_stream_t stream, const void *srtcp_hdr, unsigned pkt_octet_len) {
   srtp_err_status_t err;
   const uint8_t *master_key;
   srtp_policy_t srtp_policy;
@@ -178,7 +167,7 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
       srtcp_packet_get_ekt_spi(srtcp_hdr, pkt_octet_len))
     return srtp_err_status_no_ctx;
 
-  if (stream->ekt->data->ekt_cipher_type != EKT_CIPHER_AES_128_ECB)
+  if (stream->ekt->data->ekt_cipher_type != SRTP_EKT_CIPHER_AES_128_ECB)
     return srtp_err_status_bad_param;
 
   /* decrypt the Encrypted Master Key field */
@@ -199,12 +188,7 @@ srtp_stream_init_from_ekt(srtp_stream_t stream,
   return srtp_err_status_ok;
 }
 
-void
-ekt_write_data(ekt_stream_t ekt,
-	       uint8_t *base_tag, 
-	       unsigned base_tag_len, 
-	       int *packet_len,
-	       xtd_seq_num_t pkt_index) {
+void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, xtd_seq_num_t pkt_index) {
   uint32_t roc;
   uint16_t isn;
   unsigned emk_len;
@@ -221,7 +205,7 @@ ekt_write_data(ekt_stream_t ekt,
   packet = base_tag + base_tag_len;
 
   /* copy encrypted master key into packet */
-  emk_len = ekt_octets_after_base_tag(ekt);
+  emk_len = srtp_ekt_octets_after_base_tag(ekt);
   memcpy(packet, ekt->encrypted_master_key, emk_len);
   debug_print(mod_srtp, "writing EKT EMK: %s,", 
 	      octet_string_hex_string(packet, emk_len));
@@ -261,12 +245,7 @@ ekt_write_data(ekt_stream_t ekt,
  * auth_tag pointer is set to the location 
  */
 
-void
-srtcp_ekt_trailer(ekt_stream_t ekt,
-		  unsigned *auth_len,
-		  void **auth_tag,
-		  void *tag_copy) {
-  
+void srtcp_ekt_trailer(srtp_ekt_stream_t ekt, unsigned *auth_len, void **auth_tag, void *tag_copy) { 
   /* 
    * if there is no EKT policy, then the other inputs are unaffected
    */

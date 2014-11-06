@@ -68,73 +68,72 @@ extern "C" {
 
 #include "srtp_priv.h"
 
-#define EKT_CIPHER_DEFAULT           1
-#define EKT_CIPHER_AES_128_ECB       1
-#define EKT_CIPHER_AES_192_KEY_WRAP  2
-#define EKT_CIPHER_AES_256_KEY_WRAP  3
+#define SRTP_EKT_CIPHER_DEFAULT           1
+#define SRTP_EKT_CIPHER_AES_128_ECB       1
+#define SRTP_EKT_CIPHER_AES_192_KEY_WRAP  2
+#define SRTP_EKT_CIPHER_AES_256_KEY_WRAP  3
 
-typedef uint16_t ekt_spi_t;
+typedef uint16_t srtp_ekt_spi_t;
 
 
-unsigned
-ekt_octets_after_base_tag(ekt_stream_t ekt);
+unsigned srtp_ekt_octets_after_base_tag(srtp_ekt_stream_t ekt);
 
 /*
  * an srtp_policy_t structure can contain a pointer to an
- * ekt_policy_t structure
+ * srtp_ekt_policy_t structure
  *
  * this structure holds all of the high level EKT information, and it
  * is passed into libsrtp to indicate what policy should be in effect
  */
 
-typedef struct ekt_policy_ctx_t {
-  ekt_spi_t  spi;     /* security parameter index */
+typedef struct srtp_ekt_policy_ctx_t {
+  srtp_ekt_spi_t  spi;     /* security parameter index */
   uint8_t    ekt_cipher_type;
   uint8_t   *ekt_key;
-  struct ekt_policy_ctx_t *next_ekt_policy;
-} ekt_policy_ctx_t;
+  struct srtp_ekt_policy_ctx_t *next_ekt_policy;
+} srtp_ekt_policy_ctx_t;
 
 
 /*
- * an ekt_data_t structure holds the data corresponding to an ekt key,
+ * an srtp_ekt_data_t structure holds the data corresponding to an ekt key,
  * spi, and so on
  */
 
-typedef struct ekt_data_t {
-  ekt_spi_t spi;
+typedef struct srtp_ekt_data_t {
+  srtp_ekt_spi_t spi;
   uint8_t ekt_cipher_type;
   aes_expanded_key_t ekt_enc_key;
   aes_expanded_key_t ekt_dec_key;
   struct ekt_data_t *next_ekt_data;
-} ekt_data_t;
+} srtp_ekt_data_t;
 
 /*
- * an srtp_stream_ctx_t can contain an ekt_stream_ctx_t
+ * an srtp_stream_ctx_t can contain an srtp_ekt_stream_ctx_t
  *
- * an ekt_stream_ctx_t structure holds all of the EKT information for
+ * an srtp_ekt_stream_ctx_t structure holds all of the EKT information for
  * a specific SRTP stream
  */
 
-typedef struct ekt_stream_ctx_t {
-  ekt_data_t *data;    
-  uint16_t    isn;     /* initial sequence number  */
-  uint8_t     encrypted_master_key[SRTP_MAX_KEY_LEN];
-} ekt_stream_ctx_t;
+typedef struct srtp_ekt_stream_ctx_t {
+  srtp_ekt_data_t   *data;    
+  uint16_t	    isn;     /* initial sequence number  */
+  uint8_t	    encrypted_master_key[SRTP_MAX_KEY_LEN];
+} srtp_ekt_stream_ctx_t;
 
 
 
-srtp_err_status_t ekt_alloc(ekt_stream_t *stream_data, ekt_policy_t policy);
+srtp_err_status_t srtp_ekt_alloc(srtp_ekt_stream_t *stream_data, srtp_ekt_policy_t policy);
 
-srtp_err_status_t ekt_stream_init(ekt_stream_t e, ekt_spi_t spi, void *ekt_key, unsigned ekt_cipher_type);
+srtp_err_status_t srtp_ekt_stream_init(srtp_ekt_stream_t e, srtp_ekt_spi_t spi, void *ekt_key, unsigned ekt_cipher_type);
 
-srtp_err_status_t ekt_stream_init_from_policy(ekt_stream_t e, ekt_policy_t p);
+srtp_err_status_t srtp_ekt_stream_init_from_policy(srtp_ekt_stream_t e, srtp_ekt_policy_t p);
   
 
 
 srtp_err_status_t srtp_stream_init_from_ekt(srtp_stream_t stream, const void *srtcp_hdr, unsigned pkt_octet_len);
 		
 
-void ekt_write_data(ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, xtd_seq_num_t pkt_index);		
+void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, xtd_seq_num_t pkt_index);		
 
 /*
  * We handle EKT by performing some additional steps before
@@ -144,9 +143,9 @@ void ekt_write_data(ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, 
  * With EKT, the tag_len parameter is actually the base tag
  * length
  */
-srtp_err_status_t ekt_tag_verification_preproces(uint8_t *pkt_tag, uint8_t *pkt_tag_copy, unsigned tag_len);
+srtp_err_status_t srtp_ekt_tag_verification_preproces(uint8_t *pkt_tag, uint8_t *pkt_tag_copy, unsigned tag_len);
 
-srtp_err_status_t ekt_tag_verification_postproces(uint8_t *pkt_tag, uint8_t *pkt_tag_copy, unsigned tag_len);
+srtp_err_status_t srtp_ekt_tag_verification_postproces(uint8_t *pkt_tag, uint8_t *pkt_tag_copy, unsigned tag_len);
 
 
 /*

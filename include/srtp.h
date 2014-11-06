@@ -356,13 +356,13 @@ typedef struct {
 /**
  * @brief points to an EKT policy
  */
-typedef struct ekt_policy_ctx_t *ekt_policy_t;
+typedef struct srtp_ekt_policy_ctx_t *srtp_ekt_policy_t;
 
 
 /**
  * @brief points to EKT stream data
  */
-typedef struct ekt_stream_ctx_t *ekt_stream_t;
+typedef struct srtp_ekt_stream_ctx_t *srtp_ekt_stream_t;
 
 
 /** 
@@ -402,7 +402,7 @@ typedef struct srtp_policy_t {
   srtp_crypto_policy_t rtcp;   /**< SRTCP crypto policy.                 */
   unsigned char *key;          /**< Pointer to the SRTP master key for
 				*    this stream.                        */
-  ekt_policy_t ekt;            /**< Pointer to the EKT policy structure
+  srtp_ekt_policy_t ekt;       /**< Pointer to the EKT policy structure
                                 *   for this stream (if any)             */ 
   unsigned long window_size;   /**< The window size to use for replay
 				*   protection. */

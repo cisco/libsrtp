@@ -1834,9 +1834,9 @@ uint8_t ekt_test_key[16] = {
 
 #include "ekt.h"
 
-ekt_policy_ctx_t ekt_test_policy = {
+srtp_ekt_policy_ctx_t ekt_test_policy = {
   0xa5a5,                   /* SPI */
-  EKT_CIPHER_AES_128_ECB,
+  SRTP_EKT_CIPHER_AES_128_ECB,
   ekt_test_key,
   NULL
 };

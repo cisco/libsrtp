@@ -194,7 +194,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }  
 
   /* allocate ekt data associated with stream */
-  stat = ekt_alloc(&str->ekt, p->ekt);
+  stat = srtp_ekt_alloc(&str->ekt, p->ekt);
   if (stat) {
     auth_dealloc(str->rtcp_auth);
     cipher_dealloc(str->rtcp_cipher);
@@ -740,7 +740,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     * if EKT is in use, then initialize the EKT data associated with
     * the stream
     */
-   err = ekt_stream_init_from_policy(srtp->ekt, p->ekt);
+   err = srtp_ekt_stream_init_from_policy(srtp->ekt, p->ekt);
    if (err) {
      rdbx_dealloc(&srtp->rtp_rdbx);
      return err;
@@ -2686,8 +2686,8 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   auth_tag = (uint8_t *)hdr + *pkt_octet_len + sizeof(srtcp_trailer_t); 
 
   /* perform EKT processing if needed */
-  ekt_write_data(stream->ekt, auth_tag, tag_len, pkt_octet_len, 
-		 rdbx_get_packet_index(&stream->rtp_rdbx));
+  srtp_ekt_write_data(stream->ekt, auth_tag, tag_len, pkt_octet_len, 
+		      rdbx_get_packet_index(&stream->rtp_rdbx));
 
   /* 
    * check sequence number for overruns, and copy it into the packet
@@ -2904,7 +2904,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    * the base tag
    */
   if (stream->ekt) {
-    auth_tag -= ekt_octets_after_base_tag(stream->ekt);
+    auth_tag -= srtp_ekt_octets_after_base_tag(stream->ekt);
     memcpy(tag_copy, auth_tag, tag_len);
     octet_string_set_to_zero(auth_tag, tag_len);
     auth_tag = tag_copy;
@@ -2992,7 +2992,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    * if EKT is in effect, subtract the EKT data out of the packet
    * length
    */
-  *pkt_octet_len -= ekt_octets_after_base_tag(stream->ekt);
+  *pkt_octet_len -= srtp_ekt_octets_after_base_tag(stream->ekt);
 
   /* 
    * verify that stream is for received traffic - this check will
