@@ -68,18 +68,18 @@ typedef EVP_MD_CTX srtp_sha1_ctx_t;
  *
  */
 
-inline void srtp_sha1_init (srtp_sha1_ctx_t *ctx)
+static inline void srtp_sha1_init (srtp_sha1_ctx_t *ctx)
 {
     EVP_MD_CTX_init(ctx);
     EVP_DigestInit(ctx, EVP_sha1());
 }
 
-inline void srtp_sha1_update (srtp_sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg)
+static inline void srtp_sha1_update (srtp_sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg)
 {
     EVP_DigestUpdate(ctx, M, octets_in_msg);
 }
 
-inline void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
+static inline void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
 {
     unsigned int len = 0;
 
