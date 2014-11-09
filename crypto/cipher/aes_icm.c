@@ -333,7 +333,8 @@ aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
     uint32_t temp;    
     //alex's clock counter forward
     temp = ntohl(c->counter.v32[3]);
-    c->counter.v32[3] = htonl(++temp);
+    ++temp;
+    c->counter.v32[3] = htonl(temp);
   } else {
     if (!++(c->counter.v8[15])) 
       ++(c->counter.v8[14]);
