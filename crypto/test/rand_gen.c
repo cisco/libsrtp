@@ -59,7 +59,7 @@
 
 #define BUF_LEN (MAX_PRINT_STRING_LEN/2)
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s -n <num_bytes> [-l][ -d debug_module ]*\n"
 	 "   -n <num>   output <num> random bytes, where <num>"

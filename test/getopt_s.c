@@ -42,6 +42,7 @@
  *
  */
 
+#include "getopt_s.h"
 #include <stdlib.h>  /* for NULL */
 
 int optind_s = 0;

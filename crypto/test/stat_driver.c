@@ -27,7 +27,7 @@ typedef struct {
 err_status_t
 random_source_alloc(void);
 
-void
+static void
 err_check(err_status_t s) {
   if (s) {
     printf("error (code %d)\n", s);

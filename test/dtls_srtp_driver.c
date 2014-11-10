@@ -52,7 +52,7 @@ test_dtls_srtp(void);
 srtp_hdr_t *
 srtp_create_test_packet(int pkt_octet_len, uint32_t ssrc);
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s [ -t ][ -c ][ -v ][-d <debug_module> ]* [ -l ]\n"
          "  -d <mod>   turn on debugging module <mod>\n"

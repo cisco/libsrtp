@@ -51,7 +51,7 @@
 #include <unistd.h>          /* for getopt() */
 #include "crypto_kernel.h"
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s [ -v ][ -d debug_module ]*\n", prog_name);
   exit(255);
@@ -116,15 +116,16 @@ main (int argc, char *argv[]) {
   return 0;
 }
 
+#if 0
+/* not implemented yet */
+
 /*
  * crypto_kernel_cipher_test() is a test of the cipher interface
  * of the crypto_kernel
  */
 
-err_status_t
+static err_status_t
 crypto_kernel_cipher_test(void) {
-
-  /* not implemented yet! */
-
   return err_status_ok;
 }
+#endif

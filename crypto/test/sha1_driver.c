@@ -68,7 +68,7 @@ typedef struct hash_test_case_t {
 
 hash_test_case_t *sha1_test_case_list;
 
-err_status_t
+static err_status_t
 hash_test_case_add(hash_test_case_t **list_ptr, 
 		   char *hex_data, 
 		   unsigned data_len, 
@@ -100,7 +100,7 @@ hash_test_case_add(hash_test_case_t **list_ptr,
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 sha1_test_case_validate(const hash_test_case_t *test_case) {
   sha1_ctx_t ctx;
   uint32_t hash_value[5];
@@ -141,7 +141,7 @@ struct hex_sha1_test_case_t {
   char hex_hash[40];
 };
 
-err_status_t
+static err_status_t
 sha1_add_test_cases(void) {
   int i;
   err_status_t err;
@@ -491,7 +491,7 @@ sha1_add_test_cases(void) {
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 sha1_dealloc_test_cases(void) {
   hash_test_case_t *t, *next;
 
@@ -507,7 +507,7 @@ sha1_dealloc_test_cases(void) {
 
 
 
-err_status_t
+static err_status_t
 sha1_validate(void) {
   hash_test_case_t *test_case;
   err_status_t err;

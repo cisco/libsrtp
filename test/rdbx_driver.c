@@ -58,13 +58,13 @@
 
 #include "ut_sim.h"
 
-err_status_t 
+static err_status_t
 test_replay_dbx(int num_trials, unsigned long ws);
 
-double
+static double
 rdbx_check_adds_per_second(int num_trials, unsigned long ws);
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s [ -t | -v ]\n", prog_name);
   exit(255);
@@ -132,15 +132,17 @@ main (int argc, char *argv[]) {
   return 0;
 }
 
-void
+#if 0
+/* unused */
+static void
 print_rdbx(rdbx_t *rdbx) {
   char buf[2048];
   printf("rdbx: {%llu, %s}\n",
 	 (unsigned long long)(rdbx->index),
 	 bitvector_bit_string(&rdbx->bitmask, buf, sizeof(buf))
-);
+  );
 }
-
+#endif
 
 /*
  * rdbx_check_add(rdbx, idx) checks a known-to-be-good idx against
@@ -150,7 +152,7 @@ print_rdbx(rdbx_t *rdbx) {
  *
  */
 
-err_status_t
+static err_status_t
 rdbx_check_add(rdbx_t *rdbx, uint32_t idx) {
   int delta;
   xtd_seq_num_t est;
@@ -182,7 +184,7 @@ rdbx_check_add(rdbx_t *rdbx, uint32_t idx) {
  * and thus will be rejected
  */
 
-err_status_t
+static err_status_t
 rdbx_check_expect_failure(rdbx_t *rdbx, uint32_t idx) {
   int delta;
   xtd_seq_num_t est;
@@ -200,7 +202,7 @@ rdbx_check_expect_failure(rdbx_t *rdbx, uint32_t idx) {
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 rdbx_check_add_unordered(rdbx_t *rdbx, uint32_t idx) {
   int delta;
   xtd_seq_num_t est;
@@ -224,7 +226,7 @@ rdbx_check_add_unordered(rdbx_t *rdbx, uint32_t idx) {
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 test_replay_dbx(int num_trials, unsigned long ws) {
   rdbx_t rdbx;
   uint32_t idx, ircvd;
@@ -329,7 +331,7 @@ test_replay_dbx(int num_trials, unsigned long ws) {
 #include <time.h>       /* for clock()  */
 #include <stdlib.h>     /* for random() */
 
-double
+static double
 rdbx_check_adds_per_second(int num_trials, unsigned long ws) {
   uint32_t i;
   int delta;
