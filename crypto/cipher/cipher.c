@@ -137,7 +137,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
       buffer[i] = test_case->plaintext[i];
 
     debug_print(mod_cipher, "plaintext:    %s",
-	     octet_string_hex_string(buffer,
+	     srtp_octet_string_hex_string(buffer,
 				     test_case->plaintext_length_octets));
 
     /* set the initialization vector */
@@ -149,7 +149,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     
     if (c->algorithm == AES_128_GCM || c->algorithm == AES_256_GCM) {
         debug_print(mod_cipher, "IV:    %s",
-      	            octet_string_hex_string(test_case->idx, 12));
+      	            srtp_octet_string_hex_string(test_case->idx, 12));
 
         /*
          * Set the AAD 
@@ -161,7 +161,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
       	    return status;
         } 
         debug_print(mod_cipher, "AAD:    %s",
-      	octet_string_hex_string(test_case->aad, 
+      	srtp_octet_string_hex_string(test_case->aad, 
       	                        test_case->aad_length_octets));
     }
 
@@ -186,7 +186,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     }
 
     debug_print(mod_cipher, "ciphertext:   %s",
-	     octet_string_hex_string(buffer,
+	     srtp_octet_string_hex_string(buffer,
 				     test_case->ciphertext_length_octets));
 
     /* compare the resulting ciphertext with that in the test case */
@@ -203,10 +203,10 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     if (status) {
 
       debug_print(mod_cipher, "c computed: %s",
-	     octet_string_hex_string(buffer,
+	     srtp_octet_string_hex_string(buffer,
 		  2*test_case->plaintext_length_octets));
       debug_print(mod_cipher, "c expected: %s",
-		  octet_string_hex_string(test_case->ciphertext,
+		  srtp_octet_string_hex_string(test_case->ciphertext,
 			  2*test_case->plaintext_length_octets));
 
       cipher_dealloc(c);
@@ -234,7 +234,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
       buffer[i] = test_case->ciphertext[i];
 
     debug_print(mod_cipher, "ciphertext:    %s",
-		octet_string_hex_string(buffer,
+		srtp_octet_string_hex_string(buffer,
 					test_case->plaintext_length_octets));
 
     /* set the initialization vector */
@@ -255,7 +255,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
             return status;
         } 
         debug_print(mod_cipher, "AAD:    %s",
-                    octet_string_hex_string(test_case->aad, 
+                    srtp_octet_string_hex_string(test_case->aad, 
                                             test_case->aad_length_octets));
     }
 
@@ -268,7 +268,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     }
     
     debug_print(mod_cipher, "plaintext:   %s",
-	     octet_string_hex_string(buffer,
+	     srtp_octet_string_hex_string(buffer,
 				     test_case->plaintext_length_octets));
 
     /* compare the resulting plaintext with that in the test case */
@@ -284,10 +284,10 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     if (status) {
 
       debug_print(mod_cipher, "p computed: %s",
-	     octet_string_hex_string(buffer,
+	     srtp_octet_string_hex_string(buffer,
 		  2*test_case->plaintext_length_octets));
       debug_print(mod_cipher, "p expected: %s",
-		  octet_string_hex_string(test_case->plaintext,
+		  srtp_octet_string_hex_string(test_case->plaintext,
 			  2*test_case->plaintext_length_octets));
 
       cipher_dealloc(c);
@@ -330,7 +330,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     if (status) return status;
 
     debug_print(mod_cipher, "plaintext:    %s",
-		octet_string_hex_string(buffer, length));
+		srtp_octet_string_hex_string(buffer, length));
 
     /* copy plaintext into second buffer */
     for (i=0; (unsigned int)i < length; i++)
@@ -371,7 +371,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
             return status;
         } 
         debug_print(mod_cipher, "AAD:    %s",
-                    octet_string_hex_string(test_case->aad, 
+                    srtp_octet_string_hex_string(test_case->aad, 
                                             test_case->aad_length_octets));
     }
 
@@ -394,7 +394,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
         length += tag_len;
     }
     debug_print(mod_cipher, "ciphertext:   %s",
-		octet_string_hex_string(buffer, length));
+		srtp_octet_string_hex_string(buffer, length));
 
     /* 
      * re-initialize cipher for decryption, re-set the iv, then
@@ -421,7 +421,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
             return status;
         } 
         debug_print(mod_cipher, "AAD:    %s",
-                    octet_string_hex_string(test_case->aad, 
+                    srtp_octet_string_hex_string(test_case->aad, 
                                             test_case->aad_length_octets));
     }
     status = cipher_decrypt(c, buffer, &length);
@@ -431,7 +431,7 @@ cipher_type_test(const cipher_type_t *ct, const cipher_test_case_t *test_data) {
     }    
 
     debug_print(mod_cipher, "plaintext[2]: %s",
-		octet_string_hex_string(buffer, length));    
+		srtp_octet_string_hex_string(buffer, length));    
 
     /* compare the resulting plaintext with the original one */
     if (length != plaintext_len) {

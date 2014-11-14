@@ -25,6 +25,7 @@
 #include "aes.h"
 #include <stdio.h>
 #include <string.h>
+#include "util.h"
 
 void
 usage(char *prog_name) {

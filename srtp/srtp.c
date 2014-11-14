@@ -537,7 +537,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
     return srtp_err_status_init_fail;
   }
   debug_print(mod_srtp, "cipher key: %s", 
-	      octet_string_hex_string(tmp_key, rtp_base_key_len));
+	      srtp_octet_string_hex_string(tmp_key, rtp_base_key_len));
 
   /* 
    * if the cipher in the srtp context uses a salt, then we need
@@ -558,7 +558,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
   if (rtp_salt_len > 0) {
     debug_print(mod_srtp, "cipher salt: %s",
-		octet_string_hex_string(tmp_key + rtp_base_key_len, rtp_salt_len));
+		srtp_octet_string_hex_string(tmp_key + rtp_base_key_len, rtp_salt_len));
   }
 
   /* initialize cipher */
@@ -578,7 +578,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
     return srtp_err_status_init_fail;
   }
   debug_print(mod_srtp, "auth key:   %s",
-	      octet_string_hex_string(tmp_key, 
+	      srtp_octet_string_hex_string(tmp_key, 
 				      auth_get_key_length(srtp->rtp_auth))); 
 
   /* initialize auth function */
@@ -625,10 +625,10 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
     memcpy(srtp->c_salt, tmp_key + rtcp_base_key_len, SRTP_AEAD_SALT_LEN);
   }
   debug_print(mod_srtp, "rtcp cipher key: %s", 
-	      octet_string_hex_string(tmp_key, rtcp_base_key_len));  
+	      srtp_octet_string_hex_string(tmp_key, rtcp_base_key_len));  
   if (rtcp_salt_len > 0) {
     debug_print(mod_srtp, "rtcp cipher salt: %s",
-		octet_string_hex_string(tmp_key + rtcp_base_key_len, rtcp_salt_len));
+		srtp_octet_string_hex_string(tmp_key + rtcp_base_key_len, rtcp_salt_len));
   }
 
   /* initialize cipher */
@@ -649,7 +649,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   debug_print(mod_srtp, "rtcp auth key:   %s",
-	      octet_string_hex_string(tmp_key, 
+	      srtp_octet_string_hex_string(tmp_key, 
 		     auth_get_key_length(srtp->rtcp_auth))); 
 
   /* initialize auth function */
@@ -1374,7 +1374,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
       if (status)
 	return srtp_err_status_cipher_fail;
       debug_print(mod_srtp, "keystream prefix: %s", 
-		  octet_string_hex_string(auth_tag, prefix_len));
+		  srtp_octet_string_hex_string(auth_tag, prefix_len));
     }
   }
 
@@ -1405,7 +1405,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     debug_print(mod_srtp, "estimated packet index: %016llx", est);
     status = auth_compute(stream->rtp_auth, (uint8_t *)&est, 4, auth_tag); 
     debug_print(mod_srtp, "srtp auth tag:    %s", 
-		octet_string_hex_string(auth_tag, tag_len));
+		srtp_octet_string_hex_string(auth_tag, tag_len));
     if (status)
       return srtp_err_status_auth_fail;   
 
@@ -1600,7 +1600,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
       prefix_len = auth_get_prefix_length(stream->rtp_auth);    
       status = cipher_output(stream->rtp_cipher, tmp_tag, prefix_len);
       debug_print(mod_srtp, "keystream prefix: %s", 
-		  octet_string_hex_string(tmp_tag, prefix_len));
+		  srtp_octet_string_hex_string(tmp_tag, prefix_len));
       if (status)
 	return srtp_err_status_cipher_fail;
     } 
@@ -1617,9 +1617,9 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     status = auth_compute(stream->rtp_auth, (uint8_t *)&est, 4, tmp_tag);  
 
     debug_print(mod_srtp, "computed auth tag:    %s", 
-		octet_string_hex_string(tmp_tag, tag_len));
+		srtp_octet_string_hex_string(tmp_tag, tag_len));
     debug_print(mod_srtp, "packet auth tag:      %s", 
-		octet_string_hex_string(auth_tag, tag_len));
+		srtp_octet_string_hex_string(auth_tag, tag_len));
     if (status)
       return srtp_err_status_auth_fail;   
 
@@ -2754,7 +2754,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     status = cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
 
     debug_print(mod_srtp, "keystream prefix: %s", 
-		octet_string_hex_string(auth_tag, prefix_len));
+		srtp_octet_string_hex_string(auth_tag, prefix_len));
 
     if (status)
       return srtp_err_status_cipher_fail;
@@ -2780,7 +2780,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
 			(*pkt_octet_len) + sizeof(srtcp_trailer_t), 
 			auth_tag);
   debug_print(mod_srtp, "srtcp auth tag:    %s", 
-	      octet_string_hex_string(auth_tag, tag_len));
+	      srtp_octet_string_hex_string(auth_tag, tag_len));
   if (status)
     return srtp_err_status_auth_fail;   
     
@@ -2970,13 +2970,13 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   status = auth_compute(stream->rtcp_auth, (uint8_t *)auth_start,  
 			auth_len, tmp_tag);
   debug_print(mod_srtp, "srtcp computed tag:       %s", 
-	      octet_string_hex_string(tmp_tag, tag_len));
+	      srtp_octet_string_hex_string(tmp_tag, tag_len));
   if (status)
     return srtp_err_status_auth_fail;   
   
   /* compare the tag just computed with the one in the packet */
   debug_print(mod_srtp, "srtcp tag from packet:    %s", 
-	      octet_string_hex_string(auth_tag, tag_len));  
+	      srtp_octet_string_hex_string(auth_tag, tag_len));  
   if (octet_string_is_eq(tmp_tag, auth_tag, tag_len))
     return srtp_err_status_auth_fail;
 
@@ -2988,7 +2988,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   if (prefix_len) {
     status = cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
     debug_print(mod_srtp, "keystream prefix: %s", 
-		octet_string_hex_string(auth_tag, prefix_len));
+		srtp_octet_string_hex_string(auth_tag, prefix_len));
     if (status)
       return srtp_err_status_cipher_fail;
   }
@@ -3201,3 +3201,17 @@ srtp_profile_get_master_salt_length(srtp_profile_t profile) {
     return 0;  /* indicate error by returning a zero */
   }
 }
+
+/*
+ * SRTP debug interface
+ */
+srtp_err_status_t srtp_set_debug_module(char *mod_name, int v)
+{
+    return crypto_kernel_set_debug_module(mod_name, v);
+}
+
+srtp_err_status_t srtp_list_debug_modules(void)
+{
+    return crypto_kernel_list_debug_modules();
+}
+

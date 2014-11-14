@@ -198,7 +198,7 @@ aes_icm_context_init(aes_icm_ctx_t *c, const uint8_t *key, int key_len) {
   memcpy(&c->offset, key + base_key_len, copy_len);
 
   debug_print(mod_aes_icm, 
-	      "key:  %s", octet_string_hex_string(key, base_key_len)); 
+	      "key:  %s", srtp_octet_string_hex_string(key, base_key_len)); 
   debug_print(mod_aes_icm, 
 	      "offset: %s", v128_hex_string(&c->offset)); 
 

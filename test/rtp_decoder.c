@@ -52,6 +52,7 @@
 
 #include <pcap.h>
 #include "rtp_decoder.h"
+#include "util.h"
 
 #define MAX_KEY_LEN      96
 #define MAX_FILTER 256

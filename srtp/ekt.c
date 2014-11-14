@@ -208,27 +208,27 @@ void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base
   emk_len = srtp_ekt_octets_after_base_tag(ekt);
   memcpy(packet, ekt->encrypted_master_key, emk_len);
   debug_print(mod_srtp, "writing EKT EMK: %s,", 
-	      octet_string_hex_string(packet, emk_len));
+	      srtp_octet_string_hex_string(packet, emk_len));
   packet += emk_len;
 
   /* copy ROC into packet */
   roc = (uint32_t)(pkt_index >> 16);
   *((uint32_t *)packet) = be32_to_cpu(roc);
   debug_print(mod_srtp, "writing EKT ROC: %s,", 
-	      octet_string_hex_string(packet, sizeof(roc)));
+	      srtp_octet_string_hex_string(packet, sizeof(roc)));
   packet += sizeof(roc);
 
   /* copy ISN into packet */
   isn = (uint16_t)pkt_index;
   *((uint16_t *)packet) = htons(isn);
   debug_print(mod_srtp, "writing EKT ISN: %s,", 
-	      octet_string_hex_string(packet, sizeof(isn)));
+	      srtp_octet_string_hex_string(packet, sizeof(isn)));
   packet += sizeof(isn);
 
   /* copy SPI into packet */
   *((uint16_t *)packet) = htons(ekt->data->spi);
   debug_print(mod_srtp, "writing EKT SPI: %s,", 
-	      octet_string_hex_string(packet, sizeof(ekt->data->spi)));
+	      srtp_octet_string_hex_string(packet, sizeof(ekt->data->spi)));
 
   /* increase packet length appropriately */
   *packet_len += EKT_OCTETS_AFTER_EMK + emk_len;

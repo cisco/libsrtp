@@ -48,6 +48,7 @@
 #include <stdlib.h>   /* for malloc(), free()  */
 #include <stdio.h>    /* for print(), fflush() */
 #include "getopt_s.h" /* for local getopt()    */
+#include "util.h"
 
 #include "srtp_priv.h"
 

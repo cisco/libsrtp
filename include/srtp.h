@@ -1416,6 +1416,23 @@ const char *srtp_get_version_string(void);
 unsigned int srtp_get_version(void);
 
 /**
+ * @brief srtp_set_debug_module(mod_name, v)
+ * 
+ * sets dynamic debugging to the value v (0 for off, 1 for on) for the
+ * debug module with the name mod_name
+ *
+ * returns err_status_ok on success, err_status_fail otherwise
+ */
+srtp_err_status_t srtp_set_debug_module(char *mod_name, int v);
+
+/**
+ * @brief srtp_list_debug_modules() outputs a list of debugging modules
+ *
+ */
+srtp_err_status_t srtp_list_debug_modules(void);
+
+
+/**
  * @}
  */
 /* in host order, so outside the #if */

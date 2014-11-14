@@ -105,7 +105,7 @@ srtp_err_status_t
 aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len) {
 
   debug_print(mod_aes_cbc, 
-	      "key:  %s", octet_string_hex_string(key, key_len)); 
+	      "key:  %s", srtp_octet_string_hex_string(key, key_len)); 
 
   /*
    * Save the key until we have the IV later.  We don't

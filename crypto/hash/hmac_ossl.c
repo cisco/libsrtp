@@ -154,7 +154,7 @@ hmac_init (hmac_ctx_t *state, const uint8_t *key, int key_len)
         ((uint8_t*)state->opad)[i] = 0x5c;
     }
 
-    debug_print(mod_hmac, "ipad: %s", octet_string_hex_string(ipad, sizeof(ipad)));
+    debug_print(mod_hmac, "ipad: %s", srtp_octet_string_hex_string(ipad, sizeof(ipad)));
 
     /* initialize sha1 context */
     srtp_sha1_init(&state->init_ctx);
@@ -183,7 +183,7 @@ srtp_err_status_t
 hmac_update (hmac_ctx_t *state, const uint8_t *message, int msg_octets)
 {
     debug_print(mod_hmac, "input: %s",
-                octet_string_hex_string(message, msg_octets));
+                srtp_octet_string_hex_string(message, msg_octets));
 
     /* hash message into sha1 context */
     srtp_sha1_update(&state->ctx, message, msg_octets);
@@ -213,7 +213,7 @@ hmac_compute (hmac_ctx_t *state, const void *message,
      * function hmac_update() already did that for us
      */
     debug_print(mod_hmac, "intermediate state: %s",
-                octet_string_hex_string((uint8_t*)H, sizeof(H)));
+                srtp_octet_string_hex_string((uint8_t*)H, sizeof(H)));
 
     /* re-initialize hash context */
     srtp_sha1_init(&state->ctx);
@@ -233,7 +233,7 @@ hmac_compute (hmac_ctx_t *state, const void *message,
     }
 
     debug_print(mod_hmac, "output: %s",
-                octet_string_hex_string((uint8_t*)hash_value, tag_len));
+                srtp_octet_string_hex_string((uint8_t*)hash_value, tag_len));
 
     return srtp_err_status_ok;
 }

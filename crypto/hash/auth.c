@@ -129,15 +129,15 @@ auth_type_test(const auth_type_t *at, const auth_test_case_t *test_data) {
     }
     
     debug_print(mod_auth, "key: %s",
-		octet_string_hex_string(test_case->key,
+		srtp_octet_string_hex_string(test_case->key,
 					test_case->key_length_octets));
     debug_print(mod_auth, "data: %s",
-		octet_string_hex_string(test_case->data,
+		srtp_octet_string_hex_string(test_case->data,
 				   test_case->data_length_octets));
     debug_print(mod_auth, "tag computed: %s",
-	   octet_string_hex_string(tag, test_case->tag_length_octets));
+	   srtp_octet_string_hex_string(tag, test_case->tag_length_octets));
     debug_print(mod_auth, "tag expected: %s",
-	   octet_string_hex_string(test_case->tag,
+	   srtp_octet_string_hex_string(test_case->tag,
 				   test_case->tag_length_octets));
 
     /* check the result */
