@@ -155,7 +155,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }
   
   /* allocate key limit structure */
-  str->limit = (key_limit_ctx_t*) srtp_crypto_alloc(sizeof(key_limit_ctx_t));
+  str->limit = (srtp_key_limit_ctx_t*) srtp_crypto_alloc(sizeof(srtp_key_limit_ctx_t));
   if (str->limit == NULL) {
     auth_dealloc(str->rtp_auth);
     cipher_dealloc(str->rtp_cipher);
@@ -322,7 +322,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   str->rtcp_auth   = stream_template->rtcp_auth;
 
   /* set key limit to point to that of the template */
-  status = key_limit_clone(stream_template->limit, &str->limit);
+  status = srtp_key_limit_clone(stream_template->limit, &str->limit);
   if (status) { 
     srtp_crypto_free(*str_ptr);
     *str_ptr = NULL;
@@ -696,10 +696,10 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
 {
    uint64_t temp;
    temp = make64(UINT_MAX,UINT_MAX);
-   key_limit_set(srtp->limit, temp);
+   srtp_key_limit_set(srtp->limit, temp);
 }
 #else
-   key_limit_set(srtp->limit, 0xffffffffffffLL);
+   srtp_key_limit_set(srtp->limit, 0xffffffffffffLL);
 #endif
 
    /* set the SSRC value */
@@ -900,13 +900,13 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * didn't just hit either the soft limit or the hard limit, and call
      * the event handler if we hit either.
      */
-    switch (key_limit_update(stream->limit)) {
-    case key_event_normal:
+    switch (srtp_key_limit_update(stream->limit)) {
+    case srtp_key_event_normal:
         break;
-    case key_event_hard_limit:
+    case srtp_key_event_hard_limit:
         srtp_handle_event(ctx, stream, event_key_hard_limit);
         return srtp_err_status_key_expired;
-    case key_event_soft_limit:
+    case srtp_key_event_soft_limit:
     default:
         srtp_handle_event(ctx, stream, event_key_soft_limit);
         break;
@@ -1075,13 +1075,13 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * didn't just hit either the soft limit or the hard limit, and call
      * the event handler if we hit either.
      */
-    switch (key_limit_update(stream->limit)) {
-    case key_event_normal:
+    switch (srtp_key_limit_update(stream->limit)) {
+    case srtp_key_event_normal:
         break;
-    case key_event_soft_limit:
+    case srtp_key_event_soft_limit:
         srtp_handle_event(ctx, stream, event_key_soft_limit);
         break;
-    case key_event_hard_limit:
+    case srtp_key_event_hard_limit:
         srtp_handle_event(ctx, stream, event_key_hard_limit);
         return srtp_err_status_key_expired;
     default:
@@ -1249,13 +1249,13 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
    * didn't just hit either the soft limit or the hard limit, and call
    * the event handler if we hit either.
    */
-  switch(key_limit_update(stream->limit)) {
-  case key_event_normal:
+  switch(srtp_key_limit_update(stream->limit)) {
+  case srtp_key_event_normal:
     break;
-  case key_event_soft_limit: 
+  case srtp_key_event_soft_limit: 
     srtp_handle_event(ctx, stream, event_key_soft_limit);
     break; 
-  case key_event_hard_limit:
+  case srtp_key_event_hard_limit:
     srtp_handle_event(ctx, stream, event_key_hard_limit);
 	return srtp_err_status_key_expired;
   default:
@@ -1632,13 +1632,13 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
    * didn't just hit either the soft limit or the hard limit, and call
    * the event handler if we hit either.
    */
-  switch(key_limit_update(stream->limit)) {
-  case key_event_normal:
+  switch(srtp_key_limit_update(stream->limit)) {
+  case srtp_key_event_normal:
     break;
-  case key_event_soft_limit: 
+  case srtp_key_event_soft_limit: 
     srtp_handle_event(ctx, stream, event_key_soft_limit);
     break; 
-  case key_event_hard_limit:
+  case srtp_key_event_hard_limit:
     srtp_handle_event(ctx, stream, event_key_hard_limit);
     return srtp_err_status_key_expired;
   default:

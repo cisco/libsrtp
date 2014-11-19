@@ -111,7 +111,7 @@ typedef struct srtp_stream_ctx_t_ {
   srtp_auth_t    *rtcp_auth;
   rdb_t      rtcp_rdb;
   srtp_sec_serv_t rtcp_services;
-  key_limit_ctx_t *limit;
+  srtp_key_limit_ctx_t *limit;
   direction_t direction;
   int        allow_repeat_tx;
   srtp_ekt_stream_t ekt; 
