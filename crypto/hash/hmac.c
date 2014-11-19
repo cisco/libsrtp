@@ -1,7 +1,7 @@
 /*
  * hmac.c
  *
- * implementation of hmac auth_type_t
+ * implementation of hmac srtp_auth_type_t
  *
  * David A. McGrew
  * Cisco Systems, Inc.
@@ -58,8 +58,8 @@ debug_module_t mod_hmac = {
 
 
 srtp_err_status_t
-hmac_alloc(auth_t **a, int key_len, int out_len) {
-  extern auth_type_t hmac;
+hmac_alloc(srtp_auth_t **a, int key_len, int out_len) {
+  extern srtp_auth_type_t hmac;
   uint8_t *pointer;
 
   debug_print(mod_hmac, "allocating auth func with key length %d", key_len);
@@ -77,14 +77,14 @@ hmac_alloc(auth_t **a, int key_len, int out_len) {
     return srtp_err_status_bad_param;
 
   /* allocate memory for auth and hmac_ctx_t structures */
-  pointer = (uint8_t*)srtp_crypto_alloc(sizeof(hmac_ctx_t) + sizeof(auth_t));
+  pointer = (uint8_t*)srtp_crypto_alloc(sizeof(hmac_ctx_t) + sizeof(srtp_auth_t));
   if (pointer == NULL)
     return srtp_err_status_alloc_fail;
 
   /* set pointers */
-  *a = (auth_t *)pointer;
+  *a = (srtp_auth_t *)pointer;
   (*a)->type = &hmac;
-  (*a)->state = pointer + sizeof(auth_t);  
+  (*a)->state = pointer + sizeof(srtp_auth_t);  
   (*a)->out_len = out_len;
   (*a)->key_len = key_len;
   (*a)->prefix_len = 0;
@@ -93,12 +93,12 @@ hmac_alloc(auth_t **a, int key_len, int out_len) {
 }
 
 srtp_err_status_t
-hmac_dealloc(auth_t *a) {
-  extern auth_type_t hmac;
+hmac_dealloc(srtp_auth_t *a) {
+  extern srtp_auth_type_t hmac;
   
   /* zeroize entire state*/
   octet_string_set_to_zero((uint8_t *)a, 
-			   sizeof(hmac_ctx_t) + sizeof(auth_t));
+			   sizeof(hmac_ctx_t) + sizeof(srtp_auth_t));
 
   /* free memory */
   srtp_crypto_free(a);
@@ -230,8 +230,7 @@ hmac_test_case_0_tag[20] = {
   0xf1, 0x46, 0xbe, 0x00
 };
 
-auth_test_case_t
-hmac_test_case_0 = {
+srtp_auth_test_case_t hmac_test_case_0 = {
   20,                        /* octets in key            */
   hmac_test_case_0_key,      /* key                      */
   8,                         /* octets in data           */ 
@@ -246,11 +245,10 @@ hmac_test_case_0 = {
 char hmac_description[] = "hmac sha-1 authentication function";
 
 /*
- * auth_type_t hmac is the hmac metaobject
+ * srtp_auth_type_t hmac is the hmac metaobject
  */
 
-auth_type_t
-hmac  = {
+srtp_auth_type_t hmac  = {
   (auth_alloc_func)      hmac_alloc,
   (auth_dealloc_func)    hmac_dealloc,
   (auth_init_func)       hmac_init,
@@ -258,7 +256,7 @@ hmac  = {
   (auth_update_func)     hmac_update,
   (auth_start_func)      hmac_start,
   (char *)               hmac_description,
-  (auth_test_case_t *)  &hmac_test_case_0,
+  (srtp_auth_test_case_t *)  &hmac_test_case_0,
   (debug_module_t *)    &mod_hmac,
   (srtp_auth_type_id_t)  HMAC_SHA1
 };

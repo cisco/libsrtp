@@ -1,7 +1,7 @@
 /*
  * hmac.h
  *
- * interface to hmac auth_type_t
+ * interface to hmac srtp_auth_type_t
  *
  * David A. McGrew
  * Cisco Systems, Inc.
@@ -59,9 +59,9 @@ typedef struct {
 #endif
 } hmac_ctx_t;
 
-srtp_err_status_t hmac_alloc(auth_t **a, int key_len, int out_len);
+srtp_err_status_t hmac_alloc(srtp_auth_t **a, int key_len, int out_len);
 
-srtp_err_status_t hmac_dealloc(auth_t *a);
+srtp_err_status_t hmac_dealloc(srtp_auth_t *a);
 
 srtp_err_status_t hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len);
 

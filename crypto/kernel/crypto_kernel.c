@@ -62,7 +62,7 @@ debug_module_t mod_crypto_kernel = {
  * other debug modules that can be included in the kernel
  */
 
-extern debug_module_t mod_auth;
+extern debug_module_t srtp_mod_auth;
 extern debug_module_t mod_cipher;
 extern debug_module_t mod_stat;
 extern debug_module_t mod_alloc;
@@ -83,8 +83,8 @@ extern cipher_type_t srtp_aes_gcm_256_openssl;
  * auth func types that can be included in the kernel
  */
 
-extern auth_type_t null_auth;
-extern auth_type_t hmac;
+extern srtp_auth_type_t null_auth;
+extern srtp_auth_type_t hmac;
 
 /* crypto_kernel is a global variable, the only one of its datatype */
 
@@ -121,7 +121,7 @@ crypto_kernel_init() {
   status = crypto_kernel_load_debug_module(&mod_crypto_kernel);
   if (status)
     return status;
-  status = crypto_kernel_load_debug_module(&mod_auth);
+  status = crypto_kernel_load_debug_module(&srtp_mod_auth);
   if (status)
     return status;
   status = crypto_kernel_load_debug_module(&mod_cipher);
@@ -210,7 +210,7 @@ crypto_kernel_status() {
   while(atype != NULL) {
     printf("auth func: %s\n", atype->auth_type->description);
     printf("  self-test: ");
-    status = auth_type_self_test(atype->auth_type);
+    status = srtp_auth_type_self_test(atype->auth_type);
     if (status) {
       printf("failed with error code %d\n", status);
       exit(status);
@@ -370,7 +370,7 @@ crypto_kernel_replace_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t i
 }
 
 srtp_err_status_t
-crypto_kernel_do_load_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id,
+crypto_kernel_do_load_auth_type(srtp_auth_type_t *new_at, srtp_auth_type_id_t id,
 				int replace) {
   kernel_auth_type_t *atype, *new_atype;
   srtp_err_status_t status;
@@ -383,7 +383,7 @@ crypto_kernel_do_load_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id,
     return srtp_err_status_bad_param;
 
   /* check auth type by running self-test */
-  status = auth_type_self_test(new_at);
+  status = srtp_auth_type_self_test(new_at);
   if (status) {
     return status;
   }
@@ -394,7 +394,7 @@ crypto_kernel_do_load_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id,
     if (id == atype->id) {
       if (!replace)
 	return srtp_err_status_bad_param;
-      status = auth_type_test(new_at, atype->auth_type->test_data);
+      status = srtp_auth_type_test(new_at, atype->auth_type->test_data);
       if (status)
 	return status;
       new_atype = atype;
@@ -431,12 +431,12 @@ crypto_kernel_do_load_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id,
 }
 
 srtp_err_status_t
-crypto_kernel_load_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id) {
+crypto_kernel_load_auth_type(srtp_auth_type_t *new_at, srtp_auth_type_id_t id) {
   return crypto_kernel_do_load_auth_type(new_at, id, 0);
 }
 
 srtp_err_status_t
-crypto_kernel_replace_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id) {
+crypto_kernel_replace_auth_type(srtp_auth_type_t *new_at, srtp_auth_type_id_t id) {
   return crypto_kernel_do_load_auth_type(new_at, id, 1);
 }
 
@@ -481,7 +481,7 @@ crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
 
 
 
-auth_type_t *
+srtp_auth_type_t *
 crypto_kernel_get_auth_type(srtp_auth_type_id_t id) {
   kernel_auth_type_t *atype;
   
@@ -502,7 +502,7 @@ crypto_kernel_alloc_auth(srtp_auth_type_id_t id,
 			 auth_pointer_t *ap, 
 			 int key_len,
 			 int tag_len) {
-  auth_type_t *at;
+  srtp_auth_type_t *at;
 
   /* 
    * if the crypto_kernel is not yet initialized, we refuse to allocate

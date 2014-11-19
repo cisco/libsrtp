@@ -98,17 +98,17 @@ typedef enum direction_t {
  * key, sequence number, and replay database
  * 
  * note that the keys might not actually be unique, in which case the
- * cipher_t and auth_t pointers will point to the same structures
+ * cipher_t and srtp_auth_t pointers will point to the same structures
  */
 
 typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
   cipher_t  *rtp_cipher;
-  auth_t    *rtp_auth;
+  srtp_auth_t    *rtp_auth;
   rdbx_t     rtp_rdbx;
   srtp_sec_serv_t rtp_services;
   cipher_t  *rtcp_cipher;
-  auth_t    *rtcp_auth;
+  srtp_auth_t    *rtcp_auth;
   rdb_t      rtcp_rdb;
   srtp_sec_serv_t rtcp_services;
   key_limit_ctx_t *limit;

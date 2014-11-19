@@ -53,25 +53,25 @@
 
 /* null_auth uses the auth debug module */
 
-extern debug_module_t mod_auth;
+extern debug_module_t srtp_mod_auth;
 
 srtp_err_status_t
-null_auth_alloc(auth_t **a, int key_len, int out_len) {
-  extern auth_type_t null_auth;
+null_auth_alloc(srtp_auth_t **a, int key_len, int out_len) {
+  extern srtp_auth_type_t null_auth;
   uint8_t *pointer;
 
-  debug_print(mod_auth, "allocating auth func with key length %d", key_len);
-  debug_print(mod_auth, "                          tag length %d", out_len);
+  debug_print(srtp_mod_auth, "allocating auth func with key length %d", key_len);
+  debug_print(srtp_mod_auth, "                          tag length %d", out_len);
 
   /* allocate memory for auth and null_auth_ctx_t structures */
-  pointer = (uint8_t*)srtp_crypto_alloc(sizeof(null_auth_ctx_t) + sizeof(auth_t));
+  pointer = (uint8_t*)srtp_crypto_alloc(sizeof(null_auth_ctx_t) + sizeof(srtp_auth_t));
   if (pointer == NULL)
     return srtp_err_status_alloc_fail;
 
   /* set pointers */
-  *a = (auth_t *)pointer;
+  *a = (srtp_auth_t *)pointer;
   (*a)->type = &null_auth;
-  (*a)->state = pointer + sizeof (auth_t);  
+  (*a)->state = pointer + sizeof (srtp_auth_t);  
   (*a)->out_len = out_len;
   (*a)->prefix_len = out_len;
   (*a)->key_len = key_len;
@@ -80,12 +80,12 @@ null_auth_alloc(auth_t **a, int key_len, int out_len) {
 }
 
 srtp_err_status_t
-null_auth_dealloc(auth_t *a) {
-  extern auth_type_t null_auth;
+null_auth_dealloc(srtp_auth_t *a) {
+  extern srtp_auth_type_t null_auth;
   
   /* zeroize entire state*/
   octet_string_set_to_zero((uint8_t *)a, 
-			   sizeof(null_auth_ctx_t) + sizeof(auth_t));
+			   sizeof(null_auth_ctx_t) + sizeof(srtp_auth_t));
 
   /* free memory */
   srtp_crypto_free(a);
@@ -121,13 +121,13 @@ null_auth_start(null_auth_ctx_t *state) {
 }
 
 /*
- * auth_type_t - defines description, test case, and null_auth
+ * srtp_auth_type_t - defines description, test case, and null_auth
  * metaobject
  */
 
 /* begin test case 0 */
 
-auth_test_case_t
+srtp_auth_test_case_t
 null_auth_test_case_0 = {
   0,                                       /* octets in key            */
   NULL,                                    /* key                      */
@@ -142,7 +142,7 @@ null_auth_test_case_0 = {
 
 char null_auth_description[] = "null authentication function";
 
-auth_type_t
+srtp_auth_type_t
 null_auth  = {
   (auth_alloc_func)      null_auth_alloc,
   (auth_dealloc_func)    null_auth_dealloc,
@@ -151,7 +151,7 @@ null_auth  = {
   (auth_update_func)     null_auth_update,
   (auth_start_func)      null_auth_start,
   (char *)               null_auth_description,
-  (auth_test_case_t *)   &null_auth_test_case_0,
+  (srtp_auth_test_case_t *)   &null_auth_test_case_0,
   (debug_module_t *)     NULL,
   (srtp_auth_type_id_t)  NULL_AUTH
 };

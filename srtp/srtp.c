@@ -571,7 +571,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
 
   /* generate authentication key */
   stat = srtp_kdf_generate(&kdf, label_rtp_msg_auth,
-			   tmp_key, auth_get_key_length(srtp->rtp_auth));
+			   tmp_key, srtp_auth_get_key_length(srtp->rtp_auth));
   if (stat) {
     /* zeroize temp buffer */
     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -579,7 +579,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
   debug_print(mod_srtp, "auth key:   %s",
 	      srtp_octet_string_hex_string(tmp_key, 
-				      auth_get_key_length(srtp->rtp_auth))); 
+				      srtp_auth_get_key_length(srtp->rtp_auth))); 
 
   /* initialize auth function */
   stat = auth_init(srtp->rtp_auth, tmp_key);
@@ -641,7 +641,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
 
   /* generate authentication key */
   stat = srtp_kdf_generate(&kdf, label_rtcp_msg_auth,
-			   tmp_key, auth_get_key_length(srtp->rtcp_auth));
+			   tmp_key, srtp_auth_get_key_length(srtp->rtcp_auth));
   if (stat) {
     /* zeroize temp buffer */
     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -650,7 +650,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
 
   debug_print(mod_srtp, "rtcp auth key:   %s",
 	      srtp_octet_string_hex_string(tmp_key, 
-		     auth_get_key_length(srtp->rtcp_auth))); 
+		     srtp_auth_get_key_length(srtp->rtcp_auth))); 
 
   /* initialize auth function */
   stat = auth_init(srtp->rtcp_auth, tmp_key);
@@ -913,7 +913,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
     }
 
     /* get tag length from stream */
-    tag_len = auth_get_tag_length(stream->rtp_auth);
+    tag_len = srtp_auth_get_tag_length(stream->rtp_auth);
 
     /*
      * find starting point for encryption and length of data to be
@@ -1031,7 +1031,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
 #endif
 
     /* get tag length from stream */
-    tag_len = auth_get_tag_length(stream->rtp_auth);
+    tag_len = srtp_auth_get_tag_length(stream->rtp_auth);
 
     /*
      * AEAD uses a new IV formation method 
@@ -1263,7 +1263,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
   }
 
    /* get tag length from stream */
-   tag_len = auth_get_tag_length(stream->rtp_auth); 
+   tag_len = srtp_auth_get_tag_length(stream->rtp_auth); 
 
    /*
     * find starting point for encryption and length of data to be
@@ -1368,7 +1368,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     */
    if (auth_start) {
      
-    prefix_len = auth_get_prefix_length(stream->rtp_auth);    
+    prefix_len = srtp_auth_get_prefix_length(stream->rtp_auth);    
     if (prefix_len) {
       status = cipher_output(stream->rtp_cipher, auth_tag, prefix_len);
       if (status)
@@ -1504,7 +1504,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   }
 
   /* get tag length from stream */
-  tag_len = auth_get_tag_length(stream->rtp_auth); 
+  tag_len = srtp_auth_get_tag_length(stream->rtp_auth); 
 
   /* 
    * set the cipher's IV properly, depending on whatever cipher we
@@ -1597,7 +1597,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
      */  
     if (stream->rtp_auth->prefix_len != 0) {
       
-      prefix_len = auth_get_prefix_length(stream->rtp_auth);    
+      prefix_len = srtp_auth_get_prefix_length(stream->rtp_auth);    
       status = cipher_output(stream->rtp_cipher, tmp_tag, prefix_len);
       debug_print(mod_srtp, "keystream prefix: %s", 
 		  srtp_octet_string_hex_string(tmp_tag, prefix_len));
@@ -1756,7 +1756,7 @@ srtp_shutdown() {
 
 int
 srtp_get_trailer_length(const srtp_stream_t s) {
-  return auth_get_tag_length(s->rtp_auth);
+  return srtp_auth_get_tag_length(s->rtp_auth);
 }
 
 #endif
@@ -2281,7 +2281,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     uint32_t tseq;
 
     /* get tag length from stream context */
-    tag_len = auth_get_tag_length(stream->rtcp_auth);
+    tag_len = srtp_auth_get_tag_length(stream->rtcp_auth);
 
     /*
      * set encryption start and encryption length - if we're not
@@ -2435,7 +2435,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     uint32_t tseq;
 
     /* get tag length from stream context */
-    tag_len = auth_get_tag_length(stream->rtcp_auth);
+    tag_len = srtp_auth_get_tag_length(stream->rtcp_auth);
 
     /*
      * set encryption start, encryption length, and trailer
@@ -2668,7 +2668,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   }
 
   /* get tag length from stream context */
-  tag_len = auth_get_tag_length(stream->rtcp_auth); 
+  tag_len = srtp_auth_get_tag_length(stream->rtcp_auth); 
 
   /*
    * set encryption start and encryption length - if we're not
@@ -2750,7 +2750,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   if (auth_start) {
 
     /* put keystream prefix into auth_tag */
-    prefix_len = auth_get_prefix_length(stream->rtcp_auth);    
+    prefix_len = srtp_auth_get_prefix_length(stream->rtcp_auth);    
     status = cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
 
     debug_print(mod_srtp, "keystream prefix: %s", 
@@ -2855,7 +2855,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   }
   
   /* get tag length from stream context */
-  tag_len = auth_get_tag_length(stream->rtcp_auth);
+  tag_len = srtp_auth_get_tag_length(stream->rtcp_auth);
 
   /* check the packet length - it must contain at least a full RTCP
      header, an auth tag (if applicable), and the SRTCP encrypted flag
@@ -2984,7 +2984,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    * if we're authenticating using a universal hash, put the keystream
    * prefix into the authentication tag
    */
-  prefix_len = auth_get_prefix_length(stream->rtcp_auth);    
+  prefix_len = srtp_auth_get_prefix_length(stream->rtcp_auth);    
   if (prefix_len) {
     status = cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
     debug_print(mod_srtp, "keystream prefix: %s", 

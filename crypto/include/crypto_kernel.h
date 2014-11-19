@@ -80,7 +80,7 @@ typedef struct kernel_cipher_type {
  */
 typedef struct kernel_auth_type {
   srtp_auth_type_id_t  id;
-  auth_type_t    *auth_type;
+  srtp_auth_type_t    *auth_type;
   struct kernel_auth_type *next;
 } kernel_auth_type_t;
 
@@ -162,7 +162,7 @@ srtp_err_status_t crypto_kernel_list_debug_modules(void);
  */
 srtp_err_status_t crypto_kernel_load_cipher_type(cipher_type_t *ct, srtp_cipher_type_id_t id);
 
-srtp_err_status_t crypto_kernel_load_auth_type(auth_type_t *ct, srtp_auth_type_id_t id);
+srtp_err_status_t crypto_kernel_load_auth_type(srtp_auth_type_t *ct, srtp_auth_type_id_t id);
 
 /*
  * crypto_kernel_replace_cipher_type(ct, id)
@@ -181,7 +181,7 @@ srtp_err_status_t crypto_kernel_replace_cipher_type(cipher_type_t *ct, srtp_ciph
  * with a new one passed in externally.  The new auth type must pass all the
  * existing auth_type's self tests as well as its own.
  */
-srtp_err_status_t crypto_kernel_replace_auth_type(auth_type_t *ct, srtp_auth_type_id_t id);
+srtp_err_status_t crypto_kernel_replace_auth_type(srtp_auth_type_t *ct, srtp_auth_type_id_t id);
 
 
 srtp_err_status_t crypto_kernel_load_debug_module(debug_module_t *new_dm);

@@ -53,7 +53,7 @@
 
 #define PRINT_DEBUG_DATA 0
 
-extern auth_type_t tmmhv2;
+extern srtp_auth_type_t tmmhv2;
 
 const uint16_t msg0[9] = {
   0x6015, 0xf141, 0x5ba1, 0x29a0, 0xf604, 0xd1c, 0x2d9, 0xaa8a, 0x7931

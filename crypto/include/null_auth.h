@@ -51,9 +51,9 @@ typedef struct {
 	char foo;
 } null_auth_ctx_t;
 
-srtp_err_status_t null_auth_alloc(auth_t **a, int key_len, int out_len);
+srtp_err_status_t null_auth_alloc(srtp_auth_t **a, int key_len, int out_len);
 
-srtp_err_status_t null_auth_dealloc(auth_t *a);
+srtp_err_status_t null_auth_dealloc(srtp_auth_t *a);
 
 srtp_err_status_t null_auth_init(null_auth_ctx_t *state, const uint8_t *key, int key_len);
 
