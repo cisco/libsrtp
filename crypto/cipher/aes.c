@@ -1356,6 +1356,15 @@ static uint32_t U4[256] = {
 };
 #endif /* CPU_RISC */
 
+#define gf2_8_field_polynomial 0x1B
+/*
+ * gf2_8_shift(z) returns the result of the GF(2^8) 'multiply by x' 
+ * operation, using the field representation from AES; that is, the 
+ * next gf2_8 value in the cyclic representation of that field.  The 
+ * value z should be an uint8_t.
+ */
+#define gf2_8_shift(z) (((z) & 128) ? \
+       (((z) << 1) ^ gf2_8_field_polynomial) : ((z) << 1))
 
 /* aes internals */
 
@@ -1366,7 +1375,7 @@ aes_128_expand_encryption_key (const uint8_t *key,
                                srtp_aes_expanded_key_t *expanded_key)
 {
     int i;
-    gf2_8 rc;
+    uint8_t rc;
 
     /* initialize round constant */
     rc = 1;
@@ -1419,7 +1428,7 @@ aes_256_expand_encryption_key (const unsigned char *key,
                                srtp_aes_expanded_key_t *expanded_key)
 {
     int i;
-    gf2_8 rc;
+    uint8_t rc;
 
     /* initialize round constant */
     rc = 1;
