@@ -158,7 +158,7 @@ if test "$enable_openssl" = "yes"; then
    USE_OPENSSL=1
    AC_SUBST(USE_OPENSSL)
 else
-   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o crypto/cipher/aes_cbc.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    AC_MSG_CHECKING(which random device to use)
    if test "$enable_kernel_linux" = "yes"; then
       RNG_OBJS=rand_linux_kernel.o

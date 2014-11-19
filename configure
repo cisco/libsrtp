@@ -4984,7 +4984,7 @@ $as_echo "#define OPENSSL 1" >>confdefs.h
    USE_OPENSSL=1
 
 else
-   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o crypto/cipher/aes_cbc.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
    if test "$enable_kernel_linux" = "yes"; then

@@ -116,16 +116,14 @@ check_status(srtp_err_status_t s) {
 }
 
 /*
- * null_cipher, aes_icm, and aes_cbc are the cipher meta-objects
+ * null_cipher and srtp_aes_icm are the cipher meta-objects
  * defined in the files in crypto/cipher subdirectory.  these are
  * declared external so that we can use these cipher types here
  */
 
 extern cipher_type_t null_cipher;
 extern cipher_type_t srtp_aes_icm;
-#ifndef OPENSSL
-extern cipher_type_t srtp_aes_cbc;
-#else
+#ifdef OPENSSL
 extern cipher_type_t srtp_aes_icm_192;
 extern cipher_type_t srtp_aes_icm_256;
 extern cipher_type_t srtp_aes_gcm_128_openssl;
@@ -190,12 +188,6 @@ main(int argc, char *argv[]) {
 #ifndef OPENSSL
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&srtp_aes_icm, 46, num_cipher); 
-
-    for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
-      cipher_driver_test_array_throughput(&srtp_aes_cbc, 16, num_cipher); 
- 
-    for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
-      cipher_driver_test_array_throughput(&srtp_aes_cbc, 32, num_cipher); 
 #else
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&srtp_aes_icm_192, 38, num_cipher); 
@@ -216,9 +208,7 @@ main(int argc, char *argv[]) {
   if (do_validation) {
     cipher_driver_self_test(&null_cipher);
     cipher_driver_self_test(&srtp_aes_icm);
-#ifndef OPENSSL
-    cipher_driver_self_test(&srtp_aes_cbc);
-#else
+#ifdef OPENSSL
     cipher_driver_self_test(&srtp_aes_icm_192);
     cipher_driver_self_test(&srtp_aes_icm_256);
     cipher_driver_self_test(&srtp_aes_gcm_128_openssl);

@@ -73,9 +73,7 @@ extern debug_module_t mod_alloc;
 
 extern cipher_type_t null_cipher;
 extern cipher_type_t srtp_aes_icm;
-#ifndef OPENSSL
-extern cipher_type_t srtp_aes_cbc;
-#else
+#ifdef OPENSSL
 extern cipher_type_t srtp_aes_gcm_128_openssl;
 extern cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
@@ -153,11 +151,7 @@ crypto_kernel_init() {
   status = crypto_kernel_load_cipher_type(&srtp_aes_icm, AES_ICM);
   if (status) 
     return status;
-#ifndef OPENSSL
-  status = crypto_kernel_load_cipher_type(&srtp_aes_cbc, AES_CBC);
-  if (status) 
-    return status;
-#else
+#ifdef OPENSSL
   status = crypto_kernel_load_cipher_type(&srtp_aes_gcm_128_openssl, AES_128_GCM);
   if (status) {
       return status;
