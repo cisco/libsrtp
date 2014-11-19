@@ -19,7 +19,7 @@ typedef struct {
     v128_t previous;               /* previous ciphertext block        */
     uint8_t key[32];
     int key_len;
-    aes_expanded_key_t expanded_key; /* the cipher key                   */
+    srtp_aes_expanded_key_t expanded_key; /* the cipher key                   */
 } srtp_aes_cbc_ctx_t;
 
 srtp_err_status_t srtp_aes_cbc_encrypt(srtp_aes_cbc_ctx_t *c, unsigned char *buf, unsigned int  *bytes_in_data);

@@ -102,8 +102,8 @@ typedef struct srtp_ekt_policy_ctx_t {
 typedef struct srtp_ekt_data_t {
   srtp_ekt_spi_t spi;
   uint8_t ekt_cipher_type;
-  aes_expanded_key_t ekt_enc_key;
-  aes_expanded_key_t ekt_dec_key;
+  srtp_aes_expanded_key_t ekt_enc_key;
+  srtp_aes_expanded_key_t ekt_dec_key;
   struct ekt_data_t *next_ekt_data;
 } srtp_ekt_data_t;
 

@@ -142,10 +142,10 @@ srtp_err_status_t srtp_ekt_stream_init_from_policy(srtp_ekt_stream_t stream_data
 void aes_decrypt_with_raw_key(void *ciphertext, const void *key, int key_len) {
 #ifndef OPENSSL
 //FIXME: need to get this working through the crypto module interface
-  aes_expanded_key_t expanded_key;
+  srtp_aes_expanded_key_t expanded_key;
 
-  aes_expand_decryption_key(key, key_len, &expanded_key);
-  aes_decrypt(ciphertext, &expanded_key);
+  srtp_aes_expand_decryption_key(key, key_len, &expanded_key);
+  srtp_aes_decrypt(ciphertext, &expanded_key);
 #endif
 }
 

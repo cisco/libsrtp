@@ -40,10 +40,10 @@ main (int argc, char *argv[]) {
   uint8_t buffer[2532];
   unsigned int buf_len = 2500;
   int i, j;
-  extern cipher_type_t aes_icm;
+  extern cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
-  extern cipher_type_t aes_gcm_128_openssl;
-  extern cipher_type_t aes_gcm_256_openssl;
+  extern cipher_type_t srtp_aes_gcm_128_openssl;
+  extern cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
   cipher_t *c;
   uint8_t key[46] = {
@@ -81,7 +81,7 @@ main (int argc, char *argv[]) {
   /* set buffer to cipher output */
   for (i=0; i < 2500; i++)
     buffer[i] = 0;
-  err_check(cipher_type_alloc(&aes_icm, &c, 30, 0));
+  err_check(cipher_type_alloc(&srtp_aes_icm, &c, 30, 0));
   err_check(cipher_init(c, key));
   err_check(cipher_set_iv(c, &nonce, direction_encrypt));
   err_check(cipher_encrypt(c, buffer, &buf_len));
@@ -115,7 +115,7 @@ main (int argc, char *argv[]) {
   /* set buffer to cipher output */
   for (i=0; i < 2500; i++)
     buffer[i] = 0;
-  err_check(cipher_type_alloc(&aes_icm, &c, 46, 0));
+  err_check(cipher_type_alloc(&srtp_aes_icm, &c, 46, 0));
   err_check(cipher_init(c, key));
   err_check(cipher_set_iv(c, &nonce, direction_encrypt));
   err_check(cipher_encrypt(c, buffer, &buf_len));
@@ -146,7 +146,7 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(cipher_type_alloc(&aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8));
+    err_check(cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8));
     err_check(cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
     err_check(cipher_encrypt(c, buffer, &buf_len));
@@ -175,7 +175,7 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(cipher_type_alloc(&aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16));
+    err_check(cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16));
     err_check(cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
     err_check(cipher_encrypt(c, buffer, &buf_len));
