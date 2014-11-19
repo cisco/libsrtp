@@ -40,12 +40,12 @@ main (int argc, char *argv[]) {
   uint8_t buffer[2532];
   unsigned int buf_len = 2500;
   int i, j;
-  extern cipher_type_t srtp_aes_icm;
+  extern srtp_cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
-  extern cipher_type_t srtp_aes_gcm_128_openssl;
-  extern cipher_type_t srtp_aes_gcm_256_openssl;
+  extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
+  extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
-  cipher_t *c;
+  srtp_cipher_t *c;
   uint8_t key[46] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 

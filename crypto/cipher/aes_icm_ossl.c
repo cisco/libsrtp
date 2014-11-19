@@ -63,10 +63,10 @@ debug_module_t srtp_mod_aes_icm = {
     0,               /* debugging is off by default */
     "aes icm ossl"   /* printable module name       */
 };
-extern cipher_test_case_t srtp_aes_icm_test_case_0;
-extern cipher_type_t srtp_aes_icm;
-extern cipher_type_t srtp_aes_icm_192;
-extern cipher_type_t srtp_aes_icm_256;
+extern srtp_cipher_test_case_t srtp_aes_icm_test_case_0;
+extern srtp_cipher_type_t srtp_aes_icm;
+extern srtp_cipher_type_t srtp_aes_icm_192;
+extern srtp_cipher_type_t srtp_aes_icm_256;
 
 /*
  * integer counter mode works as follows:
@@ -110,7 +110,7 @@ extern cipher_type_t srtp_aes_icm_256;
  * value.  The tlen argument is for the AEAD tag length, which
  * isn't used in counter mode.
  */
-srtp_err_status_t srtp_aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
+srtp_err_status_t srtp_aes_icm_openssl_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
     srtp_aes_icm_ctx_t *icm;
     int tmp;
@@ -127,15 +127,15 @@ srtp_err_status_t srtp_aes_icm_openssl_alloc (cipher_t **c, int key_len, int tle
     }
 
     /* allocate memory a cipher of type aes_icm */
-    tmp = sizeof(cipher_t) + sizeof(srtp_aes_icm_ctx_t);
+    tmp = sizeof(srtp_cipher_t) + sizeof(srtp_aes_icm_ctx_t);
     allptr = (uint8_t*)srtp_crypto_alloc(tmp);
     if (allptr == NULL) {
         return srtp_err_status_alloc_fail;
     }
 
     /* set pointers */
-    *c = (cipher_t*)allptr;
-    (*c)->state = allptr + sizeof(cipher_t);
+    *c = (srtp_cipher_t*)allptr;
+    (*c)->state = allptr + sizeof(srtp_cipher_t);
     icm = (srtp_aes_icm_ctx_t*)(*c)->state;
 
     /* setup cipher parameters */
@@ -168,7 +168,7 @@ srtp_err_status_t srtp_aes_icm_openssl_alloc (cipher_t **c, int key_len, int tle
 /*
  * This function deallocates an instance of this engine
  */
-srtp_err_status_t srtp_aes_icm_openssl_dealloc (cipher_t *c)
+srtp_err_status_t srtp_aes_icm_openssl_dealloc (srtp_cipher_t *c)
 {
     srtp_aes_icm_ctx_t *ctx;
 
@@ -186,7 +186,7 @@ srtp_err_status_t srtp_aes_icm_openssl_dealloc (cipher_t *c)
 
     /* zeroize entire state*/
     octet_string_set_to_zero((uint8_t*)c,
-                             sizeof(cipher_t) + sizeof(srtp_aes_icm_ctx_t));
+                             sizeof(srtp_cipher_t) + sizeof(srtp_aes_icm_ctx_t));
 
     /* free memory */
     srtp_crypto_free(c);
@@ -357,7 +357,7 @@ uint8_t srtp_aes_icm_test_case_0_ciphertext[32] = {
     0x2a, 0x43, 0xa2, 0xfe, 0x4a, 0x5f, 0x97, 0xab
 };
 
-cipher_test_case_t srtp_aes_icm_test_case_0 = {
+srtp_cipher_test_case_t srtp_aes_icm_test_case_0 = {
     SRTP_AES_128_KEYSIZE_WSALT,                 /* octets in key            */
     srtp_aes_icm_test_case_0_key,               /* key                      */
     srtp_aes_icm_test_case_0_nonce,             /* packet index             */
@@ -402,7 +402,7 @@ uint8_t srtp_aes_icm_192_test_case_1_ciphertext[32] = {
     0xd5, 0x16, 0x5e, 0xc4, 0x56, 0x8f, 0x5c, 0x9a
 };
 
-cipher_test_case_t srtp_aes_icm_192_test_case_1 = {
+srtp_cipher_test_case_t srtp_aes_icm_192_test_case_1 = {
     SRTP_AES_192_KEYSIZE_WSALT,                 /* octets in key            */
     srtp_aes_icm_192_test_case_1_key,           /* key                      */
     srtp_aes_icm_192_test_case_1_nonce,         /* packet index             */
@@ -449,7 +449,7 @@ uint8_t srtp_aes_icm_256_test_case_2_ciphertext[32] = {
     0x70, 0x50, 0x75, 0x6d, 0xed, 0x16, 0x5b, 0xac
 };
 
-cipher_test_case_t srtp_aes_icm_256_test_case_2 = {
+srtp_cipher_test_case_t srtp_aes_icm_256_test_case_2 = {
     SRTP_AES_256_KEYSIZE_WSALT,                 /* octets in key            */
     srtp_aes_icm_256_test_case_2_key,           /* key                      */
     srtp_aes_icm_256_test_case_2_nonce,         /* packet index             */
@@ -467,7 +467,7 @@ cipher_test_case_t srtp_aes_icm_256_test_case_2 = {
  * This is the function table for this crypto engine.
  * note: the encrypt function is identical to the decrypt function
  */
-cipher_type_t srtp_aes_icm = {
+srtp_cipher_type_t srtp_aes_icm = {
     (cipher_alloc_func_t)          srtp_aes_icm_openssl_alloc,
     (cipher_dealloc_func_t)        srtp_aes_icm_openssl_dealloc,
     (cipher_init_func_t)           srtp_aes_icm_openssl_context_init,
@@ -477,7 +477,7 @@ cipher_type_t srtp_aes_icm = {
     (cipher_set_iv_func_t)         srtp_aes_icm_openssl_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        srtp_aes_icm_openssl_description,
-    (cipher_test_case_t*)          &srtp_aes_icm_test_case_0,
+    (srtp_cipher_test_case_t*)          &srtp_aes_icm_test_case_0,
     (debug_module_t*)              &srtp_mod_aes_icm,
     (srtp_cipher_type_id_t)        AES_ICM
 };
@@ -486,7 +486,7 @@ cipher_type_t srtp_aes_icm = {
  * This is the function table for this crypto engine.
  * note: the encrypt function is identical to the decrypt function
  */
-cipher_type_t srtp_aes_icm_192 = {
+srtp_cipher_type_t srtp_aes_icm_192 = {
     (cipher_alloc_func_t)          srtp_aes_icm_openssl_alloc,
     (cipher_dealloc_func_t)        srtp_aes_icm_openssl_dealloc,
     (cipher_init_func_t)           srtp_aes_icm_openssl_context_init,
@@ -496,7 +496,7 @@ cipher_type_t srtp_aes_icm_192 = {
     (cipher_set_iv_func_t)         srtp_aes_icm_openssl_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        srtp_aes_icm_192_openssl_description,
-    (cipher_test_case_t*)          &srtp_aes_icm_192_test_case_1,
+    (srtp_cipher_test_case_t*)          &srtp_aes_icm_192_test_case_1,
     (debug_module_t*)              &srtp_mod_aes_icm,
     (srtp_cipher_type_id_t)        AES_192_ICM
 };
@@ -505,7 +505,7 @@ cipher_type_t srtp_aes_icm_192 = {
  * This is the function table for this crypto engine.
  * note: the encrypt function is identical to the decrypt function
  */
-cipher_type_t srtp_aes_icm_256 = {
+srtp_cipher_type_t srtp_aes_icm_256 = {
     (cipher_alloc_func_t)          srtp_aes_icm_openssl_alloc,
     (cipher_dealloc_func_t)        srtp_aes_icm_openssl_dealloc,
     (cipher_init_func_t)           srtp_aes_icm_openssl_context_init,
@@ -515,7 +515,7 @@ cipher_type_t srtp_aes_icm_256 = {
     (cipher_set_iv_func_t)         srtp_aes_icm_openssl_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        srtp_aes_icm_256_openssl_description,
-    (cipher_test_case_t*)          &srtp_aes_icm_256_test_case_2,
+    (srtp_cipher_test_case_t*)          &srtp_aes_icm_256_test_case_2,
     (debug_module_t*)              &srtp_mod_aes_icm,
     (srtp_cipher_type_id_t)        AES_256_ICM
 };

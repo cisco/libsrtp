@@ -64,8 +64,8 @@ debug_module_t srtp_mod_aes_gcm = {
  * The following are the global singleton instances for the
  * 128-bit and 256-bit GCM ciphers.
  */
-extern cipher_type_t srtp_aes_gcm_128_openssl;
-extern cipher_type_t srtp_aes_gcm_256_openssl;
+extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
+extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 
 /*
  * For now we only support 8 and 16 octet tags.  The spec allows for
@@ -82,7 +82,7 @@ extern cipher_type_t srtp_aes_gcm_256_openssl;
  * key length includes the 14 byte salt value that is used when
  * initializing the KDF.
  */
-srtp_err_status_t srtp_aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tlen)
+srtp_err_status_t srtp_aes_gcm_openssl_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
     srtp_aes_gcm_ctx_t *gcm;
     int tmp;
@@ -105,15 +105,15 @@ srtp_err_status_t srtp_aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tle
     }
 
     /* allocate memory a cipher of type aes_gcm */
-    tmp = sizeof(cipher_t) + sizeof(srtp_aes_gcm_ctx_t);
+    tmp = sizeof(srtp_cipher_t) + sizeof(srtp_aes_gcm_ctx_t);
     allptr = srtp_crypto_alloc(tmp);
     if (allptr == NULL) {
         return (srtp_err_status_alloc_fail);
     }
 
     /* set pointers */
-    *c = (cipher_t*)allptr;
-    (*c)->state = allptr + sizeof(cipher_t);
+    *c = (srtp_cipher_t*)allptr;
+    (*c)->state = allptr + sizeof(srtp_cipher_t);
     gcm = (srtp_aes_gcm_ctx_t*)(*c)->state;
 
     /* setup cipher attributes */
@@ -143,7 +143,7 @@ srtp_err_status_t srtp_aes_gcm_openssl_alloc (cipher_t **c, int key_len, int tle
 /*
  * This function deallocates a GCM session
  */
-srtp_err_status_t srtp_aes_gcm_openssl_dealloc (cipher_t *c)
+srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
 {
     srtp_aes_gcm_ctx_t *ctx;
 
@@ -153,7 +153,7 @@ srtp_err_status_t srtp_aes_gcm_openssl_dealloc (cipher_t *c)
     }
 
     /* zeroize entire state*/
-    octet_string_set_to_zero((uint8_t*)c, sizeof(cipher_t) + sizeof(srtp_aes_gcm_ctx_t));
+    octet_string_set_to_zero((uint8_t*)c, sizeof(srtp_cipher_t) + sizeof(srtp_aes_gcm_ctx_t));
 
     /* free memory */
     srtp_crypto_free(c);
@@ -414,7 +414,7 @@ uint8_t srtp_aes_gcm_test_case_0_ciphertext[76] = {
     0x94, 0xfa, 0xe9, 0x5a, 0xe7, 0x12, 0x1a, 0x47,
 };
 
-cipher_test_case_t srtp_aes_gcm_test_case_0a = {
+srtp_cipher_test_case_t srtp_aes_gcm_test_case_0a = {
     SRTP_AES_128_GCM_KEYSIZE_WSALT,      /* octets in key            */
     srtp_aes_gcm_test_case_0_key,        /* key                      */
     srtp_aes_gcm_test_case_0_iv,         /* packet index             */
@@ -428,7 +428,7 @@ cipher_test_case_t srtp_aes_gcm_test_case_0a = {
     NULL                                 /* pointer to next testcase */
 };
 
-cipher_test_case_t srtp_aes_gcm_test_case_0 = {
+srtp_cipher_test_case_t srtp_aes_gcm_test_case_0 = {
     SRTP_AES_128_GCM_KEYSIZE_WSALT,      /* octets in key            */
     srtp_aes_gcm_test_case_0_key,        /* key                      */
     srtp_aes_gcm_test_case_0_iv,         /* packet index             */
@@ -488,7 +488,7 @@ uint8_t srtp_aes_gcm_test_case_1_ciphertext[76] = {
     0x81, 0xcb, 0x8e, 0x5b, 0x46, 0x65, 0x63, 0x1d,
 };
 
-cipher_test_case_t srtp_aes_gcm_test_case_1a = {
+srtp_cipher_test_case_t srtp_aes_gcm_test_case_1a = {
     SRTP_AES_256_GCM_KEYSIZE_WSALT,      /* octets in key            */
     srtp_aes_gcm_test_case_1_key,        /* key                      */
     srtp_aes_gcm_test_case_1_iv,         /* packet index             */
@@ -502,7 +502,7 @@ cipher_test_case_t srtp_aes_gcm_test_case_1a = {
     NULL                                 /* pointer to next testcase */
 };
 
-cipher_test_case_t srtp_aes_gcm_test_case_1 = {
+srtp_cipher_test_case_t srtp_aes_gcm_test_case_1 = {
     SRTP_AES_256_GCM_KEYSIZE_WSALT,      /* octets in key            */
     srtp_aes_gcm_test_case_1_key,        /* key                      */
     srtp_aes_gcm_test_case_1_iv,         /* packet index             */
@@ -519,7 +519,7 @@ cipher_test_case_t srtp_aes_gcm_test_case_1 = {
 /*
  * This is the vector function table for this crypto engine.
  */
-cipher_type_t srtp_aes_gcm_128_openssl = {
+srtp_cipher_type_t srtp_aes_gcm_128_openssl = {
     (cipher_alloc_func_t)srtp_aes_gcm_openssl_alloc,
     (cipher_dealloc_func_t)srtp_aes_gcm_openssl_dealloc,
     (cipher_init_func_t)srtp_aes_gcm_openssl_context_init,
@@ -529,7 +529,7 @@ cipher_type_t srtp_aes_gcm_128_openssl = {
     (cipher_set_iv_func_t)srtp_aes_gcm_openssl_set_iv,
     (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
     (char*)srtp_aes_gcm_128_openssl_description,
-    (cipher_test_case_t*)&srtp_aes_gcm_test_case_0,
+    (srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_0,
     (debug_module_t*)&srtp_mod_aes_gcm,
     (srtp_cipher_type_id_t)AES_128_GCM
 };
@@ -537,7 +537,7 @@ cipher_type_t srtp_aes_gcm_128_openssl = {
 /*
  * This is the vector function table for this crypto engine.
  */
-cipher_type_t srtp_aes_gcm_256_openssl = {
+srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
     (cipher_alloc_func_t)srtp_aes_gcm_openssl_alloc,
     (cipher_dealloc_func_t)srtp_aes_gcm_openssl_dealloc,
     (cipher_init_func_t)srtp_aes_gcm_openssl_context_init,
@@ -547,7 +547,7 @@ cipher_type_t srtp_aes_gcm_256_openssl = {
     (cipher_set_iv_func_t)srtp_aes_gcm_openssl_set_iv,
     (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
     (char*)srtp_aes_gcm_256_openssl_description,
-    (cipher_test_case_t*)&srtp_aes_gcm_test_case_1,
+    (srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_1,
     (debug_module_t*)&srtp_mod_aes_gcm,
     (srtp_cipher_type_id_t)AES_256_GCM
 };

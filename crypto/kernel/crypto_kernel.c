@@ -63,7 +63,7 @@ debug_module_t mod_crypto_kernel = {
  */
 
 extern debug_module_t srtp_mod_auth;
-extern debug_module_t mod_cipher;
+extern debug_module_t srtp_mod_cipher;
 extern debug_module_t mod_stat;
 extern debug_module_t mod_alloc;
 
@@ -71,11 +71,11 @@ extern debug_module_t mod_alloc;
  * cipher types that can be included in the kernel
  */ 
 
-extern cipher_type_t null_cipher;
-extern cipher_type_t srtp_aes_icm;
+extern srtp_cipher_type_t null_cipher;
+extern srtp_cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
-extern cipher_type_t srtp_aes_gcm_128_openssl;
-extern cipher_type_t srtp_aes_gcm_256_openssl;
+extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
+extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
 
 
@@ -124,7 +124,7 @@ crypto_kernel_init() {
   status = crypto_kernel_load_debug_module(&srtp_mod_auth);
   if (status)
     return status;
-  status = crypto_kernel_load_debug_module(&mod_cipher);
+  status = crypto_kernel_load_debug_module(&srtp_mod_cipher);
   if (status)
     return status;
   status = crypto_kernel_load_debug_module(&mod_stat);
@@ -197,7 +197,7 @@ crypto_kernel_status() {
   while(ctype != NULL) {
     printf("cipher: %s\n", ctype->cipher_type->description);
     printf("  self-test: ");
-    status = cipher_type_self_test(ctype->cipher_type);
+    status = srtp_cipher_type_self_test(ctype->cipher_type);
     if (status) {
       printf("failed with error code %d\n", status);
       exit(status);
@@ -300,7 +300,7 @@ crypto_kernel_shutdown() {
 }
 
 static inline srtp_err_status_t
-crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t id,
+crypto_kernel_do_load_cipher_type(srtp_cipher_type_t *new_ct, srtp_cipher_type_id_t id,
 				  int replace) {
   kernel_cipher_type_t *ctype, *new_ctype;
   srtp_err_status_t status;
@@ -313,7 +313,7 @@ crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t i
     return srtp_err_status_bad_param;
 
   /* check cipher type by running self-test */
-  status = cipher_type_self_test(new_ct);
+  status = srtp_cipher_type_self_test(new_ct);
   if (status) {
     return status;
   }
@@ -324,7 +324,7 @@ crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t i
     if (id == ctype->id) {
       if (!replace)
 	return srtp_err_status_bad_param;
-      status = cipher_type_test(new_ct, ctype->cipher_type->test_data);
+      status = srtp_cipher_type_test(new_ct, ctype->cipher_type->test_data);
       if (status)
 	return status;
       new_ctype = ctype;
@@ -360,12 +360,12 @@ crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t i
 }
 
 srtp_err_status_t
-crypto_kernel_load_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t id) {
+crypto_kernel_load_cipher_type(srtp_cipher_type_t *new_ct, srtp_cipher_type_id_t id) {
   return crypto_kernel_do_load_cipher_type(new_ct, id, 0);
 }
 
 srtp_err_status_t
-crypto_kernel_replace_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t id) {
+crypto_kernel_replace_cipher_type(srtp_cipher_type_t *new_ct, srtp_cipher_type_id_t id) {
   return crypto_kernel_do_load_cipher_type(new_ct, id, 1);
 }
 
@@ -441,7 +441,7 @@ crypto_kernel_replace_auth_type(srtp_auth_type_t *new_at, srtp_auth_type_id_t id
 }
 
 
-cipher_type_t *
+srtp_cipher_type_t *
 crypto_kernel_get_cipher_type(srtp_cipher_type_id_t id) {
   kernel_cipher_type_t *ctype;
   
@@ -460,10 +460,10 @@ crypto_kernel_get_cipher_type(srtp_cipher_type_id_t id) {
 
 srtp_err_status_t
 crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id, 
-			      cipher_pointer_t *cp, 
+			      srtp_cipher_pointer_t *cp, 
 			      int key_len,
 			      int tag_len) {
-  cipher_type_t *ct;
+  srtp_cipher_type_t *ct;
 
   /* 
    * if the crypto_kernel is not yet initialized, we refuse to allocate

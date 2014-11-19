@@ -56,7 +56,7 @@ typedef struct {
     int key_size;
     int tag_len;
     EVP_CIPHER_CTX ctx;
-    cipher_direction_t dir;
+    srtp_cipher_direction_t dir;
 } srtp_aes_gcm_ctx_t;
 
 #endif /* AES_GCM_OSSL_H */

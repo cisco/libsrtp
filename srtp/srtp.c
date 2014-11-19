@@ -394,7 +394,7 @@ typedef enum {
  */
 
 typedef struct { 
-  cipher_t *cipher;    /* cipher used for key derivation  */  
+  srtp_cipher_t *cipher;    /* cipher used for key derivation  */  
 } srtp_kdf_t;
 
 srtp_err_status_t
@@ -461,7 +461,7 @@ srtp_kdf_clear(srtp_kdf_t *kdf) {
  * Assumption is that for AES-ICM a key length < 30 is Ismacryp using
  * AES-128 and short salts; everything else uses a salt length of 14.
  * TODO: key and salt lengths should be separate fields in the policy.  */
-static inline int base_key_length(const cipher_type_t *cipher, int key_length)
+static inline int base_key_length(const srtp_cipher_type_t *cipher, int key_length)
 {
   switch (cipher->id) {
   case AES_128_ICM:
@@ -495,8 +495,8 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   /* If RTP or RTCP have a key length > AES-128, assume matching kdf. */
   /* TODO: kdf algorithm, master key length, and master salt length should
    * be part of srtp_policy_t. */
-  rtp_keylen = cipher_get_key_length(srtp->rtp_cipher);
-  rtcp_keylen = cipher_get_key_length(srtp->rtcp_cipher);
+  rtp_keylen = srtp_cipher_get_key_length(srtp->rtp_cipher);
+  rtcp_keylen = srtp_cipher_get_key_length(srtp->rtcp_cipher);
   rtp_base_key_len = base_key_length(srtp->rtp_cipher->type, rtp_keylen);
   rtp_salt_len = rtp_keylen - rtp_base_key_len;
 
@@ -1370,7 +1370,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      
     prefix_len = srtp_auth_get_prefix_length(stream->rtp_auth);    
     if (prefix_len) {
-      status = cipher_output(stream->rtp_cipher, auth_tag, prefix_len);
+      status = srtp_cipher_output(stream->rtp_cipher, auth_tag, prefix_len);
       if (status)
 	return srtp_err_status_cipher_fail;
       debug_print(mod_srtp, "keystream prefix: %s", 
@@ -1598,7 +1598,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     if (stream->rtp_auth->prefix_len != 0) {
       
       prefix_len = srtp_auth_get_prefix_length(stream->rtp_auth);    
-      status = cipher_output(stream->rtp_cipher, tmp_tag, prefix_len);
+      status = srtp_cipher_output(stream->rtp_cipher, tmp_tag, prefix_len);
       debug_print(mod_srtp, "keystream prefix: %s", 
 		  srtp_octet_string_hex_string(tmp_tag, prefix_len));
       if (status)
@@ -2751,7 +2751,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
 
     /* put keystream prefix into auth_tag */
     prefix_len = srtp_auth_get_prefix_length(stream->rtcp_auth);    
-    status = cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
+    status = srtp_cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
 
     debug_print(mod_srtp, "keystream prefix: %s", 
 		srtp_octet_string_hex_string(auth_tag, prefix_len));
@@ -2986,7 +2986,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    */
   prefix_len = srtp_auth_get_prefix_length(stream->rtcp_auth);    
   if (prefix_len) {
-    status = cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
+    status = srtp_cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
     debug_print(mod_srtp, "keystream prefix: %s", 
 		srtp_octet_string_hex_string(auth_tag, prefix_len));
     if (status)
