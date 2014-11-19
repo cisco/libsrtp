@@ -139,7 +139,7 @@ main (int argc, char *argv[]) {
         exit(1);
       }
       fprintf(stderr, "Setting filter as %s\n", optarg_s);
-      memcpy(filter_exp, optarg_s, strlen(optarg_s));
+      strcpy(filter_exp, optarg_s);
       break;
     case 'l':
       do_list_mods = 1;
