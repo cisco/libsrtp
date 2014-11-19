@@ -47,7 +47,6 @@
 #define CRYPTO_KERNEL
 
 #include "rand_source.h"       
-#include "prng.h"
 #include "cipher.h"    
 #include "auth.h"
 #include "cryptoalg.h"

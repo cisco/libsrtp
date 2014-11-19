@@ -172,12 +172,10 @@ else
          AC_MSG_RESULT([standard rand() function...])
       fi
    fi
-   RNG_EXTRA_OBJS="crypto/rng/prng.o crypto/rng/ctr_prng.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
 AC_SUBST(AES_ICM_OBJS)                              
 AC_SUBST(RNG_OBJS)
-AC_SUBST(RNG_EXTRA_OBJS)
 AC_SUBST(HMAC_OBJS)
 
 dnl Checking for PCAP

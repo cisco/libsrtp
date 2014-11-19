@@ -627,7 +627,6 @@ HAVE_PKG_CONFIG
 PKG_CONFIG
 HAVE_PCAP
 HMAC_OBJS
-RNG_EXTRA_OBJS
 RNG_OBJS
 AES_ICM_OBJS
 USE_OPENSSL
@@ -5007,10 +5006,8 @@ $as_echo "$DEV_URANDOM" >&6; }
 $as_echo "standard rand() function..." >&6; }
       fi
    fi
-   RNG_EXTRA_OBJS="crypto/rng/prng.o crypto/rng/ctr_prng.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
-
 
 
 

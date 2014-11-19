@@ -146,18 +146,6 @@ crypto_kernel_init() {
   if (status)
     return status;
 
-#ifndef OPENSSL
-  /* initialize pseudorandom number generator */
-  status = ctr_prng_init(rand_source_get_octet_string);
-  if (status)
-    return status;
-
-  /* run FIPS-140 statistical tests on ctr_prng */  
-  status = stat_test_rand_source_with_repetition(ctr_prng_get_octet_string, MAX_RNG_TRIALS);
-  if (status)
-    return status;
-#endif
- 
   /* load cipher types */
   status = crypto_kernel_load_cipher_type(&null_cipher, NULL_CIPHER);
   if (status) 
