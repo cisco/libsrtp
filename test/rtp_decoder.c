@@ -398,7 +398,7 @@ usage(char *string) {
 	 "       -k <key>  sets the srtp master key given in hexadecimal\n"
 	 "       -b <key>  sets the srtp master key given in base64\n"
 	 "       -l list debug modules\n"
-	 "       -f \"<pcap filter>\" select only SRTP packets\n"
+	 "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
 	 "       -d <debug> turn on debugging for module <debug>\n",
 	 string, string);
   exit(1);
