@@ -50,27 +50,26 @@
 #include "aes_cbc.h"
 #include "alloc.h"
 
-debug_module_t mod_aes_cbc = {
+debug_module_t srtp_mod_aes_cbc = {
   0,                 /* debugging is off by default */
   "aes cbc"          /* printable module name       */
 };
 
 
 
-srtp_err_status_t
-aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
+srtp_err_status_t srtp_aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
   extern cipher_type_t aes_cbc;
   uint8_t *pointer;
   int tmp;
 
-  debug_print(mod_aes_cbc, 
+  debug_print(srtp_mod_aes_cbc, 
 	      "allocating cipher with key length %d", key_len);
 
   if (key_len != 16 && key_len != 24 && key_len != 32)
     return srtp_err_status_bad_param;
   
   /* allocate memory a cipher of type aes_cbc */
-  tmp = (sizeof(aes_cbc_ctx_t) + sizeof(cipher_t));
+  tmp = (sizeof(srtp_aes_cbc_ctx_t) + sizeof(cipher_t));
   pointer = (uint8_t*)crypto_alloc(tmp);
   if (pointer == NULL) 
     return srtp_err_status_alloc_fail;
@@ -87,13 +86,12 @@ aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
   return srtp_err_status_ok;  
 }
 
-srtp_err_status_t
-aes_cbc_dealloc(cipher_t *c) {
+srtp_err_status_t srtp_aes_cbc_dealloc(cipher_t *c) {
   extern cipher_type_t aes_cbc;
 
   /* zeroize entire state*/
   octet_string_set_to_zero((uint8_t *)c, 
-			   sizeof(aes_cbc_ctx_t) + sizeof(cipher_t));
+			   sizeof(srtp_aes_cbc_ctx_t) + sizeof(cipher_t));
 
   /* free memory */
   crypto_free(c);
@@ -101,10 +99,9 @@ aes_cbc_dealloc(cipher_t *c) {
   return srtp_err_status_ok;  
 }
 
-srtp_err_status_t
-aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len) {
+srtp_err_status_t srtp_aes_cbc_context_init(srtp_aes_cbc_ctx_t *c, const uint8_t *key, int key_len) {
 
-  debug_print(mod_aes_cbc, 
+  debug_print(srtp_mod_aes_cbc, 
 	      "key:  %s", srtp_octet_string_hex_string(key, key_len)); 
 
   /*
@@ -118,8 +115,7 @@ aes_cbc_context_init(aes_cbc_ctx_t *c, const uint8_t *key, int key_len) {
 }
 
 
-srtp_err_status_t
-aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction) {
+srtp_err_status_t srtp_aes_cbc_set_iv(srtp_aes_cbc_ctx_t *c, void *iv, int direction) {
   srtp_err_status_t status;
   int i;
 /*   v128_t *input = iv; */
@@ -129,7 +125,7 @@ aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction) {
   for (i=0; i < 16; i++) 
     c->previous.v8[i] = c->state.v8[i] = input[i];
 
-  debug_print(mod_aes_cbc, "setting iv: %s", v128_hex_string(&c->state)); 
+  debug_print(srtp_mod_aes_cbc, "setting iv: %s", v128_hex_string(&c->state)); 
 
   /* expand key for the appropriate direction */
   switch (direction) {
@@ -152,10 +148,7 @@ aes_cbc_set_iv(aes_cbc_ctx_t *c, void *iv, int direction) {
   return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-aes_cbc_encrypt(aes_cbc_ctx_t *c,
-		unsigned char *data, 
-		unsigned int *bytes_in_data) {
+srtp_err_status_t srtp_aes_cbc_encrypt(srtp_aes_cbc_ctx_t *c, unsigned char *data, unsigned int *bytes_in_data) {
   int i;
   unsigned char *input  = data;   /* pointer to data being read    */
   unsigned char *output = data;   /* pointer to data being written */
@@ -171,7 +164,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
    * note that we assume that the initialization vector has already
    * been set, e.g. by calling aes_cbc_set_iv()
    */
-  debug_print(mod_aes_cbc, "iv: %s", 
+  debug_print(srtp_mod_aes_cbc, "iv: %s", 
 	      v128_hex_string(&c->state));
   
   /*
@@ -184,12 +177,12 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
     for (i=0; i < 16; i++)
       c->state.v8[i] ^= *input++;
 
-    debug_print(mod_aes_cbc, "inblock:  %s", 
+    debug_print(srtp_mod_aes_cbc, "inblock:  %s", 
 	      v128_hex_string(&c->state));
 
     aes_encrypt(&c->state, &c->expanded_key);
 
-    debug_print(mod_aes_cbc, "outblock: %s", 
+    debug_print(srtp_mod_aes_cbc, "outblock: %s", 
 	      v128_hex_string(&c->state));
 
     /* copy ciphertext to output */
@@ -203,7 +196,7 @@ aes_cbc_encrypt(aes_cbc_ctx_t *c,
 }
 
 srtp_err_status_t
-aes_cbc_decrypt(aes_cbc_ctx_t *c,
+aes_cbc_decrypt(srtp_aes_cbc_ctx_t *c,
 		unsigned char *data, 
 		unsigned int *bytes_in_data) {
   int i;
@@ -224,7 +217,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
     previous.v8[i] = c->previous.v8[i];
   }
 
-  debug_print(mod_aes_cbc, "iv: %s", 
+  debug_print(srtp_mod_aes_cbc, "iv: %s", 
 	      v128_hex_string(&previous));
   
   /*
@@ -238,13 +231,13 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
      state.v8[i] = *input++;
     }
 
-    debug_print(mod_aes_cbc, "inblock:  %s", 
+    debug_print(srtp_mod_aes_cbc, "inblock:  %s", 
 	      v128_hex_string(&state));
     
     /* decrypt state */
     aes_decrypt(&state, &c->expanded_key);
 
-    debug_print(mod_aes_cbc, "outblock: %s", 
+    debug_print(srtp_mod_aes_cbc, "outblock: %s", 
 	      v128_hex_string(&state));
 
     /* 
@@ -265,10 +258,7 @@ aes_cbc_decrypt(aes_cbc_ctx_t *c,
 }
 
 
-srtp_err_status_t
-aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
-		     unsigned char *data, 
-		     unsigned int *bytes_in_data) {
+srtp_err_status_t srtp_aes_cbc_nist_encrypt(srtp_aes_cbc_ctx_t *c, unsigned char *data, unsigned int *bytes_in_data) {
   int i;
   unsigned char *pad_start; 
   int num_pad_bytes;
@@ -293,7 +283,7 @@ aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
   /*
    * now cbc encrypt the padded data 
    */
-  status = aes_cbc_encrypt(c, data, bytes_in_data);
+  status = srtp_aes_cbc_encrypt(c, data, bytes_in_data);
   if (status) 
     return status;
 
@@ -301,10 +291,7 @@ aes_cbc_nist_encrypt(aes_cbc_ctx_t *c,
 }
 
 
-srtp_err_status_t
-aes_cbc_nist_decrypt(aes_cbc_ctx_t *c,
-		     unsigned char *data, 
-		     unsigned int *bytes_in_data) {
+srtp_err_status_t srtp_aes_cbc_nist_decrypt(srtp_aes_cbc_ctx_t *c, unsigned char *data, unsigned int *bytes_in_data) {
   unsigned char *pad_end;
   int num_pad_bytes;
   srtp_err_status_t status;
@@ -334,8 +321,7 @@ aes_cbc_nist_decrypt(aes_cbc_ctx_t *c,
 }
 
 
-char 
-aes_cbc_description[] = "aes cipher block chaining (cbc) mode";
+char srtp_aes_cbc_description[] = "aes cipher block chaining (cbc) mode";
 
 /*
  * Test case 0 is derived from FIPS 197 Appendix C; it uses an
@@ -348,17 +334,17 @@ aes_cbc_description[] = "aes cipher block chaining (cbc) mode";
  */
 
 
-uint8_t aes_cbc_test_case_0_key[16] = {
+uint8_t srtp_aes_cbc_test_case_0_key[16] = {
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
   0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 };
 
-uint8_t aes_cbc_test_case_0_plaintext[64] =  {
+uint8_t srtp_aes_cbc_test_case_0_plaintext[64] =  {
   0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
   0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff 
 };
 
-uint8_t aes_cbc_test_case_0_ciphertext[80] = {
+uint8_t srtp_aes_cbc_test_case_0_ciphertext[80] = {
   0x69, 0xc4, 0xe0, 0xd8, 0x6a, 0x7b, 0x04, 0x30, 
   0xd8, 0xcd, 0xb7, 0x80, 0x70, 0xb4, 0xc5, 0x5a,
   0x03, 0x35, 0xed, 0x27, 0x67, 0xf2, 0x6d, 0xf1, 
@@ -366,20 +352,20 @@ uint8_t aes_cbc_test_case_0_ciphertext[80] = {
 
 };
 
-uint8_t aes_cbc_test_case_0_iv[16] = {
+uint8_t srtp_aes_cbc_test_case_0_iv[16] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 
-cipher_test_case_t aes_cbc_test_case_0 = {
+cipher_test_case_t srtp_aes_cbc_test_case_0 = {
   16,                                    /* octets in key            */
-  aes_cbc_test_case_0_key,               /* key                      */
-  aes_cbc_test_case_0_iv,                /* initialization vector    */
+  srtp_aes_cbc_test_case_0_key,               /* key                      */
+  srtp_aes_cbc_test_case_0_iv,                /* initialization vector    */
   16,                                    /* octets in plaintext      */
-  aes_cbc_test_case_0_plaintext,         /* plaintext                */
+  srtp_aes_cbc_test_case_0_plaintext,         /* plaintext                */
   32,                                    /* octets in ciphertext     */
-  aes_cbc_test_case_0_ciphertext,        /* ciphertext               */
+  srtp_aes_cbc_test_case_0_ciphertext,        /* ciphertext               */
   0,
   NULL,
   0,
@@ -392,12 +378,12 @@ cipher_test_case_t aes_cbc_test_case_0 = {
  * Publication SP 800-38A
  */
 
-uint8_t aes_cbc_test_case_1_key[16] = {
+uint8_t srtp_aes_cbc_test_case_1_key[16] = {
   0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
   0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
 };
 
-uint8_t aes_cbc_test_case_1_plaintext[64] =  {
+uint8_t srtp_aes_cbc_test_case_1_plaintext[64] =  {
   0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 
   0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
   0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 
@@ -408,7 +394,7 @@ uint8_t aes_cbc_test_case_1_plaintext[64] =  {
   0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10
 };
 
-uint8_t aes_cbc_test_case_1_ciphertext[80] = {
+uint8_t srtp_aes_cbc_test_case_1_ciphertext[80] = {
   0x76, 0x49, 0xab, 0xac, 0x81, 0x19, 0xb2, 0x46,
   0xce, 0xe9, 0x8e, 0x9b, 0x12, 0xe9, 0x19, 0x7d,
   0x50, 0x86, 0xcb, 0x9b, 0x50, 0x72, 0x19, 0xee,
@@ -421,23 +407,23 @@ uint8_t aes_cbc_test_case_1_ciphertext[80] = {
   0xe0, 0xc4, 0x2f, 0xdd, 0xa8, 0xdf, 0x4c, 0xa3
 };
 
-uint8_t aes_cbc_test_case_1_iv[16] = {
+uint8_t srtp_aes_cbc_test_case_1_iv[16] = {
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
   0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 };
 
-cipher_test_case_t aes_cbc_test_case_1 = {
+cipher_test_case_t srtp_aes_cbc_test_case_1 = {
   16,                                    /* octets in key            */
-  aes_cbc_test_case_1_key,               /* key                      */
-  aes_cbc_test_case_1_iv,                /* initialization vector    */
+  srtp_aes_cbc_test_case_1_key,               /* key                      */
+  srtp_aes_cbc_test_case_1_iv,                /* initialization vector    */
   64,                                    /* octets in plaintext      */
-  aes_cbc_test_case_1_plaintext,         /* plaintext                */
+  srtp_aes_cbc_test_case_1_plaintext,         /* plaintext                */
   80,                                    /* octets in ciphertext     */
-  aes_cbc_test_case_1_ciphertext,        /* ciphertext               */
+  srtp_aes_cbc_test_case_1_ciphertext,        /* ciphertext               */
   0,
   NULL,
   0,
-  &aes_cbc_test_case_0                    /* pointer to next testcase */
+  &srtp_aes_cbc_test_case_0                    /* pointer to next testcase */
 };
 
 /*
@@ -446,42 +432,42 @@ cipher_test_case_t aes_cbc_test_case_1 = {
  */
 
 
-uint8_t aes_cbc_test_case_2_key[32] = {
+uint8_t srtp_aes_cbc_test_case_2_key[32] = {
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
   0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
   0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 
   0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
 };
 
-uint8_t aes_cbc_test_case_2_plaintext[64] =  {
+uint8_t srtp_aes_cbc_test_case_2_plaintext[64] =  {
   0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
   0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff 
 };
 
-uint8_t aes_cbc_test_case_2_ciphertext[80] = {
+uint8_t srtp_aes_cbc_test_case_2_ciphertext[80] = {
   0x8e, 0xa2, 0xb7, 0xca, 0x51, 0x67, 0x45, 0xbf,
   0xea, 0xfc, 0x49, 0x90, 0x4b, 0x49, 0x60, 0x89,  
   0x72, 0x72, 0x6e, 0xe7, 0x71, 0x39, 0xbf, 0x11,
   0xe5, 0x40, 0xe2, 0x7c, 0x54, 0x65, 0x1d, 0xee
 };
 
-uint8_t aes_cbc_test_case_2_iv[16] = {
+uint8_t srtp_aes_cbc_test_case_2_iv[16] = {
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-cipher_test_case_t aes_cbc_test_case_2 = {
+cipher_test_case_t srtp_aes_cbc_test_case_2 = {
   32,                                    /* octets in key            */
-  aes_cbc_test_case_2_key,               /* key                      */
-  aes_cbc_test_case_2_iv,                /* initialization vector    */
+  srtp_aes_cbc_test_case_2_key,               /* key                      */
+  srtp_aes_cbc_test_case_2_iv,                /* initialization vector    */
   16,                                    /* octets in plaintext      */
-  aes_cbc_test_case_2_plaintext,         /* plaintext                */
+  srtp_aes_cbc_test_case_2_plaintext,         /* plaintext                */
   32,                                    /* octets in ciphertext     */
-  aes_cbc_test_case_2_ciphertext,        /* ciphertext               */
+  srtp_aes_cbc_test_case_2_ciphertext,        /* ciphertext               */
   0,
   NULL,
   0,
-  &aes_cbc_test_case_1                   /* pointer to next testcase */
+  &srtp_aes_cbc_test_case_1                   /* pointer to next testcase */
 };
 
 
@@ -490,14 +476,14 @@ cipher_test_case_t aes_cbc_test_case_2 = {
  * Publication SP 800-38A
  */
 
-uint8_t aes_cbc_test_case_3_key[32] = {
+uint8_t srtp_aes_cbc_test_case_3_key[32] = {
   0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe,
   0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
   0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7,
   0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4
 };
 
-uint8_t aes_cbc_test_case_3_plaintext[64] =  {
+uint8_t srtp_aes_cbc_test_case_3_plaintext[64] =  {
   0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 
   0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
   0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 
@@ -508,7 +494,7 @@ uint8_t aes_cbc_test_case_3_plaintext[64] =  {
   0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10
 };
 
-uint8_t aes_cbc_test_case_3_ciphertext[80] = {
+uint8_t srtp_aes_cbc_test_case_3_ciphertext[80] = {
   0xf5, 0x8c, 0x4c, 0x04, 0xd6, 0xe5, 0xf1, 0xba,
   0x77, 0x9e, 0xab, 0xfb, 0x5f, 0x7b, 0xfb, 0xd6,
   0x9c, 0xfc, 0x4e, 0x96, 0x7e, 0xdb, 0x80, 0x8d,
@@ -521,37 +507,37 @@ uint8_t aes_cbc_test_case_3_ciphertext[80] = {
   0x63, 0xc4, 0x68, 0xba, 0x84, 0x39, 0x16, 0x5a
 };
 
-uint8_t aes_cbc_test_case_3_iv[16] = {
+uint8_t srtp_aes_cbc_test_case_3_iv[16] = {
   0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 
   0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 };
 
-cipher_test_case_t aes_cbc_test_case_3 = {
+cipher_test_case_t srtp_aes_cbc_test_case_3 = {
   32,                                    /* octets in key            */
-  aes_cbc_test_case_3_key,               /* key                      */
-  aes_cbc_test_case_3_iv,                /* initialization vector    */
+  srtp_aes_cbc_test_case_3_key,               /* key                      */
+  srtp_aes_cbc_test_case_3_iv,                /* initialization vector    */
   64,                                    /* octets in plaintext      */
-  aes_cbc_test_case_3_plaintext,         /* plaintext                */
+  srtp_aes_cbc_test_case_3_plaintext,         /* plaintext                */
   80,                                    /* octets in ciphertext     */
-  aes_cbc_test_case_3_ciphertext,        /* ciphertext               */
+  srtp_aes_cbc_test_case_3_ciphertext,        /* ciphertext               */
   0,
   NULL,
   0,
-  &aes_cbc_test_case_2                    /* pointer to next testcase */
+  &srtp_aes_cbc_test_case_2                    /* pointer to next testcase */
 };
 
 cipher_type_t aes_cbc = {
-  (cipher_alloc_func_t)          aes_cbc_alloc,
-  (cipher_dealloc_func_t)        aes_cbc_dealloc,  
-  (cipher_init_func_t)           aes_cbc_context_init,
+  (cipher_alloc_func_t)          srtp_aes_cbc_alloc,
+  (cipher_dealloc_func_t)        srtp_aes_cbc_dealloc,  
+  (cipher_init_func_t)           srtp_aes_cbc_context_init,
   (cipher_set_aad_func_t)        0,
-  (cipher_encrypt_func_t)        aes_cbc_nist_encrypt,
-  (cipher_decrypt_func_t)        aes_cbc_nist_decrypt,
-  (cipher_set_iv_func_t)         aes_cbc_set_iv,
+  (cipher_encrypt_func_t)        srtp_aes_cbc_nist_encrypt,
+  (cipher_decrypt_func_t)        srtp_aes_cbc_nist_decrypt,
+  (cipher_set_iv_func_t)         srtp_aes_cbc_set_iv,
   (cipher_get_tag_func_t)        0,
-  (char *)                       aes_cbc_description,
-  (cipher_test_case_t *)        &aes_cbc_test_case_3,
-  (debug_module_t *)            &mod_aes_cbc,
+  (char *)                       srtp_aes_cbc_description,
+  (cipher_test_case_t *)        &srtp_aes_cbc_test_case_3,
+  (debug_module_t *)            &srtp_mod_aes_cbc,
   (srtp_cipher_type_id_t)        AES_CBC
 };
 
