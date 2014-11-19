@@ -116,7 +116,7 @@ srtp_err_status_t srtp_aes_icm_alloc_ismacryp (cipher_t **c, int key_len, int fo
 
     /* allocate memory a cipher of type aes_icm */
     tmp = (sizeof(aes_icm_ctx_t) + sizeof(cipher_t));
-    pointer = (uint8_t*)crypto_alloc(tmp);
+    pointer = (uint8_t*)srtp_crypto_alloc(tmp);
     if (pointer == NULL) {
         return srtp_err_status_alloc_fail;
     }
@@ -155,7 +155,7 @@ srtp_err_status_t srtp_aes_icm_dealloc (cipher_t *c)
                              sizeof(aes_icm_ctx_t) + sizeof(cipher_t));
 
     /* free memory */
-    crypto_free(c);
+    srtp_crypto_free(c);
 
     return srtp_err_status_ok;
 }

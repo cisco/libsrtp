@@ -463,7 +463,7 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
   *ca = cipher_array;
 
   /* allocate key */
-  key = crypto_alloc(klen_pad);
+  key = srtp_crypto_alloc(klen_pad);
   if (key == NULL) {
     free(cipher_array);
     return srtp_err_status_alloc_fail;
@@ -494,7 +494,7 @@ cipher_array_alloc_init(cipher_t ***ca, int num_ciphers,
     cipher_array++;
   }
 
-  crypto_free(key);
+  srtp_crypto_free(key);
 
   return srtp_err_status_ok;
 }
@@ -535,7 +535,7 @@ cipher_array_bits_per_second(cipher_t *cipher_array[], int num_cipher,
   int cipher_index = rand() % num_cipher;
 
   /* Over-alloc, for NIST CBC padding */
-  enc_buf = crypto_alloc(octets_in_buffer+17);
+  enc_buf = srtp_crypto_alloc(octets_in_buffer+17);
   if (enc_buf == NULL)
     return 0;  /* indicate bad parameters by returning null */
   memset(enc_buf, 0, octets_in_buffer);

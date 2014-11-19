@@ -360,7 +360,7 @@ bitvector_alloc(bitvector_t *v, unsigned long length) {
   if (l == 0)
     v->word = NULL;
   else {
-    v->word = (uint32_t*)crypto_alloc(l);
+    v->word = (uint32_t*)srtp_crypto_alloc(l);
     if (v->word == NULL) {
       v->word = NULL;
       v->length = 0;
@@ -379,7 +379,7 @@ bitvector_alloc(bitvector_t *v, unsigned long length) {
 void
 bitvector_dealloc(bitvector_t *v) {
   if (v->word != NULL)
-    crypto_free(v->word);
+    srtp_crypto_free(v->word);
   v->word = NULL;
   v->length = 0;
 }

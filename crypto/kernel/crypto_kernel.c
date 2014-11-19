@@ -266,7 +266,7 @@ crypto_kernel_shutdown() {
     debug_print(mod_crypto_kernel, 
 		"freeing memory for cipher %s", 
 		ctype->cipher_type->description);
-    crypto_free(ctype);
+    srtp_crypto_free(ctype);
   }
 
   /* walk down authetication module list, freeing memory */
@@ -276,7 +276,7 @@ crypto_kernel_shutdown() {
      debug_print(mod_crypto_kernel, 
 		"freeing memory for authentication %s",
 		atype->auth_type->description);
-     crypto_free(atype);
+     srtp_crypto_free(atype);
   }
 
   /* walk down debug module list, freeing memory */
@@ -286,7 +286,7 @@ crypto_kernel_shutdown() {
     debug_print(mod_crypto_kernel, 
 		"freeing memory for debug module %s", 
 		kdm->mod->name);
-    crypto_free(kdm);
+    srtp_crypto_free(kdm);
   }
 
   /* de-initialize random number generator */  status = rand_source_deinit();
@@ -338,7 +338,7 @@ crypto_kernel_do_load_cipher_type(cipher_type_t *new_ct, srtp_cipher_type_id_t i
   /* if not found, put new_ct at the head of the list */
   if (ctype == NULL) {
   /* allocate memory */
-    new_ctype = (kernel_cipher_type_t *) crypto_alloc(sizeof(kernel_cipher_type_t));
+    new_ctype = (kernel_cipher_type_t *) srtp_crypto_alloc(sizeof(kernel_cipher_type_t));
     if (new_ctype == NULL)
       return srtp_err_status_alloc_fail;
     new_ctype->next = crypto_kernel.cipher_type_list;
@@ -408,7 +408,7 @@ crypto_kernel_do_load_auth_type(auth_type_t *new_at, srtp_auth_type_id_t id,
   /* if not found, put new_at at the head of the list */
   if (atype == NULL) {
     /* allocate memory */
-    new_atype = (kernel_auth_type_t *)crypto_alloc(sizeof(kernel_auth_type_t));
+    new_atype = (kernel_auth_type_t *)srtp_crypto_alloc(sizeof(kernel_auth_type_t));
     if (new_atype == NULL)
       return srtp_err_status_alloc_fail;
 
@@ -536,7 +536,7 @@ crypto_kernel_load_debug_module(debug_module_t *new_dm) {
 
   /* put new_dm at the head of the list */
   /* allocate memory */
-  new = (kernel_debug_module_t *)crypto_alloc(sizeof(kernel_debug_module_t));
+  new = (kernel_debug_module_t *)srtp_crypto_alloc(sizeof(kernel_debug_module_t));
   if (new == NULL)
     return srtp_err_status_alloc_fail;
     

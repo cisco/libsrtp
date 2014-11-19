@@ -65,7 +65,7 @@ null_cipher_alloc(cipher_t **c, int key_len, int tlen) {
 	      "allocating cipher with key length %d", key_len);
 
   /* allocate memory a cipher of type null_cipher */
-  pointer = (uint8_t*)crypto_alloc(sizeof(null_cipher_ctx_t) + sizeof(cipher_t));
+  pointer = (uint8_t*)srtp_crypto_alloc(sizeof(null_cipher_ctx_t) + sizeof(cipher_t));
   if (pointer == NULL)
     return srtp_err_status_alloc_fail;
 
@@ -91,7 +91,7 @@ null_cipher_dealloc(cipher_t *c) {
 			   sizeof(null_cipher_ctx_t) + sizeof(cipher_t));
 
   /* free memory of type null_cipher */
-  crypto_free(c);
+  srtp_crypto_free(c);
 
   return srtp_err_status_ok;
   

@@ -128,7 +128,7 @@ srtp_err_status_t srtp_aes_icm_openssl_alloc (cipher_t **c, int key_len, int tle
 
     /* allocate memory a cipher of type aes_icm */
     tmp = sizeof(cipher_t) + sizeof(srtp_aes_icm_ctx_t);
-    allptr = (uint8_t*)crypto_alloc(tmp);
+    allptr = (uint8_t*)srtp_crypto_alloc(tmp);
     if (allptr == NULL) {
         return srtp_err_status_alloc_fail;
     }
@@ -189,7 +189,7 @@ srtp_err_status_t srtp_aes_icm_openssl_dealloc (cipher_t *c)
                              sizeof(cipher_t) + sizeof(srtp_aes_icm_ctx_t));
 
     /* free memory */
-    crypto_free(c);
+    srtp_crypto_free(c);
 
     return srtp_err_status_ok;
 }

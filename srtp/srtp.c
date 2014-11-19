@@ -47,7 +47,7 @@
 #include "crypto_types.h"
 #include "err.h"
 #include "ekt.h"             /* for SRTP Encrypted Key Transport */
-#include "alloc.h"           /* for crypto_alloc()          */
+#include "alloc.h"           /* for srtp_crypto_alloc()          */
 #ifdef OPENSSL
 #include "aes_gcm_ossl.h"    /* for AES GCM mode  */
 #endif
@@ -128,7 +128,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
    */
 
   /* allocate srtp stream and set str_ptr */
-  str = (srtp_stream_ctx_t *) crypto_alloc(sizeof(srtp_stream_ctx_t));
+  str = (srtp_stream_ctx_t *) srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
   if (str == NULL)
     return srtp_err_status_alloc_fail;
   *str_ptr = str;  
@@ -139,7 +139,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				    p->rtp.cipher_key_len,
 				    p->rtp.auth_tag_len); 
   if (stat) {
-    crypto_free(str);
+    srtp_crypto_free(str);
     return stat;
   }
 
@@ -150,16 +150,16 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				  p->rtp.auth_tag_len); 
   if (stat) {
     cipher_dealloc(str->rtp_cipher);
-    crypto_free(str);
+    srtp_crypto_free(str);
     return stat;
   }
   
   /* allocate key limit structure */
-  str->limit = (key_limit_ctx_t*) crypto_alloc(sizeof(key_limit_ctx_t));
+  str->limit = (key_limit_ctx_t*) srtp_crypto_alloc(sizeof(key_limit_ctx_t));
   if (str->limit == NULL) {
     auth_dealloc(str->rtp_auth);
     cipher_dealloc(str->rtp_cipher);
-    crypto_free(str); 
+    srtp_crypto_free(str); 
     return srtp_err_status_alloc_fail;
   }
 
@@ -174,8 +174,8 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   if (stat) {
     auth_dealloc(str->rtp_auth);
     cipher_dealloc(str->rtp_cipher);
-    crypto_free(str->limit);
-    crypto_free(str);
+    srtp_crypto_free(str->limit);
+    srtp_crypto_free(str);
     return stat;
   }
 
@@ -188,8 +188,8 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     cipher_dealloc(str->rtcp_cipher);
     auth_dealloc(str->rtp_auth);
     cipher_dealloc(str->rtp_cipher);
-    crypto_free(str->limit);
-    crypto_free(str);
+    srtp_crypto_free(str->limit);
+    srtp_crypto_free(str);
    return stat;
   }  
 
@@ -200,8 +200,8 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     cipher_dealloc(str->rtcp_cipher);
     auth_dealloc(str->rtp_auth);
     cipher_dealloc(str->rtp_cipher);
-    crypto_free(str->limit);
-    crypto_free(str);
+    srtp_crypto_free(str->limit);
+    srtp_crypto_free(str);
    return stat;    
   }
 
@@ -243,7 +243,7 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
       && stream->limit == session->stream_template->limit) {
     /* do nothing */
   } else {
-    crypto_free(stream->limit);
+    srtp_crypto_free(stream->limit);
   }   
 
   /* 
@@ -286,7 +286,7 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
 
   
   /* deallocate srtp stream context */
-  crypto_free(stream);
+  srtp_crypto_free(stream);
 
   return srtp_err_status_ok;
 }
@@ -310,7 +310,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   debug_print(mod_srtp, "cloning stream (SSRC: 0x%08x)", ssrc);
 
   /* allocate srtp stream and set str_ptr */
-  str = (srtp_stream_ctx_t *) crypto_alloc(sizeof(srtp_stream_ctx_t));
+  str = (srtp_stream_ctx_t *) srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
   if (str == NULL)
     return srtp_err_status_alloc_fail;
   *str_ptr = str;  
@@ -324,7 +324,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   /* set key limit to point to that of the template */
   status = key_limit_clone(stream_template->limit, &str->limit);
   if (status) { 
-    crypto_free(*str_ptr);
+    srtp_crypto_free(*str_ptr);
     *str_ptr = NULL;
     return status;
   }
@@ -333,7 +333,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   status = rdbx_init(&str->rtp_rdbx,
 		     rdbx_get_window_size(&stream_template->rtp_rdbx));
   if (status) {
-    crypto_free(*str_ptr);
+    srtp_crypto_free(*str_ptr);
     *str_ptr = NULL;
     return status;
   }
@@ -1813,7 +1813,7 @@ srtp_dealloc(srtp_t session) {
     status = cipher_dealloc(session->stream_template->rtcp_cipher); 
     if (status) 
       return status; 
-    crypto_free(session->stream_template->limit);
+    srtp_crypto_free(session->stream_template->limit);
     status = cipher_dealloc(session->stream_template->rtp_cipher); 
     if (status) 
       return status; 
@@ -1823,11 +1823,11 @@ srtp_dealloc(srtp_t session) {
     status = rdbx_dealloc(&session->stream_template->rtp_rdbx);
     if (status)
       return status;
-    crypto_free(session->stream_template);
+    srtp_crypto_free(session->stream_template);
   }
 
   /* deallocate session context */
-  crypto_free(session);
+  srtp_crypto_free(session);
 
   return srtp_err_status_ok;
 }
@@ -1852,7 +1852,7 @@ srtp_add_stream(srtp_t session,
   /* initialize stream  */
   status = srtp_stream_init(tmp, policy);
   if (status) {
-    crypto_free(tmp);
+    srtp_crypto_free(tmp);
     return status;
   }
   
@@ -1885,7 +1885,7 @@ srtp_add_stream(srtp_t session,
     break;
   case (ssrc_undefined):
   default:
-    crypto_free(tmp);
+    srtp_crypto_free(tmp);
     return srtp_err_status_bad_param;
   }
     
@@ -1904,7 +1904,7 @@ srtp_create(srtp_t *session,               /* handle for session     */
     return srtp_err_status_bad_param;
 
   /* allocate srtp context and set ctx_ptr */
-  ctx = (srtp_ctx_t *) crypto_alloc(sizeof(srtp_ctx_t));
+  ctx = (srtp_ctx_t *) srtp_crypto_alloc(sizeof(srtp_ctx_t));
   if (ctx == NULL)
     return srtp_err_status_alloc_fail;
   *session = ctx;

@@ -57,8 +57,8 @@ debug_module_t mod_alloc = {
 };
 
 /*
- * Nota bene: the debugging statements for crypto_alloc() and
- * crypto_free() have identical prefixes, which include the addresses
+ * Nota bene: the debugging statements for srtp_crypto_alloc() and
+ * srtp_crypto_free() have identical prefixes, which include the addresses
  * of the memory locations on which they are operating.  This fact can
  * be used to locate memory leaks, by turning on memory debugging,
  * grepping for 'alloc', then matching alloc and free calls by
@@ -69,8 +69,7 @@ debug_module_t mod_alloc = {
 
 #include <linux/interrupt.h>
 
-void *
-crypto_alloc(size_t size) {
+void * srtp_crypto_alloc(size_t size) {
   void *ptr;
 
   ptr = kmalloc(size, in_interrupt() ? GFP_ATOMIC : GFP_KERNEL);
@@ -84,8 +83,7 @@ crypto_alloc(size_t size) {
   return ptr;
 }
 
-void 
-crypto_free(void *ptr) {
+void srtp_crypto_free(void *ptr) {
 
   debug_print(mod_alloc, "(location: %p) freed", ptr);
 
@@ -95,8 +93,7 @@ crypto_free(void *ptr) {
 
 #elif defined(HAVE_STDLIB_H)
 
-void *
-crypto_alloc(size_t size) {
+void * srtp_crypto_alloc(size_t size) {
   void *ptr;
 
   ptr = malloc(size);
@@ -110,8 +107,7 @@ crypto_alloc(size_t size) {
   return ptr;
 }
 
-void 
-crypto_free(void *ptr) {
+void srtp_crypto_free(void *ptr) {
 
   debug_print(mod_alloc, "(location: %p) freed", ptr);
 

@@ -488,7 +488,7 @@ cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials) {
   unsigned char *enc_buf;
   unsigned int len = octets_in_buffer;
 
-  enc_buf = (unsigned char*) crypto_alloc(octets_in_buffer);
+  enc_buf = (unsigned char*) srtp_crypto_alloc(octets_in_buffer);
   if (enc_buf == NULL)
     return 0;  /* indicate bad parameters by returning null */
   
@@ -501,7 +501,7 @@ cipher_bits_per_second(cipher_t *c, int octets_in_buffer, int num_trials) {
   }
   timer = clock() - timer;
 
-  crypto_free(enc_buf);
+  srtp_crypto_free(enc_buf);
 
   if (timer == 0) {
     /* Too fast! */

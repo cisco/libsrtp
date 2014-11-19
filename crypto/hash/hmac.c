@@ -77,7 +77,7 @@ hmac_alloc(auth_t **a, int key_len, int out_len) {
     return srtp_err_status_bad_param;
 
   /* allocate memory for auth and hmac_ctx_t structures */
-  pointer = (uint8_t*)crypto_alloc(sizeof(hmac_ctx_t) + sizeof(auth_t));
+  pointer = (uint8_t*)srtp_crypto_alloc(sizeof(hmac_ctx_t) + sizeof(auth_t));
   if (pointer == NULL)
     return srtp_err_status_alloc_fail;
 
@@ -101,7 +101,7 @@ hmac_dealloc(auth_t *a) {
 			   sizeof(hmac_ctx_t) + sizeof(auth_t));
 
   /* free memory */
-  crypto_free(a);
+  srtp_crypto_free(a);
   
   return srtp_err_status_ok;
 }

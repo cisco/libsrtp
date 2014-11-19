@@ -163,8 +163,7 @@ main (int argc, char *argv[]) {
 
 #include <time.h>
 
-double
-auth_bits_per_second(auth_t *a, int msg_len_octets) {
+double auth_bits_per_second(auth_t *a, int msg_len_octets) {
   int i;
   clock_t timer;
   uint8_t *result;
@@ -172,16 +171,16 @@ auth_bits_per_second(auth_t *a, int msg_len_octets) {
   uint16_t *msg_string; 
 
   /* create random message */
-  msg_string = (uint16_t *) crypto_alloc(msg_len_octets);
+  msg_string = (uint16_t *) srtp_crypto_alloc(msg_len_octets);
   if (msg_string == NULL)
     return 0.0; /* indicate failure */  
   for (i=0; i < msg_len; i++) 
     msg_string[i] = (uint16_t) random();
 
   /* allocate temporary storage for authentication tag */
-  result = crypto_alloc(auth_get_tag_length(a));
+  result = srtp_crypto_alloc(auth_get_tag_length(a));
   if (result == NULL) {
-    free(msg_string);
+    srtp_crypto_free(msg_string);
     return 0.0; /* indicate failure */  
   }
   
@@ -191,8 +190,8 @@ auth_bits_per_second(auth_t *a, int msg_len_octets) {
   }
   timer = clock() - timer;
 
-  free(msg_string);
-  free(result);
+  srtp_crypto_free(msg_string);
+  srtp_crypto_free(result);
   
   return (double) NUM_TRIALS * 8 * msg_len_octets * CLOCKS_PER_SEC / timer;
 }
