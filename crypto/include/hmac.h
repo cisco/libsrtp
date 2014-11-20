@@ -8,26 +8,26 @@
  *
  */
 /*
- *	
+ *
  * Copyright (c) 2001-2006,2013, Cisco Systems, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  *   Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
- * 
+ *
  *   Redistributions in binary form must reproduce the above
  *   copyright notice, this list of conditions and the following
  *   disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- * 
+ *
  *   Neither the name of the Cisco Systems, Inc. nor the names of its
  *   contributors may be used to endorse or promote products derived
  *   from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -50,26 +50,13 @@
 #include "sha1.h"
 
 typedef struct {
-  uint8_t    opad[64];
-  srtp_sha1_ctx_t ctx;
-  srtp_sha1_ctx_t init_ctx;
+    uint8_t opad[64];
+    srtp_sha1_ctx_t ctx;
+    srtp_sha1_ctx_t init_ctx;
 #ifdef OPENSSL
-  int ctx_initialized;
-  int init_ctx_initialized;
+    int ctx_initialized;
+    int init_ctx_initialized;
 #endif
-} hmac_ctx_t;
-
-srtp_err_status_t hmac_alloc(srtp_auth_t **a, int key_len, int out_len);
-
-srtp_err_status_t hmac_dealloc(srtp_auth_t *a);
-
-srtp_err_status_t hmac_init(hmac_ctx_t *state, const uint8_t *key, int key_len);
-
-srtp_err_status_t hmac_start(hmac_ctx_t *state);
-
-srtp_err_status_t hmac_update(hmac_ctx_t *state, const uint8_t *message, int msg_octets);
-
-srtp_err_status_t hmac_compute(hmac_ctx_t *state, const void *message, int msg_octets, int tag_len, uint8_t *result);
-
+} srtp_hmac_ctx_t;
 
 #endif /* HMAC_H */

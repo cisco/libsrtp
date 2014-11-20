@@ -84,7 +84,7 @@ extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
  */
 
 extern srtp_auth_type_t srtp_null_auth;
-extern srtp_auth_type_t hmac;
+extern srtp_auth_type_t srtp_hmac;
 
 /* crypto_kernel is a global variable, the only one of its datatype */
 
@@ -166,7 +166,7 @@ crypto_kernel_init() {
   status = crypto_kernel_load_auth_type(&srtp_null_auth, NULL_AUTH);
   if (status)
     return status;
-  status = crypto_kernel_load_auth_type(&hmac, HMAC_SHA1);
+  status = crypto_kernel_load_auth_type(&srtp_hmac, HMAC_SHA1);
   if (status)
     return status;
 
