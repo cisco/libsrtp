@@ -71,7 +71,7 @@ extern debug_module_t mod_alloc;
  * cipher types that can be included in the kernel
  */ 
 
-extern srtp_cipher_type_t null_cipher;
+extern srtp_cipher_type_t srtp_null_cipher;
 extern srtp_cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
 extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
@@ -83,7 +83,7 @@ extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
  * auth func types that can be included in the kernel
  */
 
-extern srtp_auth_type_t null_auth;
+extern srtp_auth_type_t srtp_null_auth;
 extern srtp_auth_type_t hmac;
 
 /* crypto_kernel is a global variable, the only one of its datatype */
@@ -145,7 +145,7 @@ crypto_kernel_init() {
     return status;
 
   /* load cipher types */
-  status = crypto_kernel_load_cipher_type(&null_cipher, NULL_CIPHER);
+  status = crypto_kernel_load_cipher_type(&srtp_null_cipher, NULL_CIPHER);
   if (status) 
     return status;
   status = crypto_kernel_load_cipher_type(&srtp_aes_icm, AES_ICM);
@@ -163,7 +163,7 @@ crypto_kernel_init() {
 #endif
 
   /* load auth func types */
-  status = crypto_kernel_load_auth_type(&null_auth, NULL_AUTH);
+  status = crypto_kernel_load_auth_type(&srtp_null_auth, NULL_AUTH);
   if (status)
     return status;
   status = crypto_kernel_load_auth_type(&hmac, HMAC_SHA1);

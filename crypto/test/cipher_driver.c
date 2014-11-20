@@ -121,7 +121,7 @@ check_status(srtp_err_status_t s) {
  * declared external so that we can use these cipher types here
  */
 
-extern srtp_cipher_type_t null_cipher;
+extern srtp_cipher_type_t srtp_null_cipher;
 extern srtp_cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
 extern srtp_cipher_type_t srtp_aes_icm_192;
@@ -180,7 +180,7 @@ main(int argc, char *argv[]) {
     int num_cipher;
     
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
-      cipher_driver_test_array_throughput(&null_cipher, 0, num_cipher); 
+      cipher_driver_test_array_throughput(&srtp_null_cipher, 0, num_cipher); 
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&srtp_aes_icm, 30, num_cipher); 
@@ -206,7 +206,7 @@ main(int argc, char *argv[]) {
   }
 
   if (do_validation) {
-    cipher_driver_self_test(&null_cipher);
+    cipher_driver_self_test(&srtp_null_cipher);
     cipher_driver_self_test(&srtp_aes_icm);
 #ifdef OPENSSL
     cipher_driver_self_test(&srtp_aes_icm_192);
@@ -216,8 +216,8 @@ main(int argc, char *argv[]) {
 #endif
   }
 
-  /* do timing and/or buffer_test on null_cipher */
-  status = cipher_type_alloc(&null_cipher, &c, 0, 0); 
+  /* do timing and/or buffer_test on srtp_null_cipher */
+  status = cipher_type_alloc(&srtp_null_cipher, &c, 0, 0); 
   check_status(status);
 
   status = cipher_init(c, NULL);
