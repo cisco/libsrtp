@@ -212,7 +212,7 @@ typedef struct {
  *
  *  A srtp_cipher_type_id_t is an integer that represents a particular
  *  cipher type, e.g. the Advanced Encryption Standard (AES).  A
- *  NULL_CIPHER is avaliable; this cipher leaves the data unchanged,
+ *  SRTP_NULL_CIPHER is avaliable; this cipher leaves the data unchanged,
  *  and can be selected to indicate that no encryption is to take
  *  place.
  * 
@@ -225,7 +225,7 @@ typedef uint32_t srtp_cipher_type_id_t;
  *   function.
  *
  *  An srtp_auth_type_id_t is an integer that represents a particular
- *  authentication function type, e.g. HMAC-SHA1.  A NULL_AUTH is
+ *  authentication function type, e.g. HMAC-SHA1.  A SRTP_NULL_AUTH is
  *  avaliable; this authentication function performs no computation,
  *  and can be selected to indicate that no authentication is to take
  *  place.

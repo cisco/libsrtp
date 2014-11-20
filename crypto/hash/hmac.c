@@ -259,6 +259,6 @@ srtp_auth_type_t srtp_hmac  = {
     (char*)srtp_hmac_description,
     (srtp_auth_test_case_t*)&srtp_hmac_test_case_0,
     (debug_module_t*)&srtp_mod_hmac,
-    (srtp_auth_type_id_t)HMAC_SHA1
+    (srtp_auth_type_id_t)SRTP_HMAC_SHA1
 };
 

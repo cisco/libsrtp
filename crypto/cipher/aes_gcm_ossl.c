@@ -120,13 +120,13 @@ static srtp_err_status_t srtp_aes_gcm_openssl_alloc (srtp_cipher_t **c, int key_
     switch (key_len) {
     case SRTP_AES_128_GCM_KEYSIZE_WSALT:
         (*c)->type = &srtp_aes_gcm_128_openssl;
-        (*c)->algorithm = AES_128_GCM;
+        (*c)->algorithm = SRTP_AES_128_GCM;
         ((srtp_aes_gcm_ctx_t*)(*c)->state)->key_size = SRTP_AES_128_KEYSIZE;
         ((srtp_aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;
         break;
     case SRTP_AES_256_GCM_KEYSIZE_WSALT:
         (*c)->type = &srtp_aes_gcm_256_openssl;
-        (*c)->algorithm = AES_256_GCM;
+        (*c)->algorithm = SRTP_AES_256_GCM;
         ((srtp_aes_gcm_ctx_t*)(*c)->state)->key_size = SRTP_AES_256_KEYSIZE;
         ((srtp_aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;
         break;
@@ -526,7 +526,7 @@ srtp_cipher_type_t srtp_aes_gcm_128_openssl = {
     (char*)srtp_aes_gcm_128_openssl_description,
     (srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_0,
     (debug_module_t*)&srtp_mod_aes_gcm,
-    (srtp_cipher_type_id_t)AES_128_GCM
+    (srtp_cipher_type_id_t)SRTP_AES_128_GCM
 };
 
 /*
@@ -544,6 +544,6 @@ srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
     (char*)srtp_aes_gcm_256_openssl_description,
     (srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_1,
     (debug_module_t*)&srtp_mod_aes_gcm,
-    (srtp_cipher_type_id_t)AES_256_GCM
+    (srtp_cipher_type_id_t)SRTP_AES_256_GCM
 };
 

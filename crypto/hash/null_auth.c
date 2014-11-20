@@ -152,6 +152,6 @@ srtp_auth_type_t srtp_null_auth  = {
     (char*)srtp_null_auth_description,
     (srtp_auth_test_case_t*)&srtp_null_auth_test_case_0,
     (debug_module_t*)NULL,
-    (srtp_auth_type_id_t)NULL_AUTH
+    (srtp_auth_type_id_t)SRTP_NULL_AUTH
 };
 

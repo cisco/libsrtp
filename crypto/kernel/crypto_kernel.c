@@ -145,28 +145,28 @@ crypto_kernel_init() {
     return status;
 
   /* load cipher types */
-  status = crypto_kernel_load_cipher_type(&srtp_null_cipher, NULL_CIPHER);
+  status = crypto_kernel_load_cipher_type(&srtp_null_cipher, SRTP_NULL_CIPHER);
   if (status) 
     return status;
-  status = crypto_kernel_load_cipher_type(&srtp_aes_icm, AES_ICM);
+  status = crypto_kernel_load_cipher_type(&srtp_aes_icm, SRTP_AES_ICM);
   if (status) 
     return status;
 #ifdef OPENSSL
-  status = crypto_kernel_load_cipher_type(&srtp_aes_gcm_128_openssl, AES_128_GCM);
+  status = crypto_kernel_load_cipher_type(&srtp_aes_gcm_128_openssl, SRTP_AES_128_GCM);
   if (status) {
       return status;
   }
-  status = crypto_kernel_load_cipher_type(&srtp_aes_gcm_256_openssl, AES_256_GCM);
+  status = crypto_kernel_load_cipher_type(&srtp_aes_gcm_256_openssl, SRTP_AES_256_GCM);
   if (status) {
       return status;
   }
 #endif
 
   /* load auth func types */
-  status = crypto_kernel_load_auth_type(&srtp_null_auth, NULL_AUTH);
+  status = crypto_kernel_load_auth_type(&srtp_null_auth, SRTP_NULL_AUTH);
   if (status)
     return status;
-  status = crypto_kernel_load_auth_type(&srtp_hmac, HMAC_SHA1);
+  status = crypto_kernel_load_auth_type(&srtp_hmac, SRTP_HMAC_SHA1);
   if (status)
     return status;
 

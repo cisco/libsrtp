@@ -48,11 +48,11 @@
 /*
  * The null cipher performs no encryption.
  *
- * The NULL_CIPHER leaves its inputs unaltered, during both the 
+ * The SRTP_NULL_CIPHER leaves its inputs unaltered, during both the 
  * encryption and decryption operations.  This cipher can be chosen
  * to indicate that no encryption is to be performed.
  */
-#define NULL_CIPHER        0            
+#define SRTP_NULL_CIPHER        0            
 
 /* 
  * AES Integer Counter Mode (AES ICM)             
@@ -61,55 +61,25 @@
  * This cipher uses a 16-, 24-, or 32-octet key concatenated with a
  * 14-octet offset (or salt) value.
  */
-#define AES_ICM            1            
+#define SRTP_AES_ICM            1            
 
 /* 
  * AES-128 Integer Counter Mode (AES ICM)             
  * AES-128 ICM is a deprecated alternate name for AES ICM.
  */
-#define AES_128_ICM        AES_ICM
-
-/*
- * SEAL 3.0 
- * 
- * SEAL is the Software-Optimized Encryption Algorithm of Coppersmith
- * and Rogaway.  Nota bene: this cipher is IBM proprietary.
- */
-#define SEAL               2            
-
-/* 
- * AES Cipher Block Chaining mode (AES CBC)             
- *
- * AES CBC is the AES Cipher Block Chaining mode.
- * This cipher uses a 16-, 24-, or 32-octet key.
- */
-#define AES_CBC            3            
-
-/* 
- * AES-128 Cipher Block Chaining mode (AES CBC)             
- *
- * AES-128 CBC is a deprecated alternate name for AES CBC.
- */
-#define AES_128_CBC        AES_CBC            
-
-/*
- * Strongest available cipher.
- *
- * This identifier resolves to the strongest cipher type available.
- */
-#define STRONGHOLD_CIPHER  AES_ICM  
+#define SRTP_AES_128_ICM        SRTP_AES_ICM
 
 /* 
  * AES-192 Integer Counter Mode (AES ICM)             
  * AES-192 ICM is a deprecated alternate name for AES ICM.
  */
-#define AES_192_ICM        4 
+#define SRTP_AES_192_ICM        4 
 
 /* 
  * AES-256 Integer Counter Mode (AES ICM)             
  * AES-256 ICM is a deprecated alternate name for AES ICM.
  */
-#define AES_256_ICM        5 
+#define SRTP_AES_256_ICM        5 
 
 /* 
  * AES-128_GCM Galois Counter Mode (AES GCM)             
@@ -117,7 +87,7 @@
  * AES-128 GCM is the variant of galois counter mode that is used by 
  * Secure RTP.  This cipher uses a 16-octet key.
  */
-#define AES_128_GCM        6            
+#define SRTP_AES_128_GCM        6            
 
 /* 
  * AES-256_GCM Galois Counter Mode (AES GCM)             
@@ -125,7 +95,7 @@
  * AES-256 GCM is the variant of galois counter mode that is used by 
  * Secure RTP.  This cipher uses a 32-octet key.
  */
-#define AES_256_GCM        7            
+#define SRTP_AES_256_GCM        7            
 
 /*
  * The null authentication function performs no authentication.
@@ -133,40 +103,14 @@
  * The NULL_AUTH function does nothing, and can be selected to indicate
  * that authentication should not be performed.
  */ 
-#define NULL_AUTH          0           
-
-/*
- * UST with TMMH Version 2
- *
- * UST_TMMHv2 implements the Truncated Multi-Modular Hash using
- * UST.  This function must be used in conjunction with a cipher other
- * than the null cipher.
- * with a cipher.
- */
-#define UST_TMMHv2         1           
-
-/*
- * (UST) AES-128 XORMAC  
- *
- * UST_AES_128_XMAC implements AES-128 XORMAC, using UST. Nota bene:
- * the XORMAC algorithm is IBM proprietary.
- */
-#define UST_AES_128_XMAC   2           
+#define SRTP_NULL_AUTH          0           
 
 /*
  * HMAC-SHA1
  *
- * HMAC_SHA1 implements the Hash-based MAC using the NIST Secure
+ * SRTP_HMAC_SHA1 implements the Hash-based MAC using the NIST Secure
  * Hash Algorithm version 1 (SHA1).
  */
-#define HMAC_SHA1          3          
-
-/*
- * Strongest available authentication function.
- *
- * This identifier resolves to the strongest available authentication
- * function.
- */
-#define STRONGHOLD_AUTH    HMAC_SHA1   
+#define SRTP_HMAC_SHA1          3          
 
 #endif  /* CRYPTO_TYPES_H */

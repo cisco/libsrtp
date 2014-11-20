@@ -140,17 +140,17 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc (srtp_cipher_t **c, int key_
     /* setup cipher parameters */
     switch (key_len) {
     case SRTP_AES_128_KEYSIZE_WSALT:
-        (*c)->algorithm = AES_128_ICM;
+        (*c)->algorithm = SRTP_AES_128_ICM;
         (*c)->type = &srtp_aes_icm;
         ((srtp_aes_icm_ctx_t*)(*c)->state)->key_size = SRTP_AES_128_KEYSIZE;
         break;
     case SRTP_AES_192_KEYSIZE_WSALT:
-        (*c)->algorithm = AES_192_ICM;
+        (*c)->algorithm = SRTP_AES_192_ICM;
         (*c)->type = &srtp_aes_icm_192;
         ((srtp_aes_icm_ctx_t*)(*c)->state)->key_size = SRTP_AES_192_KEYSIZE;
         break;
     case SRTP_AES_256_KEYSIZE_WSALT:
-        (*c)->algorithm = AES_256_ICM;
+        (*c)->algorithm = SRTP_AES_256_ICM;
         (*c)->type = &srtp_aes_icm_256;
         ((srtp_aes_icm_ctx_t*)(*c)->state)->key_size = SRTP_AES_256_KEYSIZE;
         break;
@@ -473,7 +473,7 @@ srtp_cipher_type_t srtp_aes_icm = {
     (char*)                        srtp_aes_icm_openssl_description,
     (srtp_cipher_test_case_t*)          &srtp_aes_icm_test_case_0,
     (debug_module_t*)              &srtp_mod_aes_icm,
-    (srtp_cipher_type_id_t)        AES_ICM
+    (srtp_cipher_type_id_t)        SRTP_AES_ICM
 };
 
 /*
@@ -492,7 +492,7 @@ srtp_cipher_type_t srtp_aes_icm_192 = {
     (char*)                        srtp_aes_icm_192_openssl_description,
     (srtp_cipher_test_case_t*)          &srtp_aes_icm_192_test_case_1,
     (debug_module_t*)              &srtp_mod_aes_icm,
-    (srtp_cipher_type_id_t)        AES_192_ICM
+    (srtp_cipher_type_id_t)        SRTP_AES_192_ICM
 };
 
 /*
@@ -511,6 +511,6 @@ srtp_cipher_type_t srtp_aes_icm_256 = {
     (char*)                        srtp_aes_icm_256_openssl_description,
     (srtp_cipher_test_case_t*)          &srtp_aes_icm_256_test_case_2,
     (debug_module_t*)              &srtp_mod_aes_icm,
-    (srtp_cipher_type_id_t)        AES_256_ICM
+    (srtp_cipher_type_id_t)        SRTP_AES_256_ICM
 };
 
