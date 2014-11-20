@@ -66,11 +66,5 @@ typedef struct {
     EVP_CIPHER_CTX ctx;
 } srtp_aes_icm_ctx_t;
 
-srtp_err_status_t srtp_aes_icm_openssl_set_iv(srtp_aes_icm_ctx_t *c, void *iv, int dir);
-srtp_err_status_t srtp_aes_icm_openssl_context_init(srtp_aes_icm_ctx_t *c, const uint8_t *key, int len);
-srtp_err_status_t srtp_aes_icm_output(srtp_aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output);
-uint16_t srtp_aes_icm_bytes_encrypted(srtp_aes_icm_ctx_t *c);
-
-
 #endif /* AES_ICM_H */
 
