@@ -7,8 +7,8 @@
 #
 # runtest       runs test applications 
 # test		builds test applications
-# libsrtp.a	static library implementing srtp
-# libsrtp.so	shared library implementing srtp
+# libsrtp2.a	static library implementing srtp
+# libsrtp2.so	shared library implementing srtp
 # clean		removes objects, libs, and executables
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
@@ -22,7 +22,7 @@ HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 all: test 
 
 runtest: test
-	@echo "running libsrtp test applications..."
+	@echo "running libsrtp2 test applications..."
 	crypto/test/cipher_driver$(EXE) -v >/dev/null
 	crypto/test/kernel_driver$(EXE) -v >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
@@ -34,7 +34,7 @@ runtest: test
 ifeq (1, $(USE_OPENSSL))
 	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh >/dev/null	
 endif
-	@echo "libsrtp test applications passed."
+	@echo "libsrtp2 test applications passed."
 	$(MAKE) -C crypto runtest
 
 # makefile variables
@@ -47,7 +47,7 @@ CFLAGS	= @CFLAGS@
 LIBS	= @LIBS@
 LDFLAGS	= @LDFLAGS@ -L.
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
-SRTPLIB	= -lsrtp
+SRTPLIB	= -lsrtp2
 
 RANLIB	= @RANLIB@
 INSTALL	= @INSTALL@
@@ -72,7 +72,7 @@ libdir = @libdir@
 
 ifeq (1, $(HAVE_PKG_CONFIG))
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libsrtp.pc
+pkgconfig_DATA = libsrtp2.pc
 endif
 
 # implicit rules for object files and test apps
@@ -105,17 +105,17 @@ kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
 
 cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
 
-# libsrtp.a (implements srtp processing)
+# libsrtp2.a (implements srtp processing)
 
 srtpobj = srtp/srtp.o srtp/ekt.o
 
-libsrtp.a: $(srtpobj) $(cryptobj) 
-	ar cr libsrtp.a $^
-	$(RANLIB) libsrtp.a
+libsrtp2.a: $(srtpobj) $(cryptobj) 
+	ar cr libsrtp2.a $^
+	$(RANLIB) libsrtp2.a
 
-libsrtp.so: $(srtpobj) $(cryptobj) 
-	$(CC) -shared -Wl,-soname,libsrtp.so \
-	    -o libsrtp.so $^ $(LDFLAGS)
+libsrtp2.so: $(srtpobj) $(cryptobj) 
+	$(CC) -shared -Wl,-soname,libsrtp2.so \
+	    -o libsrtp2.so $^ $(LDFLAGS)
 
 # test applications 
 ifneq (1, $(USE_OPENSSL))
@@ -135,7 +135,7 @@ ifeq (1, $(HAVE_PCAP))
 testapp += test/rtp_decoder$(EXE)
 endif
 
-$(testapp): libsrtp.a
+$(testapp): libsrtp2.a
 
 test/rtpw$(EXE): test/rtpw.c test/rtp.c test/util.c test/getopt_s.c \
         crypto/math/datatypes.c
@@ -192,41 +192,41 @@ tags:
 
 
 # documentation - the target libsrtpdoc builds a PDF file documenting
-# libsrtp
+# libsrtp2
 
-libsrtpdoc:
+libsrtp2doc:
 	$(MAKE) -C doc
 
 .PHONY: clean superclean distclean install
 
 install:
-	@if [ -r $(DESTDIR)$(includedir)/srtp/srtp.h ]; then \
+	@if [ -r $(DESTDIR)$(includedir)/srtp2/srtp.h ]; then \
 	   echo "you should run 'make uninstall' first"; exit 1;  \
 	fi
-	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
+	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp2
 	$(INSTALL) -d $(DESTDIR)$(libdir)
-	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp  
-	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp  
-	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp  
-	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp.so ]; then cp libsrtp.so $(DESTDIR)$(libdir)/; fi
+	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2  
+	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp2  
+	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp2  
+	if [ -f libsrtp2.a ]; then cp libsrtp2.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp2.so ]; then cp libsrtp2.so $(DESTDIR)$(libdir)/; fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
 		cp $(srcdir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
 	fi
 
 uninstall:
-	rm -f $(DESTDIR)$(includedir)/srtp/*.h
-	rm -f $(DESTDIR)$(libdir)/libsrtp.a
-	rm -f $(DESTDIR)$(libdir)/libsrtp.so
-	-rmdir $(DESTDIR)$(includedir)/srtp
+	rm -f $(DESTDIR)$(includedir)/srtp2/*.h
+	rm -f $(DESTDIR)$(libdir)/libsrtp2.a
+	rm -f $(DESTDIR)$(libdir)/libsrtp2.so
+	-rmdir $(DESTDIR)$(includedir)/srtp2
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA); \
 	fi
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) TAGS \
-        libsrtp.a libsrtp.so core *.core test/core
+        libsrtp2.a libsrtp2.so core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;
