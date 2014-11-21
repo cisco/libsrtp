@@ -253,7 +253,6 @@ static srtp_err_status_t srtp_aes_icm_set_iv (aes_icm_ctx_t *c, void *iv, int di
  *
  * this is an internal, hopefully inlined function
  */
-
 static void srtp_aes_icm_advance_ismacryp (aes_icm_ctx_t *c, uint8_t forIsmacryp)
 {
     /* fill buffer with new keystream */
@@ -272,7 +271,8 @@ static void srtp_aes_icm_advance_ismacryp (aes_icm_ctx_t *c, uint8_t forIsmacryp
         uint32_t temp;
         //alex's clock counter forward
         temp = ntohl(c->counter.v32[3]);
-        c->counter.v32[3] = htonl(++temp);
+	++temp;
+        c->counter.v32[3] = htonl(temp);
     } else {
         if (!++(c->counter.v8[15])) {
             ++(c->counter.v8[14]);

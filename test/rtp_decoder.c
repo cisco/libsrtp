@@ -93,7 +93,7 @@ main (int argc, char *argv[]) {
 
   /* check args */
   while (1) {
-    c = getopt_s(argc, argv, "b:k:gt:ae:ld:");
+    c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:");
     if (c == -1) {
       break;
     }
@@ -133,6 +133,14 @@ main (int argc, char *argv[]) {
         fprintf(stderr, "error: set debug module (%s) failed\n", optarg_s);
         exit(1);
       }
+      break;
+    case 'f':
+      if(strlen(optarg_s) > MAX_FILTER){
+        fprintf(stderr, "error: filter bigger than %d characters\n", MAX_FILTER);
+        exit(1);
+      }
+      fprintf(stderr, "Setting filter as %s\n", optarg_s);
+      strcpy(filter_exp, optarg_s);
       break;
     case 'l':
       do_list_mods = 1;
@@ -366,6 +374,7 @@ usage(char *string) {
 	 "       -k <key>  sets the srtp master key given in hexadecimal\n"
 	 "       -b <key>  sets the srtp master key given in base64\n"
 	 "       -l list debug modules\n"
+	 "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
 	 "       -d <debug> turn on debugging for module <debug>\n",
 	 string, string);
   exit(1);
