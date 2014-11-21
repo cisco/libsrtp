@@ -13,7 +13,7 @@
 
 #include "stat.h"
 
-debug_module_t mod_stat = {
+srtp_debug_module_t mod_stat = {
   0,                 /* debugging is off by default */
   (char *)"stat test"        /* printable module name       */
 };

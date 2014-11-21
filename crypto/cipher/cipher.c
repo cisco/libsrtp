@@ -53,7 +53,7 @@
 #include "rand_source.h"        /* used in invertibiltiy tests        */
 #include "alloc.h"              /* for crypto_alloc(), crypto_free()  */
 
-debug_module_t srtp_mod_cipher = {
+srtp_debug_module_t srtp_mod_cipher = {
     0,               /* debugging is off by default */
     "cipher"         /* printable module name       */
 };

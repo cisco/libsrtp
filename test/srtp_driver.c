@@ -139,7 +139,7 @@ extern const srtp_policy_t wildcard_policy;
  * makes the interface uniform and increases portability
  */
 
-debug_module_t mod_driver = {
+srtp_debug_module_t mod_driver = {
     0,                /* debugging is off by default */
     "driver"          /* printable name for module   */
 };

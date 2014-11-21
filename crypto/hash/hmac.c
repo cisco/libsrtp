@@ -51,7 +51,7 @@
 
 /* the debug module for authentiation */
 
-debug_module_t srtp_mod_hmac = {
+srtp_debug_module_t srtp_mod_hmac = {
     0,                /* debugging is off by default */
     "hmac sha-1"      /* printable name for module   */
 };
@@ -258,7 +258,7 @@ srtp_auth_type_t srtp_hmac  = {
     (auth_start_func)srtp_hmac_start,
     (char*)srtp_hmac_description,
     (srtp_auth_test_case_t*)&srtp_hmac_test_case_0,
-    (debug_module_t*)&srtp_mod_hmac,
+    (srtp_debug_module_t*)&srtp_mod_hmac,
     (srtp_auth_type_id_t)SRTP_HMAC_SHA1
 };
 

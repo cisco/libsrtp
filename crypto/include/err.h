@@ -1,32 +1,32 @@
 /*
  * err.h
- * 
+ *
  * error status codes
  *
  * David A. McGrew
  * Cisco Systems, Inc.
  */
 /*
- *	
+ *
  * Copyright (c) 2001-2006, Cisco Systems, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  *   Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
- * 
+ *
  *   Redistributions in binary form must reproduce the above
  *   copyright notice, this list of conditions and the following
  *   disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- * 
+ *
  *   Neither the name of the Cisco Systems, Inc. nor the names of its
  *   contributors may be used to endorse or promote products derived
  *   from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -52,9 +52,9 @@
 
 /**
  * @defgroup Error Error Codes
- * 
+ *
  * Error status codes are represented by the enumeration srtp_err_status_t.
- * 
+ *
  * @{
  */
 
@@ -64,16 +64,16 @@
  */
 
 typedef enum {
-  err_level_emergency = 0,
-  err_level_alert,
-  err_level_critical,
-  err_level_error,
-  err_level_warning,
-  err_level_notice,
-  err_level_info,
-  err_level_debug,
-  err_level_none
-} err_reporting_level_t;
+    srtp_err_level_emergency = 0,
+    srtp_err_level_alert,
+    srtp_err_level_critical,
+    srtp_err_level_error,
+    srtp_err_level_warning,
+    srtp_err_level_notice,
+    srtp_err_level_info,
+    srtp_err_level_debug,
+    srtp_err_level_none
+} srtp_err_reporting_level_t;
 
 /*
  * err_reporting_init prepares the error system.  If
@@ -83,7 +83,7 @@ typedef enum {
  * all syslog messages.  It is conventionally argv[0].
  */
 
-srtp_err_status_t err_reporting_init(const char *ident);
+srtp_err_status_t srtp_err_reporting_init(const char *ident);
 
 /*
  * keydaemon_report_error reports a 'printf' formatted error
@@ -96,7 +96,7 @@ srtp_err_status_t err_reporting_init(const char *ident);
  */
 
 void
-err_report(int priority, const char *format, ...);
+srtp_err_report(int priority, const char *format, ...);
 
 
 /*
@@ -104,9 +104,9 @@ err_report(int priority, const char *format, ...);
  */
 
 typedef struct {
-  int   on;          /* 1 if debugging is on, 0 if it is off */
-  const char *name;  /* printable name for debug module      */
-} debug_module_t;
+    int on;           /* 1 if debugging is on, 0 if it is off */
+    const char *name; /* printable name for debug module      */
+} srtp_debug_module_t;
 
 #ifdef ENABLE_DEBUGGING
 
@@ -116,9 +116,9 @@ typedef struct {
 
 /* use err_report() to report debug message */
 #define debug_print(mod, format, arg)                  \
-  if (mod.on) err_report(err_level_debug, ("%s: " format "\n"), mod.name, arg)
-#define debug_print2(mod, format, arg1,arg2)                  \
-  if (mod.on) err_report(err_level_debug, ("%s: " format "\n"), mod.name, arg1,arg2)
+    if (mod.on) srtp_err_report(srtp_err_level_debug, ("%s: " format "\n"), mod.name, arg)
+#define debug_print2(mod, format, arg1, arg2)                  \
+    if (mod.on) srtp_err_report(srtp_err_level_debug, ("%s: " format "\n"), mod.name, arg1, arg2)
 
 #else
 

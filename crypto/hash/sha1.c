@@ -50,7 +50,7 @@
 
 #include "sha1.h"
 
-debug_module_t srtp_mod_sha1 = {
+srtp_debug_module_t srtp_mod_sha1 = {
     0,               /* debugging is off by default */
     "sha-1"          /* printable module name       */
 };

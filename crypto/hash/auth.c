@@ -51,7 +51,7 @@
 
 /* the debug module for authentiation */
 
-debug_module_t srtp_mod_auth = {
+srtp_debug_module_t srtp_mod_auth = {
     0,                /* debugging is off by default */
     "auth func"       /* printable name for module   */
 };

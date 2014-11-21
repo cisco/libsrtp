@@ -53,7 +53,7 @@
 
 /* the debug module for the crypto_kernel */
 
-debug_module_t srtp_mod_crypto_kernel = {
+srtp_debug_module_t srtp_mod_crypto_kernel = {
     0,                /* debugging is off by default */
     "crypto kernel"   /* printable name for module   */
 };
@@ -62,10 +62,10 @@ debug_module_t srtp_mod_crypto_kernel = {
  * other debug modules that can be included in the kernel
  */
 
-extern debug_module_t srtp_mod_auth;
-extern debug_module_t srtp_mod_cipher;
-extern debug_module_t mod_stat;
-extern debug_module_t mod_alloc;
+extern srtp_debug_module_t srtp_mod_auth;
+extern srtp_debug_module_t srtp_mod_cipher;
+extern srtp_debug_module_t mod_stat;
+extern srtp_debug_module_t mod_alloc;
 
 /*
  * cipher types that can be included in the kernel
@@ -112,7 +112,7 @@ srtp_err_status_t srtp_crypto_kernel_init ()
     }
 
     /* initialize error reporting system */
-    status = err_reporting_init("crypto");
+    status = srtp_err_reporting_init("crypto");
     if (status) {
         return status;
     }
@@ -542,7 +542,7 @@ srtp_err_status_t srtp_crypto_kernel_alloc_auth (srtp_auth_type_id_t id, auth_po
     return ((at)->alloc(ap, key_len, tag_len));
 }
 
-srtp_err_status_t srtp_crypto_kernel_load_debug_module (debug_module_t *new_dm)
+srtp_err_status_t srtp_crypto_kernel_load_debug_module (srtp_debug_module_t *new_dm)
 {
     srtp_kernel_debug_module_t *kdm, *new;
 

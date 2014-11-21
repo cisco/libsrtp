@@ -55,7 +55,7 @@
 #include "crypto_types.h"
 
 
-debug_module_t srtp_mod_aes_gcm = {
+srtp_debug_module_t srtp_mod_aes_gcm = {
     0,               /* debugging is off by default */
     "aes gcm"        /* printable module name       */
 };
@@ -525,7 +525,7 @@ srtp_cipher_type_t srtp_aes_gcm_128_openssl = {
     (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
     (char*)srtp_aes_gcm_128_openssl_description,
     (srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_0,
-    (debug_module_t*)&srtp_mod_aes_gcm,
+    (srtp_debug_module_t*)&srtp_mod_aes_gcm,
     (srtp_cipher_type_id_t)SRTP_AES_128_GCM
 };
 
@@ -543,7 +543,7 @@ srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
     (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
     (char*)srtp_aes_gcm_256_openssl_description,
     (srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_1,
-    (debug_module_t*)&srtp_mod_aes_gcm,
+    (srtp_debug_module_t*)&srtp_mod_aes_gcm,
     (srtp_cipher_type_id_t)SRTP_AES_256_GCM
 };
 

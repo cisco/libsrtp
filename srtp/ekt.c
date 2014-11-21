@@ -47,7 +47,7 @@
 #include "err.h"
 #include "ekt.h"
 
-extern debug_module_t mod_srtp;
+extern srtp_debug_module_t mod_srtp;
 
 /*
  *  The EKT Authentication Tag format.

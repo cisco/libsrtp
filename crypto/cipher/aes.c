@@ -1368,7 +1368,7 @@ static uint32_t U4[256] = {
 
 /* aes internals */
 
-extern debug_module_t srtp_mod_aes_icm;
+extern srtp_debug_module_t srtp_mod_aes_icm;
 
 static void
 aes_128_expand_encryption_key (const uint8_t *key,

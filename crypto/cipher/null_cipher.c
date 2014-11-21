@@ -54,7 +54,7 @@
 
 /* the null_cipher uses the cipher debug module  */
 
-extern debug_module_t srtp_mod_cipher;
+extern srtp_debug_module_t srtp_mod_cipher;
 
 static srtp_err_status_t srtp_null_cipher_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
@@ -149,7 +149,7 @@ srtp_cipher_type_t srtp_null_cipher = {
     (cipher_get_tag_func_t)0,
     (char*)srtp_null_cipher_description,
     (srtp_cipher_test_case_t*)&srtp_null_cipher_test_0,
-    (debug_module_t*)NULL,
+    (srtp_debug_module_t*)NULL,
     (srtp_cipher_type_id_t)SRTP_NULL_CIPHER
 };
 
