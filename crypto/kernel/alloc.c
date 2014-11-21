@@ -65,33 +65,7 @@ debug_module_t mod_alloc = {
  * address.
  */
 
-#ifdef SRTP_KERNEL_LINUX
-
-#include <linux/interrupt.h>
-
-void * srtp_crypto_alloc(size_t size) {
-  void *ptr;
-
-  ptr = kmalloc(size, in_interrupt() ? GFP_ATOMIC : GFP_KERNEL);
-
-  if (ptr) {
-    debug_print(mod_alloc, "(location: %p) allocated", ptr);
-  } else {
-    debug_print(mod_alloc, "allocation failed (asked for %d bytes)\n", size);
-  }
-
-  return ptr;
-}
-
-void srtp_crypto_free(void *ptr) {
-
-  debug_print(mod_alloc, "(location: %p) freed", ptr);
-
-  kfree(ptr);
-}
-
-
-#elif defined(HAVE_STDLIB_H)
+#if defined(HAVE_STDLIB_H)
 
 void * srtp_crypto_alloc(size_t size) {
   void *ptr;

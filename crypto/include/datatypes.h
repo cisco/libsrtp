@@ -52,15 +52,13 @@
 
 #include <stdarg.h>
 
-#ifndef SRTP_KERNEL
-# include <stdio.h>
-# include <string.h>
-# include <time.h>
-# ifdef HAVE_NETINET_IN_H
-#  include <netinet/in.h>
-# elif defined HAVE_WINSOCK2_H
-#  include <winsock2.h>
-# endif
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined HAVE_WINSOCK2_H
+# include <winsock2.h>
 #endif
 
 
@@ -352,7 +350,7 @@ void
 octet_string_set_to_zero(uint8_t *s, int len);
 
 
-#if !defined(SRTP_KERNEL_LINUX) && defined(HAVE_CONFIG_H) 
+#if defined(HAVE_CONFIG_H) 
 
 /* 
  * Convert big endian integers to CPU byte order.
@@ -395,7 +393,7 @@ static inline uint64_t be64_to_cpu(uint64_t v) {
    return v;
 }
 
-#endif /* ! SRTP_KERNEL_LINUX */
+#endif 
 
 #endif /* WORDS_BIGENDIAN */
 

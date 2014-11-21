@@ -47,20 +47,6 @@ case $host_os in
 esac
 AC_SUBST(EXE)   # define executable suffix; this is needed for `make clean'
 
-
-AC_ARG_ENABLE(kernel-linux,
-  [AS_HELP_STRING([--enable-kernel-linux],
-		  [build library to run in Linux kernel context])],
-  [], enable_kernel_linux=no)
-AC_MSG_CHECKING(whether to build for Linux kernel context)
-if test "$enable_kernel_linux" = "yes"; then
-   AC_DEFINE(SRTP_KERNEL, 1,
-	[Define to compile for kernel contexts.])
-   AC_DEFINE(SRTP_KERNEL_LINUX, 1,
-	[Define to compile for Linux kernel context.])
-fi
-AC_MSG_RESULT($enable_kernel_linux)
-
 if test "$cross_compiling" != yes -a "$HOST_IS_WINDOWS" != yes; then
    dnl Check for /dev/urandom
    AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=/dev/urandom,
@@ -160,17 +146,12 @@ if test "$enable_openssl" = "yes"; then
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    AC_MSG_CHECKING(which random device to use)
-   if test "$enable_kernel_linux" = "yes"; then
-      RNG_OBJS=rand_linux_kernel.o
-      AC_MSG_RESULT([Linux kernel builtin])
+   RNG_OBJS=rand_source.o
+   if test -n "$DEV_URANDOM"; then
+      AC_DEFINE_UNQUOTED(DEV_URANDOM, "$DEV_URANDOM",[Path to random device])
+      AC_MSG_RESULT([$DEV_URANDOM])
    else
-      RNG_OBJS=rand_source.o
-      if test -n "$DEV_URANDOM"; then
-         AC_DEFINE_UNQUOTED(DEV_URANDOM, "$DEV_URANDOM",[Path to random device])
-         AC_MSG_RESULT([$DEV_URANDOM])
-      else
-         AC_MSG_RESULT([standard rand() function...])
-      fi
+      AC_MSG_RESULT([standard rand() function...])
    fi
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi

@@ -694,7 +694,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_kernel_linux
 enable_debug
 enable_generic_aesicm
 enable_openssl
@@ -1323,7 +1322,6 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --enable-kernel-linux   build library to run in Linux kernel context
   --disable-debug         do not compile in dynamic debugging system
   --enable-generic-aesicm compile in changes for ISMAcryp
   --enable-openssl        compile in OpenSSL crypto engine
@@ -4096,27 +4094,6 @@ case $host_os in
 esac
    # define executable suffix; this is needed for `make clean'
 
-
-# Check whether --enable-kernel-linux was given.
-if test "${enable_kernel_linux+set}" = set; then :
-  enableval=$enable_kernel_linux;
-else
-  enable_kernel_linux=no
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build for Linux kernel context" >&5
-$as_echo_n "checking whether to build for Linux kernel context... " >&6; }
-if test "$enable_kernel_linux" = "yes"; then
-
-$as_echo "#define SRTP_KERNEL 1" >>confdefs.h
-
-
-$as_echo "#define SRTP_KERNEL_LINUX 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_kernel_linux" >&5
-$as_echo "$enable_kernel_linux" >&6; }
-
 if test "$cross_compiling" != yes -a "$HOST_IS_WINDOWS" != yes; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for /dev/urandom" >&5
 $as_echo_n "checking for /dev/urandom... " >&6; }
@@ -4987,24 +4964,18 @@ else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
-   if test "$enable_kernel_linux" = "yes"; then
-      RNG_OBJS=rand_linux_kernel.o
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: Linux kernel builtin" >&5
-$as_echo "Linux kernel builtin" >&6; }
-   else
-      RNG_OBJS=rand_source.o
-      if test -n "$DEV_URANDOM"; then
+   RNG_OBJS=rand_source.o
+   if test -n "$DEV_URANDOM"; then
 
 cat >>confdefs.h <<_ACEOF
 #define DEV_URANDOM "$DEV_URANDOM"
 _ACEOF
 
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DEV_URANDOM" >&5
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DEV_URANDOM" >&5
 $as_echo "$DEV_URANDOM" >&6; }
-      else
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: standard rand() function..." >&5
+   else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: standard rand() function..." >&5
 $as_echo "standard rand() function..." >&6; }
-      fi
    fi
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi

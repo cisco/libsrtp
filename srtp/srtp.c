@@ -52,14 +52,12 @@
 #include "aes_gcm_ossl.h"    /* for AES GCM mode  */
 #endif
 
-#ifndef SRTP_KERNEL
-# include <limits.h>
-# ifdef HAVE_NETINET_IN_H
-#  include <netinet/in.h>
-# elif defined(HAVE_WINSOCK2_H)
-#  include <winsock2.h>
-# endif
-#endif /* ! SRTP_KERNEL */
+#include <limits.h>
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined(HAVE_WINSOCK2_H)
+# include <winsock2.h>
+#endif
 
 
 /* the debug module for srtp */

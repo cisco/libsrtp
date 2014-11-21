@@ -85,10 +85,6 @@ typedef enum {
 
 srtp_err_status_t err_reporting_init(const char *ident);
 
-#ifdef SRTP_KERNEL_LINUX
-extern err_reporting_level_t err_level;
-#else
-
 /*
  * keydaemon_report_error reports a 'printf' formatted error
  * string, followed by a an arg list.  The priority argument
@@ -101,7 +97,6 @@ extern err_reporting_level_t err_level;
 
 void
 err_report(int priority, const char *format, ...);
-#endif /* ! SRTP_KERNEL_LINUX */
 
 
 /*
