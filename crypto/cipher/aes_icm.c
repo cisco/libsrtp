@@ -115,7 +115,7 @@ static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key
     }
 
     /* allocate memory a cipher of type aes_icm */
-    tmp = (sizeof(aes_icm_ctx_t) + sizeof(srtp_cipher_t));
+    tmp = (sizeof(srtp_aes_icm_ctx_t) + sizeof(srtp_cipher_t));
     pointer = (uint8_t*)srtp_crypto_alloc(tmp);
     if (pointer == NULL) {
         return srtp_err_status_alloc_fail;
@@ -152,7 +152,7 @@ static srtp_err_status_t srtp_aes_icm_dealloc (srtp_cipher_t *c)
 {
     /* zeroize entire state*/
     octet_string_set_to_zero((uint8_t*)c,
-                             sizeof(aes_icm_ctx_t) + sizeof(srtp_cipher_t));
+                             sizeof(srtp_aes_icm_ctx_t) + sizeof(srtp_cipher_t));
 
     /* free memory */
     srtp_crypto_free(c);
@@ -171,7 +171,7 @@ static srtp_err_status_t srtp_aes_icm_dealloc (srtp_cipher_t *c)
  * randomizes the starting point in the keystream
  */
 
-static srtp_err_status_t srtp_aes_icm_context_init (aes_icm_ctx_t *c, const uint8_t *key, int key_len)
+static srtp_err_status_t srtp_aes_icm_context_init (srtp_aes_icm_ctx_t *c, const uint8_t *key, int key_len)
 {
     srtp_err_status_t status;
     int base_key_len, copy_len;
@@ -224,7 +224,7 @@ static srtp_err_status_t srtp_aes_icm_context_init (aes_icm_ctx_t *c, const uint
  * the offset
  */
 
-static srtp_err_status_t srtp_aes_icm_set_iv (aes_icm_ctx_t *c, void *iv, int direction)
+static srtp_err_status_t srtp_aes_icm_set_iv (srtp_aes_icm_ctx_t *c, void *iv, int direction)
 {
     v128_t nonce;
 
@@ -253,7 +253,7 @@ static srtp_err_status_t srtp_aes_icm_set_iv (aes_icm_ctx_t *c, void *iv, int di
  *
  * this is an internal, hopefully inlined function
  */
-static void srtp_aes_icm_advance_ismacryp (aes_icm_ctx_t *c, uint8_t forIsmacryp)
+static void srtp_aes_icm_advance_ismacryp (srtp_aes_icm_ctx_t *c, uint8_t forIsmacryp)
 {
     /* fill buffer with new keystream */
     v128_copy(&c->keystream_buffer, &c->counter);
@@ -293,7 +293,7 @@ static void srtp_aes_icm_advance_ismacryp (aes_icm_ctx_t *c, uint8_t forIsmacryp
  *  - fill buffer then add in remaining (< 16) bytes of keystream
  */
 
-static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (aes_icm_ctx_t *c,
+static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (srtp_aes_icm_ctx_t *c,
                                                  unsigned char *buf, unsigned int *enc_len,
                                                  int forIsmacryp)
 {
@@ -403,7 +403,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (aes_icm_ctx_t *c,
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_aes_icm_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
+static srtp_err_status_t srtp_aes_icm_encrypt (srtp_aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
 {
     return srtp_aes_icm_encrypt_ismacryp(c, buf, enc_len, 0);
 }
