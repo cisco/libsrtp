@@ -7,26 +7,26 @@
  * Cisco Systems, Inc.
  */
 /*
- *	
+ *
  * Copyright(c) 2001-2006 Cisco Systems, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  *   Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
- * 
+ *
  *   Redistributions in binary form must reproduce the above
  *   copyright notice, this list of conditions and the following
  *   disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- * 
+ *
  *   Neither the name of the Cisco Systems, Inc. nor the names of its
  *   contributors may be used to endorse or promote products derived
  *   from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -46,8 +46,8 @@
 #ifndef CRYPTO_KERNEL
 #define CRYPTO_KERNEL
 
-#include "rand_source.h"       
-#include "cipher.h"    
+#include "rand_source.h"
+#include "cipher.h"
 #include "auth.h"
 #include "stat.h"
 #include "err.h"
@@ -61,35 +61,35 @@
  *    secure   - initialized and passed self-tests
  */
 typedef enum {
-  crypto_kernel_state_insecure,
-  crypto_kernel_state_secure
-} crypto_kernel_state_t;
-
-/* 
- * linked list of cipher types 
- */
-typedef struct kernel_cipher_type {
-  srtp_cipher_type_id_t  id;
-  srtp_cipher_type_t    *cipher_type;
-  struct kernel_cipher_type *next;
-} kernel_cipher_type_t;
-
-/* 
- * linked list of auth types 
- */
-typedef struct kernel_auth_type {
-  srtp_auth_type_id_t  id;
-  srtp_auth_type_t    *auth_type;
-  struct kernel_auth_type *next;
-} kernel_auth_type_t;
+    srtp_crypto_kernel_state_insecure,
+    srtp_crypto_kernel_state_secure
+} srtp_crypto_kernel_state_t;
 
 /*
- * linked list of debug modules 
+ * linked list of cipher types
  */
-typedef struct kernel_debug_module {
-  debug_module_t *mod;
-  struct kernel_debug_module *next;
-} kernel_debug_module_t;
+typedef struct srtp_kernel_cipher_type {
+    srtp_cipher_type_id_t id;
+    srtp_cipher_type_t    *cipher_type;
+    struct srtp_kernel_cipher_type *next;
+} srtp_kernel_cipher_type_t;
+
+/*
+ * linked list of auth types
+ */
+typedef struct srtp_kernel_auth_type {
+    srtp_auth_type_id_t id;
+    srtp_auth_type_t    *auth_type;
+    struct srtp_kernel_auth_type *next;
+} srtp_kernel_auth_type_t;
+
+/*
+ * linked list of debug modules
+ */
+typedef struct srtp_kernel_debug_module {
+    debug_module_t *mod;
+    struct srtp_kernel_debug_module *next;
+} srtp_kernel_debug_module_t;
 
 
 /*
@@ -99,126 +99,126 @@ typedef struct kernel_debug_module {
  * a global variable defined in crypto_kernel.c
  */
 typedef struct {
-  crypto_kernel_state_t state;              /* current state of kernel     */
-  kernel_cipher_type_t *cipher_type_list;   /* list of all cipher types    */
-  kernel_auth_type_t   *auth_type_list;     /* list of all auth func types */
-  kernel_debug_module_t *debug_module_list; /* list of all debug modules   */
-} crypto_kernel_t;
+    srtp_crypto_kernel_state_t state;              /* current state of kernel     */
+    srtp_kernel_cipher_type_t *cipher_type_list;   /* list of all cipher types    */
+    srtp_kernel_auth_type_t   *auth_type_list;     /* list of all auth func types */
+    srtp_kernel_debug_module_t *debug_module_list; /* list of all debug modules   */
+} srtp_crypto_kernel_t;
 
 
 /*
- * crypto_kernel_t external api
+ * srtp_crypto_kernel_t external api
  */
 
 
 /*
- * The function crypto_kernel_init() initialized the crypto kernel and
+ * The function srtp_crypto_kernel_init() initialized the crypto kernel and
  * runs the self-test operations on the random number generators and
  * crypto algorithms.  Possible return values are:
  *
- *    err_status_ok     initialization successful
- *    <other>           init failure 
+ *    srtp_err_status_ok    initialization successful
+ *    <other>               init failure
  *
- * If any value other than err_status_ok is returned, the
- * crypto_kernel MUST NOT be used.  
+ * If any value other than srtp_err_status_ok is returned, the
+ * crypto_kernel MUST NOT be used.
  */
-srtp_err_status_t crypto_kernel_init(void);
+srtp_err_status_t srtp_crypto_kernel_init(void);
 
 
 /*
- * The function crypto_kernel_shutdown() de-initializes the
+ * The function srtp_crypto_kernel_shutdown() de-initializes the
  * crypto_kernel, zeroizes keys and other cryptographic material, and
  * deallocates any dynamically allocated memory.  Possible return
  * values are:
  *
- *    err_status_ok     shutdown successful
- *    <other>           shutdown failure 
+ *    srtp_err_status_ok     shutdown successful
+ *    <other>                shutdown failure
  *
  */
-srtp_err_status_t crypto_kernel_shutdown(void);
+srtp_err_status_t srtp_crypto_kernel_shutdown(void);
 
 /*
- * The function crypto_kernel_stats() checks the the crypto_kernel,
+ * The function srtp_crypto_kernel_stats() checks the the crypto_kernel,
  * running tests on the ciphers, auth funcs, and rng, and prints out a
  * status report.  Possible return values are:
  *
- *    err_status_ok     all tests were passed
- *    <other>           a test failed 
+ *    srtp_err_status_ok     all tests were passed
+ *    <other>                a test failed
  *
  */
-srtp_err_status_t crypto_kernel_status(void);
+srtp_err_status_t srtp_crypto_kernel_status(void);
 
 
 /*
- * crypto_kernel_list_debug_modules() outputs a list of debugging modules
+ * srtp_crypto_kernel_list_debug_modules() outputs a list of debugging modules
  *
  */
-srtp_err_status_t crypto_kernel_list_debug_modules(void);
+srtp_err_status_t srtp_crypto_kernel_list_debug_modules(void);
 
 /*
- * crypto_kernel_load_cipher_type()
+ * srtp_crypto_kernel_load_cipher_type()
  *
  */
-srtp_err_status_t crypto_kernel_load_cipher_type(srtp_cipher_type_t *ct, srtp_cipher_type_id_t id);
+srtp_err_status_t srtp_crypto_kernel_load_cipher_type(srtp_cipher_type_t *ct, srtp_cipher_type_id_t id);
 
-srtp_err_status_t crypto_kernel_load_auth_type(srtp_auth_type_t *ct, srtp_auth_type_id_t id);
+srtp_err_status_t srtp_crypto_kernel_load_auth_type(srtp_auth_type_t *ct, srtp_auth_type_id_t id);
 
 /*
- * crypto_kernel_replace_cipher_type(ct, id)
- * 
+ * srtp_crypto_kernel_replace_cipher_type(ct, id)
+ *
  * replaces the crypto kernel's existing cipher for the cipher_type id
  * with a new one passed in externally.  The new cipher must pass all the
  * existing cipher_type's self tests as well as its own.
  */
-srtp_err_status_t crypto_kernel_replace_cipher_type(srtp_cipher_type_t *ct, srtp_cipher_type_id_t id);
+srtp_err_status_t srtp_crypto_kernel_replace_cipher_type(srtp_cipher_type_t *ct, srtp_cipher_type_id_t id);
 
 
 /*
- * crypto_kernel_replace_auth_type(ct, id)
- * 
+ * srtp_crypto_kernel_replace_auth_type(ct, id)
+ *
  * replaces the crypto kernel's existing cipher for the auth_type id
  * with a new one passed in externally.  The new auth type must pass all the
  * existing auth_type's self tests as well as its own.
  */
-srtp_err_status_t crypto_kernel_replace_auth_type(srtp_auth_type_t *ct, srtp_auth_type_id_t id);
+srtp_err_status_t srtp_crypto_kernel_replace_auth_type(srtp_auth_type_t *ct, srtp_auth_type_id_t id);
 
 
-srtp_err_status_t crypto_kernel_load_debug_module(debug_module_t *new_dm);
+srtp_err_status_t srtp_crypto_kernel_load_debug_module(debug_module_t *new_dm);
 
 /*
- * crypto_kernel_alloc_cipher(id, cp, key_len); 
+ * srtp_crypto_kernel_alloc_cipher(id, cp, key_len);
  *
  * allocates a cipher of type id at location *cp, with key length
  * key_len octets.  Return values are:
- * 
- *    err_status_ok           no problems
- *    err_status_alloc_fail   an allocation failure occured
- *    err_status_fail         couldn't find cipher with identifier 'id'
+ *
+ *    srtp_err_status_ok           no problems
+ *    srtp_err_status_alloc_fail   an allocation failure occured
+ *    srtp_err_status_fail         couldn't find cipher with identifier 'id'
  */
-srtp_err_status_t crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id, srtp_cipher_pointer_t *cp, int key_len, int tag_len);
+srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id, srtp_cipher_pointer_t *cp, int key_len, int tag_len);
 
 /*
- * crypto_kernel_alloc_auth(id, ap, key_len, tag_len); 
+ * srtp_crypto_kernel_alloc_auth(id, ap, key_len, tag_len);
  *
  * allocates an auth function of type id at location *ap, with key
  * length key_len octets and output tag length of tag_len.  Return
  * values are:
- * 
- *    err_status_ok           no problems
- *    err_status_alloc_fail   an allocation failure occured
- *    err_status_fail         couldn't find auth with identifier 'id'
+ *
+ *    srtp_err_status_ok           no problems
+ *    srtp_err_status_alloc_fail   an allocation failure occured
+ *    srtp_err_status_fail         couldn't find auth with identifier 'id'
  */
-srtp_err_status_t crypto_kernel_alloc_auth(srtp_auth_type_id_t id, auth_pointer_t *ap, int key_len, int tag_len);
+srtp_err_status_t srtp_crypto_kernel_alloc_auth(srtp_auth_type_id_t id, auth_pointer_t *ap, int key_len, int tag_len);
 
 
 /*
- * crypto_kernel_set_debug_module(mod_name, v)
- * 
+ * srtp_crypto_kernel_set_debug_module(mod_name, v)
+ *
  * sets dynamic debugging to the value v (0 for off, 1 for on) for the
  * debug module with the name mod_name
  *
- * returns err_status_ok on success, err_status_fail otherwise
+ * returns srtp_err_status_ok on success, srtp_err_status_fail otherwise
  */
-srtp_err_status_t crypto_kernel_set_debug_module(char *mod_name, int v);
+srtp_err_status_t srtp_crypto_kernel_set_debug_module(char *mod_name, int v);
 
 #endif /* CRYPTO_KERNEL */

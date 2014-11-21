@@ -68,12 +68,12 @@ main (int argc, char *argv[]) {
     usage(argv[0]);
 
   /* initialize kernel - we need to do this before anything else */ 
-  status = crypto_kernel_init();
+  status = srtp_crypto_kernel_init();
   if (status) {
-    printf("error: crypto_kernel init failed\n");
+    printf("error: srtp_crypto_kernel init failed\n");
     exit(1);
   }
-  printf("crypto_kernel successfully initalized\n");
+  printf("srtp_crypto_kernel successfully initalized\n");
 
   /* process input arguments */
   while (1) {
@@ -85,7 +85,7 @@ main (int argc, char *argv[]) {
       do_validation = 1;
       break;
     case 'd':
-      status = crypto_kernel_set_debug_module(optarg, 1);
+      status = srtp_crypto_kernel_set_debug_module(optarg, 1);
       if (status) {
 	printf("error: set debug module (%s) failed\n", optarg);
 	exit(1);
@@ -97,21 +97,21 @@ main (int argc, char *argv[]) {
   }
 
   if (do_validation) {
-    printf("checking crypto_kernel status...\n");
-    status = crypto_kernel_status();
+    printf("checking srtp_crypto_kernel status...\n");
+    status = srtp_crypto_kernel_status();
     if (status) {
       printf("failed\n");
       exit(1);
     }
-    printf("crypto_kernel passed self-tests\n");
+    printf("srtp_crypto_kernel passed self-tests\n");
   }
 
-  status = crypto_kernel_shutdown();
+  status = srtp_crypto_kernel_shutdown();
   if (status) {
-    printf("error: crypto_kernel shutdown failed\n");
+    printf("error: srtp_crypto_kernel shutdown failed\n");
     exit(1);
   }
-  printf("crypto_kernel successfully shut down\n");
+  printf("srtp_crypto_kernel successfully shut down\n");
   
   return 0;
 }

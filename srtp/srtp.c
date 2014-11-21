@@ -132,7 +132,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   *str_ptr = str;  
   
   /* allocate cipher */
-  stat = crypto_kernel_alloc_cipher(p->rtp.cipher_type, 
+  stat = srtp_crypto_kernel_alloc_cipher(p->rtp.cipher_type, 
 				    &str->rtp_cipher, 
 				    p->rtp.cipher_key_len,
 				    p->rtp.auth_tag_len); 
@@ -142,7 +142,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }
 
   /* allocate auth function */
-  stat = crypto_kernel_alloc_auth(p->rtp.auth_type, 
+  stat = srtp_crypto_kernel_alloc_auth(p->rtp.auth_type, 
 				  &str->rtp_auth,
 				  p->rtp.auth_key_len, 
 				  p->rtp.auth_tag_len); 
@@ -165,7 +165,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
    * ...and now the RTCP-specific initialization - first, allocate
    * the cipher 
    */
-  stat = crypto_kernel_alloc_cipher(p->rtcp.cipher_type, 
+  stat = srtp_crypto_kernel_alloc_cipher(p->rtcp.cipher_type, 
 				    &str->rtcp_cipher, 
 				    p->rtcp.cipher_key_len, 
 				    p->rtcp.auth_tag_len); 
@@ -178,7 +178,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }
 
   /* allocate auth function */
-  stat = crypto_kernel_alloc_auth(p->rtcp.auth_type, 
+  stat = srtp_crypto_kernel_alloc_auth(p->rtcp.auth_type, 
 				  &str->rtcp_auth,
 				  p->rtcp.auth_key_len, 
 				  p->rtcp.auth_tag_len); 
@@ -399,7 +399,7 @@ srtp_err_status_t
 srtp_kdf_init(srtp_kdf_t *kdf, srtp_cipher_type_id_t cipher_id, const uint8_t *key, int length) {
 
   srtp_err_status_t stat;
-  stat = crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, length, 0);
+  stat = srtp_crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, length, 0);
   if (stat)
     return stat;
 
@@ -1713,12 +1713,12 @@ srtp_init() {
   srtp_err_status_t status;
 
   /* initialize crypto kernel */
-  status = crypto_kernel_init();
+  status = srtp_crypto_kernel_init();
   if (status) 
     return status;
 
   /* load srtp debug module into the kernel */
-  status = crypto_kernel_load_debug_module(&mod_srtp);
+  status = srtp_crypto_kernel_load_debug_module(&mod_srtp);
   if (status)
     return status;
 
@@ -1730,7 +1730,7 @@ srtp_shutdown() {
   srtp_err_status_t status;
 
   /* shut down crypto kernel */
-  status = crypto_kernel_shutdown();
+  status = srtp_crypto_kernel_shutdown();
   if (status) 
     return status;
 
@@ -3205,11 +3205,11 @@ srtp_profile_get_master_salt_length(srtp_profile_t profile) {
  */
 srtp_err_status_t srtp_set_debug_module(char *mod_name, int v)
 {
-    return crypto_kernel_set_debug_module(mod_name, v);
+    return srtp_crypto_kernel_set_debug_module(mod_name, v);
 }
 
 srtp_err_status_t srtp_list_debug_modules(void)
 {
-    return crypto_kernel_list_debug_modules();
+    return srtp_crypto_kernel_list_debug_modules();
 }
 

@@ -85,7 +85,7 @@ main(int argc, char *argv[]) {
       do_list_mods = 1;
       break;
     case 'd':
-      err = crypto_kernel_set_debug_module(optarg_s, 1);
+      err = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
       if (err) {
         printf("error: set debug module (%s) failed\n", optarg_s);
         exit(1);
@@ -97,7 +97,7 @@ main(int argc, char *argv[]) {
   }
 
   if (do_list_mods) {
-    err = crypto_kernel_list_debug_modules();
+    err = srtp_crypto_kernel_list_debug_modules();
     if (err) {
       printf("error: list of debug modules failed\n");
       exit(1);

@@ -174,7 +174,7 @@ main (int argc, char *argv[])
     }
 
     /*  load srtp_driver debug module */
-    status = crypto_kernel_load_debug_module(&mod_driver);
+    status = srtp_crypto_kernel_load_debug_module(&mod_driver);
     if (status) {
         printf("error: load of srtp_driver debug module failed "
                "with error code %d\n", status);
@@ -204,7 +204,7 @@ main (int argc, char *argv[])
             do_list_mods = 1;
             break;
         case 'd':
-            status = crypto_kernel_set_debug_module(optarg_s, 1);
+            status = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
             if (status) {
                 printf("error: set debug module (%s) failed\n", optarg_s);
                 exit(1);
@@ -221,7 +221,7 @@ main (int argc, char *argv[])
     }
 
     if (do_list_mods) {
-        status = crypto_kernel_list_debug_modules();
+        status = srtp_crypto_kernel_list_debug_modules();
         if (status) {
             printf("error: list of debug modules failed\n");
             exit(1);
