@@ -58,14 +58,24 @@ srtp_debug_module_t srtp_mod_cipher = {
     "cipher"         /* printable module name       */
 };
 
-srtp_err_status_t srtp_cipher_output (srtp_cipher_t *c, uint8_t *buffer, int num_octets_to_output)
+srtp_err_status_t srtp_cipher_output (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
 {
 
     /* zeroize the buffer */
-    octet_string_set_to_zero(buffer, num_octets_to_output);
+    octet_string_set_to_zero(buffer, *num_octets_to_output);
 
     /* exor keystream into buffer */
-    return cipher_encrypt(c, buffer, (unsigned int*)&num_octets_to_output);
+    return (((c)->type)->encrypt(((c)->state), buffer, num_octets_to_output));
+}
+
+srtp_err_status_t srtp_cipher_encrypt (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
+{
+    return (((c)->type)->encrypt(((c)->state), buffer, num_octets_to_output));
+}
+
+srtp_err_status_t srtp_cipher_decrypt (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
+{
+    return (((c)->type)->decrypt(((c)->state), buffer, num_octets_to_output));
 }
 
 /* some bookkeeping functions */
@@ -168,7 +178,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* encrypt */
         len = test_case->plaintext_length_octets;
-        status = cipher_encrypt(c, buffer, &len);
+        status = srtp_cipher_encrypt(c, buffer, &len);
         if (status) {
             cipher_dealloc(c);
             return status;
@@ -265,7 +275,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* decrypt */
         len = test_case->ciphertext_length_octets;
-        status = cipher_decrypt(c, buffer, &len);
+        status = srtp_cipher_decrypt(c, buffer, &len);
         if (status) {
             cipher_dealloc(c);
             return status;
@@ -393,7 +403,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* encrypt buffer with cipher */
         plaintext_len = length;
-        status = cipher_encrypt(c, buffer, &length);
+        status = srtp_cipher_encrypt(c, buffer, &length);
         if (status) {
             cipher_dealloc(c);
             return status;
@@ -440,7 +450,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                         srtp_octet_string_hex_string(test_case->aad,
                                                      test_case->aad_length_octets));
         }
-        status = cipher_decrypt(c, buffer, &length);
+        status = srtp_cipher_decrypt(c, buffer, &length);
         if (status) {
             cipher_dealloc(c);
             return status;
@@ -514,7 +524,7 @@ uint64_t srtp_cipher_bits_per_second (srtp_cipher_t *c, int octets_in_buffer, in
     timer = clock();
     for (i = 0; i < num_trials; i++, nonce.v32[3] = i) {
         cipher_set_iv(c, &nonce, direction_encrypt);
-        cipher_encrypt(c, enc_buf, &len);
+        srtp_cipher_encrypt(c, enc_buf, &len);
     }
     timer = clock() - timer;
 

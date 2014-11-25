@@ -175,14 +175,8 @@ typedef struct srtp_cipher_t {
 
 #define cipher_init(c, k) (((c)->type)->init(((c)->state), (k), ((c)->key_len)))
 
-#define cipher_encrypt(c, buf, len) \
-    (((c)->type)->encrypt(((c)->state), (buf), (len)))
-
 #define cipher_get_tag(c, buf, len) \
     (((c)->type)->get_tag(((c)->state), (buf), (len)))
-
-#define cipher_decrypt(c, buf, len) \
-    (((c)->type)->decrypt(((c)->state), (buf), (len)))
 
 #define cipher_set_iv(c, n, dir)                           \
     ((c) ? (((c)->type)->set_iv(((srtp_cipher_pointer_t)(c)->state), (n), (dir))) :   \
@@ -191,8 +185,6 @@ typedef struct srtp_cipher_t {
     (((c) && (((c)->type)->set_aad)) ?                  \
      (((c)->type)->set_aad(((c)->state), (a), (l))) :    \
      srtp_err_status_no_such_op)
-
-srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, int num_octets_to_output);
 
 
 /* some bookkeeping functions */
@@ -227,6 +219,8 @@ srtp_err_status_t srtp_cipher_type_test(const srtp_cipher_type_t *ct, const srtp
  */
 uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c, int octets_in_buffer, int num_trials);
 
-srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, int num_octets_to_output); 
+srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
+srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
+srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 
 #endif /* CIPHER_H */

@@ -84,7 +84,7 @@ main (int argc, char *argv[]) {
   err_check(cipher_type_alloc(&srtp_aes_icm, &c, 30, 0));
   err_check(cipher_init(c, key));
   err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-  err_check(cipher_encrypt(c, buffer, &buf_len));
+  err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
   /* run tests on cipher outout */
   printf("monobit %d\n", stat_test_monobit(buffer));
   printf("poker   %d\n", stat_test_poker(buffer));
@@ -99,7 +99,7 @@ main (int argc, char *argv[]) {
       buffer[i] = 0;
     nonce.v32[3] = i;
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-    err_check(cipher_encrypt(c, buffer, &buf_len));
+    err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
     if (stat_test_runs(buffer)) {
       num_fail++;
     }
@@ -118,7 +118,7 @@ main (int argc, char *argv[]) {
   err_check(cipher_type_alloc(&srtp_aes_icm, &c, 46, 0));
   err_check(cipher_init(c, key));
   err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-  err_check(cipher_encrypt(c, buffer, &buf_len));
+  err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
   /* run tests on cipher outout */
   printf("monobit %d\n", stat_test_monobit(buffer));
   printf("poker   %d\n", stat_test_poker(buffer));
@@ -133,7 +133,7 @@ main (int argc, char *argv[]) {
       buffer[i] = 0;
     nonce.v32[3] = i;
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-    err_check(cipher_encrypt(c, buffer, &buf_len));
+    err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
     if (stat_test_runs(buffer)) {
       num_fail++;
     }
@@ -149,7 +149,7 @@ main (int argc, char *argv[]) {
     err_check(cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8));
     err_check(cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-    err_check(cipher_encrypt(c, buffer, &buf_len));
+    err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
     /* run tests on cipher outout */
     printf("monobit %d\n", stat_test_monobit(buffer));
     printf("poker   %d\n", stat_test_poker(buffer));
@@ -163,7 +163,7 @@ main (int argc, char *argv[]) {
 	}
 	nonce.v32[3] = i;
 	err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-	err_check(cipher_encrypt(c, buffer, &buf_len));
+	err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
 	buf_len = 2500;
 	if (stat_test_runs(buffer)) {
 	    num_fail++;
@@ -178,7 +178,7 @@ main (int argc, char *argv[]) {
     err_check(cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16));
     err_check(cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-    err_check(cipher_encrypt(c, buffer, &buf_len));
+    err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
     /* run tests on cipher outout */
     printf("monobit %d\n", stat_test_monobit(buffer));
     printf("poker   %d\n", stat_test_poker(buffer));
@@ -192,7 +192,7 @@ main (int argc, char *argv[]) {
 	}
 	nonce.v32[3] = i;
 	err_check(cipher_set_iv(c, &nonce, direction_encrypt));
-	err_check(cipher_encrypt(c, buffer, &buf_len));
+	err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
 	buf_len = 2500;
 	if (stat_test_runs(buffer)) {
 	    num_fail++;

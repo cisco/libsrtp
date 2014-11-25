@@ -429,7 +429,7 @@ srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
   
   /* generate keystream output */
   octet_string_set_to_zero(key, length);
-  status = cipher_encrypt(kdf->cipher, key, &length);
+  status = srtp_cipher_encrypt(kdf->cipher, key, &length);
   if (status)
     return status;
 
@@ -978,7 +978,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
     }
 
     /* Encrypt the payload  */
-    status = cipher_encrypt(stream->rtp_cipher,
+    status = srtp_cipher_encrypt(stream->rtp_cipher,
                             (uint8_t*)enc_start, &enc_octet_len);
     if (status) {
         return srtp_err_status_cipher_fail;
@@ -1097,8 +1097,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
 
     /* Decrypt the ciphertext.  This also checks the auth tag based 
      * on the AAD we just specified above */
-    status = cipher_decrypt(stream->rtp_cipher,
-                            (uint8_t*)enc_start, &enc_octet_len);
+    status = srtp_cipher_decrypt(stream->rtp_cipher, (uint8_t*)enc_start, &enc_octet_len);
     if (status) {
         return status;
     }
@@ -1176,7 +1175,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
    srtp_err_status_t status;   
    int tag_len;
    srtp_stream_ctx_t *stream;
-   int prefix_len;
+   uint32_t prefix_len;
 
    debug_print(mod_srtp, "function srtp_protect", NULL);
 
@@ -1368,7 +1367,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      
     prefix_len = srtp_auth_get_prefix_length(stream->rtp_auth);    
     if (prefix_len) {
-      status = srtp_cipher_output(stream->rtp_cipher, auth_tag, prefix_len);
+      status = srtp_cipher_output(stream->rtp_cipher, auth_tag, &prefix_len);
       if (status)
 	return srtp_err_status_cipher_fail;
       debug_print(mod_srtp, "keystream prefix: %s", 
@@ -1378,8 +1377,8 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
 
   /* if we're encrypting, exor keystream into the message */
   if (enc_start) {
-    status = cipher_encrypt(stream->rtp_cipher, 
-			    (uint8_t *)enc_start, &enc_octet_len);
+    status = srtp_cipher_encrypt(stream->rtp_cipher, 
+			        (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return srtp_err_status_cipher_fail;
   }
@@ -1432,7 +1431,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   srtp_err_status_t status;
   srtp_stream_ctx_t *stream;
   uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
-  int tag_len, prefix_len;
+  uint32_t tag_len, prefix_len;
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
 
@@ -1596,7 +1595,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     if (stream->rtp_auth->prefix_len != 0) {
       
       prefix_len = srtp_auth_get_prefix_length(stream->rtp_auth);    
-      status = srtp_cipher_output(stream->rtp_cipher, tmp_tag, prefix_len);
+      status = srtp_cipher_output(stream->rtp_cipher, tmp_tag, &prefix_len);
       debug_print(mod_srtp, "keystream prefix: %s", 
 		  srtp_octet_string_hex_string(tmp_tag, prefix_len));
       if (status)
@@ -1645,8 +1644,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 
   /* if we're decrypting, add keystream into ciphertext */
   if (enc_start) {
-    status = cipher_decrypt(stream->rtp_cipher, 
-			    (uint8_t *)enc_start, &enc_octet_len);
+    status = srtp_cipher_decrypt(stream->rtp_cipher, (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return srtp_err_status_cipher_fail;
   }
@@ -2369,8 +2367,8 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 
     /* if we're encrypting, exor keystream into the message */
     if (enc_start) {
-        status = cipher_encrypt(stream->rtcp_cipher,
-                                (uint8_t*)enc_start, &enc_octet_len);
+        status = srtp_cipher_encrypt(stream->rtcp_cipher,
+                                    (uint8_t*)enc_start, &enc_octet_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -2389,7 +2387,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * to run the cipher to get the auth tag.
 	 */
 	unsigned int nolen = 0;
-        status = cipher_encrypt(stream->rtcp_cipher, NULL, &nolen);
+        status = srtp_cipher_encrypt(stream->rtcp_cipher, NULL, &nolen);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -2520,8 +2518,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 
     /* if we're decrypting, exor keystream into the message */
     if (enc_start) {
-        status = cipher_decrypt(stream->rtcp_cipher,
-                                (uint8_t*)enc_start, &enc_octet_len);
+        status = srtp_cipher_decrypt(stream->rtcp_cipher, (uint8_t*)enc_start, &enc_octet_len);
         if (status) {
             return status;
         }
@@ -2530,8 +2527,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * Still need to run the cipher to check the tag
 	 */
 	tmp_len = tag_len;
-        status = cipher_decrypt(stream->rtcp_cipher, (uint8_t*)auth_tag, 
-                                &tmp_len);
+        status = srtp_cipher_decrypt(stream->rtcp_cipher, (uint8_t*)auth_tag, &tmp_len);
         if (status) {
             return status;
         }
@@ -2603,7 +2599,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   srtp_err_status_t status;   
   int tag_len;
   srtp_stream_ctx_t *stream;
-  int prefix_len;
+  uint32_t prefix_len;
   uint32_t seq_num;
 
   /* we assume the hdr is 32-bit aligned to start */
@@ -2749,7 +2745,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
 
     /* put keystream prefix into auth_tag */
     prefix_len = srtp_auth_get_prefix_length(stream->rtcp_auth);    
-    status = srtp_cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
+    status = srtp_cipher_output(stream->rtcp_cipher, auth_tag, &prefix_len);
 
     debug_print(mod_srtp, "keystream prefix: %s", 
 		srtp_octet_string_hex_string(auth_tag, prefix_len));
@@ -2760,8 +2756,8 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
 
   /* if we're encrypting, exor keystream into the message */
   if (enc_start) {
-    status = cipher_encrypt(stream->rtcp_cipher, 
-			    (uint8_t *)enc_start, &enc_octet_len);
+    status = srtp_cipher_encrypt(stream->rtcp_cipher, 
+		  	        (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return srtp_err_status_cipher_fail;
   }
@@ -2803,7 +2799,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   unsigned int auth_len;
   int tag_len;
   srtp_stream_ctx_t *stream;
-  int prefix_len;
+  uint32_t prefix_len;
   uint32_t seq_num;
   int e_bit_in_packet;     /* whether the E-bit was found in the packet */
   int sec_serv_confidentiality; /* whether confidentiality was requested */
@@ -2984,7 +2980,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
    */
   prefix_len = srtp_auth_get_prefix_length(stream->rtcp_auth);    
   if (prefix_len) {
-    status = srtp_cipher_output(stream->rtcp_cipher, auth_tag, prefix_len);
+    status = srtp_cipher_output(stream->rtcp_cipher, auth_tag, &prefix_len);
     debug_print(mod_srtp, "keystream prefix: %s", 
 		srtp_octet_string_hex_string(auth_tag, prefix_len));
     if (status)
@@ -2993,8 +2989,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
 
   /* if we're decrypting, exor keystream into the message */
   if (enc_start) {
-    status = cipher_decrypt(stream->rtcp_cipher, 
-			    (uint8_t *)enc_start, &enc_octet_len);
+    status = srtp_cipher_decrypt(stream->rtcp_cipher, (uint8_t *)enc_start, &enc_octet_len);
     if (status)
       return srtp_err_status_cipher_fail;
   }

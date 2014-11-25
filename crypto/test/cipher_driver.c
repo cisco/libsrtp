@@ -166,7 +166,7 @@ main(int argc, char *argv[]) {
       usage(argv[0]);
     }    
   }
-   
+
   printf("cipher test driver\n"
 	 "David A. McGrew\n"
 	 "Cisco Systems, Inc.\n");
@@ -384,7 +384,7 @@ cipher_driver_test_buffering(srtp_cipher_t *c) {
       return status;
 
     /* generate 'reference' value by encrypting all at once */
-    status = cipher_encrypt(c, buffer0, &buflen);
+    status = srtp_cipher_encrypt(c, buffer0, &buflen);
     if (status)
       return status;
 
@@ -405,7 +405,7 @@ cipher_driver_test_buffering(srtp_cipher_t *c) {
       if (current + len > end)
 	len = end - current;
 
-      status = cipher_encrypt(c, current, &len);
+      status = srtp_cipher_encrypt(c, current, &len);
       if (status) 
 	return status;
       
@@ -544,13 +544,13 @@ cipher_array_bits_per_second(srtp_cipher_t *cipher_array[], int num_cipher,
   v128_set_to_zero(&nonce);
   timer = clock();
   for(i=0; i < num_trials; i++, nonce.v32[3] = i) {
-    /* length parameter to cipher_encrypt is in/out -- out is total, padded
+    /* length parameter to srtp_cipher_encrypt is in/out -- out is total, padded
      * length -- so reset it each time. */
     unsigned octets_to_encrypt = octets_in_buffer;
 
     /* encrypt buffer with cipher */
     cipher_set_iv(cipher_array[cipher_index], &nonce, direction_encrypt);
-    cipher_encrypt(cipher_array[cipher_index], enc_buf, &octets_to_encrypt);
+    srtp_cipher_encrypt(cipher_array[cipher_index], enc_buf, &octets_to_encrypt);
 
     /* choose a cipher at random from the array*/
     cipher_index = (*((uint32_t *)enc_buf)) % num_cipher;
