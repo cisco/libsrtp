@@ -69,7 +69,7 @@ int
 main (void) {
   srtp_err_status_t err;
   
-  printf("testing anti-replay database (rdb_t)...\n");
+  printf("testing anti-replay database (srtp_rdb_t)...\n");
   err = test_rdb_db();
   if (err) {
     printf("failed\n");
@@ -85,18 +85,18 @@ main (void) {
 
 
 void
-print_rdb(rdb_t *rdb) {
+print_rdb(srtp_rdb_t *rdb) {
   printf("rdb: {%u, %s}\n", rdb->window_start, v128_bit_string(&rdb->bitmask));
 }
 
 srtp_err_status_t
-rdb_check_add(rdb_t *rdb, uint32_t idx) {
+rdb_check_add(srtp_rdb_t *rdb, uint32_t idx) {
 
-  if (rdb_check(rdb, idx) != srtp_err_status_ok) {
+  if (srtp_rdb_check(rdb, idx) != srtp_err_status_ok) {
     printf("rdb_check failed at index %u\n", idx);
     return srtp_err_status_fail;
   }
-  if (rdb_add_index(rdb, idx) != srtp_err_status_ok) {
+  if (srtp_rdb_add_index(rdb, idx) != srtp_err_status_ok) {
     printf("rdb_add_index failed at index %u\n", idx);
     return srtp_err_status_fail;
   }
@@ -105,10 +105,10 @@ rdb_check_add(rdb_t *rdb, uint32_t idx) {
 }
 
 srtp_err_status_t
-rdb_check_expect_failure(rdb_t *rdb, uint32_t idx) {
+rdb_check_expect_failure(srtp_rdb_t *rdb, uint32_t idx) {
   srtp_err_status_t err;
   
-  err = rdb_check(rdb, idx);
+  err = srtp_rdb_check(rdb, idx);
   if ((err != srtp_err_status_replay_old) && (err != srtp_err_status_replay_fail)) {
     printf("rdb_check failed at index %u (false positive)\n", idx);
     return srtp_err_status_fail;
@@ -118,11 +118,11 @@ rdb_check_expect_failure(rdb_t *rdb, uint32_t idx) {
 }
 
 srtp_err_status_t
-rdb_check_add_unordered(rdb_t *rdb, uint32_t idx) {
+rdb_check_add_unordered(srtp_rdb_t *rdb, uint32_t idx) {
   srtp_err_status_t rstat;
 
  /* printf("index: %u\n", idx); */
-  rstat = rdb_check(rdb, idx);
+  rstat = srtp_rdb_check(rdb, idx);
   if ((rstat != srtp_err_status_ok) && (rstat != srtp_err_status_replay_old)) {
     printf("rdb_check_add_unordered failed at index %u\n", idx);
     return rstat;
@@ -130,7 +130,7 @@ rdb_check_add_unordered(rdb_t *rdb, uint32_t idx) {
   if (rstat == srtp_err_status_replay_old) {
 	return srtp_err_status_ok;
   }
-  if (rdb_add_index(rdb, idx) != srtp_err_status_ok) {
+  if (srtp_rdb_add_index(rdb, idx) != srtp_err_status_ok) {
     printf("rdb_add_index failed at index %u\n", idx);
     return srtp_err_status_fail;
   }  
@@ -140,12 +140,12 @@ rdb_check_add_unordered(rdb_t *rdb, uint32_t idx) {
 
 srtp_err_status_t
 test_rdb_db() {
-  rdb_t rdb;
+  srtp_rdb_t rdb;
   uint32_t idx, ircvd;
   ut_connection utc;
   srtp_err_status_t err;
 
-  if (rdb_init(&rdb) != srtp_err_status_ok) {
+  if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
     printf("rdb_init failed\n");
     return srtp_err_status_init_fail;
   }
@@ -165,7 +165,7 @@ test_rdb_db() {
   }
 
   /* re-initialize */
-  if (rdb_init(&rdb) != srtp_err_status_ok) {
+  if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
     printf("rdb_init failed\n");
     return srtp_err_status_fail;
   }
@@ -184,7 +184,7 @@ test_rdb_db() {
   }
 
   /* re-initialize */
-  if (rdb_init(&rdb) != srtp_err_status_ok) {
+  if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
     printf("rdb_init failed\n");
     return srtp_err_status_fail;
   }
@@ -200,7 +200,7 @@ test_rdb_db() {
   }
 
   /* re-initialize */
-  if (rdb_init(&rdb) != srtp_err_status_ok) {
+  if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
     printf("rdb_init failed\n");
     return srtp_err_status_fail;
   }
@@ -231,28 +231,28 @@ test_rdb_db() {
 double
 rdb_check_adds_per_second(void) {
   uint32_t i;
-  rdb_t rdb;
+  srtp_rdb_t rdb;
   clock_t timer;
   int failures;                    /* count number of failures        */
   
-  if (rdb_init(&rdb) != srtp_err_status_ok) {
+  if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
     printf("rdb_init failed\n");
     exit(1);
   }  
 
   timer = clock();
   for(i=0; i < REPLAY_NUM_TRIALS; i+=3) {
-    if (rdb_check(&rdb, i+2) != srtp_err_status_ok)
+    if (srtp_rdb_check(&rdb, i+2) != srtp_err_status_ok)
       ++failures;
-    if (rdb_add_index(&rdb, i+2) != srtp_err_status_ok)
+    if (srtp_rdb_add_index(&rdb, i+2) != srtp_err_status_ok)
       ++failures;
-    if (rdb_check(&rdb, i+1) != srtp_err_status_ok)
+    if (srtp_rdb_check(&rdb, i+1) != srtp_err_status_ok)
       ++failures;
-    if (rdb_add_index(&rdb, i+1) != srtp_err_status_ok)
+    if (srtp_rdb_add_index(&rdb, i+1) != srtp_err_status_ok)
       ++failures;
-    if (rdb_check(&rdb, i) != srtp_err_status_ok)
+    if (srtp_rdb_check(&rdb, i) != srtp_err_status_ok)
       ++failures;
-    if (rdb_add_index(&rdb, i) != srtp_err_status_ok)
+    if (srtp_rdb_add_index(&rdb, i) != srtp_err_status_ok)
       ++failures;
   }
   timer = clock() - timer;

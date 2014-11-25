@@ -133,7 +133,7 @@ srtp_err_status_t srtp_ekt_stream_init_from_policy(srtp_ekt_stream_t e, srtp_ekt
 srtp_err_status_t srtp_stream_init_from_ekt(srtp_stream_t stream, const void *srtcp_hdr, unsigned pkt_octet_len);
 		
 
-void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, xtd_seq_num_t pkt_index);		
+void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, srtp_xtd_seq_num_t pkt_index);		
 
 /*
  * We handle EKT by performing some additional steps before

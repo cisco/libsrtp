@@ -50,7 +50,7 @@
 
 #define soft_limit 0x10000
 
-srtp_err_status_t srtp_key_limit_set (srtp_key_limit_t key, const xtd_seq_num_t s)
+srtp_err_status_t srtp_key_limit_set (srtp_key_limit_t key, const srtp_xtd_seq_num_t s)
 {
 #ifdef NO_64BIT_MATH
     if (high32(s) == 0 && low32(s) < soft_limit) {

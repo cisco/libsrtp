@@ -270,7 +270,7 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
       return status;
   }
 
-  status = rdbx_dealloc(&stream->rtp_rdbx);
+  status = srtp_rdbx_dealloc(&stream->rtp_rdbx);
   if (status)
     return status;
 
@@ -328,14 +328,14 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   }
 
   /* initialize replay databases */
-  status = rdbx_init(&str->rtp_rdbx,
-		     rdbx_get_window_size(&stream_template->rtp_rdbx));
+  status = srtp_rdbx_init(&str->rtp_rdbx,
+		     srtp_rdbx_get_window_size(&stream_template->rtp_rdbx));
   if (status) {
     srtp_crypto_free(*str_ptr);
     *str_ptr = NULL;
     return status;
   }
-  rdb_init(&str->rtcp_rdb);
+  srtp_rdb_init(&str->rtcp_rdb);
   str->allow_repeat_tx = stream_template->allow_repeat_tx;
   
   /* set ssrc to that provided */
@@ -684,9 +684,9 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
      return srtp_err_status_bad_param;
 
    if (p->window_size != 0)
-     err = rdbx_init(&srtp->rtp_rdbx, p->window_size);
+     err = srtp_rdbx_init(&srtp->rtp_rdbx, p->window_size);
    else
-     err = rdbx_init(&srtp->rtp_rdbx, 128);
+     err = srtp_rdbx_init(&srtp->rtp_rdbx, 128);
    if (err) return err;
 
    /* initialize key limit to maximum value */
@@ -715,12 +715,12 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    srtp->direction = dir_unknown;
 
    /* initialize SRTCP replay database */
-   rdb_init(&srtp->rtcp_rdb);
+   srtp_rdb_init(&srtp->rtcp_rdb);
 
    /* initialize allow_repeat_tx */
    /* guard against uninitialized memory: allow only 0 or 1 here */
    if (p->allow_repeat_tx != 0 && p->allow_repeat_tx != 1) {
-     rdbx_dealloc(&srtp->rtp_rdbx);
+     srtp_rdbx_dealloc(&srtp->rtp_rdbx);
      return srtp_err_status_bad_param;
    }
    srtp->allow_repeat_tx = p->allow_repeat_tx;
@@ -730,7 +730,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    /* initialize keys */
    err = srtp_stream_init_keys(srtp, p->key);
    if (err) {
-     rdbx_dealloc(&srtp->rtp_rdbx);
+     srtp_rdbx_dealloc(&srtp->rtp_rdbx);
      return err;
    }
 
@@ -740,7 +740,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
     */
    err = srtp_ekt_stream_init_from_policy(srtp->ekt, p->ekt);
    if (err) {
-     rdbx_dealloc(&srtp->rtp_rdbx);
+     srtp_rdbx_dealloc(&srtp->rtp_rdbx);
      return err;
    }
 
@@ -832,7 +832,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
  *
  */
 static void srtp_calc_aead_iv(srtp_stream_ctx_t *stream, v128_t *iv, 
-	                      xtd_seq_num_t *seq, srtp_hdr_t *hdr)
+	                      srtp_xtd_seq_num_t *seq, srtp_hdr_t *hdr)
 {
     v128_t	in;
     v128_t	salt;
@@ -884,7 +884,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
     srtp_hdr_t *hdr = (srtp_hdr_t*)rtp_hdr;
     uint32_t *enc_start;        /* pointer to start of encrypted portion  */
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion  */
-    xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
+    srtp_xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
     int delta;                  /* delta of local pkt idx and that in hdr */
     srtp_err_status_t status;
     int tag_len;
@@ -933,14 +933,14 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * estimate the packet index using the start of the replay window
      * and the sequence number from the header
      */
-    delta = rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-    status = rdbx_check(&stream->rtp_rdbx, delta);
+    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
+    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
     if (status) {
 	if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx) {
 	    return status;  /* we've been asked to reuse an index */
 	}
     } else {
-	rdbx_add_index(&stream->rtp_rdbx, delta);
+	srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
 
 #ifdef NO_64BIT_MATH
@@ -1010,7 +1010,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
  */
 static srtp_err_status_t
 srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta, 
-	             xtd_seq_num_t est, void *srtp_hdr, unsigned int *pkt_octet_len)
+	             srtp_xtd_seq_num_t est, void *srtp_hdr, unsigned int *pkt_octet_len)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t*)srtp_hdr;
     uint32_t *enc_start;        /* pointer to start of encrypted portion  */
@@ -1153,7 +1153,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * the message authentication function passed, so add the packet
      * index into the replay database
      */
-    rdbx_add_index(&stream->rtp_rdbx, delta);
+    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
 
     /* decrease the packet length by the length of the auth tag */
     *pkt_octet_len -= tag_len;
@@ -1170,7 +1170,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
    uint32_t *enc_start;        /* pointer to start of encrypted portion  */
    uint32_t *auth_start;       /* pointer to start of auth. portion      */
    unsigned int enc_octet_len = 0; /* number of octets in encrypted portion  */
-   xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
+   srtp_xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
    int delta;                  /* delta of local pkt idx and that in hdr */
    uint8_t *auth_tag = NULL;   /* location of auth_tag within packet     */
    srtp_err_status_t status;   
@@ -1302,14 +1302,14 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     * estimate the packet index using the start of the replay window   
     * and the sequence number from the header
     */
-   delta = rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-   status = rdbx_check(&stream->rtp_rdbx, delta);
+   delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
+   status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
    if (status) {
      if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx)
        return status;  /* we've been asked to reuse an index */
    }
    else
-     rdbx_add_index(&stream->rtp_rdbx, delta);
+     srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
 
 #ifdef NO_64BIT_MATH
    debug_print2(mod_srtp, "estimated packet index: %08x%08x", 
@@ -1426,7 +1426,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   uint32_t *auth_start;     /* pointer to start of auth. portion      */
   unsigned int enc_octet_len = 0;/* number of octets in encrypted portion */
   uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
-  xtd_seq_num_t est;        /* estimated xtd_seq_num_t of *hdr        */
+  srtp_xtd_seq_num_t est;        /* estimated xtd_seq_num_t of *hdr        */
   int delta;                /* delta of local pkt idx and that in hdr */
   v128_t iv;
   srtp_err_status_t status;
@@ -1461,10 +1461,10 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
        * and set delta equal to the same value
        */
 #ifdef NO_64BIT_MATH
-      est = (xtd_seq_num_t) make64(0,ntohs(hdr->seq));
+      est = (srtp_xtd_seq_num_t) make64(0,ntohs(hdr->seq));
       delta = low32(est);
 #else
-      est = (xtd_seq_num_t) ntohs(hdr->seq);
+      est = (srtp_xtd_seq_num_t) ntohs(hdr->seq);
       delta = (int)est;
 #endif
     } else {
@@ -1478,10 +1478,10 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   } else {
   
     /* estimate packet index from seq. num. in header */
-    delta = rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
+    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
     
     /* check replay database */
-    status = rdbx_check(&stream->rtp_rdbx, delta);
+    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
     if (status)
       return status;
   }
@@ -1700,7 +1700,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
    * the message authentication function passed, so add the packet
    * index into the replay database 
    */
-  rdbx_add_index(&stream->rtp_rdbx, delta);
+  srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
 
   /* decrease the packet length by the length of the auth tag */
   *pkt_octet_len -= tag_len;
@@ -1818,7 +1818,7 @@ srtp_dealloc(srtp_t session) {
     status = auth_dealloc(session->stream_template->rtp_auth);
     if (status)
       return status;
-    status = rdbx_dealloc(&session->stream_template->rtp_rdbx);
+    status = srtp_rdbx_dealloc(&session->stream_template->rtp_rdbx);
     if (status)
       return status;
     srtp_crypto_free(session->stream_template);
@@ -2315,11 +2315,11 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
      * check sequence number for overruns, and copy it into the packet
      * if its value isn't too big
      */
-    status = rdb_increment(&stream->rtcp_rdb);
+    status = srtp_rdb_increment(&stream->rtcp_rdb);
     if (status) {
         return status;
     }
-    seq_num = rdb_get_value(&stream->rtcp_rdb);
+    seq_num = srtp_rdb_get_value(&stream->rtcp_rdb);
     *trailer |= htonl(seq_num);
     debug_print(mod_srtp, "srtcp index: %x", seq_num);
 
@@ -2468,7 +2468,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     /* this is easier than dealing with bitfield access */
     seq_num = ntohl(*trailer) & SRTCP_INDEX_MASK;
     debug_print(mod_srtp, "srtcp index: %x", seq_num);
-    status = rdb_check(&stream->rtcp_rdb, seq_num);
+    status = srtp_rdb_check(&stream->rtcp_rdb, seq_num);
     if (status) {
         return status;
     }
@@ -2587,7 +2587,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     }
 
     /* we've passed the authentication check, so add seq_num to the rdb */
-    rdb_add_index(&stream->rtcp_rdb, seq_num);
+    srtp_rdb_add_index(&stream->rtcp_rdb, seq_num);
 
     return srtp_err_status_ok;
 }
@@ -2701,16 +2701,16 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
 
   /* perform EKT processing if needed */
   srtp_ekt_write_data(stream->ekt, auth_tag, tag_len, pkt_octet_len, 
-		      rdbx_get_packet_index(&stream->rtp_rdbx));
+		      srtp_rdbx_get_packet_index(&stream->rtp_rdbx));
 
   /* 
    * check sequence number for overruns, and copy it into the packet
    * if its value isn't too big
    */
-  status = rdb_increment(&stream->rtcp_rdb);
+  status = srtp_rdb_increment(&stream->rtcp_rdb);
   if (status)
     return status;
-  seq_num = rdb_get_value(&stream->rtcp_rdb);
+  seq_num = srtp_rdb_get_value(&stream->rtcp_rdb);
   *trailer |= htonl(seq_num);
   debug_print(mod_srtp, "srtcp index: %x", seq_num);
 
@@ -2931,7 +2931,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* this is easier than dealing with bitfield access */
   seq_num = ntohl(*trailer) & SRTCP_INDEX_MASK;
   debug_print(mod_srtp, "srtcp index: %x", seq_num);
-  status = rdb_check(&stream->rtcp_rdb, seq_num);
+  status = srtp_rdb_check(&stream->rtcp_rdb, seq_num);
   if (status)
     return status;
 
@@ -3054,7 +3054,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   }
 
   /* we've passed the authentication check, so add seq_num to the rdb */
-  rdb_add_index(&stream->rtcp_rdb, seq_num);
+  srtp_rdb_add_index(&stream->rtcp_rdb, seq_num);
     
     
   return srtp_err_status_ok;  

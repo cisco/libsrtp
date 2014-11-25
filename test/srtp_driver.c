@@ -1094,7 +1094,7 @@ srtp_session_print_policy (srtp_t srtp)
                stream->rtcp_cipher->type->description,
                stream->rtcp_auth->type->description,
                serv_descr[stream->rtcp_services],
-               rdbx_get_window_size(&stream->rtp_rdbx),
+               srtp_rdbx_get_window_size(&stream->rtp_rdbx),
                stream->allow_repeat_tx ? "true" : "false");
     }
 
@@ -1121,7 +1121,7 @@ srtp_session_print_policy (srtp_t srtp)
                stream->rtcp_cipher->type->description,
                stream->rtcp_auth->type->description,
                serv_descr[stream->rtcp_services],
-               rdbx_get_window_size(&stream->rtp_rdbx),
+               srtp_rdbx_get_window_size(&stream->rtp_rdbx),
                stream->allow_repeat_tx ? "true" : "false");
 
         /* advance to next stream in the list */

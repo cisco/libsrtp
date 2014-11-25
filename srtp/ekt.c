@@ -179,7 +179,7 @@ srtp_err_status_t srtp_stream_init_from_ekt(srtp_stream_t stream, const void *sr
 
   /* set the SRTP ROC */
   roc = srtcp_packet_get_ekt_roc(srtcp_hdr, pkt_octet_len);
-  err = rdbx_set_roc(&stream->rtp_rdbx, roc);
+  err = srtp_rdbx_set_roc(&stream->rtp_rdbx, roc);
   if (err) return err;
 
   err = srtp_stream_init(stream, &srtp_policy);
@@ -188,7 +188,7 @@ srtp_err_status_t srtp_stream_init_from_ekt(srtp_stream_t stream, const void *sr
   return srtp_err_status_ok;
 }
 
-void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, xtd_seq_num_t pkt_index) {
+void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, srtp_xtd_seq_num_t pkt_index) {
   uint32_t roc;
   uint16_t isn;
   unsigned emk_len;

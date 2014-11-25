@@ -48,7 +48,7 @@
 
 #include "srtp.h"
 #include "datatypes.h"
-#include "rdbx.h"               /* for xtd_seq_num_t */
+#include "rdbx.h"               /* for srtp_xtd_seq_num_t */
 #include "err.h"                /* for error codes  */
 #include "crypto_types.h"       /* for values of cipher_type_id_t */
 
@@ -89,7 +89,7 @@ typedef srtp_err_status_t (*cipher_dealloc_func_t)(srtp_cipher_pointer_t cp);
 
 /* a cipher_set_segment_func_t sets the segment index of a cipher_t */
 typedef srtp_err_status_t (*cipher_set_segment_func_t)
-    (void *state, xtd_seq_num_t idx);
+    (void *state, srtp_xtd_seq_num_t idx);
 
 /*
  * a cipher_set_aad_func_t processes the AAD data for AEAD ciphers
@@ -121,7 +121,7 @@ typedef srtp_err_status_t (*cipher_get_tag_func_t)
 
 
 /*
- * cipher_test_case_t is a (list of) key, salt, xtd_seq_num_t,
+ * cipher_test_case_t is a (list of) key, salt, srtp_xtd_seq_num_t,
  * plaintext, and ciphertext values that are known to be correct for a
  * particular cipher.  this data can be used to test an implementation
  * in an on-the-fly self test of the correcness of the implementation.
@@ -201,7 +201,7 @@ int srtp_cipher_get_key_length(const srtp_cipher_t *c);
 
 /*
  * cipher_type_self_test() tests a cipher against test cases provided in
- * an array of values of key/xtd_seq_num_t/plaintext/ciphertext
+ * an array of values of key/srtp_xtd_seq_num_t/plaintext/ciphertext
  * that is known to be good
  */
 srtp_err_status_t srtp_cipher_type_self_test(const srtp_cipher_type_t *ct);
@@ -209,7 +209,7 @@ srtp_err_status_t srtp_cipher_type_self_test(const srtp_cipher_type_t *ct);
 
 /*
  * cipher_type_test() tests a cipher against external test cases provided in
- * an array of values of key/xtd_seq_num_t/plaintext/ciphertext
+ * an array of values of key/srtp_xtd_seq_num_t/plaintext/ciphertext
  * that is known to be good
  */
 srtp_err_status_t srtp_cipher_type_test(const srtp_cipher_type_t *ct, const srtp_cipher_test_case_t *test_data);
