@@ -110,7 +110,7 @@ typedef srtp_err_status_t (*cipher_decrypt_func_t)
  * a cipher_set_iv_func_t function sets the current initialization vector
  */
 typedef srtp_err_status_t (*cipher_set_iv_func_t)
-    (srtp_cipher_pointer_t cp, void *iv, srtp_cipher_direction_t direction);
+    (srtp_cipher_pointer_t cp, const uint8_t *iv, srtp_cipher_direction_t direction);
 
 /*
  * a cipher_get_tag_funct_t function is used to get the authentication
@@ -171,9 +171,6 @@ typedef struct srtp_cipher_t {
 #define cipher_get_tag(c, buf, len) \
     (((c)->type)->get_tag(((c)->state), (buf), (len)))
 
-#define cipher_set_iv(c, n, dir)                           \
-    ((c) ? (((c)->type)->set_iv(((srtp_cipher_pointer_t)(c)->state), (n), (dir))) :   \
-     srtp_err_status_no_such_op)
 #define cipher_set_aad(c, a, l)                       \
     (((c) && (((c)->type)->set_aad)) ?                  \
      (((c)->type)->set_aad(((c)->state), (a), (l))) :    \
@@ -215,6 +212,7 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c, int octets_in_buffer, int
 srtp_err_status_t srtp_cipher_type_alloc(const srtp_cipher_type_t *ct, srtp_cipher_t **c, int key_len, int tlen);
 srtp_err_status_t srtp_cipher_dealloc(srtp_cipher_t *c);
 srtp_err_status_t srtp_cipher_init(srtp_cipher_t *c, const uint8_t *key);
+srtp_err_status_t srtp_cipher_set_iv(srtp_cipher_t *c, const uint8_t *iv, int direction);
 srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 

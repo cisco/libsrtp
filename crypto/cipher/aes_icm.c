@@ -225,7 +225,7 @@ static srtp_err_status_t srtp_aes_icm_context_init (srtp_aes_icm_ctx_t *c, const
  * the offset
  */
 
-static srtp_err_status_t srtp_aes_icm_set_iv (srtp_aes_icm_ctx_t *c, void *iv, int direction)
+static srtp_err_status_t srtp_aes_icm_set_iv (srtp_aes_icm_ctx_t *c, const uint8_t *iv, int direction)
 {
     v128_t nonce;
 

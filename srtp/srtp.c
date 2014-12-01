@@ -423,7 +423,7 @@ srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
   v128_set_to_zero(&nonce);
   nonce.v8[7] = label;
  
-  status = cipher_set_iv(kdf->cipher, &nonce, direction_encrypt);
+  status = srtp_cipher_set_iv(kdf->cipher, (const uint8_t*)&nonce, direction_encrypt);
   if (status)
     return status;
   
@@ -954,7 +954,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * AEAD uses a new IV formation method
      */
     srtp_calc_aead_iv(stream, &iv, &est, hdr);
-    status = cipher_set_iv(stream->rtp_cipher, &iv, direction_encrypt);
+    status = srtp_cipher_set_iv(stream->rtp_cipher, (const uint8_t*)&iv, direction_encrypt);
     if (status) {
         return srtp_err_status_cipher_fail;
     }
@@ -1035,7 +1035,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * AEAD uses a new IV formation method 
      */
     srtp_calc_aead_iv(stream, &iv, &est, hdr);
-    status = cipher_set_iv(stream->rtp_cipher, &iv, direction_decrypt);
+    status = srtp_cipher_set_iv(stream->rtp_cipher, (const uint8_t*)&iv, direction_decrypt);
     if (status) {
         return srtp_err_status_cipher_fail;
     }
@@ -1332,7 +1332,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
 #else
      iv.v64[1] = be64_to_cpu(est << 16);
 #endif
-     status = cipher_set_iv(stream->rtp_cipher, &iv, direction_encrypt);
+     status = srtp_cipher_set_iv(stream->rtp_cipher, (const uint8_t*)&iv, direction_encrypt);
 
    } else {  
      v128_t iv;
@@ -1345,7 +1345,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      iv.v64[0] = 0;
 #endif
      iv.v64[1] = be64_to_cpu(est);
-     status = cipher_set_iv(stream->rtp_cipher, &iv, direction_encrypt);
+     status = srtp_cipher_set_iv(stream->rtp_cipher, (const uint8_t*)&iv, direction_encrypt);
    }
    if (status)
      return srtp_err_status_cipher_fail;
@@ -1519,7 +1519,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
 #else
     iv.v64[1] = be64_to_cpu(est << 16);
 #endif
-    status = cipher_set_iv(stream->rtp_cipher, &iv, direction_decrypt);
+    status = srtp_cipher_set_iv(stream->rtp_cipher, (const uint8_t*)&iv, direction_decrypt);
   } else {  
     
     /* no particular format - set the iv to the pakcet index */  
@@ -1530,7 +1530,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
     iv.v64[0] = 0;
 #endif
     iv.v64[1] = be64_to_cpu(est);
-    status = cipher_set_iv(stream->rtp_cipher, &iv, direction_decrypt);
+    status = srtp_cipher_set_iv(stream->rtp_cipher, (const uint8_t*)&iv, direction_decrypt);
   }
   if (status)
     return srtp_err_status_cipher_fail;
@@ -2325,7 +2325,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
      * Calculating the IV and pass it down to the cipher 
      */
     srtp_calc_aead_iv_srtcp(stream, &iv, seq_num, hdr);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_encrypt);
+    status = srtp_cipher_set_iv(stream->rtcp_cipher, (const uint8_t*)&iv, direction_encrypt);
     if (status) {
         return srtp_err_status_cipher_fail;
     }
@@ -2475,7 +2475,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
      * Calculate and set the IV
      */
     srtp_calc_aead_iv_srtcp(stream, &iv, seq_num, hdr);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_decrypt);
+    status = srtp_cipher_set_iv(stream->rtcp_cipher, (const uint8_t*)&iv, direction_decrypt);
     if (status) {
         return srtp_err_status_cipher_fail;
     }
@@ -2720,7 +2720,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = hdr->ssrc;  /* still in network order! */
     iv.v32[2] = htonl(seq_num >> 16);
     iv.v32[3] = htonl(seq_num << 16);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_encrypt);
+    status = srtp_cipher_set_iv(stream->rtcp_cipher, (const uint8_t*)&iv, direction_encrypt);
 
   } else {  
     v128_t iv;
@@ -2730,7 +2730,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = 0;
     iv.v32[2] = 0;
     iv.v32[3] = htonl(seq_num);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_encrypt);
+    status = srtp_cipher_set_iv(stream->rtcp_cipher, (const uint8_t*)&iv, direction_encrypt);
   }
   if (status)
     return srtp_err_status_cipher_fail;
@@ -2941,7 +2941,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = hdr->ssrc; /* still in network order! */
     iv.v32[2] = htonl(seq_num >> 16);
     iv.v32[3] = htonl(seq_num << 16);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_decrypt);
+    status = srtp_cipher_set_iv(stream->rtcp_cipher, (const uint8_t*)&iv, direction_decrypt);
 
   } else {  
     v128_t iv;
@@ -2951,7 +2951,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
     iv.v32[1] = 0;
     iv.v32[2] = 0;
     iv.v32[3] = htonl(seq_num);
-    status = cipher_set_iv(stream->rtcp_cipher, &iv, direction_decrypt);
+    status = srtp_cipher_set_iv(stream->rtcp_cipher, (const uint8_t*)&iv, direction_decrypt);
 
   }
   if (status)

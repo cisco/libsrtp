@@ -106,7 +106,7 @@ static srtp_err_status_t srtp_null_cipher_init (srtp_null_cipher_ctx_t *ctx, con
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_null_cipher_set_iv (srtp_null_cipher_ctx_t *c, void *iv)
+static srtp_err_status_t srtp_null_cipher_set_iv (srtp_null_cipher_ctx_t *c, const uint8_t *iv, int dir)
 {
     return srtp_err_status_ok;
 }
