@@ -17,7 +17,7 @@ USE_OPENSSL = @USE_OPENSSL@
 HAVE_PCAP = @HAVE_PCAP@
 HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 
-.PHONY: all test
+.PHONY: all shared_library test
 
 all: test 
 
@@ -42,10 +42,10 @@ endif
 CC	= @CC@
 INCDIR	= -Icrypto/include -I$(srcdir)/include -I$(srcdir)/crypto/include
 DEFS	= @DEFS@
-CPPFLAGS= @CPPFLAGS@
+CPPFLAGS= -fPIC @CPPFLAGS@
 CFLAGS	= @CFLAGS@
 LIBS	= @LIBS@
-LDFLAGS	= @LDFLAGS@ -L.
+LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 SRTPLIB	= -lsrtp2
 
@@ -69,10 +69,31 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 includedir = @includedir@
 libdir = @libdir@
+bindir = @bindir@
 
 ifeq (1, $(HAVE_PKG_CONFIG))
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libsrtp2.pc
+endif
+
+SHAREDLIBVERSION = 1
+ifeq (linux,$(findstring linux,@host@))
+SHAREDLIB_DIR = $(libdir)
+SHAREDLIB_LDFLAGS = -shared -Wl,-soname,$@
+SHAREDLIBSUFFIXNOVER = so
+SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER).$(SHAREDLIBVERSION)
+else ifeq (mingw,$(findstring mingw,@host@))
+SHAREDLIB_DIR = $(bindir)
+SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp2.dll.a
+SHAREDLIBVERSION =
+SHAREDLIBSUFFIXNOVER = dll
+SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER)
+else ifeq (darwin,$(findstring darwin,@host@))
+SHAREDLIB_DIR = $(libdir)
+SHAREDLIB_LDFLAGS = -dynamiclib -twolevel_namespace -undefined dynamic_lookup \
+        -fno-common -headerpad_max_install_names -install_name $(libdir)/$@
+SHAREDLIBSUFFIXNOVER = dylib
+SHAREDLIBSUFFIX = $(SHAREDLIBVERSION).$(SHAREDLIBSUFFIXNOVER)
 endif
 
 # implicit rules for object files and test apps
@@ -109,9 +130,18 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
 
 srtpobj = srtp/srtp.o srtp/ekt.o
 
-libsrtp2.a: $(srtpobj) $(cryptobj) 
+libsrtp2.a: $(srtpobj) $(cryptobj) $(gdoi)
 	ar cr libsrtp2.a $^
 	$(RANLIB) libsrtp2.a
+
+libsrtp2.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
+	$(CC) -shared -o $@ $(SHAREDLIB_LDFLAGS) \
+                $^ $(LDFLAGS) $(LIBS)
+	if [ -n "$(SHAREDLIBVERSION)" ]; then \
+		ln -sfn $@ libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
+	fi
+
+shared_library: libsrtp2.$(SHAREDLIBSUFFIX)
 
 libsrtp2.so: $(srtpobj) $(cryptobj) 
 	$(CC) -shared -Wl,-soname,libsrtp2.so \
@@ -200,16 +230,18 @@ libsrtp2doc:
 .PHONY: clean superclean distclean install
 
 install:
-	@if [ -r $(DESTDIR)$(includedir)/srtp2/srtp.h ]; then \
-	   echo "you should run 'make uninstall' first"; exit 1;  \
-	fi
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp2
 	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -d $(DESTDIR)$(bindir)
 	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2  
 	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp2  
 	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp2  
 	if [ -f libsrtp2.a ]; then cp libsrtp2.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp2.so ]; then cp libsrtp2.so $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp2.dll.a ]; then cp libsrtp2.dll.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp2.$(SHAREDLIBSUFFIX) ]; then \
+		cp libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		cp libsrtp2.$(SHAREDLIBSUFFIXNOVER) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+	fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
 		cp $(srcdir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
@@ -217,8 +249,7 @@ install:
 
 uninstall:
 	rm -f $(DESTDIR)$(includedir)/srtp2/*.h
-	rm -f $(DESTDIR)$(libdir)/libsrtp2.a
-	rm -f $(DESTDIR)$(libdir)/libsrtp2.so
+	rm -f $(DESTDIR)$(libdir)/libsrtp2.*
 	-rmdir $(DESTDIR)$(includedir)/srtp2
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA); \
@@ -226,7 +257,7 @@ uninstall:
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) TAGS \
-        libsrtp2.a libsrtp2.so core *.core test/core
+        libsrtp2.a libsrtp2.so libsrtp2.dll.a core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;
