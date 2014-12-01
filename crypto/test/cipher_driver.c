@@ -217,10 +217,10 @@ main(int argc, char *argv[]) {
   }
 
   /* do timing and/or buffer_test on srtp_null_cipher */
-  status = cipher_type_alloc(&srtp_null_cipher, &c, 0, 0); 
+  status = srtp_cipher_type_alloc(&srtp_null_cipher, &c, 0, 0); 
   check_status(status);
 
-  status = cipher_init(c, NULL);
+  status = srtp_cipher_init(c, NULL);
   check_status(status);
 
   if (do_timing_test) 
@@ -229,18 +229,18 @@ main(int argc, char *argv[]) {
     status = cipher_driver_test_buffering(c);
     check_status(status);
   }
-  status = cipher_dealloc(c);
+  status = srtp_cipher_dealloc(c);
   check_status(status);
   
 
   /* run the throughput test on the aes_icm cipher (128-bit key) */
-    status = cipher_type_alloc(&srtp_aes_icm, &c, 30, 0);  
+    status = srtp_cipher_type_alloc(&srtp_aes_icm, &c, 30, 0);  
     if (status) {
       fprintf(stderr, "error: can't allocate cipher\n");
       exit(status);
     }
 
-    status = cipher_init(c, test_key);
+    status = srtp_cipher_init(c, test_key);
     check_status(status);
 
     if (do_timing_test)
@@ -251,21 +251,21 @@ main(int argc, char *argv[]) {
       check_status(status);
     }
     
-    status = cipher_dealloc(c);
+    status = srtp_cipher_dealloc(c);
     check_status(status);
 
   /* repeat the tests with 256-bit keys */
 #ifndef OPENSSL
-    status = cipher_type_alloc(&srtp_aes_icm, &c, 46, 0);  
+    status = srtp_cipher_type_alloc(&srtp_aes_icm, &c, 46, 0);  
 #else
-    status = cipher_type_alloc(&srtp_aes_icm_256, &c, 46, 0);  
+    status = srtp_cipher_type_alloc(&srtp_aes_icm_256, &c, 46, 0);  
 #endif
     if (status) {
       fprintf(stderr, "error: can't allocate cipher\n");
       exit(status);
     }
 
-    status = cipher_init(c, test_key);
+    status = srtp_cipher_init(c, test_key);
     check_status(status);
 
     if (do_timing_test)
@@ -276,17 +276,17 @@ main(int argc, char *argv[]) {
       check_status(status);
     }
     
-    status = cipher_dealloc(c);
+    status = srtp_cipher_dealloc(c);
     check_status(status);
 
 #ifdef OPENSSL
     /* run the throughput test on the aes_gcm_128_openssl cipher */
-    status = cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8);
+    status = srtp_cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8);
     if (status) {
         fprintf(stderr, "error: can't allocate GCM 128 cipher\n");
         exit(status);
     }
-    status = cipher_init(c, test_key);
+    status = srtp_cipher_init(c, test_key);
     check_status(status);
     if (do_timing_test) {
         cipher_driver_test_throughput(c);
@@ -296,16 +296,16 @@ main(int argc, char *argv[]) {
         status = cipher_driver_test_buffering(c);
         check_status(status);
     }
-    status = cipher_dealloc(c);
+    status = srtp_cipher_dealloc(c);
     check_status(status);
 
     /* run the throughput test on the aes_gcm_256_openssl cipher */
-    status = cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16);
+    status = srtp_cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16);
     if (status) {
         fprintf(stderr, "error: can't allocate GCM 256 cipher\n");
         exit(status);
     }
-    status = cipher_init(c, test_key);
+    status = srtp_cipher_init(c, test_key);
     check_status(status);
     if (do_timing_test) {
         cipher_driver_test_throughput(c);
@@ -315,7 +315,7 @@ main(int argc, char *argv[]) {
         status = cipher_driver_test_buffering(c);
         check_status(status);
     }
-    status = cipher_dealloc(c);
+    status = srtp_cipher_dealloc(c);
     check_status(status);
 #endif 
 
@@ -473,7 +473,7 @@ cipher_array_alloc_init(srtp_cipher_t ***ca, int num_ciphers,
   for (i=0; i < num_ciphers; i++) {
 
     /* allocate cipher */
-    status = cipher_type_alloc(ctype, cipher_array, klen, 16);
+    status = srtp_cipher_type_alloc(ctype, cipher_array, klen, 16);
     if (status)
       return status;
     
@@ -482,7 +482,7 @@ cipher_array_alloc_init(srtp_cipher_t ***ca, int num_ciphers,
       key[j] = (uint8_t) rand();
     for (; j < klen_pad; j++)
       key[j] = 0;
-    status = cipher_init(*cipher_array, key);
+    status = srtp_cipher_init(*cipher_array, key);
     if (status)
       return status;
 
@@ -504,7 +504,7 @@ cipher_array_delete(srtp_cipher_t *cipher_array[], int num_cipher) {
   int i;
   
   for (i=0; i < num_cipher; i++) {
-    cipher_dealloc(cipher_array[i]);
+    srtp_cipher_dealloc(cipher_array[i]);
   }
 
   free(cipher_array);

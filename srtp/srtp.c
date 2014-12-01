@@ -147,7 +147,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				  p->rtp.auth_key_len, 
 				  p->rtp.auth_tag_len); 
   if (stat) {
-    cipher_dealloc(str->rtp_cipher);
+    srtp_cipher_dealloc(str->rtp_cipher);
     srtp_crypto_free(str);
     return stat;
   }
@@ -156,7 +156,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   str->limit = (srtp_key_limit_ctx_t*) srtp_crypto_alloc(sizeof(srtp_key_limit_ctx_t));
   if (str->limit == NULL) {
     auth_dealloc(str->rtp_auth);
-    cipher_dealloc(str->rtp_cipher);
+    srtp_cipher_dealloc(str->rtp_cipher);
     srtp_crypto_free(str); 
     return srtp_err_status_alloc_fail;
   }
@@ -171,7 +171,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				    p->rtcp.auth_tag_len); 
   if (stat) {
     auth_dealloc(str->rtp_auth);
-    cipher_dealloc(str->rtp_cipher);
+    srtp_cipher_dealloc(str->rtp_cipher);
     srtp_crypto_free(str->limit);
     srtp_crypto_free(str);
     return stat;
@@ -183,9 +183,9 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				  p->rtcp.auth_key_len, 
 				  p->rtcp.auth_tag_len); 
   if (stat) {
-    cipher_dealloc(str->rtcp_cipher);
+    srtp_cipher_dealloc(str->rtcp_cipher);
     auth_dealloc(str->rtp_auth);
-    cipher_dealloc(str->rtp_cipher);
+    srtp_cipher_dealloc(str->rtp_cipher);
     srtp_crypto_free(str->limit);
     srtp_crypto_free(str);
    return stat;
@@ -195,9 +195,9 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   stat = srtp_ekt_alloc(&str->ekt, p->ekt);
   if (stat) {
     auth_dealloc(str->rtcp_auth);
-    cipher_dealloc(str->rtcp_cipher);
+    srtp_cipher_dealloc(str->rtcp_cipher);
     auth_dealloc(str->rtp_auth);
-    cipher_dealloc(str->rtp_cipher);
+    srtp_cipher_dealloc(str->rtp_cipher);
     srtp_crypto_free(str->limit);
     srtp_crypto_free(str);
    return stat;    
@@ -221,7 +221,7 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
       && stream->rtp_cipher == session->stream_template->rtp_cipher) {
     /* do nothing */
   } else {
-    status = cipher_dealloc(stream->rtp_cipher); 
+    status = srtp_cipher_dealloc(stream->rtp_cipher); 
     if (status) 
       return status;
   }
@@ -252,7 +252,7 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
       && stream->rtcp_cipher == session->stream_template->rtcp_cipher) {
     /* do nothing */
   } else {
-    status = cipher_dealloc(stream->rtcp_cipher); 
+    status = srtp_cipher_dealloc(stream->rtcp_cipher); 
     if (status) 
       return status;
   }
@@ -403,9 +403,9 @@ srtp_kdf_init(srtp_kdf_t *kdf, srtp_cipher_type_id_t cipher_id, const uint8_t *k
   if (stat)
     return stat;
 
-  stat = cipher_init(kdf->cipher, key);
+  stat = srtp_cipher_init(kdf->cipher, key);
   if (stat) {
-    cipher_dealloc(kdf->cipher);
+    srtp_cipher_dealloc(kdf->cipher);
     return stat;
   }
 
@@ -439,7 +439,7 @@ srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
 srtp_err_status_t
 srtp_kdf_clear(srtp_kdf_t *kdf) {
   srtp_err_status_t status;
-  status = cipher_dealloc(kdf->cipher);
+  status = srtp_cipher_dealloc(kdf->cipher);
   if (status)
     return status;
   kdf->cipher = NULL;
@@ -560,7 +560,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* initialize cipher */
-  stat = cipher_init(srtp->rtp_cipher, tmp_key);
+  stat = srtp_cipher_init(srtp->rtp_cipher, tmp_key);
   if (stat) {
     /* zeroize temp buffer */
     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -630,7 +630,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   /* initialize cipher */
-  stat = cipher_init(srtp->rtcp_cipher, tmp_key);
+  stat = srtp_cipher_init(srtp->rtcp_cipher, tmp_key);
   if (stat) {
     /* zeroize temp buffer */
     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -1806,11 +1806,11 @@ srtp_dealloc(srtp_t session) {
     status = auth_dealloc(session->stream_template->rtcp_auth); 
     if (status) 
       return status; 
-    status = cipher_dealloc(session->stream_template->rtcp_cipher); 
+    status = srtp_cipher_dealloc(session->stream_template->rtcp_cipher); 
     if (status) 
       return status; 
     srtp_crypto_free(session->stream_template->limit);
-    status = cipher_dealloc(session->stream_template->rtp_cipher); 
+    status = srtp_cipher_dealloc(session->stream_template->rtp_cipher); 
     if (status) 
       return status; 
     status = auth_dealloc(session->stream_template->rtp_auth);

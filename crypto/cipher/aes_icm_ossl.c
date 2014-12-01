@@ -202,16 +202,12 @@ static srtp_err_status_t srtp_aes_icm_openssl_dealloc (srtp_cipher_t *c)
  * the salt is unpredictable (but not necessarily secret) data which
  * randomizes the starting point in the keystream
  */
-static srtp_err_status_t srtp_aes_icm_openssl_context_init (srtp_aes_icm_ctx_t *c, const uint8_t *key, int len)
+static srtp_err_status_t srtp_aes_icm_openssl_context_init (srtp_aes_icm_ctx_t *c, const uint8_t *key)
 {
     /*
      * set counter and initial values to 'offset' value, being careful not to
      * go past the end of the key buffer
      */
-
-    if (c->key_size + SRTP_SALT_SIZE != len)
-        return srtp_err_status_bad_param;
-
     v128_set_to_zero(&c->counter);
     v128_set_to_zero(&c->offset);
     memcpy(&c->counter, key + c->key_size, SRTP_SALT_SIZE);

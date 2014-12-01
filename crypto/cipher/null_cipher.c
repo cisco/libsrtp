@@ -98,7 +98,7 @@ static srtp_err_status_t srtp_null_cipher_dealloc (srtp_cipher_t *c)
 
 }
 
-static srtp_err_status_t srtp_null_cipher_init (srtp_null_cipher_ctx_t *ctx, const uint8_t *key, int key_len)
+static srtp_err_status_t srtp_null_cipher_init (srtp_null_cipher_ctx_t *ctx, const uint8_t *key)
 {
 
     debug_print(srtp_mod_cipher, "initializing null cipher", NULL);

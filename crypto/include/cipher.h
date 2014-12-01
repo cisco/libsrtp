@@ -82,7 +82,7 @@ typedef srtp_err_status_t (*cipher_alloc_func_t)
  * a cipher_init_func_t [re-]initializes a cipher_t with a given key
  */
 typedef srtp_err_status_t (*cipher_init_func_t)
-    (void *state, const uint8_t *key, int key_len);
+    (void *state, const uint8_t *key);
 
 /* a cipher_dealloc_func_t de-allocates a cipher_t */
 typedef srtp_err_status_t (*cipher_dealloc_func_t)(srtp_cipher_pointer_t cp);
@@ -168,13 +168,6 @@ typedef struct srtp_cipher_t {
     int algorithm;
 } srtp_cipher_t;
 
-/* some syntactic sugar on these function types */
-#define cipher_type_alloc(ct, c, klen, tlen) ((ct)->alloc((c), (klen), (tlen)))
-
-#define cipher_dealloc(c) (((c)->type)->dealloc(c))
-
-#define cipher_init(c, k) (((c)->type)->init(((c)->state), (k), ((c)->key_len)))
-
 #define cipher_get_tag(c, buf, len) \
     (((c)->type)->get_tag(((c)->state), (buf), (len)))
 
@@ -219,6 +212,9 @@ srtp_err_status_t srtp_cipher_type_test(const srtp_cipher_type_t *ct, const srtp
  */
 uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c, int octets_in_buffer, int num_trials);
 
+srtp_err_status_t srtp_cipher_type_alloc(const srtp_cipher_type_t *ct, srtp_cipher_t **c, int key_len, int tlen);
+srtp_err_status_t srtp_cipher_dealloc(srtp_cipher_t *c);
+srtp_err_status_t srtp_cipher_init(srtp_cipher_t *c, const uint8_t *key);
 srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 

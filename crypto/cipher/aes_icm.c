@@ -136,6 +136,7 @@ static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key
     }
     (*c)->type = &srtp_aes_icm;
     (*c)->state = pointer + sizeof(srtp_cipher_t);
+    ((srtp_aes_icm_ctx_t*)(*c)->state)->key_size = key_len;
 
     /* set key size        */
     (*c)->key_len = key_len;
@@ -171,15 +172,15 @@ static srtp_err_status_t srtp_aes_icm_dealloc (srtp_cipher_t *c)
  * randomizes the starting point in the keystream
  */
 
-static srtp_err_status_t srtp_aes_icm_context_init (srtp_aes_icm_ctx_t *c, const uint8_t *key, int key_len)
+static srtp_err_status_t srtp_aes_icm_context_init (srtp_aes_icm_ctx_t *c, const uint8_t *key)
 {
     srtp_err_status_t status;
     int base_key_len, copy_len;
 
-    if (key_len > 16 && key_len < 30) { /* Ismacryp */
+    if (c->key_size > 16 && c->key_size < 30) { /* Ismacryp */
         base_key_len = 16;
-    } else if (key_len == 30 || key_len == 38 || key_len == 46) {
-        base_key_len = key_len - 14;
+    } else if (c->key_size == 30 || c->key_size == 38 || c->key_size == 46) {
+        base_key_len = c->key_size - 14;
     } else{
         return srtp_err_status_bad_param;
     }
@@ -191,7 +192,7 @@ static srtp_err_status_t srtp_aes_icm_context_init (srtp_aes_icm_ctx_t *c, const
     v128_set_to_zero(&c->counter);
     v128_set_to_zero(&c->offset);
 
-    copy_len = key_len - base_key_len;
+    copy_len = c->key_size - base_key_len;
     /* force last two octets of the offset to be left zero (for srtp compatibility) */
     if (copy_len > 14) {
         copy_len = 14;

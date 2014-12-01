@@ -58,6 +58,30 @@ srtp_debug_module_t srtp_mod_cipher = {
     "cipher"         /* printable module name       */
 };
 
+srtp_err_status_t srtp_cipher_type_alloc (const srtp_cipher_type_t *ct, srtp_cipher_t **c, int key_len, int tlen)
+{
+    if (!ct || !ct->alloc) {
+	return (srtp_err_status_bad_param);
+    }
+    return ((ct)->alloc((c), (key_len), (tlen)));
+}
+
+srtp_err_status_t srtp_cipher_dealloc (srtp_cipher_t *c)
+{
+    if (!c || !c->type) {
+	return (srtp_err_status_bad_param);
+    }
+    return (((c)->type)->dealloc(c));
+}
+
+srtp_err_status_t srtp_cipher_init (srtp_cipher_t *c, const uint8_t *key)
+{
+    if (!c || !c->type || !c->state) {
+	return (srtp_err_status_bad_param);
+    }
+    return (((c)->type)->init(((c)->state), (key)));
+}
+
 srtp_err_status_t srtp_cipher_output (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
 {
 
@@ -121,7 +145,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
      */
     while (test_case != NULL) {
         /* allocate cipher */
-        status = cipher_type_alloc(ct, &c, test_case->key_length_octets, test_case->tag_length_octets);
+        status = srtp_cipher_type_alloc(ct, &c, test_case->key_length_octets, test_case->tag_length_octets);
         if (status) {
             return status;
         }
@@ -132,15 +156,15 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         debug_print(srtp_mod_cipher, "testing encryption", NULL);
 
         /* initialize cipher */
-        status = cipher_init(c, test_case->key);
+        status = srtp_cipher_init(c, test_case->key);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
         /* copy plaintext into test buffer */
         if (test_case->ciphertext_length_octets > SELF_TEST_BUF_OCTETS) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return srtp_err_status_bad_param;
         }
         for (i = 0; i < test_case->plaintext_length_octets; i++) {
@@ -154,7 +178,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         /* set the initialization vector */
         status = cipher_set_iv(c, test_case->idx, direction_encrypt);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -168,7 +192,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             status = cipher_set_aad(c, test_case->aad,
                                     test_case->aad_length_octets);
             if (status) {
-                cipher_dealloc(c);
+                srtp_cipher_dealloc(c);
                 return status;
             }
             debug_print(srtp_mod_cipher, "AAD:    %s",
@@ -180,7 +204,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         len = test_case->plaintext_length_octets;
         status = srtp_cipher_encrypt(c, buffer, &len);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -190,7 +214,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
              */
             status = cipher_get_tag(c, buffer + len, &tag_len);
             if (status) {
-                cipher_dealloc(c);
+                srtp_cipher_dealloc(c);
                 return status;
             }
             len += tag_len;
@@ -222,7 +246,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                         srtp_octet_string_hex_string(test_case->ciphertext,
                                                      2 * test_case->plaintext_length_octets));
 
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
 
@@ -232,15 +256,15 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         debug_print(srtp_mod_cipher, "testing decryption", NULL);
 
         /* re-initialize cipher for decryption */
-        status = cipher_init(c, test_case->key);
+        status = srtp_cipher_init(c, test_case->key);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
         /* copy ciphertext into test buffer */
         if (test_case->ciphertext_length_octets > SELF_TEST_BUF_OCTETS) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return srtp_err_status_bad_param;
         }
         for (i = 0; i < test_case->ciphertext_length_octets; i++) {
@@ -254,7 +278,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         /* set the initialization vector */
         status = cipher_set_iv(c, test_case->idx, direction_decrypt);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -265,7 +289,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             status = cipher_set_aad(c, test_case->aad,
                                     test_case->aad_length_octets);
             if (status) {
-                cipher_dealloc(c);
+                srtp_cipher_dealloc(c);
                 return status;
             }
             debug_print(srtp_mod_cipher, "AAD:    %s",
@@ -277,7 +301,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         len = test_case->ciphertext_length_octets;
         status = srtp_cipher_decrypt(c, buffer, &len);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -306,12 +330,12 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                         srtp_octet_string_hex_string(test_case->plaintext,
                                                      2 * test_case->plaintext_length_octets));
 
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
 
         /* deallocate the cipher */
-        status = cipher_dealloc(c);
+        status = srtp_cipher_dealloc(c);
         if (status) {
             return status;
         }
@@ -328,7 +352,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
     /* allocate cipher, using paramaters from the first test case */
     test_case = test_data;
-    status = cipher_type_alloc(ct, &c, test_case->key_length_octets, test_case->tag_length_octets);
+    status = srtp_cipher_type_alloc(ct, &c, test_case->key_length_octets, test_case->tag_length_octets);
     if (status) {
         return status;
     }
@@ -373,16 +397,16 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         }
 
         /* initialize cipher */
-        status = cipher_init(c, key);
+        status = srtp_cipher_init(c, key);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
         /* set initialization vector */
         status = cipher_set_iv(c, test_case->idx, direction_encrypt);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -393,7 +417,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             status = cipher_set_aad(c, test_case->aad,
                                     test_case->aad_length_octets);
             if (status) {
-                cipher_dealloc(c);
+                srtp_cipher_dealloc(c);
                 return status;
             }
             debug_print(srtp_mod_cipher, "AAD:    %s",
@@ -405,7 +429,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         plaintext_len = length;
         status = srtp_cipher_encrypt(c, buffer, &length);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
         if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
@@ -414,7 +438,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
              */
             status = cipher_get_tag(c, buffer + length, &tag_len);
             if (status) {
-                cipher_dealloc(c);
+                srtp_cipher_dealloc(c);
                 return status;
             }
             length += tag_len;
@@ -426,14 +450,14 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
          * re-initialize cipher for decryption, re-set the iv, then
          * decrypt the ciphertext
          */
-        status = cipher_init(c, key);
+        status = srtp_cipher_init(c, key);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
         status = cipher_set_iv(c, test_case->idx, direction_decrypt);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
         if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
@@ -443,7 +467,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             status = cipher_set_aad(c, test_case->aad,
                                     test_case->aad_length_octets);
             if (status) {
-                cipher_dealloc(c);
+                srtp_cipher_dealloc(c);
                 return status;
             }
             debug_print(srtp_mod_cipher, "AAD:    %s",
@@ -452,7 +476,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         }
         status = srtp_cipher_decrypt(c, buffer, &length);
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -472,13 +496,13 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             }
         }
         if (status) {
-            cipher_dealloc(c);
+            srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
 
     }
 
-    status = cipher_dealloc(c);
+    status = srtp_cipher_dealloc(c);
     if (status) {
         return status;
     }

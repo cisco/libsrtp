@@ -81,8 +81,8 @@ main (int argc, char *argv[]) {
   /* set buffer to cipher output */
   for (i=0; i < 2500; i++)
     buffer[i] = 0;
-  err_check(cipher_type_alloc(&srtp_aes_icm, &c, 30, 0));
-  err_check(cipher_init(c, key));
+  err_check(srtp_cipher_type_alloc(&srtp_aes_icm, &c, 30, 0));
+  err_check(srtp_cipher_init(c, key));
   err_check(cipher_set_iv(c, &nonce, direction_encrypt));
   err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
   /* run tests on cipher outout */
@@ -109,14 +109,14 @@ main (int argc, char *argv[]) {
   printf("(nota bene: a small fraction of stat_test failures does not \n"
 	 "indicate that the random source is invalid)\n");
 
-  err_check(cipher_dealloc(c));
+  err_check(srtp_cipher_dealloc(c));
 
   printf("running stat_tests on AES-256-ICM, expecting success\n");
   /* set buffer to cipher output */
   for (i=0; i < 2500; i++)
     buffer[i] = 0;
-  err_check(cipher_type_alloc(&srtp_aes_icm, &c, 46, 0));
-  err_check(cipher_init(c, key));
+  err_check(srtp_cipher_type_alloc(&srtp_aes_icm, &c, 46, 0));
+  err_check(srtp_cipher_init(c, key));
   err_check(cipher_set_iv(c, &nonce, direction_encrypt));
   err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
   /* run tests on cipher outout */
@@ -146,8 +146,8 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8));
-    err_check(cipher_init(c, key));
+    err_check(srtp_cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_128_GCM_KEYSIZE_WSALT, 8));
+    err_check(srtp_cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
     err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
     /* run tests on cipher outout */
@@ -175,8 +175,8 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16));
-    err_check(cipher_init(c, key));
+    err_check(srtp_cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_256_GCM_KEYSIZE_WSALT, 16));
+    err_check(srtp_cipher_init(c, key));
     err_check(cipher_set_iv(c, &nonce, direction_encrypt));
     err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
     /* run tests on cipher outout */
@@ -205,7 +205,7 @@ main (int argc, char *argv[]) {
   printf("(nota bene: a small fraction of stat_test failures does not \n"
 	 "indicate that the random source is invalid)\n");
 
-  err_check(cipher_dealloc(c));
+  err_check(srtp_cipher_dealloc(c));
 
   return 0;
 }
