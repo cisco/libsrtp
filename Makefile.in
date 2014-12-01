@@ -277,7 +277,7 @@ uninstall:
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
-        libcryptomath.a libsrtp.* core *.core test/core
+        libcryptomath.a libsrtp.a libsrtp.so libsrtp.dll.a core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;
