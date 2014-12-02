@@ -104,12 +104,44 @@ srtp_err_status_t srtp_cipher_output (srtp_cipher_t *c, uint8_t *buffer, uint32_
 
 srtp_err_status_t srtp_cipher_encrypt (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
 {
+    if (!c || !c->type || !c->state) {
+	return (srtp_err_status_bad_param);
+    }
+
     return (((c)->type)->encrypt(((c)->state), buffer, num_octets_to_output));
 }
 
 srtp_err_status_t srtp_cipher_decrypt (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
 {
+    if (!c || !c->type || !c->state) {
+	return (srtp_err_status_bad_param);
+    }
+
     return (((c)->type)->decrypt(((c)->state), buffer, num_octets_to_output));
+}
+
+srtp_err_status_t srtp_cipher_get_tag (srtp_cipher_t *c, uint8_t *buffer, uint32_t *tag_len)
+{
+    if (!c || !c->type || !c->state) {
+	return (srtp_err_status_bad_param);
+    }
+    if (!((c)->type)->get_tag) {
+	return (srtp_err_status_no_such_op);
+    }
+
+    return (((c)->type)->get_tag(((c)->state), buffer, tag_len));
+}
+
+srtp_err_status_t srtp_cipher_set_aad (srtp_cipher_t *c, uint8_t *aad, uint32_t aad_len)
+{
+    if (!c || !c->type || !c->state) {
+	return (srtp_err_status_bad_param);
+    }
+    if (!((c)->type)->set_aad) {
+	return (srtp_err_status_no_such_op);
+    }
+
+    return (((c)->type)->set_aad(((c)->state), aad, aad_len));
 }
 
 /* some bookkeeping functions */
@@ -134,7 +166,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
     srtp_err_status_t status;
     uint8_t buffer[SELF_TEST_BUF_OCTETS];
     uint8_t buffer2[SELF_TEST_BUF_OCTETS];
-    int tag_len;
+    uint32_t tag_len;
     unsigned int len;
     int i, j, case_num = 0;
 
@@ -199,8 +231,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             /*
              * Set the AAD
              */
-            status = cipher_set_aad(c, test_case->aad,
-                                    test_case->aad_length_octets);
+            status = srtp_cipher_set_aad(c, test_case->aad, test_case->aad_length_octets);
             if (status) {
                 srtp_cipher_dealloc(c);
                 return status;
@@ -222,7 +253,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             /*
              * Get the GCM tag
              */
-            status = cipher_get_tag(c, buffer + len, &tag_len);
+            status = srtp_cipher_get_tag(c, buffer + len, &tag_len);
             if (status) {
                 srtp_cipher_dealloc(c);
                 return status;
@@ -296,8 +327,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             /*
              * Set the AAD
              */
-            status = cipher_set_aad(c, test_case->aad,
-                                    test_case->aad_length_octets);
+            status = srtp_cipher_set_aad(c, test_case->aad, test_case->aad_length_octets);
             if (status) {
                 srtp_cipher_dealloc(c);
                 return status;
@@ -424,8 +454,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             /*
              * Set the AAD
              */
-            status = cipher_set_aad(c, test_case->aad,
-                                    test_case->aad_length_octets);
+            status = srtp_cipher_set_aad(c, test_case->aad, test_case->aad_length_octets);
             if (status) {
                 srtp_cipher_dealloc(c);
                 return status;
@@ -446,7 +475,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             /*
              * Get the GCM tag
              */
-            status = cipher_get_tag(c, buffer + length, &tag_len);
+            status = srtp_cipher_get_tag(c, buffer + length, &tag_len);
             if (status) {
                 srtp_cipher_dealloc(c);
                 return status;
@@ -474,8 +503,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             /*
              * Set the AAD
              */
-            status = cipher_set_aad(c, test_case->aad,
-                                    test_case->aad_length_octets);
+            status = srtp_cipher_set_aad(c, test_case->aad, test_case->aad_length_octets);
             if (status) {
                 srtp_cipher_dealloc(c);
                 return status;

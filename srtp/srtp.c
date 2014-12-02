@@ -887,7 +887,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
     srtp_xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
     int delta;                  /* delta of local pkt idx and that in hdr */
     srtp_err_status_t status;
-    int tag_len;
+    uint32_t tag_len;
     v128_t iv;
     unsigned int aad_len;
 
@@ -972,7 +972,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * Set the AAD over the RTP header 
      */
     aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
-    status = cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
+    status = srtp_cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
     if (status) {
         return ( srtp_err_status_cipher_fail);
     }
@@ -987,7 +987,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * If we're doing GCM, we need to get the tag
      * and append that to the output
      */
-    status = cipher_get_tag(stream->rtp_cipher, 
+    status = srtp_cipher_get_tag(stream->rtp_cipher, 
                             (uint8_t*)enc_start+enc_octet_len, &tag_len);
     if (status) {
 	return ( srtp_err_status_cipher_fail);
@@ -1090,7 +1090,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * Set the AAD for AES-GCM, which is the RTP header
      */
     aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
-    status = cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
+    status = srtp_cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
     if (status) {
         return ( srtp_err_status_cipher_fail);
     }
@@ -2271,7 +2271,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
     uint8_t *auth_tag = NULL;   /* location of auth_tag within packet     */
     srtp_err_status_t status;
-    int tag_len;
+    uint32_t tag_len;
     uint32_t seq_num;
     v128_t iv;
     uint32_t tseq;
@@ -2338,8 +2338,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * If payload encryption is enabled, then the AAD consist of
 	 * the RTCP header and the seq# at the end of the packet
 	 */
-	status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, 
-                                octets_in_rtcp_header);
+	status = srtp_cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, octets_in_rtcp_header);
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
@@ -2349,8 +2348,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * the entire packet as described in section 10.3 in revision 07
 	 * of the draft.
 	 */
-	status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, 
-                                *pkt_octet_len);
+	status = srtp_cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, *pkt_octet_len);
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
@@ -2359,8 +2357,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
      * put the idx# into network byte order and process it as AAD
      */
     tseq = htonl(*trailer);
-    status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)&tseq, 
-                            sizeof(srtcp_trailer_t));
+    status = srtp_cipher_set_aad(stream->rtcp_cipher, (uint8_t*)&tseq, sizeof(srtcp_trailer_t));
     if (status) {
         return ( srtp_err_status_cipher_fail);
     }
@@ -2375,8 +2372,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	/*
 	 * Get the tag and append that to the output
 	 */
-	status = cipher_get_tag(stream->rtcp_cipher, (uint8_t*)auth_tag, 
-                                &tag_len);
+	status = srtp_cipher_get_tag(stream->rtcp_cipher, (uint8_t*)auth_tag, &tag_len);
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
@@ -2394,8 +2390,7 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	/*
 	 * Get the tag and append that to the output
 	 */
-	status = cipher_get_tag(stream->rtcp_cipher, (uint8_t*)auth_tag, 
-                                &tag_len);
+	status = srtp_cipher_get_tag(stream->rtcp_cipher, (uint8_t*)auth_tag, &tag_len);
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
@@ -2488,8 +2483,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * If payload encryption is enabled, then the AAD consist of
 	 * the RTCP header and the seq# at the end of the packet
 	 */
-	status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, 
-                                octets_in_rtcp_header);
+	status = srtp_cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, octets_in_rtcp_header);
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
@@ -2499,8 +2493,8 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * the entire packet as described in section 10.3 in revision 07
 	 * of the draft.
 	 */
-	status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, 
-			       (*pkt_octet_len - tag_len - sizeof(srtcp_trailer_t)));
+	status = srtp_cipher_set_aad(stream->rtcp_cipher, (uint8_t*)hdr, 
+			            (*pkt_octet_len - tag_len - sizeof(srtcp_trailer_t)));
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
@@ -2510,8 +2504,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
      * put the idx# into network byte order, and process it as AAD 
      */
     tseq = htonl(*trailer);
-    status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)&tseq, 
-                            sizeof(srtcp_trailer_t));
+    status = srtp_cipher_set_aad(stream->rtcp_cipher, (uint8_t*)&tseq, sizeof(srtcp_trailer_t));
     if (status) {
 	return ( srtp_err_status_cipher_fail);
     }

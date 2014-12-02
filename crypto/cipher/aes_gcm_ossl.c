@@ -243,7 +243,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, con
  *	aad	Additional data to process for AEAD cipher suites
  *	aad_len	length of aad buffer
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (srtp_aes_gcm_ctx_t *c, unsigned char *aad, unsigned int aad_len)
+static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (srtp_aes_gcm_ctx_t *c, uint8_t *aad, uint32_t aad_len)
 {
     int rv;
 
@@ -294,7 +294,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (srtp_aes_gcm_ctx_t *c, un
  *	buf	data to encrypt
  *	len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (srtp_aes_gcm_ctx_t *c, unsigned char *buf, int *len)
+static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (srtp_aes_gcm_ctx_t *c, uint8_t *buf, uint32_t *len)
 {
     /*
      * Calculate the tag
