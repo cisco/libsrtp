@@ -58,7 +58,6 @@
 #else
 #include "aes_icm.h"
 #endif
-#include "null_cipher.h"
 
 #define PRINT_DEBUG 0
 

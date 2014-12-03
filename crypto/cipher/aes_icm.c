@@ -95,8 +95,7 @@ srtp_debug_module_t srtp_mod_aes_icm = {
 static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key_len, int forIsmacryp)
 {
     extern srtp_cipher_type_t srtp_aes_icm;
-    uint8_t *pointer;
-    int tmp;
+    srtp_aes_icm_ctx_t *icm;
 
     debug_print(srtp_mod_aes_icm,
                 "allocating cipher with key length %d", key_len);
@@ -115,14 +114,23 @@ static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key
     }
 
     /* allocate memory a cipher of type aes_icm */
-    tmp = (sizeof(srtp_aes_icm_ctx_t) + sizeof(srtp_cipher_t));
-    pointer = (uint8_t*)srtp_crypto_alloc(tmp);
-    if (pointer == NULL) {
+    *c = (srtp_cipher_t *)srtp_crypto_alloc(sizeof(srtp_cipher_t));
+    if (*c == NULL) {
         return srtp_err_status_alloc_fail;
     }
+    memset(*c, 0x0, sizeof(srtp_cipher_t));
+
+    icm = (srtp_aes_icm_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_icm_ctx_t));
+    if (icm == NULL) {
+	srtp_crypto_free(*c);
+        return srtp_err_status_alloc_fail;
+    }
+    memset(icm, 0x0, sizeof(srtp_aes_icm_ctx_t));
 
     /* set pointers */
-    *c = (srtp_cipher_t*)pointer;
+    (*c)->state = icm;
+    (*c)->type = &srtp_aes_icm;
+
     switch (key_len) {
     case 46:
         (*c)->algorithm = SRTP_AES_256_ICM;
@@ -134,11 +142,9 @@ static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key
         (*c)->algorithm = SRTP_AES_128_ICM;
         break;
     }
-    (*c)->type = &srtp_aes_icm;
-    (*c)->state = pointer + sizeof(srtp_cipher_t);
-    ((srtp_aes_icm_ctx_t*)(*c)->state)->key_size = key_len;
 
     /* set key size        */
+    icm->key_size = key_len;
     (*c)->key_len = key_len;
 
     return srtp_err_status_ok;
@@ -151,11 +157,20 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
 
 static srtp_err_status_t srtp_aes_icm_dealloc (srtp_cipher_t *c)
 {
-    /* zeroize entire state*/
-    octet_string_set_to_zero((uint8_t*)c,
-                             sizeof(srtp_aes_icm_ctx_t) + sizeof(srtp_cipher_t));
+    srtp_aes_icm_ctx_t *ctx;
 
-    /* free memory */
+    if (c == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    ctx = (srtp_aes_icm_ctx_t *)c->state;
+    if (ctx) {
+	/* zeroize the key material */
+	octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_icm_ctx_t));
+	srtp_crypto_free(ctx);
+    }
+
+    /* free the cipher context */
     srtp_crypto_free(c);
 
     return srtp_err_status_ok;

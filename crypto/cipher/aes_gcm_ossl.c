@@ -85,8 +85,6 @@ extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 static srtp_err_status_t srtp_aes_gcm_openssl_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
     srtp_aes_gcm_ctx_t *gcm;
-    int tmp;
-    uint8_t *allptr;
 
     debug_print(srtp_mod_aes_gcm, "allocating cipher with key length %d", key_len);
     debug_print(srtp_mod_aes_gcm, "allocating cipher with tag length %d", tlen);
@@ -105,30 +103,36 @@ static srtp_err_status_t srtp_aes_gcm_openssl_alloc (srtp_cipher_t **c, int key_
     }
 
     /* allocate memory a cipher of type aes_gcm */
-    tmp = sizeof(srtp_cipher_t) + sizeof(srtp_aes_gcm_ctx_t);
-    allptr = srtp_crypto_alloc(tmp);
-    if (allptr == NULL) {
+    *c = (srtp_cipher_t *)srtp_crypto_alloc(sizeof(srtp_cipher_t));
+    if (*c == NULL) {
         return (srtp_err_status_alloc_fail);
     }
+    memset(*c, 0x0, sizeof(srtp_cipher_t));
+
+    gcm = (srtp_aes_gcm_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_gcm_ctx_t));
+    if (gcm == NULL) {
+	srtp_crypto_free(*c);	
+	*c = NULL;
+        return (srtp_err_status_alloc_fail);
+    }
+    memset(gcm, 0x0, sizeof(srtp_aes_gcm_ctx_t));
 
     /* set pointers */
-    *c = (srtp_cipher_t*)allptr;
-    (*c)->state = allptr + sizeof(srtp_cipher_t);
-    gcm = (srtp_aes_gcm_ctx_t*)(*c)->state;
+    (*c)->state = gcm;
 
     /* setup cipher attributes */
     switch (key_len) {
     case SRTP_AES_128_GCM_KEYSIZE_WSALT:
         (*c)->type = &srtp_aes_gcm_128_openssl;
         (*c)->algorithm = SRTP_AES_128_GCM;
-        ((srtp_aes_gcm_ctx_t*)(*c)->state)->key_size = SRTP_AES_128_KEYSIZE;
-        ((srtp_aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;
+        gcm->key_size = SRTP_AES_128_KEYSIZE;
+        gcm->tag_len = tlen;
         break;
     case SRTP_AES_256_GCM_KEYSIZE_WSALT:
         (*c)->type = &srtp_aes_gcm_256_openssl;
         (*c)->algorithm = SRTP_AES_256_GCM;
-        ((srtp_aes_gcm_ctx_t*)(*c)->state)->key_size = SRTP_AES_256_KEYSIZE;
-        ((srtp_aes_gcm_ctx_t*)(*c)->state)->tag_len = tlen;
+        gcm->key_size = SRTP_AES_256_KEYSIZE;
+        gcm->tag_len = tlen;
         break;
     }
 
@@ -150,10 +154,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
     ctx = (srtp_aes_gcm_ctx_t*)c->state;
     if (ctx) {
         EVP_CIPHER_CTX_cleanup(&ctx->ctx);
+	/* zeroize the key material */
+	octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_gcm_ctx_t));
+	srtp_crypto_free(ctx);
     }
-
-    /* zeroize entire state*/
-    octet_string_set_to_zero((uint8_t*)c, sizeof(srtp_cipher_t) + sizeof(srtp_aes_gcm_ctx_t));
 
     /* free memory */
     srtp_crypto_free(c);
