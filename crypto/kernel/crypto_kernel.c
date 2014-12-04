@@ -139,18 +139,6 @@ srtp_err_status_t srtp_crypto_kernel_init ()
         return status;
     }
 
-    /* initialize random number generator */
-    status = rand_source_init();
-    if (status) {
-        return status;
-    }
-
-    /* run FIPS-140 statistical tests on rand_source */
-    status = stat_test_rand_source_with_repetition(rand_source_get_octet_string, MAX_RNG_TRIALS);
-    if (status) {
-        return status;
-    }
-
     /* load cipher types */
     status = srtp_crypto_kernel_load_cipher_type(&srtp_null_cipher, SRTP_NULL_CIPHER);
     if (status) {
@@ -193,16 +181,6 @@ srtp_err_status_t srtp_crypto_kernel_status ()
     srtp_kernel_cipher_type_t  *ctype = crypto_kernel.cipher_type_list;
     srtp_kernel_auth_type_t    *atype = crypto_kernel.auth_type_list;
     srtp_kernel_debug_module_t *dm    = crypto_kernel.debug_module_list;
-
-    /* run FIPS-140 statistical tests on rand_source */
-    printf("testing rand_source...");
-    status = stat_test_rand_source_with_repetition(rand_source_get_octet_string, MAX_RNG_TRIALS);
-    if (status) {
-        printf("failed\n");
-        crypto_kernel.state = srtp_crypto_kernel_state_insecure;
-        return status;
-    }
-    printf("passed\n");
 
     /* for each cipher type, describe and test */
     while (ctype != NULL) {
@@ -266,8 +244,6 @@ srtp_err_status_t srtp_crypto_kernel_list_debug_modules ()
 
 srtp_err_status_t srtp_crypto_kernel_shutdown ()
 {
-    srtp_err_status_t status;
-
     /*
      * free dynamic memory used in crypto_kernel at present
      */
@@ -300,11 +276,6 @@ srtp_err_status_t srtp_crypto_kernel_shutdown ()
                     "freeing memory for debug module %s",
                     kdm->mod->name);
         srtp_crypto_free(kdm);
-    }
-
-    /* de-initialize random number generator */ status = rand_source_deinit();
-    if (status) {
-        return status;
     }
 
     /* return to insecure state */

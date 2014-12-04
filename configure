@@ -627,7 +627,6 @@ HAVE_PKG_CONFIG
 PKG_CONFIG
 HAVE_PCAP
 HMAC_OBJS
-RNG_OBJS
 AES_ICM_OBJS
 USE_OPENSSL
 EXE
@@ -4073,6 +4072,7 @@ $as_echo "#define HAVE_X86 1" >>confdefs.h
 	* )
 
 $as_echo "#define CPU_RISC 1" >>confdefs.h
+
 	;;
 esac
 
@@ -4949,7 +4949,6 @@ fi
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
-   RNG_OBJS=rand_source_ossl.o
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    USE_OPENSSL=1
 
@@ -4957,7 +4956,6 @@ else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
-   RNG_OBJS=rand_source.o
    if test -n "$DEV_URANDOM"; then
 
 cat >>confdefs.h <<_ACEOF
@@ -4972,7 +4970,6 @@ $as_echo "standard rand() function..." >&6; }
    fi
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
-
 
 
 
@@ -6400,7 +6397,6 @@ as_dir=crypto/hash; as_fn_mkdir_p
 as_dir=crypto/kernel; as_fn_mkdir_p
 as_dir=crypto/math; as_fn_mkdir_p
 as_dir=crypto/replay; as_fn_mkdir_p
-as_dir=crypto/rng; as_fn_mkdir_p
 as_dir=crypto/test; as_fn_mkdir_p
 as_dir=doc; as_fn_mkdir_p
 as_dir=srtp; as_fn_mkdir_p

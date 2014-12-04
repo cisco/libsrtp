@@ -46,10 +46,8 @@
 #ifndef CRYPTO_KERNEL
 #define CRYPTO_KERNEL
 
-#include "rand_source.h"
 #include "cipher.h"
 #include "auth.h"
-#include "stat.h"
 #include "err.h"
 #include "crypto_types.h"
 #include "key.h"

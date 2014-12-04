@@ -56,8 +56,6 @@ INSTALL	= @INSTALL@
 # null on linux, bsd, and OS X and other OSes.
 EXE	= @EXE@
 
-# Random source.
-RNG_OBJS = @RNG_OBJS@
 HMAC_OBJS = @HMAC_OBJS@
 AES_ICM_OBJS = @AES_ICM_OBJS@
 
@@ -113,18 +111,16 @@ hashes  = crypto/hash/null_auth.o  crypto/hash/auth.o            \
 replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
           crypto/replay/ut_sim.o 
 
-math    = crypto/math/datatypes.o crypto/math/stat.o
+math    = crypto/math/datatypes.o crypto/math/stat.o 
 
 ust     = crypto/ust/ust.o 
-
-rng     = crypto/rng/$(RNG_OBJS)
 
 err     = crypto/kernel/err.o
 
 kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
-          crypto/kernel/key.o $(rng) $(err) # $(ust) 
+          crypto/kernel/key.o $(err) # $(ust) 
 
-cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
+cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
 # libsrtp2.a (implements srtp processing)
 

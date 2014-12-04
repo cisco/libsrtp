@@ -50,7 +50,6 @@
 
 #include "cipher.h"
 #include "crypto_types.h"
-#include "rand_source.h"        /* used in invertibiltiy tests        */
 #include "alloc.h"              /* for crypto_alloc(), crypto_free()  */
 
 srtp_debug_module_t srtp_mod_cipher = {
@@ -151,6 +150,43 @@ int srtp_cipher_get_key_length (const srtp_cipher_t *c)
     return c->key_len;
 }
 
+
+/*
+ * A trivial platform independent random source.  The random
+ * data is used for some of the cipher self-tests.
+ */
+static srtp_err_status_t srtp_cipher_rand (void *dest, uint32_t len) 
+{
+#if defined(HAVE_RAND_S)
+  uint8_t *dst = (uint8_t *)dest;
+  while (len)
+  {
+    unsigned int val;
+    errno_t err = rand_s(&val);
+
+    if (err != 0)
+      return srtp_err_status_fail;
+  
+    *dst++ = val & 0xff;
+    len--;
+  }
+#else
+  /* Generic C-library (rand()) version */
+  /* This is a random source of last resort */
+  uint8_t *dst = (uint8_t *)dest;
+  while (len)
+  {
+	  int val = rand();
+	  /* rand() returns 0-32767 (ugh) */
+	  /* Is this a good enough way to get random bytes?
+	     It is if it passes FIPS-140... */
+	  *dst++ = val & 0xff;
+	  len--;
+  }
+#endif
+  return srtp_err_status_ok;
+}
+ 
 #define SELF_TEST_BUF_OCTETS 128
 #define NUM_RAND_TESTS       128
 #define MAX_KEY_LEN          64
@@ -397,8 +433,6 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         return status;
     }
 
-    rand_source_init();
-
     for (j = 0; j < NUM_RAND_TESTS; j++) {
         unsigned length;
         int plaintext_len;
@@ -408,7 +442,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         /* choose a length at random (leaving room for IV and padding) */
         length = rand() % (SELF_TEST_BUF_OCTETS - 64);
         debug_print(srtp_mod_cipher, "random plaintext length %d\n", length);
-        status = rand_source_get_octet_string(buffer, length);
+        status = srtp_cipher_rand(buffer, length);
         if (status) {
             return status;
         }
@@ -425,13 +459,13 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         if (test_case->key_length_octets > MAX_KEY_LEN) {
             return srtp_err_status_cant_check;
         }
-        status = rand_source_get_octet_string(key, test_case->key_length_octets);
+        status = srtp_cipher_rand(key, test_case->key_length_octets);
         if (status) {
             return status;
         }
 
         /* chose a random initialization vector */
-        status = rand_source_get_octet_string(iv, MAX_KEY_LEN);
+        status = srtp_cipher_rand(iv, MAX_KEY_LEN);
         if (status) {
             return status;
         }
