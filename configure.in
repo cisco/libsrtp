@@ -25,13 +25,8 @@ case $host_cpu in
         AC_DEFINE(HAVE_X86, 1,
 	   [Define to use X86 inlined assembly code]);; 
 	* )
-	# CPU_RISC is only supported for big endian machines.
-	if test "$ac_cv_c_bigendian" = "yes"; then
 	   AC_DEFINE(CPU_RISC, 1,
 	    [Define if building for a RISC machine (assume slow byte access).])
-	else
-	   AC_DEFINE(CPU_CISC, 1)
-	fi
 	;;
 esac	
 
