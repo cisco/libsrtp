@@ -4079,15 +4079,8 @@ $as_echo "#define CPU_CISC 1" >>confdefs.h
 $as_echo "#define HAVE_X86 1" >>confdefs.h
 ;;
 	* )
-	# CPU_RISC is only supported for big endian machines.
-	if test "$ac_cv_c_bigendian" = "yes"; then
 
 $as_echo "#define CPU_RISC 1" >>confdefs.h
-
-	else
-	   $as_echo "#define CPU_CISC 1" >>confdefs.h
-
-	fi
 	;;
 esac
 
