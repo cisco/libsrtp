@@ -126,7 +126,9 @@ extern cipher_type_t aes_icm;
 #ifndef OPENSSL
 extern cipher_type_t aes_cbc;
 #else
+#ifndef BORINGSSL
 extern cipher_type_t aes_icm_192;
+#endif
 extern cipher_type_t aes_icm_256;
 extern cipher_type_t aes_gcm_128_openssl;
 extern cipher_type_t aes_gcm_256_openssl;
@@ -197,8 +199,10 @@ main(int argc, char *argv[]) {
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&aes_cbc, 32, num_cipher); 
 #else
+#ifndef BORINGSSL
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&aes_icm_192, 38, num_cipher); 
+#endif
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&aes_icm_256, 46, num_cipher); 
@@ -219,7 +223,9 @@ main(int argc, char *argv[]) {
 #ifndef OPENSSL
     cipher_driver_self_test(&aes_cbc);
 #else
+#ifndef BORINGSSL
     cipher_driver_self_test(&aes_icm_192);
+#endif
     cipher_driver_self_test(&aes_icm_256);
     cipher_driver_self_test(&aes_gcm_128_openssl);
     cipher_driver_self_test(&aes_gcm_256_openssl);
