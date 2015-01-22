@@ -127,7 +127,7 @@ leave_group(int sock, struct ip_mreq mreq, char *name);
  * setup_signal_handler() sets up a signal handler to trigger
  * cleanups after an interrupt
  */
-int setup_signal_handler(char* name);
+static int setup_signal_handler(char* name);
 
 /*
  * handle_signal(...) handles interrupt signal to trigger cleanups
@@ -669,7 +669,8 @@ leave_group(int sock, struct ip_mreq mreq, char *name) {
   }
 }
 
-void handle_signal(int signum)
+static void
+handle_signal(int signum)
 {
   interrupted = 1;
   /* Reset handler explicitly, in case we don't have sigaction() (and signal()
@@ -677,7 +678,8 @@ void handle_signal(int signum)
   signal(signum, SIG_DFL);
 }
 
-int setup_signal_handler(char* name)
+static int
+setup_signal_handler(char* name)
 {
 #if HAVE_SIGACTION
   struct sigaction act;

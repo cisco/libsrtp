@@ -111,7 +111,7 @@ unsigned int srtp_get_version ()
     return rv;
 }
 
-err_status_t
+static err_status_t
 srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 		  const srtp_policy_t *p) {
   srtp_stream_ctx_t *str;
@@ -206,7 +206,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) { 
   err_status_t status;
   
@@ -298,7 +298,7 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
  * the SSRC
  */
 
-err_status_t
+static err_status_t
 srtp_stream_clone(const srtp_stream_ctx_t *stream_template, 
 		  uint32_t ssrc, 
 		  srtp_stream_ctx_t **str_ptr) {
@@ -395,7 +395,7 @@ typedef struct {
   cipher_t *cipher;    /* cipher used for key derivation  */  
 } srtp_kdf_t;
 
-err_status_t
+static err_status_t
 srtp_kdf_init(srtp_kdf_t *kdf, cipher_type_id_t cipher_id, const uint8_t *key, int length) {
 
   err_status_t stat;
@@ -412,7 +412,7 @@ srtp_kdf_init(srtp_kdf_t *kdf, cipher_type_id_t cipher_id, const uint8_t *key, i
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
 		  uint8_t *key, unsigned int length) {
 
@@ -436,7 +436,7 @@ srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 srtp_kdf_clear(srtp_kdf_t *kdf) {
   err_status_t status;
   status = cipher_dealloc(kdf->cipher);

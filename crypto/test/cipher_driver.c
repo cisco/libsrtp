@@ -100,13 +100,13 @@ err_status_t
 cipher_array_alloc_init(cipher_t ***cipher_array, int num_ciphers,
 			cipher_type_t *ctype, int klen);
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s [ -t | -v | -a ]\n", prog_name);
   exit(255);
 }
 
-void
+static void
 check_status(err_status_t s) {
   if (s) {
     printf("error (code %d)\n", s);

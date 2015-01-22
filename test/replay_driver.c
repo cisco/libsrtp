@@ -83,13 +83,15 @@ main (void) {
   return 0;
 }
 
-
-void
+#if 0
+/* unused */
+static void
 print_rdb(rdb_t *rdb) {
   printf("rdb: {%u, %s}\n", rdb->window_start, v128_bit_string(&rdb->bitmask));
 }
+#endif
 
-err_status_t
+static err_status_t
 rdb_check_add(rdb_t *rdb, uint32_t idx) {
 
   if (rdb_check(rdb, idx) != err_status_ok) {
@@ -104,7 +106,7 @@ rdb_check_add(rdb_t *rdb, uint32_t idx) {
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 rdb_check_expect_failure(rdb_t *rdb, uint32_t idx) {
   err_status_t err;
   
@@ -117,7 +119,7 @@ rdb_check_expect_failure(rdb_t *rdb, uint32_t idx) {
   return err_status_ok;
 }
 
-err_status_t
+static err_status_t
 rdb_check_add_unordered(rdb_t *rdb, uint32_t idx) {
   err_status_t rstat;
 

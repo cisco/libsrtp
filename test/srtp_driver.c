@@ -106,7 +106,7 @@ mips_estimate(int num_trials, int *ignore);
 
 extern uint8_t test_key[46];
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s [ -t ][ -c ][ -v ][-d <debug_module> ]* [ -l ]\n"
          "  -t         run timing test\n"
@@ -407,7 +407,7 @@ main (int argc, char *argv[]) {
  * deallocated with the free() call once it is no longer needed.
  */
 
-srtp_hdr_t *
+static srtp_hdr_t *
 srtp_create_test_packet(int pkt_octet_len, uint32_t ssrc) {
   int i;
   uint8_t *buffer;
@@ -604,7 +604,7 @@ srtp_rejections_per_second(int msg_len_octets, const srtp_policy_t *policy) {
 }
 
 
-void
+static void
 err_check(err_status_t s) {
   if (s == err_status_ok) 
     return;

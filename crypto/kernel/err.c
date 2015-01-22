@@ -146,7 +146,10 @@ err_report(int priority, const char *format, ...) {
 }
 #endif /* SRTP_KERNEL_LINUX */	
 
+#if 0
+/* not in api, as err_level is made available directly */
 void
 err_reporting_set_level(err_reporting_level_t lvl) { 
-  err_level = lvl;
+   err_level = lvl;
 }
+#endif

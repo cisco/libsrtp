@@ -117,8 +117,8 @@ octet_string_hex_string(const void *s, int length) {
   length *= 2;
 
   /* truncate string if it would be too long */
-  if (length > MAX_PRINT_STRING_LEN)
-    length = MAX_PRINT_STRING_LEN-1;
+  if (length > MAX_PRINT_STRING_LEN-2)
+    length = MAX_PRINT_STRING_LEN-2;
   
   for (i=0; i < length; i+=2) {
     bit_string[i]   = nibble_to_hex_char(*str >> 4);
@@ -159,13 +159,16 @@ hex_char_to_nibble(uint8_t c) {
   return -1;  /* this keeps compilers from complaining */
 }
 
-int
+#if 0
+/* unused */
+static int
 is_hex_string(char *s) {
   while(*s != 0)
     if (hex_char_to_nibble(*s++) == -1)
       return 0;
   return 1;
 }
+#endif
 
 /*
  * hex_string_to_octet_string converts a hexadecimal string

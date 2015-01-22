@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void
+static void
 usage(char *prog_name) {
   printf("usage: %s <key> <plaintext> [-v]\n", prog_name);
   exit(255);
