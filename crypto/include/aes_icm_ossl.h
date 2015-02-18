@@ -52,10 +52,14 @@
 
 #define     SALT_SIZE               14
 #define     AES_128_KEYSIZE         AES_BLOCK_SIZE
+#ifndef OPENSSL_IS_BORINGSSL
 #define     AES_192_KEYSIZE         AES_BLOCK_SIZE + AES_BLOCK_SIZE / 2
+#endif
 #define     AES_256_KEYSIZE         AES_BLOCK_SIZE * 2
 #define     AES_128_KEYSIZE_WSALT   AES_128_KEYSIZE + SALT_SIZE
+#ifndef OPENSSL_IS_BORINGSSL
 #define     AES_192_KEYSIZE_WSALT   AES_192_KEYSIZE + SALT_SIZE
+#endif
 #define     AES_256_KEYSIZE_WSALT   AES_256_KEYSIZE + SALT_SIZE
 
 typedef struct {
