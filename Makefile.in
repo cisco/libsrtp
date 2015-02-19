@@ -240,7 +240,7 @@ install:
 	fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
-		cp $(srcdir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
+		cp $(top_builddir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
 	fi
 
 uninstall:
