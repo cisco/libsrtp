@@ -65,7 +65,7 @@ debug_module_t mod_aes_icm = {
 };
 extern cipher_test_case_t aes_icm_test_case_0;
 extern cipher_type_t aes_icm;
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
 extern cipher_type_t aes_icm_192;
 #endif
 extern cipher_type_t aes_icm_256;
@@ -124,7 +124,7 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
      * Verify the key_len is valid for one of: AES-128/192/256
      */
     if (key_len != AES_128_KEYSIZE_WSALT &&
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
         key_len != AES_192_KEYSIZE_WSALT &&
 #endif
         key_len != AES_256_KEYSIZE_WSALT) {
@@ -151,7 +151,7 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
         aes_icm.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_128_KEYSIZE;
         break;
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
     case AES_192_KEYSIZE_WSALT:
         (*c)->algorithm = AES_192_ICM;
         (*c)->type = &aes_icm_192;
@@ -197,7 +197,7 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
         case AES_256_KEYSIZE:
             aes_icm_256.ref_count--;
             break;
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
         case AES_192_KEYSIZE:
             aes_icm_192.ref_count--;
             break;
@@ -259,7 +259,7 @@ err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key,
      * regardless of the cipher in use.
      */
     if (c->key_size == AES_256_KEYSIZE
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
         || c->key_size == AES_192_KEYSIZE
 #endif
         ) {
@@ -299,7 +299,7 @@ err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
     case AES_256_KEYSIZE:
         evp = EVP_aes_256_ctr();
         break;
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
     case AES_192_KEYSIZE:
         evp = EVP_aes_192_ctr();
         break;
@@ -356,7 +356,7 @@ uint16_t aes_icm_bytes_encrypted(aes_icm_ctx_t *c)
  * Name of this crypto engine
  */
 char aes_icm_openssl_description[] = "AES-128 counter mode using openssl";
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
 char aes_icm_192_openssl_description[] = "AES-192 counter mode using openssl";
 #endif
 char aes_icm_256_openssl_description[] = "AES-256 counter mode using openssl";
@@ -406,7 +406,7 @@ cipher_test_case_t aes_icm_test_case_0 = {
     NULL                                   /* pointer to next testcase */
 };
 
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
 /*
  * KAT values for AES-192-CTR self-test.  These
  * values came from section 7 of RFC 6188.
@@ -519,7 +519,7 @@ cipher_type_t aes_icm = {
     (cipher_type_id_t)             AES_ICM
 };
 
-#ifndef OPENSSL_IS_BORINGSSL
+#ifndef SRTP_NO_AES192
 /*
  * This is the function table for this crypto engine.
  * note: the encrypt function is identical to the decrypt function
