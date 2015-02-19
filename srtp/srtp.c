@@ -73,7 +73,7 @@ srtp_debug_module_t mod_srtp = {
 #define uint32s_in_rtcp_header 2
 #define octets_in_rtp_extn_hdr 4
 
-static err_status_t
+static srtp_err_status_t
 srtp_validate_rtp_header(void *rtp_hdr, int *pkt_octet_len) {
   srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
 
@@ -83,7 +83,7 @@ srtp_validate_rtp_header(void *rtp_hdr, int *pkt_octet_len) {
     rtp_header_len += octets_in_rtp_extn_hdr;
 
   if (*pkt_octet_len < rtp_header_len)
-    return err_status_bad_param;
+    return srtp_err_status_bad_param;
 
   /* Verifing profile length. */
   if (hdr->x == 1) {
@@ -93,9 +93,9 @@ srtp_validate_rtp_header(void *rtp_hdr, int *pkt_octet_len) {
     rtp_header_len += profile_len * 4;
     /* profile length counts the number of 32-bit words */
     if (*pkt_octet_len < rtp_header_len)
-      return err_status_bad_param;
+      return srtp_err_status_bad_param;
   }
-  return err_status_ok;
+  return srtp_err_status_ok;
 }
 
 const char *srtp_get_version_string ()
