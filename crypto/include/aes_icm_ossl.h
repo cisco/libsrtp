@@ -50,12 +50,21 @@
 #include <openssl/evp.h>
 #include <openssl/aes.h>
 
+#ifdef OPENSSL_IS_BORINGSSL
+// BoringSSL doesn't support AES-192, cipher will be disabled
+#define SRTP_NO_AES192
+#endif
+
 #define     SALT_SIZE               14
 #define     AES_128_KEYSIZE         AES_BLOCK_SIZE
+#ifndef SRTP_NO_AES192
 #define     AES_192_KEYSIZE         AES_BLOCK_SIZE + AES_BLOCK_SIZE / 2
+#endif
 #define     AES_256_KEYSIZE         AES_BLOCK_SIZE * 2
 #define     AES_128_KEYSIZE_WSALT   AES_128_KEYSIZE + SALT_SIZE
+#ifndef SRTP_NO_AES192
 #define     AES_192_KEYSIZE_WSALT   AES_192_KEYSIZE + SALT_SIZE
+#endif
 #define     AES_256_KEYSIZE_WSALT   AES_256_KEYSIZE + SALT_SIZE
 
 typedef struct {
