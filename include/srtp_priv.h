@@ -229,6 +229,7 @@ typedef struct srtp_stream_ctx_t {
   key_limit_ctx_t *limit;
   direction_t direction;
   int        allow_repeat_tx;
+  int        allow_repeat_rx;
   ekt_stream_t ekt; 
   uint8_t    salt[SRTP_AEAD_SALT_LEN];   /* used with GCM mode for SRTP */
   uint8_t    c_salt[SRTP_AEAD_SALT_LEN]; /* used with GCM mode for SRTCP */

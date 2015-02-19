@@ -242,6 +242,13 @@ typedef struct srtp_policy_t {
 				*   transmissions must have the same RTP
 				*   payload, or a severe security weakness
 				*   is introduced!)                      */
+  int        allow_repeat_rx;  /**< Whether rerecptions of
+				*   packets with the same sequence number
+				*   are allowed. (Note this is a special feature
+				*   for SRTP-to-SRTP translators to not need
+				*   a jitterbuffer for reordering packets
+				*   and dealing with retransmitted packets
+				*   (caused by RTCP NACKs) */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;
 
