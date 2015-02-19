@@ -47,6 +47,10 @@
 #ifndef SHA1_H
 #define SHA1_H
 
+#ifdef HAVE_CONFIG_H
+    #include <config.h>
+#endif
+
 #include "err.h"
 #ifdef OPENSSL
 #include <openssl/evp.h>
