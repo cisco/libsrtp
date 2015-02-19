@@ -71,6 +71,32 @@ srtp_debug_module_t mod_srtp = {
 #define uint32s_in_rtp_header  3
 #define octets_in_rtcp_header  8
 #define uint32s_in_rtcp_header 2
+#define octets_in_rtp_extn_hdr 4
+
+static err_status_t
+srtp_validate_rtp_header(void *rtp_hdr, int *pkt_octet_len) {
+  srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
+
+  /* Check RTP header length */
+  int rtp_header_len = octets_in_rtp_header + 4 * hdr->cc;
+  if (hdr->x == 1)
+    rtp_header_len += octets_in_rtp_extn_hdr;
+
+  if (*pkt_octet_len < rtp_header_len)
+    return err_status_bad_param;
+
+  /* Verifing profile length. */
+  if (hdr->x == 1) {
+    srtp_hdr_xtnd_t *xtn_hdr =
+      (srtp_hdr_xtnd_t *)((uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc);
+    int profile_len = ntohs(xtn_hdr->length);
+    rtp_header_len += profile_len * 4;
+    /* profile length counts the number of 32-bit words */
+    if (*pkt_octet_len < rtp_header_len)
+      return err_status_bad_param;
+  }
+  return err_status_ok;
+}
 
 const char *srtp_get_version_string ()
 {
@@ -1181,6 +1207,11 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
 
   /* we assume the hdr is 32-bit aligned to start */
 
+  /* Verify RTP header */
+  status = srtp_validate_rtp_header(rtp_hdr, pkt_octet_len);
+  if (status)
+    return status;
+
    /* check the packet length - it must at least contain a full header */
    if (*pkt_octet_len < octets_in_rtp_header)
      return srtp_err_status_bad_param;
@@ -1436,6 +1467,11 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
 
   /* we assume the hdr is 32-bit aligned to start */
+
+  /* Verify RTP header */
+  status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
+  if (status)
+    return status;
 
   /* check the packet length - it must at least contain a full header */
   if (*pkt_octet_len < octets_in_rtp_header)
