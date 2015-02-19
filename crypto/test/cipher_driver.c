@@ -123,7 +123,9 @@ check_status(srtp_err_status_t s) {
 extern srtp_cipher_type_t srtp_null_cipher;
 extern srtp_cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
+#ifndef SRTP_NO_AES192
 extern srtp_cipher_type_t srtp_aes_icm_192;
+#endif
 extern srtp_cipher_type_t srtp_aes_icm_256;
 extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
 extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
@@ -188,9 +190,11 @@ main(int argc, char *argv[]) {
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&srtp_aes_icm, 46, num_cipher); 
 #else
+#ifndef SRTP_NO_AES192
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&srtp_aes_icm_192, 38, num_cipher); 
 
+#endif
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
       cipher_driver_test_array_throughput(&srtp_aes_icm_256, 46, num_cipher); 
 
@@ -208,7 +212,9 @@ main(int argc, char *argv[]) {
     cipher_driver_self_test(&srtp_null_cipher);
     cipher_driver_self_test(&srtp_aes_icm);
 #ifdef OPENSSL
+#ifndef SRTP_NO_AES192
     cipher_driver_self_test(&srtp_aes_icm_192);
+#endif
     cipher_driver_self_test(&srtp_aes_icm_256);
     cipher_driver_self_test(&srtp_aes_gcm_128_openssl);
     cipher_driver_self_test(&srtp_aes_gcm_256_openssl);
