@@ -142,6 +142,10 @@ if test "$enable_openssl" = "yes"; then
    LDFLAGS="$LDFLAGS $(pkg-config --libs openssl)";
    CFLAGS="$CFLAGS $(pkg-config --cflags openssl)";
 
+   AC_CHECK_LIB([dl], [dlopen], [],
+             [AC_MSG_FAILURE([can't find libdl])])
+   AC_CHECK_LIB([z], [inflate], [],
+             [AC_MSG_FAILURE([can't find libz])])
    AC_CHECK_LIB([crypto], [EVP_EncryptInit], [],
              [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
    AC_CHECK_LIB([crypto], [EVP_aes_128_ctr], [],
