@@ -4882,10 +4882,8 @@ _ACEOF
   LIBS="-ldl $LIBS"
 
 else
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find libdl
-See \`config.log' for more details" "$LINENO" 5; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find libdl" >&5
+$as_echo "$as_me: WARNING: can't find libdl" >&2;}
 fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflate in -lz" >&5
@@ -4932,10 +4930,8 @@ _ACEOF
   LIBS="-lz $LIBS"
 
 else
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find libz
-See \`config.log' for more details" "$LINENO" 5; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find libz" >&5
+$as_echo "$as_me: WARNING: can't find libz" >&2;}
 fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for EVP_EncryptInit in -lcrypto" >&5
