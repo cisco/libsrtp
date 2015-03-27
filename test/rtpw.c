@@ -68,6 +68,9 @@
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>         /* for close()         */
+#elif defined(_MSC_VER)
+#include <io.h>             /* for _close()        */
+#define close _close
 #endif
 #ifdef HAVE_SYS_SOCKET_H
 # include <sys/socket.h>
