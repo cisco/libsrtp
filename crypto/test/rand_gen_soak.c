@@ -43,7 +43,7 @@
 #endif
 
 #include <stdio.h>           /* for printf() */
-#include <unistd.h>          /* for getopt() */
+#include "getopt_s.h"
 #include "crypto_kernel.h"
 
 #define BUF_LEN (MAX_PRINT_STRING_LEN/2)
@@ -51,7 +51,6 @@
 int main(int argc, char *argv[])
 {
     int q;
-    extern char *optarg;
     int num_octets = 0;
     err_status_t status;
     uint32_t iterations = 0;
@@ -68,7 +67,7 @@ int main(int argc, char *argv[])
     }
 
     while (1) {
-        q = getopt(argc, argv, "pvn:");
+        q = getopt_s(argc, argv, "pvn:");
         if (q == -1) {
             break;
         }
@@ -77,7 +76,7 @@ int main(int argc, char *argv[])
             print_values = 1;
             break;
         case 'n':
-            num_octets = atoi(optarg);
+            num_octets = atoi(optarg_s);
             if (num_octets < 0 || num_octets > BUF_LEN) {
                 exit(255);
             }

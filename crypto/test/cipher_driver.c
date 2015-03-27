@@ -50,7 +50,7 @@
 #include <stdio.h>           /* for printf() */
 #include <stdlib.h>          /* for rand() */
 #include <string.h>          /* for memset() */
-#include <unistd.h>          /* for getopt() */
+#include "getopt_s.h"
 #include "cipher.h"
 #ifdef OPENSSL
 #include "aes_icm_ossl.h"
@@ -153,7 +153,7 @@ main(int argc, char *argv[]) {
 
   /* process input arguments */
   while (1) {
-    q = getopt(argc, argv, "tva");
+    q = getopt_s(argc, argv, "tva");
     if (q == -1) 
       break;
     switch (q) {
