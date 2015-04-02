@@ -211,14 +211,13 @@ err_status_t aes_gcm_openssl_set_iv (aes_gcm_ctx_t *c, void *iv,
 	                             int direction)
 {
     const EVP_CIPHER *evp;
-    v128_t *nonce = iv;
 
     if (direction != direction_encrypt && direction != direction_decrypt) {
         return (err_status_bad_param);
     }
     c->dir = direction;
 
-    debug_print(mod_aes_gcm, "setting iv: %s", v128_hex_string(nonce));
+    debug_print(mod_aes_gcm, "setting iv: %s", v128_hex_string(iv));
 
     switch (c->key_size) {
     case AES_256_KEYSIZE:

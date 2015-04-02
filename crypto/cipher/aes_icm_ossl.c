@@ -65,7 +65,9 @@ debug_module_t mod_aes_icm = {
 };
 extern cipher_test_case_t aes_icm_test_case_0;
 extern cipher_type_t aes_icm;
+#ifndef SRTP_NO_AES192
 extern cipher_type_t aes_icm_192;
+#endif
 extern cipher_type_t aes_icm_256;
 
 /*
@@ -74,7 +76,7 @@ extern cipher_type_t aes_icm_256;
  * 16 bits
  * <----->
  * +------+------+------+------+------+------+------+------+
- * |           nonce           |    pakcet index    |  ctr |---+
+ * |           nonce           |    packet index    |  ctr |---+
  * +------+------+------+------+------+------+------+------+   |
  *                                                             |
  * +------+------+------+------+------+------+------+------+   v
@@ -121,7 +123,10 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     /*
      * Verify the key_len is valid for one of: AES-128/192/256
      */
-    if (key_len != AES_128_KEYSIZE_WSALT && key_len != AES_192_KEYSIZE_WSALT &&
+    if (key_len != AES_128_KEYSIZE_WSALT &&
+#ifndef SRTP_NO_AES192
+        key_len != AES_192_KEYSIZE_WSALT &&
+#endif
         key_len != AES_256_KEYSIZE_WSALT) {
         return err_status_bad_param;
     }
@@ -146,12 +151,14 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
         aes_icm.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_128_KEYSIZE;
         break;
+#ifndef SRTP_NO_AES192
     case AES_192_KEYSIZE_WSALT:
         (*c)->algorithm = AES_192_ICM;
         (*c)->type = &aes_icm_192;
         aes_icm_192.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_192_KEYSIZE;
         break;
+#endif
     case AES_256_KEYSIZE_WSALT:
         (*c)->algorithm = AES_256_ICM;
         (*c)->type = &aes_icm_256;
@@ -190,9 +197,11 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
         case AES_256_KEYSIZE:
             aes_icm_256.ref_count--;
             break;
+#ifndef SRTP_NO_AES192
         case AES_192_KEYSIZE:
             aes_icm_192.ref_count--;
             break;
+#endif
         case AES_128_KEYSIZE:
             aes_icm.ref_count--;
             break;
@@ -221,12 +230,16 @@ err_status_t aes_icm_openssl_dealloc (cipher_t *c)
  * the salt is unpredictable (but not necessarily secret) data which
  * randomizes the starting point in the keystream
  */
-err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key)
+err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key, int len)
 {
     /*
      * set counter and initial values to 'offset' value, being careful not to
      * go past the end of the key buffer
      */
+
+    if (c->key_size + SALT_SIZE != len)
+        return err_status_bad_param;
+
     v128_set_to_zero(&c->counter);
     v128_set_to_zero(&c->offset);
     memcpy(&c->counter, key + c->key_size, SALT_SIZE);
@@ -245,7 +258,11 @@ err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key)
      * key is statically allocated to handle a full 32 byte key
      * regardless of the cipher in use.
      */
-    if (c->key_size == AES_256_KEYSIZE || c->key_size == AES_192_KEYSIZE) {
+    if (c->key_size == AES_256_KEYSIZE
+#ifndef SRTP_NO_AES192
+        || c->key_size == AES_192_KEYSIZE
+#endif
+        ) {
         debug_print(mod_aes_icm, "Copying last 16 bytes of key: %s",
                     v128_hex_string((v128_t*)(key + AES_128_KEYSIZE)));
         v128_copy_octet_string(((v128_t*)(&c->key.v8)) + 1, key + AES_128_KEYSIZE);
@@ -267,11 +284,14 @@ err_status_t aes_icm_openssl_context_init (aes_icm_ctx_t *c, const uint8_t *key)
 err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
 {
     const EVP_CIPHER *evp;
-    v128_t *nonce = (v128_t*)iv;
+    v128_t nonce;
 
-    debug_print(mod_aes_icm, "setting iv: %s", v128_hex_string(nonce));
+    /* set nonce (for alignment) */
+    v128_copy_octet_string(&nonce, iv);
 
-    v128_xor(&c->counter, &c->offset, nonce);
+    debug_print(mod_aes_icm, "setting iv: %s", v128_hex_string(&nonce));
+
+    v128_xor(&c->counter, &c->offset, &nonce);
 
     debug_print(mod_aes_icm, "set_counter: %s", v128_hex_string(&c->counter));
 
@@ -279,9 +299,11 @@ err_status_t aes_icm_openssl_set_iv (aes_icm_ctx_t *c, void *iv, int dir)
     case AES_256_KEYSIZE:
         evp = EVP_aes_256_ctr();
         break;
+#ifndef SRTP_NO_AES192
     case AES_192_KEYSIZE:
         evp = EVP_aes_192_ctr();
         break;
+#endif
     case AES_128_KEYSIZE:
         evp = EVP_aes_128_ctr();
         break;
@@ -317,7 +339,7 @@ err_status_t aes_icm_openssl_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsi
     }
     *enc_len = len;
 
-    if (!EVP_EncryptFinal_ex(&c->ctx, buf, (int*)&len)) {
+    if (!EVP_EncryptFinal_ex(&c->ctx, buf, &len)) {
         return err_status_cipher_fail;
     }
     *enc_len += len;
@@ -325,25 +347,18 @@ err_status_t aes_icm_openssl_encrypt (aes_icm_ctx_t *c, unsigned char *buf, unsi
     return err_status_ok;
 }
 
-/*
- * Abstraction layer for encrypt.
- */
-err_status_t aes_icm_output (aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output)
+uint16_t aes_icm_bytes_encrypted(aes_icm_ctx_t *c)
 {
-    unsigned int len = num_octets_to_output;
-
-    /* zeroize the buffer */
-    octet_string_set_to_zero(buffer, num_octets_to_output);
-
-    /* exor keystream into buffer */
-    return aes_icm_openssl_encrypt(c, buffer, &len);
+    return htons(c->counter.v16[7]);
 }
 
 /*
  * Name of this crypto engine
  */
 char aes_icm_openssl_description[] = "AES-128 counter mode using openssl";
+#ifndef SRTP_NO_AES192
 char aes_icm_192_openssl_description[] = "AES-192 counter mode using openssl";
+#endif
 char aes_icm_256_openssl_description[] = "AES-256 counter mode using openssl";
 
 
@@ -391,6 +406,7 @@ cipher_test_case_t aes_icm_test_case_0 = {
     NULL                                   /* pointer to next testcase */
 };
 
+#ifndef SRTP_NO_AES192
 /*
  * KAT values for AES-192-CTR self-test.  These
  * values came from section 7 of RFC 6188.
@@ -435,7 +451,7 @@ cipher_test_case_t aes_icm_192_test_case_1 = {
     0,
     NULL                                   /* pointer to next testcase */
 };
-
+#endif
 
 /*
  * KAT values for AES-256-CTR self-test.  These
@@ -503,6 +519,7 @@ cipher_type_t aes_icm = {
     (cipher_type_id_t)             AES_ICM
 };
 
+#ifndef SRTP_NO_AES192
 /*
  * This is the function table for this crypto engine.
  * note: the encrypt function is identical to the decrypt function
@@ -522,6 +539,7 @@ cipher_type_t aes_icm_192 = {
     (debug_module_t*)              &mod_aes_icm,
     (cipher_type_id_t)             AES_192_ICM
 };
+#endif
 
 /*
  * This is the function table for this crypto engine.

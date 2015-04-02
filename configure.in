@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([libsrtp], [1.5.0], [https://github.com/cisco/libsrtp/issues])
+AC_INIT([libsrtp], [1.5.2-dev], [https://github.com/cisco/libsrtp/issues])
 
 dnl Must come before AC_PROG_CC
 if test -z "$CFLAGS"; then
@@ -25,13 +25,8 @@ case $host_cpu in
         AC_DEFINE(HAVE_X86, 1,
 	   [Define to use X86 inlined assembly code]);; 
 	* )
-	# CPU_RISC is only supported for big endian machines.
-	if test "$ac_cv_c_bigendian" = "yes"; then
 	   AC_DEFINE(CPU_RISC, 1,
 	    [Define if building for a RISC machine (assume slow byte access).])
-	else
-	   AC_DEFINE(CPU_CISC, 1)
-	fi
 	;;
 esac	
 
@@ -147,6 +142,10 @@ if test "$enable_openssl" = "yes"; then
    LDFLAGS="$LDFLAGS $(pkg-config --libs openssl)";
    CFLAGS="$CFLAGS $(pkg-config --cflags openssl)";
 
+   AC_CHECK_LIB([dl], [dlopen], [],
+             [AC_MSG_WARN([can't find libdl])])
+   AC_CHECK_LIB([z], [inflate], [],
+             [AC_MSG_WARN([can't find libz])])
    AC_CHECK_LIB([crypto], [EVP_EncryptInit], [],
              [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
    AC_CHECK_LIB([crypto], [EVP_aes_128_ctr], [],
@@ -181,6 +180,15 @@ AC_SUBST(AES_ICM_OBJS)
 AC_SUBST(RNG_OBJS)
 AC_SUBST(RNG_EXTRA_OBJS)
 AC_SUBST(HMAC_OBJS)
+
+dnl Checking for PCAP
+AC_CHECK_LIB([pcap],[pcap_create],
+    [PCAP=1
+     LIBS="-lpcap $LIBS"
+     HAVE_PCAP=1
+     AC_DEFINE(HAVE_PCAP, 1, [Define to 1 if you have the `pcap' library (-lpcap)])
+     AC_SUBST(HAVE_PCAP)
+])
 
 AC_MSG_CHECKING(whether to use syslog for error reporting)
 AC_ARG_ENABLE(syslog,

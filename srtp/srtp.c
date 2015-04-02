@@ -71,8 +71,34 @@ debug_module_t mod_srtp = {
 #define uint32s_in_rtp_header  3
 #define octets_in_rtcp_header  8
 #define uint32s_in_rtcp_header 2
+#define octets_in_rtp_extn_hdr 4
 
-char *srtp_get_version_string ()
+static err_status_t
+srtp_validate_rtp_header(void *rtp_hdr, int *pkt_octet_len) {
+  srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
+
+  /* Check RTP header length */
+  int rtp_header_len = octets_in_rtp_header + 4 * hdr->cc;
+  if (hdr->x == 1)
+    rtp_header_len += octets_in_rtp_extn_hdr;
+
+  if (*pkt_octet_len < rtp_header_len)
+    return err_status_bad_param;
+
+  /* Verifing profile length. */
+  if (hdr->x == 1) {
+    srtp_hdr_xtnd_t *xtn_hdr =
+      (srtp_hdr_xtnd_t *)((uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc);
+    int profile_len = ntohs(xtn_hdr->length);
+    rtp_header_len += profile_len * 4;
+    /* profile length counts the number of 32-bit words */
+    if (*pkt_octet_len < rtp_header_len)
+      return err_status_bad_param;
+  }
+  return err_status_ok;
+}
+
+const char *srtp_get_version_string ()
 {
     /*
      * Simply return the autotools generated string
@@ -1064,7 +1090,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * the tag size.  It must always be at least as large
      * as the tag length.
      */
-    if (enc_octet_len < tag_len) {
+    if (enc_octet_len < (unsigned int) tag_len) {
         return err_status_cipher_fail;
     }
 
@@ -1181,6 +1207,11 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
    debug_print(mod_srtp, "function srtp_protect", NULL);
 
   /* we assume the hdr is 32-bit aligned to start */
+
+  /* Verify RTP header */
+  status = srtp_validate_rtp_header(rtp_hdr, pkt_octet_len);
+  if (status)
+    return status;
 
    /* check the packet length - it must at least contain a full header */
    if (*pkt_octet_len < octets_in_rtp_header)
@@ -1437,6 +1468,11 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
 
   /* we assume the hdr is 32-bit aligned to start */
+
+  /* Verify RTP header */
+  status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
+  if (status)
+    return status;
 
   /* check the packet length - it must at least contain a full header */
   if (*pkt_octet_len < octets_in_rtp_header)
@@ -2842,7 +2878,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* check the packet length - it must contain at least a full RTCP
      header, an auth tag (if applicable), and the SRTCP encrypted flag
      and 31-bit index value */
-  if (*pkt_octet_len < (octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))) {
+  if (*pkt_octet_len < (int) (octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))) {
     return err_status_bad_param;
   }
 

@@ -15,9 +15,10 @@
 # tags          builds etags file from all .c and .h files
 
 USE_OPENSSL = @USE_OPENSSL@
+HAVE_PCAP = @HAVE_PCAP@
 HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 
-.PHONY: all test build_table_apps
+.PHONY: all shared_library test build_table_apps
 
 all: test 
 
@@ -43,10 +44,10 @@ endif
 CC	= @CC@
 INCDIR	= -Icrypto/include -I$(srcdir)/include -I$(srcdir)/crypto/include
 DEFS	= @DEFS@
-CPPFLAGS= @CPPFLAGS@
+CPPFLAGS= -fPIC @CPPFLAGS@
 CFLAGS	= @CFLAGS@
 LIBS	= @LIBS@
-LDFLAGS	= @LDFLAGS@ -L.
+LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 SRTPLIB	= -lsrtp
 
@@ -75,10 +76,31 @@ prefix = @prefix@
 exec_prefix = @exec_prefix@
 includedir = @includedir@
 libdir = @libdir@
+bindir = @bindir@
 
 ifeq (1, $(HAVE_PKG_CONFIG))
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libsrtp.pc
+endif
+
+SHAREDLIBVERSION = 1
+ifeq (linux,$(findstring linux,@host@))
+SHAREDLIB_DIR = $(libdir)
+SHAREDLIB_LDFLAGS = -shared -Wl,-soname,$@
+SHAREDLIBSUFFIXNOVER = so
+SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER).$(SHAREDLIBVERSION)
+else ifeq (mingw,$(findstring mingw,@host@))
+SHAREDLIB_DIR = $(bindir)
+SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp.dll.a
+SHAREDLIBVERSION =
+SHAREDLIBSUFFIXNOVER = dll
+SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER)
+else ifeq (darwin,$(findstring darwin,@host@))
+SHAREDLIB_DIR = $(libdir)
+SHAREDLIB_LDFLAGS = -dynamiclib -twolevel_namespace -undefined dynamic_lookup \
+        -fno-common -headerpad_max_install_names -install_name $(libdir)/$@
+SHAREDLIBSUFFIXNOVER = dylib
+SHAREDLIBSUFFIX = $(SHAREDLIBVERSION).$(SHAREDLIBSUFFIXNOVER)
 endif
 
 # implicit rules for object files and test apps
@@ -121,9 +143,14 @@ libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
 	ar cr libsrtp.a $^
 	$(RANLIB) libsrtp.a
 
-libsrtp.so: $(srtpobj) $(cryptobj) $(gdoi) 
-	$(CC) -shared -Wl,-soname,libsrtp.so \
-	    -o libsrtp.so $^ $(LDFLAGS)
+libsrtp.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
+	$(CC) -shared -o $@ $(SHAREDLIB_LDFLAGS) \
+                $^ $(LDFLAGS) $(LIBS)
+	if [ -n "$(SHAREDLIBVERSION)" ]; then \
+		ln -sfn $@ libsrtp.$(SHAREDLIBSUFFIXNOVER); \
+	fi
+
+shared_library: libsrtp.$(SHAREDLIBSUFFIX)
 
 # libcryptomath.a contains general-purpose routines that are used to
 # generate tables and verify cryptoalgorithm implementations - this
@@ -150,10 +177,21 @@ testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
 	  test/dtls_srtp_driver$(EXE)
 
+ifeq (1, $(HAVE_PCAP))
+testapp += test/rtp_decoder$(EXE)
+endif
+
 $(testapp): libsrtp.a
 
-test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c
-	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c \
+        crypto/math/datatypes.c
+	$(COMPILE) -DTESTAPP_SOURCE=1 $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+ifeq (1, $(HAVE_PCAP))
+test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/getopt_s.c \
+        crypto/math/datatypes.c
+	$(COMPILE) -DTESTAPP_SOURCE=1 $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+endif
 
 test/srtp_driver$(EXE): test/srtp_driver.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
@@ -162,6 +200,18 @@ test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/kernel_driver$(EXE): crypto/test/kernel_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/rand_gen$(EXE): crypto/test/rand_gen.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/rand_gen_soak$(EXE): crypto/test/rand_gen_soak.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test: $(testapp)
@@ -212,25 +262,26 @@ libsrtpdoc:
 .PHONY: clean superclean distclean install
 
 install:
-	@if [ -r $(DESTDIR)$(includedir)/srtp/srtp.h ]; then \
-	   echo "you should run 'make uninstall' first"; exit 1;  \
-	fi
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
 	$(INSTALL) -d $(DESTDIR)$(libdir)
 	cp $(srcdir)/include/*.h $(DESTDIR)$(includedir)/srtp  
 	cp $(srcdir)/crypto/include/*.h $(DESTDIR)$(includedir)/srtp
 	if [ "$(srcdir)" != "." ]; then cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp; fi
 	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp.so ]; then cp libsrtp.so $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp.dll.a ]; then cp libsrtp.dll.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp.$(SHAREDLIBSUFFIX) ]; then \
+		$(INSTALL) -d $(DESTDIR)$(SHAREDLIB_DIR); \
+		cp libsrtp.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		ln -sfn libsrtp.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp.$(SHAREDLIBSUFFIXNOVER); \
+	fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
-		cp $(srcdir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
+		cp $(top_builddir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
 	fi
 
 uninstall:
 	rm -f $(DESTDIR)$(includedir)/srtp/*.h
-	rm -f $(DESTDIR)$(libdir)/libsrtp.a
-	rm -f $(DESTDIR)$(libdir)/libsrtp.so
+	rm -f $(DESTDIR)$(libdir)/libsrtp.*
 	-rmdir $(DESTDIR)$(includedir)/srtp
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA); \
@@ -238,7 +289,7 @@ uninstall:
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
-        libcryptomath.a libsrtp.a libsrtp.so core *.core test/core
+        libcryptomath.a libsrtp.a libsrtp.so libsrtp.dll.a core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;

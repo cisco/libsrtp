@@ -287,12 +287,15 @@ aes_icm_set_octet(aes_icm_ctx_t *c,
 
 err_status_t
 aes_icm_set_iv(aes_icm_ctx_t *c, void *iv, int direction) {
-  v128_t *nonce = (v128_t *) iv;
+  v128_t nonce;
+
+  /* set nonce (for alignment) */
+  v128_copy_octet_string(&nonce, iv);
 
   debug_print(mod_aes_icm, 
-	      "setting iv: %s", v128_hex_string(nonce)); 
+	      "setting iv: %s", v128_hex_string(&nonce)); 
  
-  v128_xor(&c->counter, &c->offset, nonce);
+  v128_xor(&c->counter, &c->offset, &nonce);
   
   debug_print(mod_aes_icm, 
 	      "set_counter: %s", v128_hex_string(&c->counter)); 
@@ -330,17 +333,13 @@ aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
     uint32_t temp;    
     //alex's clock counter forward
     temp = ntohl(c->counter.v32[3]);
-    c->counter.v32[3] = htonl(++temp);
+    ++temp;
+    c->counter.v32[3] = htonl(temp);
   } else {
     if (!++(c->counter.v8[15])) 
       ++(c->counter.v8[14]);
   }
 }
-
-static inline void aes_icm_advance(aes_icm_ctx_t *c) {
-  aes_icm_advance_ismacryp(c, 0);
-}
-
 
 /*e
  * icm_encrypt deals with the following cases:
@@ -469,7 +468,7 @@ aes_icm_encrypt(aes_icm_ctx_t *c, unsigned char *buf, unsigned int *enc_len) {
 }
 
 err_status_t
-aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output) {
+aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, unsigned int num_octets_to_output) {
   unsigned int len = num_octets_to_output;
   
   /* zeroize the buffer */

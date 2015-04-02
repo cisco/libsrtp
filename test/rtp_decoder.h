@@ -1,16 +1,16 @@
 /*
- * aes_icm.h
+ * rtp_decoder.h
  *
- * Header for AES Integer Counter Mode.
+ * decoder structures and functions for SRTP pcap decoder
  *
- * David A. McGrew
- * Cisco Systems, Inc.
+ * Bernardo Torres <bernardo@torresautomacao.com.br>
+ *
+ * Some structure and code from https://github.com/gteissier/srtp-decrypt
  *
  */
-
 /*
  *	
- * Copyright (c) 2001-2006, Cisco Systems, Inc.
+ * Copyright (c) 2001-2006 Cisco Systems, Inc.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -44,53 +44,76 @@
  *
  */
 
-#ifndef AES_ICM_H
-#define AES_ICM_H
 
-#include "aes.h"
-#include "cipher.h"
+#ifndef RTP_DECODER_H
+#define RTP_DECODER_H
 
-typedef struct {
-  v128_t   counter;                /* holds the counter value          */
-  v128_t   offset;                 /* initial offset value             */
-  v128_t   keystream_buffer;       /* buffers bytes of keystream       */
-  aes_expanded_key_t expanded_key; /* the cipher key                   */
-  int      bytes_in_buffer;        /* number of unused bytes in buffer */
-} aes_icm_ctx_t;
+#include "srtp_priv.h"
+#include "rtp_priv.h"
+#include "rtp.h"
+#include "datatypes.h"
 
+#define DEFAULT_RTP_OFFSET 42
+
+typedef struct rtp_decoder_ctx_t {
+  srtp_policy_t policy;
+  srtp_ctx_t *srtp_ctx;
+  int rtp_offset;
+  struct timeval start_tv;
+  int frame_nr;
+  rtp_msg_t message;
+} rtp_decoder_ctx_t;
+
+typedef struct rtp_decoder_ctx_t *rtp_decoder_t;
+
+/*
+ * error to string
+ */
+
+void rtp_print_error(err_status_t status, char *message);
+
+/* 
+ * prints the output of a random buffer in hexadecimal
+ */
+
+void
+hexdump(const void *ptr, size_t size);
+
+/*
+ * the function usage() prints an error message describing how this
+ * program should be called, then calls exit()
+ */
+
+void
+usage(char *prog_name);
+
+/*
+ * transforms base64 key into octet
+ */
+
+char *decode_sdes(char *in, char *out);
+
+/* 
+ * pcap handling
+ */
+
+void
+rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
+	const u_char *bytes);
+
+rtp_decoder_t
+rtp_decoder_alloc(void);
+
+void
+rtp_decoder_dealloc(rtp_decoder_t rtp_ctx);
+
+int
+rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy);
 
 err_status_t
-aes_icm_context_init(aes_icm_ctx_t *c,
-		     const unsigned char *key,
-		     int key_len); 
+rtp_decoder_init_srtp(rtp_decoder_t decoder, unsigned int ssrc);
 
-err_status_t
-aes_icm_set_iv(aes_icm_ctx_t *c, void *iv, int direction);
+int
+rtp_decoder_deinit_srtp(rtp_decoder_t decoder);
 
-err_status_t
-aes_icm_encrypt(aes_icm_ctx_t *c,
-		unsigned char *buf, unsigned int *bytes_to_encr);
-
-err_status_t
-aes_icm_output(aes_icm_ctx_t *c,
-	       unsigned char *buf, unsigned int bytes_to_output);
-
-err_status_t 
-aes_icm_dealloc(cipher_t *c);
- 
-err_status_t 
-aes_icm_encrypt_ismacryp(aes_icm_ctx_t *c, 
-			 unsigned char *buf, 
-			 unsigned int *enc_len, 
-			 int forIsmacryp);
- 
-err_status_t 
-aes_icm_alloc_ismacryp(cipher_t **c, 
-		       int key_len, 
-		       int forIsmacryp);
-
-uint16_t
-aes_icm_bytes_encrypted(aes_icm_ctx_t *c);
-
-#endif /* AES_ICM_H */
-
+#endif /* RTP_DECODER_H */

@@ -242,7 +242,7 @@ test_replay_dbx(int num_trials, unsigned long ws) {
    *  test sequential insertion 
    */
   printf("\ttesting sequential insertion...");
-  for (idx=0; idx < num_trials; idx++) {
+  for (idx=0; (int) idx < num_trials; idx++) {
     status = rdbx_check_add(&rdbx, idx);
     if (status)
       return status;
@@ -261,7 +261,7 @@ test_replay_dbx(int num_trials, unsigned long ws) {
     printf("warning: no false positive tests performed\n");
   }
   printf("\ttesting for false positives...");
-  for (idx=0; idx < num_fp_trials; idx++) {
+  for (idx=0; (int) idx < num_fp_trials; idx++) {
     status = rdbx_check_expect_failure(&rdbx, idx);
     if (status)
       return status;
@@ -285,7 +285,7 @@ test_replay_dbx(int num_trials, unsigned long ws) {
   ut_init(&utc);
 
   printf("\ttesting non-sequential insertion...");  
-  for (idx=0; idx < num_trials; idx++) {
+  for (idx=0; (int) idx < num_trials; idx++) {
     ircvd = ut_next_index(&utc);
     status = rdbx_check_add_unordered(&rdbx, ircvd);
     if (status)
@@ -309,7 +309,7 @@ test_replay_dbx(int num_trials, unsigned long ws) {
    * check for false positives for each insertion.
    */
   printf("\ttesting insertion with large gaps...");  
-  for (idx=0, ircvd=0; idx < num_trials; idx++, ircvd += (1 << (rand() % 12))) {
+  for (idx=0, ircvd=0; (int) idx < num_trials; idx++, ircvd += (1 << (rand() % 12))) {
     status = rdbx_check_add(&rdbx, ircvd);
     if (status)
       return status;
@@ -345,7 +345,7 @@ rdbx_check_adds_per_second(int num_trials, unsigned long ws) {
 
   failures = 0;
   timer = clock();
-  for(i=0; i < num_trials; i++) {
+  for(i=0; (int) i < num_trials; i++) {
     
     delta = index_guess(&rdbx.index, &est, i);
     

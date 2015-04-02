@@ -77,6 +77,7 @@ aes_cbc_alloc(cipher_t **c, int key_len, int tlen) {
 
   /* set pointers */
   *c = (cipher_t *)pointer;
+  (*c)->algorithm = AES_CBC;
   (*c)->type = &aes_cbc;
   (*c)->state = pointer + sizeof(cipher_t);
 
