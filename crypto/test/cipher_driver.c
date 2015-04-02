@@ -50,7 +50,7 @@
 #include <stdio.h>           /* for printf() */
 #include <stdlib.h>          /* for rand() */
 #include <string.h>          /* for memset() */
-#include <unistd.h>          /* for getopt() */
+#include "getopt_s.h"
 #include "cipher.h"
 #ifdef OPENSSL
 #include "aes_icm_ossl.h"
@@ -153,7 +153,7 @@ main(int argc, char *argv[]) {
 
   /* process input arguments */
   while (1) {
-    q = getopt(argc, argv, "tva");
+    q = getopt_s(argc, argv, "tva");
     if (q == -1) 
       break;
     switch (q) {
@@ -373,11 +373,12 @@ cipher_driver_self_test(cipher_type_t *ct) {
  * calls
  */
 
+#define INITIAL_BUFLEN 1024
 err_status_t
 cipher_driver_test_buffering(cipher_t *c) {
   int i, j, num_trials = 1000;
-  unsigned len, buflen = 1024;
-  uint8_t buffer0[buflen], buffer1[buflen], *current, *end;
+  unsigned len, buflen = INITIAL_BUFLEN;
+  uint8_t buffer0[INITIAL_BUFLEN], buffer1[INITIAL_BUFLEN], *current, *end;
   uint8_t idx[16] = { 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34
@@ -390,8 +391,9 @@ cipher_driver_test_buffering(cipher_t *c) {
   for (i=0; i < num_trials; i++) {
 
    /* set buffers to zero */
-    for (j=0; j < buflen; j++) 
+    for (j=0; j < (int) buflen; j++) {
       buffer0[j] = buffer1[j] = 0;
+    }
     
     /* initialize cipher  */
     status = cipher_set_iv(c, idx, direction_encrypt);
@@ -433,7 +435,7 @@ cipher_driver_test_buffering(cipher_t *c) {
     }
 
     /* compare buffers */
-    for (j=0; j < buflen; j++)
+    for (j=0; j < (int) buflen; j++) {
       if (buffer0[j] != buffer1[j]) {
 #if PRINT_DEBUG
 	printf("test case %d failed at byte %d\n", i, j);
@@ -442,6 +444,7 @@ cipher_driver_test_buffering(cipher_t *c) {
 #endif 
 	return err_status_algo_fail;
       }
+    }
   }
   
   printf("passed\n");

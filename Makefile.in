@@ -202,6 +202,18 @@ test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
 test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
+crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/kernel_driver$(EXE): crypto/test/kernel_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/rand_gen$(EXE): crypto/test/rand_gen.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/rand_gen_soak$(EXE): crypto/test/rand_gen_soak.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
 test: $(testapp)
 	@echo "Build done. Please run '$(MAKE) runtest' to run self tests."
 

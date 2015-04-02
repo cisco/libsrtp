@@ -535,7 +535,7 @@ static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   "abcdefghijklmnopqrstuvwxyz0123456789+/";
 
 static int base64_block_to_octet_triple(char *out, char *in) {
-  unsigned char sextets[4] = {};
+  unsigned char sextets[4] = {0};
   int j = 0;
   int i;
 

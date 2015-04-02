@@ -1090,7 +1090,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * the tag size.  It must always be at least as large
      * as the tag length.
      */
-    if (enc_octet_len < tag_len) {
+    if (enc_octet_len < (unsigned int) tag_len) {
         return err_status_cipher_fail;
     }
 
@@ -2878,7 +2878,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* check the packet length - it must contain at least a full RTCP
      header, an auth tag (if applicable), and the SRTCP encrypted flag
      and 31-bit index value */
-  if (*pkt_octet_len < (octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))) {
+  if (*pkt_octet_len < (int) (octets_in_rtcp_header + tag_len + sizeof(srtcp_trailer_t))) {
     return err_status_bad_param;
   }
 

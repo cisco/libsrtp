@@ -223,5 +223,5 @@ rtp_receiver_alloc(void) {
 
 void
 rtp_receiver_dealloc(rtp_receiver_t rtp_ctx) {
-  return free(rtp_ctx);
+  free(rtp_ctx);
 }
