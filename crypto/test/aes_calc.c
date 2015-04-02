@@ -61,6 +61,7 @@
 #include "aes.h"
 #include <stdio.h>
 #include <string.h>
+#include "util.h"
 
 void
 usage(char *prog_name) {
@@ -74,10 +75,10 @@ int
 main (int argc, char *argv[]) {
   v128_t data;
   uint8_t key[AES_MAX_KEY_LEN];
-  aes_expanded_key_t exp_key;
+  srtp_aes_expanded_key_t exp_key;
   int key_len, len;
   int verbose = 0;
-  err_status_t status;
+  srtp_err_status_t status;
 
   if (argc == 3) {
     /* we're not in verbose mode */
@@ -138,14 +139,14 @@ main (int argc, char *argv[]) {
   }
 
   /* encrypt plaintext */
-  status = aes_expand_encryption_key(key, key_len, &exp_key);
+  status = srtp_aes_expand_encryption_key(key, key_len, &exp_key);
   if (status) {
     fprintf(stderr,
 	    "error: AES key expansion failed.\n");
     exit(1);
   }
 
-  aes_encrypt(&data, &exp_key);
+  srtp_aes_encrypt(&data, &exp_key);
 
   /* write ciphertext to output */
   if (verbose) {

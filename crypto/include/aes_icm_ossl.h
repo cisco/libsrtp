@@ -55,17 +55,15 @@
 #define SRTP_NO_AES192
 #endif
 
-#define     SALT_SIZE               14
-#define     AES_128_KEYSIZE         AES_BLOCK_SIZE
+#define     SRTP_SALT_SIZE               14
+#define     SRTP_AES_128_KEYSIZE         AES_BLOCK_SIZE
+#define     SRTP_AES_256_KEYSIZE         AES_BLOCK_SIZE * 2
+#define     SRTP_AES_128_KEYSIZE_WSALT   SRTP_AES_128_KEYSIZE + SRTP_SALT_SIZE
+#define     SRTP_AES_256_KEYSIZE_WSALT   SRTP_AES_256_KEYSIZE + SRTP_SALT_SIZE
 #ifndef SRTP_NO_AES192
-#define     AES_192_KEYSIZE         AES_BLOCK_SIZE + AES_BLOCK_SIZE / 2
+#define     SRTP_AES_192_KEYSIZE         AES_BLOCK_SIZE + AES_BLOCK_SIZE / 2
+#define     SRTP_AES_192_KEYSIZE_WSALT   SRTP_AES_192_KEYSIZE + SRTP_SALT_SIZE
 #endif
-#define     AES_256_KEYSIZE         AES_BLOCK_SIZE * 2
-#define     AES_128_KEYSIZE_WSALT   AES_128_KEYSIZE + SALT_SIZE
-#ifndef SRTP_NO_AES192
-#define     AES_192_KEYSIZE_WSALT   AES_192_KEYSIZE + SALT_SIZE
-#endif
-#define     AES_256_KEYSIZE_WSALT   AES_256_KEYSIZE + SALT_SIZE
 
 typedef struct {
     v128_t counter;                /* holds the counter value          */
@@ -73,13 +71,7 @@ typedef struct {
     v256_t key;
     int key_size;
     EVP_CIPHER_CTX ctx;
-} aes_icm_ctx_t;
-
-err_status_t aes_icm_openssl_set_iv(aes_icm_ctx_t *c, void *iv, int dir);
-err_status_t aes_icm_openssl_context_init(aes_icm_ctx_t *c, const uint8_t *key, int len);
-err_status_t aes_icm_output(aes_icm_ctx_t *c, uint8_t *buffer, int num_octets_to_output);
-uint16_t aes_icm_bytes_encrypted(aes_icm_ctx_t *c);
-
+} srtp_aes_icm_ctx_t;
 
 #endif /* AES_ICM_H */
 

@@ -52,15 +52,13 @@
 
 #include <stdarg.h>
 
-#ifndef SRTP_KERNEL
-# include <stdio.h>
-# include <string.h>
-# include <time.h>
-# ifdef HAVE_NETINET_IN_H
-#  include <netinet/in.h>
-# elif defined HAVE_WINSOCK2_H
-#  include <winsock2.h>
-# endif
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
+#ifdef HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#elif defined HAVE_WINSOCK2_H
+# include <winsock2.h>
 #endif
 
 
@@ -115,47 +113,16 @@ typedef union {
 int
 octet_get_weight(uint8_t octet);
 
-char *
-octet_bit_string(uint8_t x);
-
 #define MAX_PRINT_STRING_LEN 1024
 
 char *
-octet_string_hex_string(const void *str, int length);
+srtp_octet_string_hex_string(const void *str, int length);
 
 char *
 v128_bit_string(v128_t *x);
 
 char *
 v128_hex_string(v128_t *x);
-
-uint8_t
-nibble_to_hex_char(uint8_t nibble);
-
-char *
-char_to_hex_string(char *x, int num_char);
-
-uint8_t
-hex_string_to_octet(char *s);
-
-/*
- * hex_string_to_octet_string(raw, hex, len) converts the hexadecimal
- * string at *hex (of length len octets) to the equivalent raw data
- * and writes it to *raw.
- *
- * if a character in the hex string that is not a hexadeciaml digit
- * (0123456789abcdefABCDEF) is encountered, the function stops writing
- * data to *raw
- *
- * the number of hex digits copied (which is two times the number of
- * octets in *raw) is returned
- */
-
-int
-hex_string_to_octet_string(char *raw, char *hex, int len);
-
-v128_t
-hex_string_to_v128(char *s);
 
 void
 v128_copy_octet_string(v128_t *x, const uint8_t s[16]);
@@ -383,7 +350,7 @@ void
 octet_string_set_to_zero(uint8_t *s, int len);
 
 
-#if !defined(SRTP_KERNEL_LINUX) && defined(HAVE_CONFIG_H) 
+#if defined(HAVE_CONFIG_H) 
 
 /* 
  * Convert big endian integers to CPU byte order.
@@ -426,7 +393,7 @@ static inline uint64_t be64_to_cpu(uint64_t v) {
    return v;
 }
 
-#endif /* ! SRTP_KERNEL_LINUX */
+#endif 
 
 #endif /* WORDS_BIGENDIAN */
 
@@ -508,9 +475,5 @@ bitvector_left_shift(bitvector_t *x, int index);
 
 char *
 bitvector_bit_string(bitvector_t *x, char* buf, int len);
-
-#ifdef TESTAPP_SOURCE
-int base64_string_to_octet_string(char *raw, int *pad, char *base64, int len);
-#endif
 
 #endif /* _DATATYPES_H */

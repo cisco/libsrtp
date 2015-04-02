@@ -1,33 +1,32 @@
 /*
- * gf2_8.h
+ * util.h
  *
- * GF(256) implementation
+ * Utilities used by the test apps
  *
- * David A. McGrew
+ * John A. Foley
  * Cisco Systems, Inc.
  */
-
 /*
- *	
- * Copyright (c) 2001-2006, Cisco Systems, Inc.
+ *
+ * Copyright (c) 2014, Cisco Systems, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 
+ *
  *   Redistributions of source code must retain the above copyright
  *   notice, this list of conditions and the following disclaimer.
- * 
+ *
  *   Redistributions in binary form must reproduce the above
  *   copyright notice, this list of conditions and the following
  *   disclaimer in the documentation and/or other materials provided
  *   with the distribution.
- * 
+ *
  *   Neither the name of the Cisco Systems, Inc. nor the names of its
  *   contributors may be used to endorse or promote products derived
  *   from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -42,38 +41,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
+#ifndef _UTIL_H
+#define _UTIL_H
 
+#define MAX_PRINT_STRING_LEN 1024
 
-#ifndef GF2_8_H
-#define GF2_8_H
+int hex_string_to_octet_string(char *raw, char *hex, int len);
+char * octet_string_hex_string(const void *s, int length);
+int base64_string_to_octet_string(char *raw, int *pad, char *base64, int len);
 
-#include "datatypes.h"  /* for uint8_t definition */
-
-typedef uint8_t gf2_8;
-
-#define gf2_8_field_polynomial 0x1B
-
-/*
- * gf2_8_shift(x) returns 
- */
-
-/*
- * gf2_8_shift(z) returns the result of the GF(2^8) 'multiply by x' 
- * operation, using the field representation from AES; that is, the 
- * next gf2_8 value in the cyclic representation of that field.  The 
- * value z should be an uint8_t.
- */
-
-#define gf2_8_shift(z) (((z) & 128) ? \
-       (((z) << 1) ^ gf2_8_field_polynomial) : ((z) << 1))
-
-gf2_8
-gf2_8_compute_inverse(gf2_8 x);
-
-void
-test_gf2_8(void);
-
-gf2_8
-gf2_8_multiply(gf2_8 x, gf2_8 y);
-
-#endif /* GF2_8_H */
+#endif

@@ -7,9 +7,8 @@
 #
 # runtest       runs test applications 
 # test		builds test applications
-# libcrypt.a	static library implementing crypto engine
-# libsrtp.a	static library implementing srtp
-# libsrtp.so	shared library implementing srtp
+# libsrtp2.a	static library implementing srtp
+# libsrtp2.so	shared library implementing srtp
 # clean		removes objects, libs, and executables
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
@@ -18,12 +17,12 @@ USE_OPENSSL = @USE_OPENSSL@
 HAVE_PCAP = @HAVE_PCAP@
 HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 
-.PHONY: all shared_library test build_table_apps
+.PHONY: all shared_library test
 
 all: test 
 
-runtest: build_table_apps test
-	@echo "running libsrtp test applications..."
+runtest: test
+	@echo "running libsrtp2 test applications..."
 	crypto/test/cipher_driver$(EXE) -v >/dev/null
 	crypto/test/kernel_driver$(EXE) -v >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
@@ -31,12 +30,11 @@ runtest: build_table_apps test
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
-	crypto/test/rand_gen_soak$(EXE) -v >/dev/null
 	cd test; $(abspath $(srcdir))/test/rtpw_test.sh >/dev/null	
 ifeq (1, $(USE_OPENSSL))
 	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh >/dev/null	
 endif
-	@echo "libsrtp test applications passed."
+	@echo "libsrtp2 test applications passed."
 	$(MAKE) -C crypto runtest
 
 # makefile variables
@@ -49,7 +47,7 @@ CFLAGS	= @CFLAGS@
 LIBS	= @LIBS@
 LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
-SRTPLIB	= -lsrtp
+SRTPLIB	= -lsrtp2
 
 RANLIB	= @RANLIB@
 INSTALL	= @INSTALL@
@@ -58,14 +56,7 @@ INSTALL	= @INSTALL@
 # null on linux, bsd, and OS X and other OSes.
 EXE	= @EXE@
 
-# gdoi is the group domain of interpretation for isakmp, a group key
-# management system which can provide keys for srtp
-gdoi	= @GDOI_OBJS@
-
-# Random source.
-RNG_OBJS = @RNG_OBJS@
 HMAC_OBJS = @HMAC_OBJS@
-RNG_EXTRA_OBJS = @RNG_EXTRA_OBJS@
 AES_ICM_OBJS = @AES_ICM_OBJS@
 
 srcdir = @srcdir@
@@ -80,7 +71,7 @@ bindir = @bindir@
 
 ifeq (1, $(HAVE_PKG_CONFIG))
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libsrtp.pc
+pkgconfig_DATA = libsrtp2.pc
 endif
 
 SHAREDLIBVERSION = 1
@@ -91,7 +82,7 @@ SHAREDLIBSUFFIXNOVER = so
 SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER).$(SHAREDLIBVERSION)
 else ifeq (mingw,$(findstring mingw,@host@))
 SHAREDLIB_DIR = $(bindir)
-SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp.dll.a
+SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp2.dll.a
 SHAREDLIBVERSION =
 SHAREDLIBSUFFIXNOVER = dll
 SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER)
@@ -111,8 +102,6 @@ endif
 %$(EXE): %.c
 	$(COMPILE) $(LDFLAGS) $< -o $@ $(SRTPLIB) $(LIBS)
 
-
-# libcrypt.a (the crypto engine) 
 ciphers = crypto/cipher/cipher.o crypto/cipher/null_cipher.o      \
           $(AES_ICM_OBJS)     
 
@@ -122,46 +111,37 @@ hashes  = crypto/hash/null_auth.o  crypto/hash/auth.o            \
 replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
           crypto/replay/ut_sim.o 
 
-math    = crypto/math/datatypes.o crypto/math/stat.o
+math    = crypto/math/datatypes.o crypto/math/stat.o 
 
 ust     = crypto/ust/ust.o 
-
-rng     = crypto/rng/$(RNG_OBJS) $(RNG_EXTRA_OBJS) 
 
 err     = crypto/kernel/err.o
 
 kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
-          crypto/kernel/key.o $(rng) $(err) # $(ust) 
+          crypto/kernel/key.o $(err) # $(ust) 
 
-cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
+cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
-# libsrtp.a (implements srtp processing)
+# libsrtp2.a (implements srtp processing)
 
 srtpobj = srtp/srtp.o srtp/ekt.o
 
-libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
-	ar cr libsrtp.a $^
-	$(RANLIB) libsrtp.a
+libsrtp2.a: $(srtpobj) $(cryptobj) $(gdoi)
+	ar cr libsrtp2.a $^
+	$(RANLIB) libsrtp2.a
 
-libsrtp.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
+libsrtp2.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
 	$(CC) -shared -o $@ $(SHAREDLIB_LDFLAGS) \
                 $^ $(LDFLAGS) $(LIBS)
 	if [ -n "$(SHAREDLIBVERSION)" ]; then \
-		ln -sfn $@ libsrtp.$(SHAREDLIBSUFFIXNOVER); \
+		ln -sfn $@ libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
 	fi
 
-shared_library: libsrtp.$(SHAREDLIBSUFFIX)
+shared_library: libsrtp2.$(SHAREDLIBSUFFIX)
 
-# libcryptomath.a contains general-purpose routines that are used to
-# generate tables and verify cryptoalgorithm implementations - this
-# library is not meant to be included in production code
-
-cryptomath = crypto/math/math.o crypto/math/gf2_8.o 
-
-libcryptomath.a: $(cryptomath)
-	ar cr libcryptomath.a $(cryptomath)
-	$(RANLIB) libcryptomath.a
-
+libsrtp2.so: $(srtpobj) $(cryptobj) 
+	$(CC) -shared -Wl,-soname,libsrtp2.so \
+	    -o libsrtp2.so $^ $(LDFLAGS)
 
 # test applications 
 ifneq (1, $(USE_OPENSSL))
@@ -170,8 +150,8 @@ endif
 
 crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 	crypto/test/datatypes_driver$(EXE) crypto/test/kernel_driver$(EXE) \
-	crypto/test/rand_gen$(EXE) crypto/test/sha1_driver$(EXE) \
-	crypto/test/stat_driver$(EXE) crypto/test/rand_gen_soak$(EXE)
+	crypto/test/sha1_driver$(EXE) \
+	crypto/test/stat_driver$(EXE) 
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
@@ -181,19 +161,28 @@ ifeq (1, $(HAVE_PCAP))
 testapp += test/rtp_decoder$(EXE)
 endif
 
-$(testapp): libsrtp.a
+$(testapp): libsrtp2.a
 
-test/rtpw$(EXE): test/rtpw.c test/rtp.c test/getopt_s.c \
+test/rtpw$(EXE): test/rtpw.c test/rtp.c test/util.c test/getopt_s.c \
         crypto/math/datatypes.c
-	$(COMPILE) -DTESTAPP_SOURCE=1 $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 ifeq (1, $(HAVE_PCAP))
-test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/getopt_s.c \
+test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/util.c test/getopt_s.c \
         crypto/math/datatypes.c
-	$(COMPILE) -DTESTAPP_SOURCE=1 $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 endif
 
-test/srtp_driver$(EXE): test/srtp_driver.c test/getopt_s.c
+crypto/test/aes_calc$(EXE): crypto/test/aes_calc.c test/util.c
+	$(COMPILE) -I./test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/datatypes_driver$(EXE): crypto/test/datatypes_driver.c test/util.c
+	$(COMPILE) -I./test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/sha1_driver$(EXE): crypto/test/sha1_driver.c test/util.c
+	$(COMPILE) -I./test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/srtp_driver$(EXE): test/srtp_driver.c test/util.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
@@ -226,19 +215,6 @@ memtest: test/srtp_driver
 	@echo "passed (same number of alloc() and dealloc() calls found)"
 	@rm freed allocated tmp
 
-# tables_apps are used to generate the tables used in the crypto
-# implementations; these need only be generated during porting, not
-# for building libsrtp or the test applications
-
-table_apps = tables/aes_tables 
-
-build_table_apps: $(table_apps)
-
-# in the tables/ subdirectory, we use libcryptomath instead of libsrtp
-
-tables/%: tables/%.c libcryptomath.a 
-	$(COMPILE) $(LDFLAGS) $< -o $@ $(LIBS) libcryptomath.a
-
 # the target 'plot' runs the timing test (test/srtp_driver -t) then
 # uses gnuplot to produce plots of the results - see the script file
 # 'timing'
@@ -254,25 +230,26 @@ tags:
 
 
 # documentation - the target libsrtpdoc builds a PDF file documenting
-# libsrtp
+# libsrtp2
 
-libsrtpdoc:
+libsrtp2doc:
 	$(MAKE) -C doc
 
 .PHONY: clean superclean distclean install
 
 install:
-	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp
+	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp2
 	$(INSTALL) -d $(DESTDIR)$(libdir)
-	cp $(srcdir)/include/*.h $(DESTDIR)$(includedir)/srtp  
-	cp $(srcdir)/crypto/include/*.h $(DESTDIR)$(includedir)/srtp
-	if [ "$(srcdir)" != "." ]; then cp crypto/include/*.h $(DESTDIR)$(includedir)/srtp; fi
-	if [ -f libsrtp.a ]; then cp libsrtp.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp.dll.a ]; then cp libsrtp.dll.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp.$(SHAREDLIBSUFFIX) ]; then \
+	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2  
+	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp2  
+	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp2  
+	if [ -f libsrtp2.a ]; then cp libsrtp2.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp2.dll.a ]; then cp libsrtp2.dll.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp2.$(SHAREDLIBSUFFIX) ]; then \
 		$(INSTALL) -d $(DESTDIR)$(SHAREDLIB_DIR); \
-		cp libsrtp.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
-		ln -sfn libsrtp.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp.$(SHAREDLIBSUFFIXNOVER); \
+		cp libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		cp libsrtp2.$(SHAREDLIBSUFFIXNOVER) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		ln -sfn libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
 	fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
@@ -280,25 +257,23 @@ install:
 	fi
 
 uninstall:
-	rm -f $(DESTDIR)$(includedir)/srtp/*.h
-	rm -f $(DESTDIR)$(libdir)/libsrtp.*
-	-rmdir $(DESTDIR)$(includedir)/srtp
+	rm -f $(DESTDIR)$(includedir)/srtp2/*.h
+	rm -f $(DESTDIR)$(libdir)/libsrtp2.*
+	-rmdir $(DESTDIR)$(includedir)/srtp2
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA); \
 	fi
 
 clean:
-	rm -rf $(cryptobj) $(srtpobj) $(cryptomath) TAGS \
-        libcryptomath.a libsrtp.a libsrtp.so libsrtp.dll.a core *.core test/core
+	rm -rf $(cryptobj) $(srtpobj) TAGS \
+        libsrtp2.a libsrtp2.so libsrtp2.dll.a core *.core test/core
 	for a in * */* */*/*; do			\
               if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
         done;
-	for a in $(testapp) $(table_apps); do rm -rf $$a$(EXE); done
+	for a in $(testapp); do rm -rf $$a$(EXE); done
 	rm -rf *.pict *.jpg *.dat 
 	rm -rf freed allocated tmp
 	$(MAKE) -C doc clean
-	$(MAKE) -C crypto clean
-
 
 superclean: clean
 	rm -rf crypto/include/config.h config.log config.cache config.status \

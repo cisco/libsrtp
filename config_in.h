@@ -138,17 +138,8 @@
 /* The size of a `unsigned long long', as computed by sizeof. */
 #undef SIZEOF_UNSIGNED_LONG_LONG
 
-/* Define to use GDOI. */
-#undef SRTP_GDOI
-
 /* Define to use OpenSSL crypto. */
 #undef OPENSSL
-
-/* Define to compile for kernel contexts. */
-#undef SRTP_KERNEL
-
-/* Define to compile for Linux kernel context. */
-#undef SRTP_KERNEL_LINUX
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

@@ -48,10 +48,8 @@
 
 #include "datatypes.h"
 
-void *
-crypto_alloc(size_t size);
+void * srtp_crypto_alloc(size_t size);
 
-void
-crypto_free(void *ptr);
+void srtp_crypto_free(void *ptr);
 
 #endif /* CRYPTO_ALLOC_H */

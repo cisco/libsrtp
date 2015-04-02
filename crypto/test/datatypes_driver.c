@@ -51,6 +51,7 @@
 #include <stdio.h>            /* for printf() */
 #include <string.h>           /* for strlen() */
 #include "datatypes.h"
+#include "util.h"
 
 void
 byte_order(void);
