@@ -48,7 +48,7 @@
 #endif
 
 #include <stdio.h>           /* for printf() */
-#include <unistd.h>          /* for getopt() */
+#include "getopt_s.h"
 #include "crypto_kernel.h"
 
 void
@@ -59,7 +59,6 @@ usage(char *prog_name) {
 
 int
 main (int argc, char *argv[]) {
-  extern char *optarg;
   int q;
   int do_validation      = 0;
   srtp_err_status_t status;
@@ -77,7 +76,7 @@ main (int argc, char *argv[]) {
 
   /* process input arguments */
   while (1) {
-    q = getopt(argc, argv, "vd:");
+    q = getopt_s(argc, argv, "vd:");
     if (q == -1) 
       break;
     switch (q) {
@@ -85,9 +84,9 @@ main (int argc, char *argv[]) {
       do_validation = 1;
       break;
     case 'd':
-      status = srtp_crypto_kernel_set_debug_module(optarg, 1);
+      status = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
       if (status) {
-	printf("error: set debug module (%s) failed\n", optarg);
+	printf("error: set debug module (%s) failed\n", optarg_s);
 	exit(1);
       }
       break;

@@ -210,7 +210,7 @@ test_hex_string_funcs(void) {
 
 void
 print_string(char *s) {
-  int i;  
+  size_t i;
   printf("%s\n", s);
   printf("strlen(s) = %u\n", (unsigned)strlen(s));
   printf("{ ");

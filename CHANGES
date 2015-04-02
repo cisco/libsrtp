@@ -1,5 +1,13 @@
 Changelog
 
+1.5.2
+ 
+  Autoconf checks for libz and libdl for buildroot support.
+
+  Pull request 96 - Include config.h to get inline on Windows.
+
+  Pull request 93 - Don't include AES-192 when compiling against BoringSSL.
+
 1.5.1
 
   Pull request 95 - Additional header check from Chromium

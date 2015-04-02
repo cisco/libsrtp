@@ -9,7 +9,7 @@ top_builddir = @top_builddir@
 VPATH = @srcdir@
 
 CC	= @CC@
-INCDIR	= -Iinclude -I$(srcdir)/include
+INCDIR	= -Iinclude -I$(srcdir)/include -I$(top_srcdir)/include
 DEFS	= @DEFS@
 CPPFLAGS= @CPPFLAGS@
 CFLAGS	= @CFLAGS@
@@ -81,8 +81,8 @@ endif
 %.o: %.c
 	$(COMPILE) -c $< -o $@
 
-%$(EXE): %.c  
-	$(COMPILE) $(LDFLAGS) $< -o $@ $(CRYPTOLIB) $(LIBS)
+%$(EXE): %.c ../test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) $< ../test/getopt_s.c -o $@ $(CRYPTOLIB) $(LIBS)
 
 all: $(testapp)
 
