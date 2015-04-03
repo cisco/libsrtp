@@ -51,6 +51,7 @@ LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 SRTPLIB	= -lsrtp
 
+AR      = @AR@
 RANLIB	= @RANLIB@
 INSTALL	= @INSTALL@
 
@@ -140,7 +141,7 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(stat) $(kernel) $(replay)
 srtpobj = srtp/srtp.o srtp/ekt.o
 
 libsrtp.a: $(srtpobj) $(cryptobj) $(gdoi)
-	ar cr libsrtp.a $^
+	$(AR) cr libsrtp.a $^
 	$(RANLIB) libsrtp.a
 
 libsrtp.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
@@ -159,7 +160,7 @@ shared_library: libsrtp.$(SHAREDLIBSUFFIX)
 cryptomath = crypto/math/math.o crypto/math/gf2_8.o 
 
 libcryptomath.a: $(cryptomath)
-	ar cr libcryptomath.a $(cryptomath)
+	$(AR) cr libcryptomath.a $(cryptomath)
 	$(RANLIB) libcryptomath.a
 
 
