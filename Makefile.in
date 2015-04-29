@@ -30,6 +30,7 @@ runtest: test
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
+	test/ekt_tag_key_wrap_test$(EXE) >/dev/null
 	cd test; $(abspath $(srcdir))/test/rtpw_test.sh >/dev/null	
 ifeq (1, $(USE_OPENSSL))
 	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh >/dev/null	
@@ -124,7 +125,7 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
 # libsrtp2.a (implements srtp processing)
 
-srtpobj = srtp/srtp.o srtp/ekt.o
+srtpobj = srtp/srtp.o srtp/ekt.o srtp/ekt_tag_utils.o
 
 libsrtp2.a: $(srtpobj) $(cryptobj) $(gdoi)
 	ar cr libsrtp2.a $^
@@ -155,7 +156,7 @@ crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
-	  test/dtls_srtp_driver$(EXE)
+	  test/dtls_srtp_driver$(EXE) test/ekt_tag_key_wrap_test$(EXE)
 
 ifeq (1, $(HAVE_PCAP))
 testapp += test/rtp_decoder$(EXE)
@@ -189,6 +190,9 @@ test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/ekt_tag_key_wrap_test$(EXE): test/ekt_tag_key_wrap_test.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test: $(testapp)
@@ -231,6 +235,7 @@ install:
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2  
 	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp2  
+	cp $(srcdir)/include/ekt_tag_utils.h $(DESTDIR)$(includedir)/srtp2  
 	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp2  
 	if [ -f libsrtp2.a ]; then cp libsrtp2.a $(DESTDIR)$(libdir)/; fi
 	if [ -f libsrtp2.dll.a ]; then cp libsrtp2.dll.a $(DESTDIR)$(libdir)/; fi

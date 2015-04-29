@@ -46,3 +46,4 @@ test/replay_driver
 test/roc_driver
 test/rtpw
 test/srtp_driver
+test/ekt_tag_key_wrap_test
