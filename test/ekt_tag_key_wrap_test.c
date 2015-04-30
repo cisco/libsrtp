@@ -582,8 +582,8 @@ int rfc3394_test()
  *
  *  Description:
  *      This routine will exercise various key lengths and plaintext lengths
- *      to ensure that calls to srtp_ekt_tag_encrypt() and
- *      srtp_ekt_tag_decrypt() will consistently produce ciphertext
+ *      to ensure that calls to srtp_ekt_plaintext_encrypt() and
+ *      srtp_ciphertext_tag_decrypt() will consistently produce ciphertext
  *      that, when decrypted, matches the original plaintext.
  *      Note that the way the key and text is constructed, a key of 192
  *      bits and 20 octets aligns with the first published example
@@ -640,11 +640,10 @@ int exercise_key_and_plaintext_lengths()
         1, 5, 8, 9, 15, 16, 20, 23, 24, 25, 32, 45, 48, 51, 60, 64
     };
     unsigned int key_length, text_length, k_i, t_i;
-    unsigned char ciphertext[1024];
-    unsigned char ekt_tag[1024];
-    unsigned int ekt_tag_length;
-    unsigned char plaintext2[1024];
-    unsigned int plaintext_length2;
+    unsigned char ekt_ciphertext[1024];
+    unsigned int ekt_ciphertext_length;
+    unsigned char ekt_plaintext[1024];
+    unsigned int ekt_plaintext_length;
     unsigned int expected_length;
     int i;
     unsigned char *p1, *p2;
@@ -664,28 +663,27 @@ int exercise_key_and_plaintext_lengths()
             /*
              * Zero out memory
              */
-            memset(ciphertext, 0, sizeof(ciphertext));
-            memset(plaintext2, 0, sizeof(plaintext2));
-            memset(ekt_tag, 0, sizeof(ekt_tag));
+            memset(ekt_plaintext, 0, sizeof(ekt_plaintext));
+            memset(ekt_ciphertext, 0, sizeof(ekt_ciphertext));
 
             /************************************************
              * ENCRYPT
              ************************************************/
 
-            printf("Encrypting using srtp_ekt_tag_encrypt\n");
+            printf("Encrypting using srtp_ekt_plaintext_encrypt\n");
 
-            if (srtp_ekt_tag_encrypt(   key,
-                                        key_length,
-                                        plaintext,
-                                        text_length,
-                                        0, /* ROC */
-                                        ekt_tag,
-                                        &ekt_tag_length))
+            if (srtp_ekt_plaintext_encrypt( key,
+                                            key_length,
+                                            plaintext,
+                                            text_length,
+                                            0, /* ROC */
+                                            ekt_ciphertext,
+                                            &ekt_ciphertext_length))
             {
-                printf ("Error: srtp_ekt_tag_encrypt failed\n");
+                printf ("Error: srtp_ekt_plaintext_encrypt failed\n");
                 return (-1);
             }
-            printf("Text lengths: %u/%u\n", text_length, ekt_tag_length);
+            printf("Text lengths: %u/%u\n", text_length, ekt_ciphertext_length);
             expected_length = text_length / 8;
             if (text_length % 8)
             {
@@ -699,7 +697,7 @@ int exercise_key_and_plaintext_lengths()
             {
                 expected_length = expected_length * 8 + 8;
             }
-            if (expected_length != ekt_tag_length)
+            if (expected_length != ekt_ciphertext_length)
             {
                 printf("Unexpected length: %u\n", expected_length);
                 return (-1);
@@ -717,11 +715,12 @@ int exercise_key_and_plaintext_lengths()
             {
                 printf("Checking known ciphertext\n");
 
-                if (ekt_tag_length != sizeof(known_ciphertext))
+                if (ekt_ciphertext_length != sizeof(known_ciphertext))
                 {
                     printf("Error: ciphertext length (%i) does not match "
                            "expected (%i)\n",
-                           ekt_tag_length, (int)sizeof(known_ciphertext));
+                           ekt_ciphertext_length,
+                           (int)sizeof(known_ciphertext));
                     return (-1);
                 }
                 else
@@ -729,8 +728,8 @@ int exercise_key_and_plaintext_lengths()
                     printf("Encrypted lengths match\n");
                 }
 
-                for(i = 0, p1=known_ciphertext, p2=ekt_tag;
-                    i < ekt_tag_length;
+                for(i = 0, p1=known_ciphertext, p2=ekt_ciphertext;
+                    i < ekt_ciphertext_length;
                     i++)
                 {
                     if (*(p1++) != *(p2++))
@@ -748,17 +747,17 @@ int exercise_key_and_plaintext_lengths()
              * DECRYPT
              ************************************************/
 
-            printf("Decrypting using srtp_ekt_tag_decrypt\n");
+            printf("Decrypting using srtp_ekt_ciphertext_decrypt\n");
 
-            if (srtp_ekt_tag_decrypt(   key,
-                                        key_length,
-                                        ekt_tag,
-                                        ekt_tag_length,
-                                        0, /* ROC */
-                                        plaintext2,
-                                        &plaintext_length2))
+            if (srtp_ekt_ciphertext_decrypt(key,
+                                            key_length,
+                                            ekt_ciphertext,
+                                            ekt_ciphertext_length,
+                                            0, /* ROC */
+                                            ekt_plaintext,
+                                            &ekt_plaintext_length))
             {
-                    printf ("Error: srtp_ekt_tag_decrypt failed\n");
+                    printf ("Error: srtp_ekt_ciphertext_decrypt failed\n");
                     return (-1);
             }
 
@@ -766,13 +765,13 @@ int exercise_key_and_plaintext_lengths()
              * CHECK DECRYPTION RESULT
              ************************************************/
 
-            printf("Checking srtp_ekt_tag_decrypt\n");
+            printf("Checking srtp_ekt_ciphertext_decrypt\n");
 
-            if (plaintext_length2 != text_length)
+            if (ekt_plaintext_length != text_length)
             {
                 printf("Error: Plaintext length (%i) does not match "
                        "expected (%i)\n",
-                       plaintext_length2, text_length);
+                       ekt_plaintext_length, text_length);
                 return (-1);
             }
             else
@@ -780,7 +779,9 @@ int exercise_key_and_plaintext_lengths()
                 printf("Decrypted lengths match\n");
             }
 
-            for(i = 0, p1=plaintext2, p2=plaintext; i<plaintext_length2; i++)
+            for(i = 0, p1=ekt_plaintext, p2=plaintext;
+                i<ekt_plaintext_length;
+                i++)
             {
                 if (*(p1++) != *(p2++))
                 {

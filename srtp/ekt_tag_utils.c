@@ -9,9 +9,9 @@
  *      Paul E. Jones
  *
  *  Description:
- *      This file implements functions used for EKT Tag encrytion and
- *      decryption.  It utilizes OpenSSL for AES encryption.  The AES Key Wrap
- *      with Padding (RFC 5649) and AES Key Wrap logic (RFC 3394) are
+ *      This file implements functions used for "EKT_Plaintext" encrytion
+ *      and decryption.  It utilizes OpenSSL for AES encryption.  The AES Key
+ *      Wrap with Padding (RFC 5649) and AES Key Wrap logic (RFC 3394) are
  *      implemented within this module.
  *
  *  Portability Issues:
@@ -51,10 +51,11 @@ static const unsigned char Alternative_IV[] =   /* AIV per RFC 5649         */
 {
     0xA6, 0x59, 0x59, 0xA6
 };
-static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF; /* Ditto  */
+static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF;
+                                                /* Max length per RFC 5649  */
 
 /*
- *  srtp_ekt_tag_encrypt
+ *  srtp_ekt_plaintext_encrypt
  *
  *  Description:
  *      This fuction performs the AES Key Wrap with Padding for SRTP as
@@ -78,12 +79,12 @@ static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF; /* Ditto  */
  *          The SRTP "rollover counter" value.  This parameter should always
  *          be zero (0) if draft-jones-avtcore-private-media-framework is
  *          not being used.
- *      ekt_tag [out]
- *          A pointer to a buffer to hold the EKT tag.  This function does
- *          not allocate memory and expects the caller to pass a pointer
+ *      ekt_ciphertext [out]
+ *          A pointer to a buffer to hold the "EKT_Ciphertext".  This function
+ *          does not allocate memory and expects the caller to pass a pointer
  *          to a block of memory large enough to hold the output.
- *      ekt_tag_length [out]
- *          This is a the length of the resulting ekt_tag.
+ *      ekt_ciphertext_length [out]
+ *          This is a the length of the resulting ekt_ciphertext.
  *
  *  Returns:
  *      srtp_err_status_ok (0) if successful, non-zero if there was an error.
@@ -93,13 +94,13 @@ static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF; /* Ditto  */
  *      None.
  *
  */
-int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
-                            unsigned int ekt_key_length,
-                            const unsigned char *ekt_plaintext,
-                            unsigned int ekt_plaintext_length,
-                            uint32_t rollover_counter,
-                            unsigned char *ekt_tag,
-                            unsigned int *ekt_tag_length)
+int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
+                                unsigned int ekt_key_length,
+                                const unsigned char *ekt_plaintext,
+                                unsigned int ekt_plaintext_length,
+                                uint32_t rollover_counter,
+                                unsigned char *ekt_ciphertext,
+                                unsigned int *ekt_ciphertext_length)
 {
     int i;                                      /* Loop counter             */
     unsigned char alternative_iv[4];            /* Alternative IV           */
@@ -107,10 +108,10 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
     /*
      * Ensure we do not receive NULL pointers
      */
-    if (!ekt_plaintext || !ekt_tag || !ekt_tag_length)
+    if (!ekt_plaintext || !ekt_ciphertext || !ekt_ciphertext_length)
     {
         debug_print(mod_srtp,
-                    "EKT tag encrypt pointers to buffers invalid",
+                    "EKT plaintext encrypt pointers to buffers invalid",
                     NULL);
         return srtp_err_status_bad_param;
     }
@@ -122,7 +123,7 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
         (ekt_plaintext_length > AES_Key_Wrap_with_Padding_Max))
     {
         debug_print(mod_srtp,
-                    "EKT tag encrypt plaintext length invalid",
+                    "EKT plaintext encrypt plaintext length invalid",
                     NULL);
         return srtp_err_status_bad_param;
     }
@@ -142,16 +143,16 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
                                                 ekt_plaintext,
                                                 ekt_plaintext_length,
                                                 alternative_iv,
-                                                ekt_tag,
-                                                ekt_tag_length);
+                                                ekt_ciphertext,
+                                                ekt_ciphertext_length);
 }
 
 /*
- *  srtp_ekt_tag_decrypt
+ *  srtp_ekt_ciphertext_decrypt
  *
  *  Description:
  *      This function uses AES Key Wrap with Padding procedures to decrypt
- *      the EKT tag as specified in draft-ietf-avtcore-srtp-ekt-03.
+ *      the "EKT_Ciphertext" as specified in draft-ietf-avtcore-srtp-ekt-03.
  *      The ROC value is XORed with the alternative IV specified in RFC 5649
  *      per the draft-jones-avtcore-private-media-framework.
  *
@@ -161,10 +162,10 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
  *      ekt_key_length [in]
  *          The length in bits of the EKT key.  Valid values are 128, 192,
  *          and 256.
- *      ekt_tag [in]
- *          A pointer to the EKT tag to decrypt.
- *      ekt_tag_length [in]
- *          This is a the length of the ekt_tag.
+ *      ekt_ciphertext [in]
+ *          A pointer to the "EKT_Ciphertext" to decrypt.
+ *      ekt_ciphertext_length [in]
+ *          This is a the length of the ekt_ciphertext.
  *      rollover_counter [in]
  *          The SRTP "rollover counter" value.  This parameter should always
  *          be zero (0) if draft-jones-avtcore-private-media-framework is
@@ -172,7 +173,7 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
  *      ekt_plaintext_length [in]
  *          The length in octets of the ekt_plaintext paramter.
  *      ekt_plaintext [out]
- *          A pointer to a buffer to hold the decrypted EKT tag.  This function
+ *          A pointer to a buffer to hold the "EKT_Plaintext".  This function
  *          does not allocate memory and expects the caller to pass a pointer
  *          to a block of memory large enough to hold the output.
  *      ekt_plaintext_length [out]
@@ -186,13 +187,13 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
  *      None.
  *
  */
-int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
-                            unsigned int ekt_key_length,
-                            const unsigned char *ekt_tag,
-                            unsigned int ekt_tag_length,
-                            uint32_t rollover_counter,
-                            unsigned char *ekt_plaintext,
-                            unsigned int *ekt_plaintext_length)
+int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
+                                unsigned int ekt_key_length,
+                                const unsigned char *ekt_ciphertext,
+                                unsigned int ekt_ciphertext_length,
+                                uint32_t rollover_counter,
+                                unsigned char *ekt_plaintext,
+                                unsigned int *ekt_plaintext_length)
 {
     int i;                                      /* Loop counter             */
     unsigned char alternative_iv[4];            /* Alternative IV           */
@@ -200,10 +201,10 @@ int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
     /*
      * Ensure we do not receive NULL pointers
      */
-    if (!ekt_key || !ekt_tag || !ekt_plaintext || !ekt_plaintext_length)
+    if (!ekt_key || !ekt_ciphertext || !ekt_plaintext || !ekt_plaintext_length)
     {
         debug_print(mod_srtp,
-                    "EKT tag decryption pointers to buffers invalid",
+                    "EKT ciphertext decryption pointers to buffers invalid",
                     NULL);
         return srtp_err_status_bad_param;
     }
@@ -212,7 +213,7 @@ int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
      * Check to ensure that the ciphertext length is proper, though no
      * length check is performed.  (Note: "& 0x07" == "% 8")
      */
-    if ((ekt_tag_length & 0x07) || (!ekt_tag_length))
+    if ((ekt_ciphertext_length & 0x07) || (!ekt_ciphertext_length))
     {
         debug_print(mod_srtp,
                     "EKT ciphertext length invalid",
@@ -232,8 +233,8 @@ int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
 
     return srtp_ekt_aes_key_unwrap_with_padding(ekt_key,
                                                 ekt_key_length,
-                                                ekt_tag,
-                                                ekt_tag_length,
+                                                ekt_ciphertext,
+                                                ekt_ciphertext_length,
                                                 alternative_iv,
                                                 ekt_plaintext,
                                                 ekt_plaintext_length);
