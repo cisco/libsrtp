@@ -35,6 +35,9 @@
 #include "srtp.h"
 #include "ekt_tag_utils.h"
 
+//FIXME: this is temporary
+#define USENEW
+
 /*
  * Reference the external module name
  */
@@ -103,6 +106,8 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
 {
     int i;                                      /* Loop counter             */
     unsigned char alternative_iv[4];            /* Alternative IV           */
+    srtp_cipher_t *kw;
+    srtp_err_status_t stat;
 
     /*
      * Ensure we do not receive NULL pointers
@@ -137,6 +142,51 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
         alternative_iv[i] ^= (unsigned char) (rollover_counter & 0xFF);
     }
 
+
+#ifdef USENEW
+    /* allocate key wrap cipher */
+    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_128_WRAP, &kw, ekt_key_length/8, 0); 
+    if (stat) {
+        debug_print(mod_srtp, "Failed to allocate key wrap cipher", NULL);
+	return stat;
+    }
+
+    /* initialize key wrap cipher */
+    stat = srtp_cipher_init(kw, ekt_key);
+    if (stat) {
+        debug_print(mod_srtp, "Failed to initialize key wrap cipher", NULL);
+	return stat; 
+    }
+
+    /*
+     * Set the IV 
+     */
+    stat = srtp_cipher_set_iv(kw, (const uint8_t*)alternative_iv, direction_encrypt);
+    if (stat) {
+        debug_print(mod_srtp, "Failed to set key wrap IV", NULL);
+        return stat;
+    }
+
+    /* 
+     * Encrypt the payload  
+     */
+    memcpy(ekt_tag, ekt_plaintext, ekt_plaintext_length);
+    *ekt_tag_length = ekt_plaintext_length;
+    stat = srtp_cipher_encrypt(kw, (uint8_t*)ekt_tag, ekt_tag_length);
+    if (stat) {
+        debug_print(mod_srtp, "Key wrap encryption failed", NULL);
+        return srtp_err_status_cipher_fail;
+    }
+
+    /*
+     * Dealloc the key wrap cipher.
+     * FIXME: if this cipher is going to be used a lot, we should allocate it
+     *        SRTP/EKT context and reuse it.
+     */
+    srtp_cipher_dealloc(kw);
+    return srtp_err_status_ok;
+
+#else
     return srtp_ekt_aes_key_wrap_with_padding(  ekt_key,
                                                 ekt_key_length,
                                                 ekt_plaintext,
@@ -144,6 +194,7 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
                                                 alternative_iv,
                                                 ekt_tag,
                                                 ekt_tag_length);
+#endif
 }
 
 /*
@@ -196,6 +247,8 @@ int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
 {
     int i;                                      /* Loop counter             */
     unsigned char alternative_iv[4];            /* Alternative IV           */
+    srtp_cipher_t *kw;
+    srtp_err_status_t stat;
 
     /*
      * Ensure we do not receive NULL pointers
@@ -230,6 +283,51 @@ int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
         alternative_iv[i] ^= (unsigned char) (rollover_counter & 0xFF);
     }
 
+#ifdef USENEW
+    /* allocate key wrap cipher */
+    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_128_WRAP, &kw, ekt_key_length/8, 0); 
+    if (stat) {
+        debug_print(mod_srtp, "Failed to allocate key wrap cipher", NULL);
+	return stat;
+    }
+
+    /* initialize key wrap cipher */
+    stat = srtp_cipher_init(kw, ekt_key);
+    if (stat) {
+        debug_print(mod_srtp, "Failed to initialize key wrap cipher", NULL);
+	return stat; 
+    }
+
+    /*
+     * Set the IV 
+     */
+    stat = srtp_cipher_set_iv(kw, (const uint8_t*)alternative_iv, direction_decrypt);
+    if (stat) {
+        debug_print(mod_srtp, "Failed to set key wrap IV", NULL);
+        return stat;
+    }
+
+    /* 
+     * Decrypt the payload  
+     */
+    memcpy(ekt_plaintext, ekt_tag, ekt_tag_length);
+    *ekt_plaintext_length = ekt_tag_length;
+    stat = srtp_cipher_encrypt(kw, (uint8_t*)ekt_plaintext, ekt_plaintext_length);
+    if (stat) {
+        debug_print(mod_srtp, "Key wrap decryption failed", NULL);
+        return srtp_err_status_cipher_fail;
+    }
+
+    /*
+     * Dealloc the key wrap cipher.
+     * FIXME: if this cipher is going to be used a lot, we should allocate it
+     *        SRTP/EKT context and reuse it.
+     */
+    srtp_cipher_dealloc(kw);
+    return srtp_err_status_ok;
+
+
+#else
     return srtp_ekt_aes_key_unwrap_with_padding(ekt_key,
                                                 ekt_key_length,
                                                 ekt_tag,
@@ -237,6 +335,7 @@ int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
                                                 alternative_iv,
                                                 ekt_plaintext,
                                                 ekt_plaintext_length);
+#endif
 }
 
 /*

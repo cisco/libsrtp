@@ -701,7 +701,7 @@ int exercise_key_and_plaintext_lengths()
             }
             if (expected_length != ekt_tag_length)
             {
-                printf("Unexpected length: %u\n", expected_length);
+                printf("Unexpected length: %u %u\n", expected_length, ekt_tag_length);
                 return (-1);
             }
 
@@ -803,6 +803,26 @@ int exercise_key_and_plaintext_lengths()
  */
 int main()
 {
+    srtp_err_status_t stat;
+
+#if 0
+    /*
+     * enable debugs
+     */
+    stat = srtp_set_debug_module("crypto", 1);
+    if (stat) {
+        printf("error: set debug module failed\n");
+        exit(1);
+    }
+#endif
+
+    /* initialize srtp library */
+    stat = srtp_init();
+    if (stat) {
+	printf("error: srtp initialization failed with error code %d\n", stat);
+	exit(1);
+    }
+
     /*
      * Test RFC 3394 using published test vectors
      */

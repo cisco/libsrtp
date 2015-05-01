@@ -4948,12 +4948,12 @@ fi
 
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
-   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
+   AES_ICM_OBJS="crypto/cipher/aes_wrap.o crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    USE_OPENSSL=1
 
 else
-   AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
+   AES_ICM_OBJS="crypto/cipher/aes_wrap.o crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
 $as_echo_n "checking which random device to use... " >&6; }
    if test -n "$DEV_URANDOM"; then

@@ -77,6 +77,7 @@ extern srtp_cipher_type_t srtp_aes_icm;
 extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
 extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
+extern srtp_cipher_type_t srtp_aes_wrap;
 
 
 /*
@@ -158,6 +159,10 @@ srtp_err_status_t srtp_crypto_kernel_init ()
         return status;
     }
 #endif
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_wrap, SRTP_AES_128_WRAP);
+    if (status) {
+        return status;
+    }
 
     /* load auth func types */
     status = srtp_crypto_kernel_load_auth_type(&srtp_null_auth, SRTP_NULL_AUTH);
