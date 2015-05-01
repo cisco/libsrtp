@@ -9,8 +9,8 @@
  *      Paul E. Jones
  *
  *  Description:
- *      This file defines function prototypes used for EKT Tag encrytion
- *      and decryption.
+ *      This file defines function prototypes used for "EKT_Plaintext"
+ *      encrytion and decryption.
  *
  *  Portability Issues:
  *      None.
@@ -22,8 +22,9 @@
 
 #include <stdint.h>                             /* For uint32_t             */
 
+
 /*
- *  srtp_ekt_tag_encrypt
+ *  srtp_ekt_plaintext_encrypt
  *
  *  Description:
  *      This fuction performs the AES Key Wrap with Padding for SRTP as
@@ -47,12 +48,12 @@
  *          The SRTP "rollover counter" value.  This parameter should always
  *          be zero (0) if draft-jones-avtcore-private-media-framework is
  *          not being used.
- *      ekt_tag [out]
- *          A pointer to a buffer to hold the EKT tag.  This function does
- *          not allocate memory and expects the caller to pass a pointer
+ *      ekt_ciphertext [out]
+ *          A pointer to a buffer to hold the "EKT_Ciphertext".  This function
+ *          does not allocate memory and expects the caller to pass a pointer
  *          to a block of memory large enough to hold the output.
- *      ekt_tag_length [out]
- *          This is a the length of the resulting ekt_tag.
+ *      ekt_ciphertext_length [out]
+ *          This is a the length of the resulting ekt_ciphertext.
  *
  *  Returns:
  *      srtp_err_status_ok (0) if successful, non-zero if there was an error.
@@ -62,20 +63,20 @@
  *      None.
  *
  */
-int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
-                            unsigned int ekt_key_length,
-                            const unsigned char *ekt_plaintext,
-                            unsigned int ekt_plaintext_length,
-                            uint32_t rollover_counter,
-                            unsigned char *ekt_tag,
-                            unsigned int *ekt_tag_length);
+int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
+                                unsigned int ekt_key_length,
+                                const unsigned char *ekt_plaintext,
+                                unsigned int ekt_plaintext_length,
+                                uint32_t rollover_counter,
+                                unsigned char *ekt_ciphertext,
+                                unsigned int *ekt_ciphertext_length);
 
 /*
- *  srtp_ekt_tag_decrypt
+ *  srtp_ekt_ciphertext_decrypt
  *
  *  Description:
  *      This function uses AES Key Wrap with Padding procedures to decrypt
- *      the EKT tag as specified in draft-ietf-avtcore-srtp-ekt-03.
+ *      the "EKT_Ciphertext" as specified in draft-ietf-avtcore-srtp-ekt-03.
  *      The ROC value is XORed with the alternative IV specified in RFC 5649
  *      per the draft-jones-avtcore-private-media-framework.
  *
@@ -85,10 +86,10 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
  *      ekt_key_length [in]
  *          The length in bits of the EKT key.  Valid values are 128, 192,
  *          and 256.
- *      ekt_tag [in]
- *          A pointer to the EKT tag to decrypt.
- *      ekt_tag_length [in]
- *          This is a the length of the ekt_tag.
+ *      ekt_ciphertext [in]
+ *          A pointer to the "EKT_Ciphertext" to decrypt.
+ *      ekt_ciphertext_length [in]
+ *          This is a the length of the ekt_ciphertext.
  *      rollover_counter [in]
  *          The SRTP "rollover counter" value.  This parameter should always
  *          be zero (0) if draft-jones-avtcore-private-media-framework is
@@ -96,7 +97,7 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
  *      ekt_plaintext_length [in]
  *          The length in octets of the ekt_plaintext paramter.
  *      ekt_plaintext [out]
- *          A pointer to a buffer to hold the decrypted EKT tag.  This function
+ *          A pointer to a buffer to hold the "EKT_Plaintext".  This function
  *          does not allocate memory and expects the caller to pass a pointer
  *          to a block of memory large enough to hold the output.
  *      ekt_plaintext_length [out]
@@ -110,13 +111,13 @@ int srtp_ekt_tag_encrypt(   const unsigned char *ekt_key,
  *      None.
  *
  */
-int srtp_ekt_tag_decrypt(   const unsigned char *ekt_key,
-                            unsigned int ekt_key_length,
-                            const unsigned char *ekt_tag,
-                            unsigned int ekt_tag_length,
-                            uint32_t rollover_counter,
-                            unsigned char *ekt_plaintext,
-                            unsigned int *ekt_plaintext_length);
+int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
+                                unsigned int ekt_key_length,
+                                const unsigned char *ekt_ciphertext,
+                                unsigned int ekt_ciphertext_length,
+                                uint32_t rollover_counter,
+                                unsigned char *ekt_plaintext,
+                                unsigned int *ekt_plaintext_length);
 
 /*
  *  srtp_ekt_aes_ecb_encrypt
