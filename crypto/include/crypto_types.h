@@ -100,17 +100,7 @@
 /* 
  * AES-128 Key Wrap Mode              
  */
-#define SRTP_AES_128_WRAP        8 
-
-/* 
- * AES-192 Key Wrap Mode              
- */
-#define SRTP_AES_192_WRAP        9 
-
-/* 
- * AES-256 Key Wrap Mode              
- */
-#define SRTP_AES_256_WRAP        10 
+#define SRTP_AES_WRAP		8 
 
 /*
  * The null authentication function performs no authentication.

@@ -75,10 +75,6 @@ srtp_debug_module_t srtp_mod_aes_wrap = {
     "aes key wrap"   /* printable module name       */
 };
 extern srtp_cipher_type_t srtp_aes_wrap;
-#ifndef SRTP_NO_AES192
-extern srtp_cipher_type_t srtp_aes_wrap_192;
-#endif
-extern srtp_cipher_type_t srtp_aes_wrap_256;
 
 /*
  * This function allocates a new instance of this crypto engine.
@@ -121,25 +117,9 @@ static srtp_err_status_t srtp_aes_wrap_alloc (srtp_cipher_t **c, int key_len, in
     (*c)->state = wrap;
 
     /* setup cipher parameters */
-    switch (key_len) {
-    case SRTP_AES_128_KEYSIZE:
-        (*c)->algorithm = SRTP_AES_128_WRAP;
-        (*c)->type = &srtp_aes_wrap;
-        wrap->key_size = SRTP_AES_128_KEYSIZE;
-        break;
-#ifndef SRTP_NO_AES192
-    case SRTP_AES_192_KEYSIZE:
-        (*c)->algorithm = SRTP_AES_192_WRAP;
-        (*c)->type = &srtp_aes_wrap_192;
-        wrap->key_size = SRTP_AES_192_KEYSIZE;
-        break;
-#endif
-    case SRTP_AES_256_KEYSIZE:
-        (*c)->algorithm = SRTP_AES_256_WRAP;
-        (*c)->type = &srtp_aes_wrap_256;
-        wrap->key_size = SRTP_AES_256_KEYSIZE;
-        break;
-    }
+    (*c)->algorithm = SRTP_AES_WRAP;
+    (*c)->type = &srtp_aes_wrap;
+    wrap->key_size = key_len;
 
     /* set key size        */
     (*c)->key_len = key_len;
@@ -164,6 +144,9 @@ static srtp_err_status_t srtp_aes_wrap_dealloc (srtp_cipher_t *c)
      */
     ctx = (srtp_aes_wrap_ctx_t*)c->state;
     if (ctx != NULL) {
+	if (ctx->alternate_iv) {
+	    free(ctx->alternate_iv);
+	}
 	/* zeroize the key material */
 	octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_wrap_ctx_t));
 	srtp_crypto_free(ctx);
@@ -219,9 +202,14 @@ static srtp_err_status_t srtp_aes_wrap_context_init (srtp_aes_wrap_ctx_t *c, con
 static srtp_err_status_t srtp_aes_wrap_set_iv (srtp_aes_wrap_ctx_t *c, const uint8_t *iv, int dir)
 {
     c->direction = dir;
-    memcpy(c->alternate_iv, iv, 4);
-    debug_print(srtp_mod_aes_wrap, "iv:  %s", v128_hex_string((v128_t*)c->alternate_iv));
-
+    if (iv) {
+	c->alternate_iv = malloc(4);
+	if (!c->alternate_iv) {
+	    return srtp_err_status_alloc_fail;
+	}
+	memcpy(c->alternate_iv, iv, 4);
+	debug_print(srtp_mod_aes_wrap, "iv:  %s", v128_hex_string((v128_t*)c->alternate_iv));
+    }
     return srtp_err_status_ok;
 }
 
@@ -809,153 +797,84 @@ static srtp_err_status_t srtp_aes_wrap_encrypt (srtp_aes_wrap_ctx_t *c, unsigned
 /*
  * Name of this crypto engine
  */
-static char srtp_aes_wrap_description[] = "AES-128 key wrap";
-#ifndef SRTP_NO_AES192
-static char srtp_aes_wrap_192_description[] = "AES-192 key wrap";
-#endif
-static char srtp_aes_wrap_256_description[] = "AES-256 key wrap";
-
-
-#if 0
-//FIXME: need to setup key wrap KAT values
+static char srtp_aes_wrap_description[] = "AES key wrap";
 
 /*
- * KAT values for AES self-test.  These
- * values came from the legacy libsrtp code.
+ * KAT values for AES self-test.  These values came from RFC 5649.
+ * //FIXME: need to add test cases for 128 and 256 bit keys
  */
-static uint8_t srtp_aes_icm_test_case_0_key[SRTP_AES_128_KEYSIZE_WSALT] = {
-    0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
-    0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
-    0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
-    0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
+static uint8_t srtp_aes_wrap_test_case_0_key[SRTP_AES_192_KEYSIZE] = {
+    0x58, 0x40, 0xDF, 0x6E, 0x29, 0xB0, 0x2A, 0XF1,
+    0xAB, 0x49, 0x3B, 0x70, 0x5B, 0xF1, 0x6E, 0XA1,
+    0xAE, 0x83, 0x38, 0xF4, 0xDC, 0xC1, 0x76, 0xA8
 };
 
-static uint8_t srtp_aes_icm_test_case_0_nonce[16] = {
+static uint8_t srtp_aes_wrap_test_case_0_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static uint8_t srtp_aes_icm_test_case_0_plaintext[32] =  {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+static uint8_t srtp_aes_wrap_test_case_0_plaintext[20] =  {
+    0xC3, 0x7B, 0x7E, 0x64, 0x92, 0x58, 0x43, 0x40,
+    0xBE, 0xD1, 0x22, 0x07, 0x80, 0x89, 0x41, 0x15,
+    0x50, 0x68, 0xF7, 0x38
 };
 
-static uint8_t srtp_aes_icm_test_case_0_ciphertext[32] = {
-    0xe0, 0x3e, 0xad, 0x09, 0x35, 0xc9, 0x5e, 0x80,
-    0xe1, 0x66, 0xb1, 0x6d, 0xd9, 0x2b, 0x4e, 0xb4,
-    0xd2, 0x35, 0x13, 0x16, 0x2b, 0x02, 0xd0, 0xf7,
-    0x2a, 0x43, 0xa2, 0xfe, 0x4a, 0x5f, 0x97, 0xab
+static uint8_t srtp_aes_wrap_test_case_0_ciphertext[32] = {
+    0x13, 0x8B, 0xDE, 0xAA, 0x9B, 0x8F, 0xA7, 0xFC,
+    0x61, 0xF9, 0x77, 0x42, 0xE7, 0x22, 0x48, 0xEE,
+    0x5A, 0xE6, 0xAE, 0x53, 0x60, 0xD1, 0xAE, 0x6A,
+    0x5F, 0x54, 0xF3, 0x73, 0xFA, 0x54, 0x3B, 0x6A 
 };
 
-static srtp_cipher_test_case_t srtp_aes_icm_test_case_0 = {
-    SRTP_AES_128_KEYSIZE_WSALT,                 /* octets in key            */
-    srtp_aes_icm_test_case_0_key,               /* key                      */
-    srtp_aes_icm_test_case_0_nonce,             /* packet index             */
-    32,                                    /* octets in plaintext      */
-    srtp_aes_icm_test_case_0_plaintext,         /* plaintext                */
-    32,                                    /* octets in ciphertext     */
-    srtp_aes_icm_test_case_0_ciphertext,        /* ciphertext               */
+static srtp_cipher_test_case_t srtp_aes_wrap_test_case_0 = {
+    SRTP_AES_192_KEYSIZE,			/* octets in key            */
+    srtp_aes_wrap_test_case_0_key,              /* key                      */
+    srtp_aes_wrap_test_case_0_nonce,            /* packet index             */
+    20,						/* octets in plaintext      */
+    srtp_aes_wrap_test_case_0_plaintext,        /* plaintext                */
+    32,						/* octets in ciphertext     */
+    srtp_aes_wrap_test_case_0_ciphertext,       /* ciphertext               */
     0,
     NULL,
     0,
-    NULL                                   /* pointer to next testcase */
+    NULL					/* pointer to next testcase */
 };
 
-#ifndef SRTP_NO_AES192
-/*
- * KAT values for AES-192-CTR self-test.  These
- * values came from section 7 of RFC 6188.
- */
-static uint8_t srtp_aes_icm_192_test_case_1_key[SRTP_AES_192_KEYSIZE_WSALT] = {
-    0xea, 0xb2, 0x34, 0x76, 0x4e, 0x51, 0x7b, 0x2d,
-    0x3d, 0x16, 0x0d, 0x58, 0x7d, 0x8c, 0x86, 0x21,
-    0x97, 0x40, 0xf6, 0x5f, 0x99, 0xb6, 0xbc, 0xf7,
-    0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
-    0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
+static uint8_t srtp_aes_wrap_test_case_1_key[SRTP_AES_192_KEYSIZE] = {
+    0x58, 0x40, 0xDF, 0x6E, 0x29, 0xB0, 0x2A, 0XF1,
+    0xAB, 0x49, 0x3B, 0x70, 0x5B, 0xF1, 0x6E, 0XA1,
+    0xAE, 0x83, 0x38, 0xF4, 0xDC, 0xC1, 0x76, 0xA8
 };
 
-static uint8_t srtp_aes_icm_192_test_case_1_nonce[16] = {
+static uint8_t srtp_aes_wrap_test_case_1_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static uint8_t srtp_aes_icm_192_test_case_1_plaintext[32] =  {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+static uint8_t srtp_aes_wrap_test_case_1_plaintext[7] =  {
+    0x46, 0x6F, 0x72, 0x50, 0x61, 0x73, 0x69
 };
 
-static uint8_t srtp_aes_icm_192_test_case_1_ciphertext[32] = {
-    0x35, 0x09, 0x6c, 0xba, 0x46, 0x10, 0x02, 0x8d,
-    0xc1, 0xb5, 0x75, 0x03, 0x80, 0x4c, 0xe3, 0x7c,
-    0x5d, 0xe9, 0x86, 0x29, 0x1d, 0xcc, 0xe1, 0x61,
-    0xd5, 0x16, 0x5e, 0xc4, 0x56, 0x8f, 0x5c, 0x9a
+static uint8_t srtp_aes_wrap_test_case_1_ciphertext[16] = {
+    0xaf, 0xbe, 0xb0, 0xf0, 0x7d, 0xfb, 0xf5, 0x41,
+    0x92, 0x00, 0xf2, 0xcc, 0xb5, 0x0b, 0xb2, 0x4f
 };
 
-static srtp_cipher_test_case_t srtp_aes_icm_192_test_case_1 = {
-    SRTP_AES_192_KEYSIZE_WSALT,                 /* octets in key            */
-    srtp_aes_icm_192_test_case_1_key,           /* key                      */
-    srtp_aes_icm_192_test_case_1_nonce,         /* packet index             */
-    32,                                    /* octets in plaintext      */
-    srtp_aes_icm_192_test_case_1_plaintext,     /* plaintext                */
-    32,                                    /* octets in ciphertext     */
-    srtp_aes_icm_192_test_case_1_ciphertext,    /* ciphertext               */
+static srtp_cipher_test_case_t srtp_aes_wrap_test_case_1 = {
+    SRTP_AES_192_KEYSIZE,			/* octets in key            */
+    srtp_aes_wrap_test_case_1_key,              /* key                      */
+    srtp_aes_wrap_test_case_1_nonce,            /* packet index             */
+    7,						/* octets in plaintext      */
+    srtp_aes_wrap_test_case_1_plaintext,        /* plaintext                */
+    16,						/* octets in ciphertext     */
+    srtp_aes_wrap_test_case_1_ciphertext,       /* ciphertext               */
     0,
     NULL,
     0,
-    NULL                                   /* pointer to next testcase */
-};
-#endif
-
-/*
- * KAT values for AES-256-CTR self-test.  These
- * values came from section 7 of RFC 6188.
- */
-static uint8_t srtp_aes_icm_256_test_case_2_key[SRTP_AES_256_KEYSIZE_WSALT] = {
-    0x57, 0xf8, 0x2f, 0xe3, 0x61, 0x3f, 0xd1, 0x70,
-    0xa8, 0x5e, 0xc9, 0x3c, 0x40, 0xb1, 0xf0, 0x92,
-    0x2e, 0xc4, 0xcb, 0x0d, 0xc0, 0x25, 0xb5, 0x82,
-    0x72, 0x14, 0x7c, 0xc4, 0x38, 0x94, 0x4a, 0x98,
-    0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
-    0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
+    &srtp_aes_wrap_test_case_0			/* pointer to next testcase */
 };
 
-static uint8_t srtp_aes_icm_256_test_case_2_nonce[16] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-static uint8_t srtp_aes_icm_256_test_case_2_plaintext[32] =  {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-};
-
-static uint8_t srtp_aes_icm_256_test_case_2_ciphertext[32] = {
-    0x92, 0xbd, 0xd2, 0x8a, 0x93, 0xc3, 0xf5, 0x25,
-    0x11, 0xc6, 0x77, 0xd0, 0x8b, 0x55, 0x15, 0xa4,
-    0x9d, 0xa7, 0x1b, 0x23, 0x78, 0xa8, 0x54, 0xf6,
-    0x70, 0x50, 0x75, 0x6d, 0xed, 0x16, 0x5b, 0xac
-};
-
-static srtp_cipher_test_case_t srtp_aes_icm_256_test_case_2 = {
-    SRTP_AES_256_KEYSIZE_WSALT,                 /* octets in key            */
-    srtp_aes_icm_256_test_case_2_key,           /* key                      */
-    srtp_aes_icm_256_test_case_2_nonce,         /* packet index             */
-    32,                                    /* octets in plaintext      */
-    srtp_aes_icm_256_test_case_2_plaintext,     /* plaintext                */
-    32,                                    /* octets in ciphertext     */
-    srtp_aes_icm_256_test_case_2_ciphertext,    /* ciphertext               */
-    0,
-    NULL,
-    0,
-    NULL                                   /* pointer to next testcase */
-};
-#endif
 
 /*
  * This is the function table for this crypto engine.
@@ -971,48 +890,8 @@ srtp_cipher_type_t srtp_aes_wrap = {
     (cipher_set_iv_func_t)         srtp_aes_wrap_set_iv,
     (cipher_get_tag_func_t)        0,
     (char*)                        srtp_aes_wrap_description,
-    (srtp_cipher_test_case_t*)     0,
+    (srtp_cipher_test_case_t*)     &srtp_aes_wrap_test_case_1,
     (srtp_debug_module_t*)         &srtp_mod_aes_wrap,
-    (srtp_cipher_type_id_t)        SRTP_AES_128_WRAP
-};
-
-#ifndef SRTP_NO_AES192
-/*
- * This is the function table for this crypto engine.
- * note: the encrypt function is identical to the decrypt function
- */
-srtp_cipher_type_t srtp_aes_wrap_192 = {
-    (cipher_alloc_func_t)          srtp_aes_wrap_alloc,
-    (cipher_dealloc_func_t)        srtp_aes_wrap_dealloc,
-    (cipher_init_func_t)           srtp_aes_wrap_context_init,
-    (cipher_set_aad_func_t)        0,
-    (cipher_encrypt_func_t)        srtp_aes_wrap_encrypt,
-    (cipher_decrypt_func_t)        srtp_aes_wrap_encrypt,
-    (cipher_set_iv_func_t)         srtp_aes_wrap_set_iv,
-    (cipher_get_tag_func_t)        0,
-    (char*)                        srtp_aes_wrap_192_description,
-    (srtp_cipher_test_case_t*)     0,
-    (srtp_debug_module_t*)         &srtp_mod_aes_wrap,
-    (srtp_cipher_type_id_t)        SRTP_AES_192_WRAP
-};
-#endif
-
-/*
- * This is the function table for this crypto engine.
- * note: the encrypt function is identical to the decrypt function
- */
-srtp_cipher_type_t srtp_aes_wrap_256 = {
-    (cipher_alloc_func_t)          srtp_aes_wrap_alloc,
-    (cipher_dealloc_func_t)        srtp_aes_wrap_dealloc,
-    (cipher_init_func_t)           srtp_aes_wrap_context_init,
-    (cipher_set_aad_func_t)        0,
-    (cipher_encrypt_func_t)        srtp_aes_wrap_encrypt,
-    (cipher_decrypt_func_t)        srtp_aes_wrap_encrypt,
-    (cipher_set_iv_func_t)         srtp_aes_wrap_set_iv,
-    (cipher_get_tag_func_t)        0,
-    (char*)                        srtp_aes_wrap_256_description,
-    (srtp_cipher_test_case_t*)     0,
-    (srtp_debug_module_t*)         &srtp_mod_aes_wrap,
-    (srtp_cipher_type_id_t)        SRTP_AES_256_WRAP
+    (srtp_cipher_type_id_t)        SRTP_AES_WRAP
 };
 

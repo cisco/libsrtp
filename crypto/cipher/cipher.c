@@ -214,9 +214,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
      * return an error if we don't - we need to be paranoid here
      */
     if (test_case == NULL) {
-//FIXME: need to enable this after we add key wrap test cases
-//        return srtp_err_status_cant_check;
-	return srtp_err_status_ok;
+        return srtp_err_status_cant_check;
     }
 
     /*
@@ -256,7 +254,11 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                                                  test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
+	if (c->algorithm == SRTP_AES_WRAP) {
+	    status = srtp_cipher_set_iv(c, NULL, direction_encrypt);
+	} else {
+	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
+	}
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -355,7 +357,11 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                                                  test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
+	if (c->algorithm == SRTP_AES_WRAP) {
+	    status = srtp_cipher_set_iv(c, NULL, direction_decrypt);
+	} else {
+	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
+	}
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -443,6 +449,10 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* choose a length at random (leaving room for IV and padding) */
         length = rand() % (SELF_TEST_BUF_OCTETS - 64);
+	if (!length && (c->algorithm == SRTP_AES_WRAP)) {
+	    /* AES key wrap doesn't allow zero-length input */
+	    continue;
+	}
         debug_print(srtp_mod_cipher, "random plaintext length %d\n", length);
         status = srtp_cipher_rand(buffer, length);
         if (status) {
@@ -480,7 +490,11 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         }
 
         /* set initialization vector */
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
+	if (c->algorithm == SRTP_AES_WRAP) {
+	    status = srtp_cipher_set_iv(c, NULL, direction_encrypt);
+	} else {
+	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
+	}
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -530,7 +544,11 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
+	if (c->algorithm == SRTP_AES_WRAP) {
+	    status = srtp_cipher_set_iv(c, NULL, direction_decrypt);
+	} else {
+	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
+	}
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
