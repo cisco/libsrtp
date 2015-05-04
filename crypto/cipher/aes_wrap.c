@@ -65,7 +65,9 @@ static const unsigned char Alternative_IV[] =   /* AIV per RFC 5649         */
 {
     0xA6, 0x59, 0x59, 0xA6
 };
-static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF; /* Ditto  */
+
+/* Max key wrap length per RFC 5649  */
+static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF; 
 
 
 srtp_debug_module_t srtp_mod_aes_wrap = {
