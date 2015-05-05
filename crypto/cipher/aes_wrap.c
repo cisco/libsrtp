@@ -54,20 +54,18 @@
 #include "alloc.h"
 #include "crypto_types.h"
 
-/*
- * Define module-level global constants
- */
-static const unsigned char AES_Key_Wrap_Default_IV[] = /* The default IV    */
-{
+/* The default IV for RFC 3394  */
+static const unsigned char AES_Key_Wrap_Default_IV[] = {
     0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6, 0xA6
 };
-static const unsigned char Alternative_IV[] =   /* AIV per RFC 5649         */
-{
+
+/* AIV per RFC 5649         */
+static const unsigned char Alternative_IV[] = {
     0xA6, 0x59, 0x59, 0xA6
 };
 
 /* Max key wrap length per RFC 5649  */
-static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF; 
+static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF;
 
 
 srtp_debug_module_t srtp_mod_aes_wrap = {
@@ -107,8 +105,8 @@ static srtp_err_status_t srtp_aes_wrap_alloc (srtp_cipher_t **c, int key_len, in
 
     wrap = (srtp_aes_wrap_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_wrap_ctx_t));
     if (wrap == NULL) {
-	srtp_crypto_free(*c);
-	*c = NULL;
+        srtp_crypto_free(*c);
+        *c = NULL;
         return srtp_err_status_alloc_fail;
     }
     memset(wrap, 0x0, sizeof(srtp_aes_wrap_ctx_t));
@@ -120,6 +118,7 @@ static srtp_err_status_t srtp_aes_wrap_alloc (srtp_cipher_t **c, int key_len, in
     (*c)->algorithm = SRTP_AES_WRAP;
     (*c)->type = &srtp_aes_wrap;
     wrap->key_size = key_len;
+    wrap->alternate_iv_len = 4; /* default to 4 byte IV for RFC 5649 */
 
     /* set key size        */
     (*c)->key_len = key_len;
@@ -144,12 +143,12 @@ static srtp_err_status_t srtp_aes_wrap_dealloc (srtp_cipher_t *c)
      */
     ctx = (srtp_aes_wrap_ctx_t*)c->state;
     if (ctx != NULL) {
-	if (ctx->alternate_iv) {
-	    free(ctx->alternate_iv);
-	}
-	/* zeroize the key material */
-	octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_wrap_ctx_t));
-	srtp_crypto_free(ctx);
+        if (ctx->alternate_iv) {
+            free(ctx->alternate_iv);
+        }
+        /* zeroize the key material */
+        octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_wrap_ctx_t));
+        srtp_crypto_free(ctx);
     }
 
     /* free memory */
@@ -179,11 +178,11 @@ static srtp_err_status_t srtp_aes_wrap_context_init (srtp_aes_wrap_ctx_t *c, con
      * key is statically allocated to handle a full 32 byte key
      * regardless of the cipher in use.
      */
-    if (c->key_size == SRTP_AES_256_KEYSIZE || 
+    if (c->key_size == SRTP_AES_256_KEYSIZE ||
 #ifndef SRTP_NO_AES192
-	    c->key_size == SRTP_AES_192_KEYSIZE
+        c->key_size == SRTP_AES_192_KEYSIZE
 #endif
-	    ) {
+        ) {
         debug_print(srtp_mod_aes_wrap, "Copying last 16 bytes of key: %s",
                     v128_hex_string((v128_t*)(key + SRTP_AES_128_KEYSIZE)));
         v128_copy_octet_string(((v128_t*)(&c->key.v8)) + 1, key + SRTP_AES_128_KEYSIZE);
@@ -196,31 +195,80 @@ static srtp_err_status_t srtp_aes_wrap_context_init (srtp_aes_wrap_ctx_t *c, con
 }
 
 /*
- * srtp_aes_wrap_set_iv(c, iv) sets the counter value to the exor of iv with
- * the offset
+ * srtp_aes_wrap_set_iv(c, iv) sets the key wrap initialization vector and
+ * encryption direction.  The iv parameter may be NULL, in which case
+ * this module will perform Key Wrap with padding as defined in RFC 5649.
+ * Alternatively, the user can pass in an alternate IV using the iv parameter.
  */
 static srtp_err_status_t srtp_aes_wrap_set_iv (srtp_aes_wrap_ctx_t *c, const uint8_t *iv, int dir)
 {
+    /*
+     * Set the encryption direction
+     */
     c->direction = dir;
+
+    /*
+     * Allocate space for the IV
+     */
+    c->alternate_iv = malloc(c->alternate_iv_len);
+    if (!c->alternate_iv) {
+        return srtp_err_status_alloc_fail;
+    }
+
+    /*
+     * Populate the alternate IV value from either the user provided value
+     * or the preset value
+     */
     if (iv) {
-	c->alternate_iv = malloc(4);
-	if (!c->alternate_iv) {
-	    return srtp_err_status_alloc_fail;
-	}
-	memcpy(c->alternate_iv, iv, 4);
-	debug_print(srtp_mod_aes_wrap, "iv:  %s", v128_hex_string((v128_t*)c->alternate_iv));
+        memcpy(c->alternate_iv, iv, c->alternate_iv_len);
+        debug_print(srtp_mod_aes_wrap, "iv:  %s", v128_hex_string((v128_t*)c->alternate_iv));
+    } else {
+        switch (c->alternate_iv_len) {
+        case 4:
+            memcpy(c->alternate_iv, Alternative_IV, 4);
+            break;
+        case 8:
+            memcpy(c->alternate_iv, AES_Key_Wrap_Default_IV, 8);
+            break;
+        default:
+            return srtp_err_status_bad_param;
+            break;
+        }
+
     }
     return srtp_err_status_ok;
+}
+
+/*
+ * srtp_aes_wrap_set_iv_len(c, iv_len) sets the IV length
+ * This function is optional.  The default IV length is 4, which indicates
+ * to perform Key Wrap with padding as defined in RFC 5649.  The user can
+ * elect to use this function to set the IV length to 8, in which
+ * case this module will perform Key Wrap w/o padding as defined
+ * in RFC 3394.  Specifying an IV length other than 4 or 8 will
+ * result in an error.
+ */
+static srtp_err_status_t srtp_aes_wrap_set_iv_len (srtp_aes_wrap_ctx_t *c, const uint8_t iv_len)
+{
+    /*
+     * RFC 5649 uses 4 byte IV, RFC 3394 uses 8 bytes
+     */
+    if (iv_len == 4 || iv_len == 8) {
+        c->alternate_iv_len = iv_len;
+        return srtp_err_status_ok;
+    } else {
+        return srtp_err_status_bad_param;
+    }
 }
 
 /*
  * This function does simple AES-ECB crypto
  * FIXME: this function currently uses OpenSSL crypto, need to support built-in crypto too
  */
-static srtp_err_status_t srtp_aes_wrap_ecb_decrypt( srtp_aes_wrap_ctx_t *c,   
-        const unsigned char *ciphertext,
-        unsigned int ciphertext_length,
-        unsigned char *plaintext)
+static srtp_err_status_t srtp_aes_wrap_ecb_decrypt(srtp_aes_wrap_ctx_t *c,
+                                                   const unsigned char *ciphertext,
+                                                   unsigned int ciphertext_length,
+                                                   unsigned char *plaintext)
 {
     EVP_CIPHER_CTX ctx;                         /* Crypto context           */
     const EVP_CIPHER *cipher = NULL;            /* Cipher to use            */
@@ -299,10 +347,10 @@ static srtp_err_status_t srtp_aes_wrap_ecb_decrypt( srtp_aes_wrap_ctx_t *c,
  * This function does simple AES-ECB crypto
  * FIXME: this function currently uses OpenSSL crypto, need to support built-in crypto too
  */
-static srtp_err_status_t srtp_aes_wrap_ecb_encrypt( srtp_aes_wrap_ctx_t *c,   
-        const unsigned char *plaintext,
-        unsigned int plaintext_length,
-        unsigned char *ciphertext)
+static srtp_err_status_t srtp_aes_wrap_ecb_encrypt(srtp_aes_wrap_ctx_t *c,
+                                                   const unsigned char *plaintext,
+                                                   unsigned int plaintext_length,
+                                                   unsigned char *ciphertext)
 {
     EVP_CIPHER_CTX ctx;                         /* Crypto context           */
     const EVP_CIPHER *cipher = NULL;            /* Cipher to use            */
@@ -426,9 +474,9 @@ static srtp_err_status_t srtp_aes_wrap_ecb_encrypt( srtp_aes_wrap_ctx_t *c,
  *
  */
 static srtp_err_status_t srtp_aes_key_unwrap_nopad(srtp_aes_wrap_ctx_t *c,
-                                unsigned char *buf,
-                                unsigned int *enc_len,
-                                unsigned char *integrity_data)
+                                                   unsigned char *buf,
+                                                   unsigned int *enc_len,
+                                                   unsigned char *integrity_data)
 {
     int i, j, k;                                /* Loop counters            */
     unsigned int n;                             /* Number of 64-bit blocks  */
@@ -465,9 +513,9 @@ static srtp_err_status_t srtp_aes_key_unwrap_nopad(srtp_aes_wrap_ctx_t *c,
      * Perform the key wrap
      */
     memmove(buf, buf + 8, *enc_len-8);
-    for(j=5, t=6*n; j>=0; j--) {
-        for(i=n, R=buf+*enc_len-16; i>=1; i--, t--, R-=8) {
-            for(k=7, tt=t; (k>=0) && (tt>0); k--, tt>>=8) {
+    for (j = 5, t = 6*n; j >= 0; j--) {
+        for (i = n, R = buf+*enc_len-16; i >= 1; i--, t--, R -= 8) {
+            for (k = 7, tt = t; (k >= 0) && (tt > 0); k--, tt >>= 8) {
                 A[k] ^= (unsigned char) (tt & 0xFF);
             }
             memcpy(B+8, R, 8);
@@ -526,10 +574,10 @@ static srtp_err_status_t srtp_aes_key_unwrap_nopad(srtp_aes_wrap_ctx_t *c,
  *      use different pointers to memory for the ciphertext and plaintext.
  *
  */
-static srtp_err_status_t srtp_aes_key_wrap_nopad(srtp_aes_wrap_ctx_t *c, 
-                            unsigned int plaintext_length,
-                            unsigned char *buf,
-                            unsigned int *enc_len)
+static srtp_err_status_t srtp_aes_key_wrap_nopad(srtp_aes_wrap_ctx_t *c,
+                                                 unsigned int plaintext_length,
+                                                 unsigned char *buf,
+                                                 unsigned int *enc_len)
 {
     int i, j, k;                                /* Loop counters            */
     unsigned int n;                             /* Number of 64-bit blocks  */
@@ -560,13 +608,13 @@ static srtp_err_status_t srtp_aes_key_wrap_nopad(srtp_aes_wrap_ctx_t *c,
     /*
      * Perform the key wrap
      */
-    for(j=0, t=1; j<=5; j++) {
-        for(i=1, R=buf+8; i<=n; i++, t++, R+=8) {
+    for (j = 0, t = 1; j <= 5; j++) {
+        for (i = 1, R = buf+8; i <= n; i++, t++, R += 8) {
             memcpy(B+8, R, 8);
             if (srtp_aes_wrap_ecb_encrypt(c, B, 16, B)) {
                 return srtp_err_status_cipher_fail;
             }
-            for(k=7, tt=t; (k>=0) && (tt>0); k--, tt>>=8) {
+            for (k = 7, tt = t; (k >= 0) && (tt > 0); k--, tt >>= 8) {
                 A[k] ^= (unsigned char) (tt & 0xFF);
             }
             memcpy(R, B+8, 8);
@@ -582,7 +630,9 @@ static srtp_err_status_t srtp_aes_key_wrap_nopad(srtp_aes_wrap_ctx_t *c,
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
+static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c, 
+	                                             unsigned char *buf, 
+						     unsigned int *enc_len)
 {
     unsigned char integrity_data[8];            /* Integrity data           */
     uint32_t network_word;                      /* Word, network byte order */
@@ -605,7 +655,7 @@ static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c, uns
         /*
          * Decrypt using AES ECB mode
          */
-        if (srtp_aes_wrap_ecb_decrypt(c , buf, 16, buf)) {
+        if (srtp_aes_wrap_ecb_decrypt(c, buf, 16, buf)) {
             debug_print(srtp_mod_aes_wrap, "key unwrap with padding failed to decrypt ciphertext", NULL);
             return srtp_err_status_cipher_fail;
         }
@@ -618,7 +668,7 @@ static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c, uns
         /*
          * Copy the plaintext into the output buffer
          */
-	memmove(buf, buf+8, 8);
+        memmove(buf, buf+8, 8);
 
         /*
          * Set the plaintext_length to 8
@@ -635,43 +685,48 @@ static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c, uns
     }
 
     /*
-     * Verify that the first 4 octets of the integrity data are correct
+     * Verify the integrity data is correct
      */
-    if (c->alternate_iv) {
-        if (memcmp(c->alternate_iv, integrity_data, 4)) {
+    if (c->alternate_iv && c->alternate_iv_len == 8) {
+        /*
+         * Perform RFC 3394 integrity check
+         */
+        if (memcmp(c->alternate_iv, integrity_data, c->alternate_iv_len)) {
             debug_print(srtp_mod_aes_wrap, "key unwrap with padding integrity check failed", NULL);
             return srtp_err_status_cipher_fail;
         }
     } else {
-        if (memcmp(Alternative_IV, integrity_data, 4)) {
+        /*
+         * We're doing RFC 5649 key wrap (padded)
+         */
+        if (memcmp(c->alternate_iv, integrity_data, 4)) {
             debug_print(srtp_mod_aes_wrap, "key unwrap with padding integrity check failed", NULL);
             return srtp_err_status_cipher_fail;
         }
-    }
-    
-    /*
-     * Determine the original message length and sanity check
-     */
-    memcpy(&network_word, integrity_data+4, 4);
-    message_length_indicator = ntohl(network_word);
-    if ((message_length_indicator > *enc_len) || ((*enc_len > 8) && (message_length_indicator < (*enc_len)-7))) {
-        debug_print(srtp_mod_aes_wrap, "key unwrap with padding plaintex message length invalid", NULL);
-        return srtp_err_status_cipher_fail;
-    }
 
-    /*
-     * Ensure that all padding bits are zero
-     */
-    p = buf + message_length_indicator;
-    q = buf + *enc_len;
-    while(p<q) {
-        if (*p++) {
-            debug_print(srtp_mod_aes_wrap, "key unwrap with padding zero octets not zero", NULL);
+        /*
+         * Determine the original message length and sanity check
+         */
+        memcpy(&network_word, integrity_data+4, 4);
+        message_length_indicator = ntohl(network_word);
+        if ((message_length_indicator > *enc_len) || ((*enc_len > 8) && (message_length_indicator < (*enc_len)-7))) {
+            debug_print(srtp_mod_aes_wrap, "key unwrap with padding plaintex message length invalid", NULL);
             return srtp_err_status_cipher_fail;
         }
-    }
 
-    *enc_len = message_length_indicator;
+        /*
+         * Ensure that all padding bits are zero
+         */
+        p = buf + message_length_indicator;
+        q = buf + *enc_len;
+        while (p < q) {
+            if (*p++) {
+                debug_print(srtp_mod_aes_wrap, "key unwrap with padding zero octets not zero", NULL);
+                return srtp_err_status_cipher_fail;
+            }
+        }
+        *enc_len = message_length_indicator;
+    }
 
     return srtp_err_status_ok;
 }
@@ -698,18 +753,23 @@ static srtp_err_status_t srtp_aes_key_wrap_padded (srtp_aes_wrap_ctx_t *c, unsig
     /*
      * Store the initialization vector as the first 4 octets of the ciphertext
      */
-    if (c->alternate_iv) {
-        memcpy(buf, c->alternate_iv, 4);
+    if (c->alternate_iv && c->alternate_iv_len == 8) {
+        /*
+         * We're doing RFC 3394 key wrap
+         */
+        memcpy(buf, c->alternate_iv, c->alternate_iv_len);
     } else {
-        memcpy(buf, Alternative_IV, 4);
+        /*
+         * No alternate IV provided, we must be doing RFC 5649
+         */
+        memcpy(buf, c->alternate_iv, 4);
+        /*
+         * Store the original message length in network byte order as the
+         * second 4 octets of the buffer
+         */
+        network_word = htonl(*enc_len);
+        memcpy(buf+4, &network_word, 4);
     }
-
-    /*
-     * Store the original message length in network byte order as the
-     * second 4 octets of the buffer
-     */
-    network_word = htonl(*enc_len);
-    memcpy(buf+4, &network_word, 4);
 
     /*
      * Now pad the buffer to be an even 8 octets and compute the length
@@ -776,19 +836,19 @@ static srtp_err_status_t srtp_aes_wrap_encrypt (srtp_aes_wrap_ctx_t *c, unsigned
     }
 
     /*
-     * fork to the correct handler for wrap or unwrap 
+     * fork to the correct handler for wrap or unwrap
      */
-    switch (c->direction) { 
+    switch (c->direction) {
     case direction_encrypt:
-	return (srtp_aes_key_wrap_padded(c, buf, enc_len));
-	break;
+        return (srtp_aes_key_wrap_padded(c, buf, enc_len));
+        break;
     case direction_decrypt:
-	return (srtp_aes_key_unwrap_padded(c, buf, enc_len));
-	break;
+        return (srtp_aes_key_unwrap_padded(c, buf, enc_len));
+        break;
     default:
         debug_print(srtp_mod_aes_wrap, "Invalid cipher direction", NULL);
         return srtp_err_status_bad_param;
-	break;
+        break;
     }
 
     return (srtp_err_status_fail);
@@ -814,7 +874,7 @@ static uint8_t srtp_aes_wrap_test_case_0_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static uint8_t srtp_aes_wrap_test_case_0_plaintext[20] =  {
+static uint8_t srtp_aes_wrap_test_case_0_plaintext[20] = {
     0xC3, 0x7B, 0x7E, 0x64, 0x92, 0x58, 0x43, 0x40,
     0xBE, 0xD1, 0x22, 0x07, 0x80, 0x89, 0x41, 0x15,
     0x50, 0x68, 0xF7, 0x38
@@ -824,7 +884,7 @@ static uint8_t srtp_aes_wrap_test_case_0_ciphertext[32] = {
     0x13, 0x8B, 0xDE, 0xAA, 0x9B, 0x8F, 0xA7, 0xFC,
     0x61, 0xF9, 0x77, 0x42, 0xE7, 0x22, 0x48, 0xEE,
     0x5A, 0xE6, 0xAE, 0x53, 0x60, 0xD1, 0xAE, 0x6A,
-    0x5F, 0x54, 0xF3, 0x73, 0xFA, 0x54, 0x3B, 0x6A 
+    0x5F, 0x54, 0xF3, 0x73, 0xFA, 0x54, 0x3B, 0x6A
 };
 
 static srtp_cipher_test_case_t srtp_aes_wrap_test_case_0 = {
@@ -852,7 +912,7 @@ static uint8_t srtp_aes_wrap_test_case_1_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static uint8_t srtp_aes_wrap_test_case_1_plaintext[7] =  {
+static uint8_t srtp_aes_wrap_test_case_1_plaintext[7] = {
     0x46, 0x6F, 0x72, 0x50, 0x61, 0x73, 0x69
 };
 
@@ -888,6 +948,7 @@ srtp_cipher_type_t srtp_aes_wrap = {
     (cipher_encrypt_func_t)        srtp_aes_wrap_encrypt,
     (cipher_decrypt_func_t)        srtp_aes_wrap_encrypt,
     (cipher_set_iv_func_t)         srtp_aes_wrap_set_iv,
+    (cipher_set_iv_len_func_t)     srtp_aes_wrap_set_iv_len,
     (cipher_get_tag_func_t)        0,
     (char*)                        srtp_aes_wrap_description,
     (srtp_cipher_test_case_t*)     &srtp_aes_wrap_test_case_1,

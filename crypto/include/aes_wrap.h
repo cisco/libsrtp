@@ -66,6 +66,7 @@ typedef struct {
     int key_size;
     int direction; /* encrypt is wrap, decrypt is unwrap */
     unsigned char *alternate_iv;
+    uint8_t alternate_iv_len;
 } srtp_aes_wrap_ctx_t;
 
 #endif /* AES_ICM_H */

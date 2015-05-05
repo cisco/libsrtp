@@ -25,6 +25,7 @@
 #include "srtp.h"
 #include "ekt_tag_utils.h"
 
+#if 0
 /*  
  *  aeskw_test
  *
@@ -295,84 +296,6 @@ int aeskw_with_padding_test(const unsigned char *key,
 }
 
 /*  
- *  rfc5649_test
- *
- *  Description:
- *      This routine will test using the test vectors published in RFC 5649
- *      by calling srtp_ekt_aes_key_wrap_with_padding() and
- *      srtp_ekt_aes_key_unwrap_with_padding().
- *
- *  Parameters:
- *      None.
- *
- *  Returns:
- *      Zero if successful, non-zero otherwise.
- *
- *  Comments:
- *      None.
- *
- */
-int rfc5649_test()
-{
-    unsigned char key[] =
-    {
-        0x58, 0x40, 0xDF, 0x6E, 0x29, 0xB0, 0x2A, 0XF1,
-        0xAB, 0x49, 0x3B, 0x70, 0x5B, 0xF1, 0x6E, 0XA1,
-        0xAE, 0x83, 0x38, 0xF4, 0xDC, 0xC1, 0x76, 0XA8
-    };
-    unsigned char plaintext_20[] =
-    {
-        0xC3, 0x7B, 0x7E, 0x64, 0x92, 0x58, 0x43, 0x40,
-        0xBE, 0xD1, 0x22, 0x07, 0x80, 0x89, 0x41, 0x15,
-        0x50, 0x68, 0xF7, 0x38
-    };
-    unsigned char ciphertext_20[] =
-    {
-        0x13, 0x8B, 0xDE, 0xAA, 0x9B, 0x8F, 0xA7, 0xFC,
-        0x61, 0xF9, 0x77, 0x42, 0xE7, 0x22, 0x48, 0xEE,
-        0x5A, 0xE6, 0xAE, 0x53, 0x60, 0xD1, 0xAE, 0x6A,
-        0x5F, 0x54, 0xF3, 0x73, 0xFA, 0x54, 0x3B, 0x6A
-    };
-    unsigned char plaintext_7[] =
-    {
-        0x46, 0x6F, 0x72, 0x50, 0x61, 0x73, 0x69
-    };
-    unsigned char ciphertext_7[] =
-    {
-        0xAF, 0xBE, 0xB0, 0xF0, 0x7D, 0xFB, 0xF5, 0x41,
-        0x92, 0x00, 0xF2, 0xCC, 0xB5, 0x0B, 0xB2, 0x4F
-    };
-
-    printf("Entering rfc5649_test()\n");
-
-    if (aeskw_with_padding_test(key,
-                                sizeof(key)*8,
-                                plaintext_20,
-                                sizeof(plaintext_20),
-                                ciphertext_20,
-                                sizeof(ciphertext_20)))
-    {
-        printf("Exiting rfc5649_test()\n");
-        return (-1);
-    }
-
-    if (aeskw_with_padding_test(key,
-                                sizeof(key)*8,
-                                plaintext_7,
-                                sizeof(plaintext_7),
-                                ciphertext_7,
-                                sizeof(ciphertext_7)))
-    {
-        printf("Exiting rfc5649_test()\n");
-        return (-1);
-    }
-
-    printf("Exiting rfc5649_test()\n");
-
-    return 0;
-}
-
-/*  
  *  rfc3394_test
  *
  *  Description:
@@ -576,6 +499,7 @@ int rfc3394_test()
 
     return 0;
 }
+#endif
 
 /*  
  *  exercise_key_and_plaintext_lengths
@@ -824,6 +748,7 @@ int main()
 	exit(1);
     }
 
+#if 0
     /*
      * Test RFC 3394 using published test vectors
      */
@@ -832,15 +757,7 @@ int main()
         printf("There was a problem!\n");
         exit(1);
     }
-
-    /*
-     * Test RFC 5649 using published test vectors
-     */
-    if (rfc5649_test())
-    {
-        printf("There was a problem!\n");
-        exit(1);
-    }
+#endif
 
     /*
      * Run a number of different tests with various key and plaintext lengths

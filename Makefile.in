@@ -25,6 +25,7 @@ runtest: test
 	@echo "running libsrtp2 test applications..."
 	crypto/test/cipher_driver$(EXE) -v >/dev/null
 	crypto/test/kernel_driver$(EXE) -v >/dev/null
+	crypto/test/aes_key_wrap$(EXE) >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
 	test/srtp_driver$(EXE) -v >/dev/null
 	test/roc_driver$(EXE) -v >/dev/null
@@ -152,7 +153,8 @@ endif
 crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 	crypto/test/datatypes_driver$(EXE) crypto/test/kernel_driver$(EXE) \
 	crypto/test/sha1_driver$(EXE) \
-	crypto/test/stat_driver$(EXE) 
+	crypto/test/stat_driver$(EXE) \
+	crypto/test/aes_key_wrap$(EXE) 
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \

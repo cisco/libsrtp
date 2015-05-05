@@ -144,6 +144,7 @@ srtp_cipher_type_t srtp_null_cipher = {
     (cipher_encrypt_func_t)srtp_null_cipher_encrypt,
     (cipher_decrypt_func_t)srtp_null_cipher_encrypt,
     (cipher_set_iv_func_t)srtp_null_cipher_set_iv,
+    (cipher_set_iv_len_func_t)NULL,
     (cipher_get_tag_func_t)0,
     (char*)srtp_null_cipher_description,
     (srtp_cipher_test_case_t*)&srtp_null_cipher_test_0,

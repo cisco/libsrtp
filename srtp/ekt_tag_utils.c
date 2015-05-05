@@ -35,8 +35,6 @@
 #include "srtp.h"
 #include "ekt_tag_utils.h"
 
-//FIXME: this is temporary
-#define USENEW
 
 /*
  * Reference the external module name
@@ -144,7 +142,7 @@ int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
     }
 
 
-#ifdef USENEW
+#if 1
     /* allocate key wrap cipher */
     stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_WRAP, &kw, ekt_key_length/8, 0); 
     if (stat) {
@@ -284,7 +282,7 @@ int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
         alternative_iv[i] ^= (unsigned char) (rollover_counter & 0xFF);
     }
 
-#ifdef USENEW
+#if 1
     /* allocate key wrap cipher */
     stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_WRAP, &kw, ekt_key_length/8, 0); 
     if (stat) {
@@ -339,6 +337,7 @@ int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
 #endif
 }
 
+#if 0
 /*
  *  srtp_ekt_aes_ecb_encrypt
  *
@@ -1271,3 +1270,4 @@ int srtp_ekt_aes_key_unwrap_with_padding(   const unsigned char *key,
 
     return srtp_err_status_ok;
 }
+#endif

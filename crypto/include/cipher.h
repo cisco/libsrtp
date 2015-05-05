@@ -113,6 +113,12 @@ typedef srtp_err_status_t (*cipher_set_iv_func_t)
     (srtp_cipher_pointer_t cp, const uint8_t *iv, srtp_cipher_direction_t direction);
 
 /*
+ * a cipher_set_iv_len_func_t function sets the IV length 
+ */
+typedef srtp_err_status_t (*cipher_set_iv_len_func_t)
+    (srtp_cipher_pointer_t cp, const uint8_t iv_len);
+
+/*
  * a cipher_get_tag_funct_t function is used to get the authentication
  * tag that was calculated by an AEAD cipher.
  */
@@ -150,6 +156,7 @@ typedef struct srtp_cipher_type_t {
     cipher_encrypt_func_t encrypt;
     cipher_encrypt_func_t decrypt;
     cipher_set_iv_func_t set_iv;
+    cipher_set_iv_len_func_t set_iv_len;
     cipher_get_tag_func_t get_tag;
     char                       *description;
     srtp_cipher_test_case_t         *test_data;
@@ -204,6 +211,7 @@ srtp_err_status_t srtp_cipher_type_alloc(const srtp_cipher_type_t *ct, srtp_ciph
 srtp_err_status_t srtp_cipher_dealloc(srtp_cipher_t *c);
 srtp_err_status_t srtp_cipher_init(srtp_cipher_t *c, const uint8_t *key);
 srtp_err_status_t srtp_cipher_set_iv(srtp_cipher_t *c, const uint8_t *iv, int direction);
+srtp_err_status_t srtp_cipher_set_iv_len(srtp_cipher_t *c, const uint8_t iv_len);
 srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 

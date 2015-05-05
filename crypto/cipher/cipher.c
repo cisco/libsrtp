@@ -91,6 +91,15 @@ srtp_err_status_t srtp_cipher_set_iv (srtp_cipher_t *c, const uint8_t *iv, int d
     return (((c)->type)->set_iv(((c)->state), iv, direction)); 
 }
 
+srtp_err_status_t srtp_cipher_set_iv_len (srtp_cipher_t *c, const uint8_t iv_len)
+{
+    if (!c || !c->type || !c->state) {
+	return (srtp_err_status_bad_param);
+    }
+
+    return (((c)->type)->set_iv_len(((c)->state), iv_len)); 
+}
+
 srtp_err_status_t srtp_cipher_output (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
 {
 
