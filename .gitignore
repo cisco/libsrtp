@@ -44,6 +44,7 @@ test/dtls_srtp_driver
 test/rdbx_driver
 test/replay_driver
 test/roc_driver
+test/rtp_decoder
 test/rtpw
 test/srtp_driver
 test/ekt_tag_key_wrap_test

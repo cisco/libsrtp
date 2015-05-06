@@ -460,3 +460,41 @@ octet_string_set_to_zero(uint8_t *s, int len) {
   
 }
 
+#ifdef TESTAPP_SOURCE
+
+static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  "abcdefghijklmnopqrstuvwxyz0123456789+/";
+
+static int base64_block_to_octet_triple(char *out, char *in) {
+  unsigned char sextets[4] = {0};
+  int j = 0;
+  int i;
+
+  for (i = 0; i < 4; i++) {
+    char *p = strchr(b64chars, in[i]);
+    if (p != NULL) sextets[i] = p - b64chars;
+    else j++;
+  }
+
+  out[0] = (sextets[0]<<2)|(sextets[1]>>4);
+  if (j < 2) out[1] = (sextets[1]<<4)|(sextets[2]>>2);
+  if (j < 1) out[2] = (sextets[2]<<6)|sextets[3];
+  return j;
+}
+
+int base64_string_to_octet_string(char *out, int *pad, char *in, int len) {
+  int k = 0;
+  int i = 0;
+  int j = 0;
+  if (len % 4 != 0) return 0;
+
+  while (i < len && j == 0) {
+    j = base64_block_to_octet_triple(out + k, in + i);
+    k += 3;
+    i += 4;
+  }
+  *pad = j;
+  return i;
+}
+
+#endif

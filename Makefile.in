@@ -51,6 +51,7 @@ LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 SRTPLIB	= -lsrtp2
 
+AR      = @AR@
 RANLIB	= @RANLIB@
 INSTALL	= @INSTALL@
 
@@ -129,7 +130,7 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 srtpobj = srtp/srtp.o srtp/ekt.o srtp/ekt_tag_utils.o
 
 libsrtp2.a: $(srtpobj) $(cryptobj) $(gdoi)
-	ar cr libsrtp2.a $^
+	$(AR) cr libsrtp2.a $^
 	$(RANLIB) libsrtp2.a
 
 libsrtp2.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
@@ -197,6 +198,17 @@ test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c
 test/ekt_tag_key_wrap_test$(EXE): test/ekt_tag_key_wrap_test.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
+crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/kernel_driver$(EXE): crypto/test/kernel_driver.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/rand_gen$(EXE): crypto/test/rand_gen.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+crypto/test/rand_gen_soak$(EXE): crypto/test/rand_gen_soak.c test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 test: $(testapp)
 	@echo "Build done. Please run '$(MAKE) runtest' to run self tests."
 
@@ -234,15 +246,16 @@ libsrtp2doc:
 install:
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp2
 	$(INSTALL) -d $(DESTDIR)$(libdir)
-	$(INSTALL) -d $(DESTDIR)$(bindir)
 	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2  
 	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp2  
 	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp2  
 	if [ -f libsrtp2.a ]; then cp libsrtp2.a $(DESTDIR)$(libdir)/; fi
 	if [ -f libsrtp2.dll.a ]; then cp libsrtp2.dll.a $(DESTDIR)$(libdir)/; fi
 	if [ -f libsrtp2.$(SHAREDLIBSUFFIX) ]; then \
+		$(INSTALL) -d $(DESTDIR)$(SHAREDLIB_DIR); \
 		cp libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
 		cp libsrtp2.$(SHAREDLIBSUFFIXNOVER) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		ln -sfn libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
 	fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
