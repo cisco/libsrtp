@@ -61,6 +61,7 @@
 #include "srtp_priv.h"
 #include "ekt_tag_utils.h"
 
+#ifdef OPENSSL
 /*
  *  aeskw_with_padding_test
  *
@@ -272,6 +273,7 @@ static int rfc5649_test()
 
     return 0;
 }
+#endif
 
 
 
@@ -393,6 +395,15 @@ static int aes_wrap_test(unsigned char *kek, int keysize, unsigned char *expecte
     int ct_len;
     unsigned char *ct;
 
+#ifndef OPENSSL
+    /*
+     * 192-bit keys are only supported when using OpenSSL crypto
+     */
+    if (keysize == 24) {
+	return (0);
+    }
+#endif
+
     printf("Testing wrap/unwrap with key size %d and PT length %d\n", keysize, pt_len);
 
     /* allocate key wrap cipher */
@@ -509,20 +520,23 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+#ifdef OPENSSL
     /*
-     * Test RFC 5649 using published test vectors
+     * Test RFC 5649 using published test vectors.  These use 192 bit keys,
+     * which are only supported when OpenSSL crypto is used.
      */
     if (rfc5649_test())
     {
         printf("RFC 5649 tests failed!\n");
         exit(1);
     }
+#endif
 
     /*
      * Wrap/unwrap test #1
      */
     if (aes_wrap_test(key_1, sizeof(key_1), ciphertext_1, plaintext_1, sizeof(plaintext_1))) {
-        printf("Key wrap test# failed!\n");
+        printf("Key wrap test# 1 failed!\n");
         exit(1);
     }
 
@@ -530,7 +544,7 @@ int main(int argc, char *argv[])
      * Wrap/unwrap test #2
      */
     if (aes_wrap_test(key_2, sizeof(key_2), ciphertext_2, plaintext_2, sizeof(plaintext_2))) {
-        printf("Key wrap test# failed!\n");
+        printf("Key wrap test# 2 failed!\n");
         exit(1);
     }
 
@@ -538,7 +552,7 @@ int main(int argc, char *argv[])
      * Wrap/unwrap test #3
      */
     if (aes_wrap_test(key_3, sizeof(key_3), ciphertext_3, plaintext_3, sizeof(plaintext_3))) {
-        printf("Key wrap test# failed!\n");
+        printf("Key wrap test# 3 failed!\n");
         exit(1);
     }
 
@@ -546,7 +560,7 @@ int main(int argc, char *argv[])
      * Wrap/unwrap test #4
      */
     if (aes_wrap_test(key_4, sizeof(key_4), ciphertext_4, plaintext_4, sizeof(plaintext_4))) {
-        printf("Key wrap test# failed!\n");
+        printf("Key wrap test# 4 failed!\n");
         exit(1);
     }
 
@@ -554,7 +568,7 @@ int main(int argc, char *argv[])
      * Wrap/unwrap test #5
      */
     if (aes_wrap_test(key_5, sizeof(key_5), ciphertext_5, plaintext_5, sizeof(plaintext_5))) {
-        printf("Key wrap test# failed!\n");
+        printf("Key wrap test# 5 failed!\n");
         exit(1);
     }
 
@@ -562,7 +576,7 @@ int main(int argc, char *argv[])
      * Wrap/unwrap test #1
      */
     if (aes_wrap_test(key_6, sizeof(key_6), ciphertext_6, plaintext_6, sizeof(plaintext_6))) {
-        printf("Key wrap test# failed!\n");
+        printf("Key wrap test# 6 failed!\n");
         exit(1);
     }
 

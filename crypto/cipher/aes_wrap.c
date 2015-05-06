@@ -48,7 +48,12 @@
     #include <config.h>
 #endif
 
+#ifdef OPENSSL
 #include <openssl/evp.h>
+#else
+#include "aes.h"
+#endif
+
 #include "aes_wrap.h"
 #include "crypto_types.h"
 #include "alloc.h"
@@ -261,27 +266,18 @@ static srtp_err_status_t srtp_aes_wrap_set_iv_len (srtp_aes_wrap_ctx_t *c, const
     }
 }
 
+#ifdef OPENSSL
 /*
  * This function does simple AES-ECB crypto
- * FIXME: this function currently uses OpenSSL crypto, need to support built-in crypto too
  */
 static srtp_err_status_t srtp_aes_wrap_ecb_decrypt(srtp_aes_wrap_ctx_t *c,
                                                    const unsigned char *ciphertext,
-                                                   unsigned int ciphertext_length,
                                                    unsigned char *plaintext)
 {
     EVP_CIPHER_CTX ctx;                         /* Crypto context           */
     const EVP_CIPHER *cipher = NULL;            /* Cipher to use            */
     int plaintext_length = 0;                   /* Length of text           */
     int final_length = 0;                       /* Length of final text     */
-
-    /*
-     * Ensure the plaintext length is valid (Note: "& 0x0F" == "% 16")
-     */
-    if ((ciphertext_length & 0x0F) || (!ciphertext_length)) {
-        debug_print(srtp_mod_aes_wrap, "ciphertext length invalid for AES ECB encryption", NULL);
-        return srtp_err_status_bad_param;
-    }
 
     /*
      * Select the cipher based on the key length
@@ -316,7 +312,7 @@ static srtp_err_status_t srtp_aes_wrap_ecb_decrypt(srtp_aes_wrap_ctx_t *c,
 
     EVP_CIPHER_CTX_set_padding(&ctx, 0);
 
-    if (!EVP_DecryptUpdate(&ctx, plaintext, &plaintext_length, ciphertext, ciphertext_length)) {
+    if (!EVP_DecryptUpdate(&ctx, plaintext, &plaintext_length, ciphertext, AES_BLOCK_SIZE)) {
         debug_print(srtp_mod_aes_wrap, "call to EVP_DecryptUpdate failed trying to decrypt " "using AES ECB", NULL);
         EVP_CIPHER_CTX_cleanup(&ctx);
         return srtp_err_status_cipher_fail;
@@ -333,7 +329,7 @@ static srtp_err_status_t srtp_aes_wrap_ecb_decrypt(srtp_aes_wrap_ctx_t *c,
     /*
      * Verify the ciphertext length is correct
      */
-    if (plaintext_length + final_length != ciphertext_length) {
+    if (plaintext_length + final_length != AES_BLOCK_SIZE) {
         debug_print(srtp_mod_aes_wrap, "Unexpected plaintext length in AES ECB encryption", NULL);
         return srtp_err_status_cipher_fail;
     }
@@ -345,25 +341,15 @@ static srtp_err_status_t srtp_aes_wrap_ecb_decrypt(srtp_aes_wrap_ctx_t *c,
 
 /*
  * This function does simple AES-ECB crypto
- * FIXME: this function currently uses OpenSSL crypto, need to support built-in crypto too
  */
 static srtp_err_status_t srtp_aes_wrap_ecb_encrypt(srtp_aes_wrap_ctx_t *c,
                                                    const unsigned char *plaintext,
-                                                   unsigned int plaintext_length,
                                                    unsigned char *ciphertext)
 {
     EVP_CIPHER_CTX ctx;                         /* Crypto context           */
     const EVP_CIPHER *cipher = NULL;            /* Cipher to use            */
     int ciphertext_length = 0;                  /* Length of ciphertext     */
     int final_length = 0;                       /* Length of final text     */
-
-    /*
-     * Ensure the plaintext length is valid (Note: "& 0x0F" == "% 16")
-     */
-    if ((plaintext_length & 0x0F) || (!plaintext_length)) {
-        debug_print(srtp_mod_aes_wrap, "plaintext length invalid for AES ECB encryption", NULL);
-        return srtp_err_status_bad_param;
-    }
 
     /*
      * Select the cipher based on the key length
@@ -398,7 +384,7 @@ static srtp_err_status_t srtp_aes_wrap_ecb_encrypt(srtp_aes_wrap_ctx_t *c,
 
     EVP_CIPHER_CTX_set_padding(&ctx, 0);
 
-    if (!EVP_EncryptUpdate(&ctx, ciphertext, &ciphertext_length, plaintext, plaintext_length)) {
+    if (!EVP_EncryptUpdate(&ctx, ciphertext, &ciphertext_length, plaintext, AES_BLOCK_SIZE)) {
         debug_print(srtp_mod_aes_wrap, "call to EVP_EncryptUpdate failed trying to encrypt " "using AES ECB", NULL);
         EVP_CIPHER_CTX_cleanup(&ctx);
         return srtp_err_status_cipher_fail;
@@ -415,13 +401,64 @@ static srtp_err_status_t srtp_aes_wrap_ecb_encrypt(srtp_aes_wrap_ctx_t *c,
     /*
      * Verify the ciphertext length is correct
      */
-    if (ciphertext_length + final_length != plaintext_length) {
+    if (ciphertext_length + final_length != AES_BLOCK_SIZE) {
         debug_print(srtp_mod_aes_wrap, "Unexpected ciphertext length in AES ECB encryption", NULL);
         return srtp_err_status_cipher_fail;
     }
 
     return srtp_err_status_ok;
 }
+#else
+static srtp_err_status_t srtp_aes_wrap_ecb_decrypt(srtp_aes_wrap_ctx_t *c,
+                                                   const unsigned char *ciphertext,
+                                                   unsigned char *plaintext)
+{
+    srtp_aes_expanded_key_t expanded_key; 
+    srtp_err_status_t stat;
+    v128_t buf;
+    int i;
+
+    stat = srtp_aes_expand_encryption_key(c->key.v8, c->key_size, &expanded_key);
+    if (stat) {
+        return stat;
+    }
+    stat = srtp_aes_expand_decryption_key(c->key.v8, c->key_size, &expanded_key);
+    if (stat) {
+        return stat;
+    }
+
+    v128_copy_octet_string(&buf, ciphertext);
+    srtp_aes_decrypt(&buf, (const srtp_aes_expanded_key_t *)&expanded_key);
+    for (i=0; i<16; i++) {
+	plaintext[i] = buf.v8[i];
+    }
+
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_aes_wrap_ecb_encrypt(srtp_aes_wrap_ctx_t *c,
+                                                   const unsigned char *plaintext,
+                                                   unsigned char *ciphertext)
+{
+    srtp_aes_expanded_key_t expanded_key; 
+    srtp_err_status_t stat;
+    v128_t buf;
+    int i;
+
+    stat = srtp_aes_expand_encryption_key(c->key.v8, c->key_size, &expanded_key);
+    if (stat) {
+        return stat;
+    }
+
+    v128_copy_octet_string(&buf, plaintext);
+    srtp_aes_encrypt(&buf, (const srtp_aes_expanded_key_t *)&expanded_key);
+    for (i=0; i<16; i++) {
+	ciphertext[i] = buf.v8[i];
+    }
+
+    return srtp_err_status_ok;
+}
+#endif
 
 /*
  *  srtp_aes_key_unwrap_nopad
@@ -519,7 +556,7 @@ static srtp_err_status_t srtp_aes_key_unwrap_nopad(srtp_aes_wrap_ctx_t *c,
                 A[k] ^= (unsigned char) (tt & 0xFF);
             }
             memcpy(B+8, R, 8);
-            if (srtp_aes_wrap_ecb_decrypt(c, B, 16, B)) {
+            if (srtp_aes_wrap_ecb_decrypt(c, B, B)) {
                 return srtp_err_status_cipher_fail;
             }
             memcpy(R, B+8, 8);
@@ -611,7 +648,7 @@ static srtp_err_status_t srtp_aes_key_wrap_nopad(srtp_aes_wrap_ctx_t *c,
     for (j = 0, t = 1; j <= 5; j++) {
         for (i = 1, R = buf+8; i <= n; i++, t++, R += 8) {
             memcpy(B+8, R, 8);
-            if (srtp_aes_wrap_ecb_encrypt(c, B, 16, B)) {
+            if (srtp_aes_wrap_ecb_encrypt(c, B, B)) {
                 return srtp_err_status_cipher_fail;
             }
             for (k = 7, tt = t; (k >= 0) && (tt > 0); k--, tt >>= 8) {
@@ -655,7 +692,7 @@ static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c,
         /*
          * Decrypt using AES ECB mode
          */
-        if (srtp_aes_wrap_ecb_decrypt(c, buf, 16, buf)) {
+        if (srtp_aes_wrap_ecb_decrypt(c, buf, buf)) {
             debug_print(srtp_mod_aes_wrap, "key unwrap with padding failed to decrypt ciphertext", NULL);
             return srtp_err_status_cipher_fail;
         }
@@ -794,7 +831,7 @@ static srtp_err_status_t srtp_aes_key_wrap_padded (srtp_aes_wrap_ctx_t *c, unsig
         /*
          * Encrypt using AES ECB mode
          */
-        if (srtp_aes_wrap_ecb_encrypt(c, buf, 16, buf)) {
+        if (srtp_aes_wrap_ecb_encrypt(c, buf, buf)) {
             debug_print(srtp_mod_aes_wrap, "key wrap with padding failed to encrypt plaintext", NULL);
             return srtp_err_status_cipher_fail;
         }
@@ -812,7 +849,6 @@ static srtp_err_status_t srtp_aes_key_wrap_padded (srtp_aes_wrap_ctx_t *c, unsig
             return srtp_err_status_cipher_fail;
         }
     }
-
     return srtp_err_status_ok;
 }
 
@@ -859,14 +895,13 @@ static srtp_err_status_t srtp_aes_wrap_encrypt (srtp_aes_wrap_ctx_t *c, unsigned
  */
 static char srtp_aes_wrap_description[] = "AES key wrap";
 
+
 /*
  * KAT values for AES self-test.  These values came from RFC 5649.
- * //FIXME: need to add test cases for 128 and 256 bit keys
  */
-static uint8_t srtp_aes_wrap_test_case_0_key[SRTP_AES_192_KEYSIZE] = {
+static uint8_t srtp_aes_wrap_test_case_0_key[SRTP_AES_128_KEYSIZE] = {
     0x58, 0x40, 0xDF, 0x6E, 0x29, 0xB0, 0x2A, 0XF1,
     0xAB, 0x49, 0x3B, 0x70, 0x5B, 0xF1, 0x6E, 0XA1,
-    0xAE, 0x83, 0x38, 0xF4, 0xDC, 0xC1, 0x76, 0xA8
 };
 
 static uint8_t srtp_aes_wrap_test_case_0_nonce[16] = {
@@ -881,14 +916,14 @@ static uint8_t srtp_aes_wrap_test_case_0_plaintext[20] = {
 };
 
 static uint8_t srtp_aes_wrap_test_case_0_ciphertext[32] = {
-    0x13, 0x8B, 0xDE, 0xAA, 0x9B, 0x8F, 0xA7, 0xFC,
-    0x61, 0xF9, 0x77, 0x42, 0xE7, 0x22, 0x48, 0xEE,
-    0x5A, 0xE6, 0xAE, 0x53, 0x60, 0xD1, 0xAE, 0x6A,
-    0x5F, 0x54, 0xF3, 0x73, 0xFA, 0x54, 0x3B, 0x6A
+    0xed, 0x9f, 0x0e, 0xcf, 0xbb, 0x76, 0x1b, 0x73, 
+    0x65, 0x83, 0x87, 0x33, 0xe3, 0xf4, 0x2f, 0x81, 
+    0xa0, 0x49, 0xf0, 0x77, 0xe9, 0x01, 0xf6, 0x3b, 
+    0xfe, 0x05, 0x19, 0xe8, 0xa1, 0x2e, 0x9b, 0xcf
 };
 
 static srtp_cipher_test_case_t srtp_aes_wrap_test_case_0 = {
-    SRTP_AES_192_KEYSIZE,			/* octets in key            */
+    SRTP_AES_128_KEYSIZE,			/* octets in key            */
     srtp_aes_wrap_test_case_0_key,              /* key                      */
     srtp_aes_wrap_test_case_0_nonce,            /* packet index             */
     20,						/* octets in plaintext      */
@@ -901,6 +936,8 @@ static srtp_cipher_test_case_t srtp_aes_wrap_test_case_0 = {
     NULL					/* pointer to next testcase */
 };
 
+
+#ifdef OPENSSL
 static uint8_t srtp_aes_wrap_test_case_1_key[SRTP_AES_192_KEYSIZE] = {
     0x58, 0x40, 0xDF, 0x6E, 0x29, 0xB0, 0x2A, 0XF1,
     0xAB, 0x49, 0x3B, 0x70, 0x5B, 0xF1, 0x6E, 0XA1,
@@ -912,28 +949,69 @@ static uint8_t srtp_aes_wrap_test_case_1_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static uint8_t srtp_aes_wrap_test_case_1_plaintext[7] = {
-    0x46, 0x6F, 0x72, 0x50, 0x61, 0x73, 0x69
+static uint8_t srtp_aes_wrap_test_case_1_plaintext[20] = {
+    0xC3, 0x7B, 0x7E, 0x64, 0x92, 0x58, 0x43, 0x40,
+    0xBE, 0xD1, 0x22, 0x07, 0x80, 0x89, 0x41, 0x15,
+    0x50, 0x68, 0xF7, 0x38
 };
 
-static uint8_t srtp_aes_wrap_test_case_1_ciphertext[16] = {
-    0xaf, 0xbe, 0xb0, 0xf0, 0x7d, 0xfb, 0xf5, 0x41,
-    0x92, 0x00, 0xf2, 0xcc, 0xb5, 0x0b, 0xb2, 0x4f
+static uint8_t srtp_aes_wrap_test_case_1_ciphertext[32] = {
+    0x13, 0x8B, 0xDE, 0xAA, 0x9B, 0x8F, 0xA7, 0xFC,
+    0x61, 0xF9, 0x77, 0x42, 0xE7, 0x22, 0x48, 0xEE,
+    0x5A, 0xE6, 0xAE, 0x53, 0x60, 0xD1, 0xAE, 0x6A,
+    0x5F, 0x54, 0xF3, 0x73, 0xFA, 0x54, 0x3B, 0x6A
 };
 
 static srtp_cipher_test_case_t srtp_aes_wrap_test_case_1 = {
     SRTP_AES_192_KEYSIZE,			/* octets in key            */
     srtp_aes_wrap_test_case_1_key,              /* key                      */
     srtp_aes_wrap_test_case_1_nonce,            /* packet index             */
-    7,						/* octets in plaintext      */
+    20,						/* octets in plaintext      */
     srtp_aes_wrap_test_case_1_plaintext,        /* plaintext                */
-    16,						/* octets in ciphertext     */
+    32,						/* octets in ciphertext     */
     srtp_aes_wrap_test_case_1_ciphertext,       /* ciphertext               */
     0,
     NULL,
     0,
     &srtp_aes_wrap_test_case_0			/* pointer to next testcase */
 };
+
+static uint8_t srtp_aes_wrap_test_case_2_key[SRTP_AES_192_KEYSIZE] = {
+    0x58, 0x40, 0xDF, 0x6E, 0x29, 0xB0, 0x2A, 0XF1,
+    0xAB, 0x49, 0x3B, 0x70, 0x5B, 0xF1, 0x6E, 0XA1,
+    0xAE, 0x83, 0x38, 0xF4, 0xDC, 0xC1, 0x76, 0xA8
+};
+
+static uint8_t srtp_aes_wrap_test_case_2_nonce[16] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+static uint8_t srtp_aes_wrap_test_case_2_plaintext[7] = {
+    0x46, 0x6F, 0x72, 0x50, 0x61, 0x73, 0x69
+};
+
+static uint8_t srtp_aes_wrap_test_case_2_ciphertext[16] = {
+    0xaf, 0xbe, 0xb0, 0xf0, 0x7d, 0xfb, 0xf5, 0x41,
+    0x92, 0x00, 0xf2, 0xcc, 0xb5, 0x0b, 0xb2, 0x4f
+};
+
+static srtp_cipher_test_case_t srtp_aes_wrap_test_case_2 = {
+    SRTP_AES_192_KEYSIZE,			/* octets in key            */
+    srtp_aes_wrap_test_case_2_key,              /* key                      */
+    srtp_aes_wrap_test_case_2_nonce,            /* packet index             */
+    7,						/* octets in plaintext      */
+    srtp_aes_wrap_test_case_2_plaintext,        /* plaintext                */
+    16,						/* octets in ciphertext     */
+    srtp_aes_wrap_test_case_2_ciphertext,       /* ciphertext               */
+    0,
+    NULL,
+    0,
+    &srtp_aes_wrap_test_case_1			/* pointer to next testcase */
+};
+#endif
+
+
 
 
 /*
@@ -951,7 +1029,11 @@ srtp_cipher_type_t srtp_aes_wrap = {
     (cipher_set_iv_len_func_t)     srtp_aes_wrap_set_iv_len,
     (cipher_get_tag_func_t)        0,
     (char*)                        srtp_aes_wrap_description,
-    (srtp_cipher_test_case_t*)     &srtp_aes_wrap_test_case_1,
+#ifndef OPENSSL
+    (srtp_cipher_test_case_t*)     &srtp_aes_wrap_test_case_0,
+#else
+    (srtp_cipher_test_case_t*)     &srtp_aes_wrap_test_case_2,
+#endif
     (srtp_debug_module_t*)         &srtp_mod_aes_wrap,
     (srtp_cipher_type_id_t)        SRTP_AES_WRAP
 };

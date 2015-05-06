@@ -81,7 +81,11 @@ int exercise_key_and_plaintext_lengths()
     };
     unsigned int key_lengths[] =
     {
-        128, 192, 256
+        128, 
+#ifdef OPENSSL 
+	192, 
+#endif
+	256
     };
     unsigned int text_lengths[] =
     {
@@ -104,6 +108,7 @@ int exercise_key_and_plaintext_lengths()
     for(k_i = 0; k_i < sizeof(key_lengths)/sizeof(int); k_i++)
     {
         key_length = key_lengths[k_i];
+	printf("\nStarting key length %d:\n", key_length);
         for(t_i = 0; t_i < sizeof(text_lengths)/sizeof(int); t_i++)
         {
             text_length = text_lengths[t_i];
