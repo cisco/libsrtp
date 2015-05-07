@@ -28,8 +28,6 @@
 
 #include <string.h>
 #include <arpa/inet.h>
-#include <openssl/evp.h>
-#include <openssl/err.h>
 #include "srtp_priv.h"
 #include "err.h"
 #include "srtp.h"
@@ -171,8 +169,6 @@ int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
 
     /*
      * Dealloc the key wrap cipher.
-     * FIXME: if this cipher is going to be used a lot, we should allocate it
-     *        through a SRTP/EKT context and reuse it.
      */
     srtp_cipher_dealloc(kw);
     return srtp_err_status_ok;
@@ -300,8 +296,6 @@ int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
 
     /*
      * Dealloc the key wrap cipher.
-     * FIXME: if this cipher is going to be used a lot, we should allocate it
-     *        through a SRTP/EKT context and reuse it.
      */
     srtp_cipher_dealloc(kw);
     return srtp_err_status_ok;
