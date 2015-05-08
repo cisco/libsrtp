@@ -31,6 +31,7 @@ config.log
 config.status
 crypto/include/config.h
 crypto/test/aes_calc
+crypto/test/aes_key_wrap
 crypto/test/cipher_driver
 crypto/test/datatypes_driver
 crypto/test/env
