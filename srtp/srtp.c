@@ -50,6 +50,10 @@
 #include "alloc.h"           /* for srtp_crypto_alloc()          */
 #ifdef OPENSSL
 #include "aes_gcm_ossl.h"    /* for AES GCM mode  */
+# ifdef OPENSSL_KDF
+# include <openssl/kdf.h>
+# include "aes_icm_ossl.h"    /* for AES GCM mode  */
+# endif
 #endif
 
 #include <limits.h>
@@ -411,73 +415,139 @@ typedef enum {
   label_rtcp_salt       = 0x05
 } srtp_prf_label;
 
+#define MAX_SRTP_KEY_LEN 256
+
+#if defined(OPENSSL) && defined(OPENSSL_KDF)
+#define MAX_SRTP_AESKEY_LEN 32
+#define MAX_SRTP_SALT_LEN 14 
 
 /*
  * srtp_kdf_t represents a key derivation function.  The SRTP
  * default KDF is the only one implemented at present.
  */
-
 typedef struct { 
-  srtp_cipher_t *cipher;    /* cipher used for key derivation  */  
+    uint8_t master_key[MAX_SRTP_AESKEY_LEN];
+    uint8_t master_salt[MAX_SRTP_SALT_LEN];
+    const EVP_CIPHER *evp;
 } srtp_kdf_t;
 
-srtp_err_status_t
-srtp_kdf_init(srtp_kdf_t *kdf, srtp_cipher_type_id_t cipher_id, const uint8_t *key, int length) {
 
-  srtp_err_status_t stat;
-  stat = srtp_crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, length, 0);
-  if (stat)
-    return stat;
+static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t *key, int key_len, int salt_len) 
+{
+    memset(kdf, 0x0, sizeof(srtp_kdf_t));
 
-  stat = srtp_cipher_init(kdf->cipher, key);
-  if (stat) {
-    srtp_cipher_dealloc(kdf->cipher);
-    return stat;
-  }
+    /* The NULL cipher has zero key length */
+    if (key_len == 0) return srtp_err_status_ok;
 
-  return srtp_err_status_ok;
+    if ((key_len > MAX_SRTP_AESKEY_LEN) || (salt_len > MAX_SRTP_SALT_LEN)) {
+        return srtp_err_status_bad_param;
+    }
+    switch (key_len) {
+    case SRTP_AES_256_KEYSIZE:
+        kdf->evp = EVP_aes_256_ctr();
+        break;
+    case SRTP_AES_192_KEYSIZE:
+        kdf->evp = EVP_aes_192_ctr();
+        break;
+    case SRTP_AES_128_KEYSIZE:
+        kdf->evp = EVP_aes_128_ctr();
+        break;
+    default:
+        return srtp_err_status_bad_param;
+        break;
+    }
+    memcpy(kdf->master_key, key, key_len); 
+    memcpy(kdf->master_salt, key+key_len, salt_len); 
+    return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label,
-		  uint8_t *key, unsigned int length) {
+static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label, uint8_t *key, unsigned int length) 
+{
+    int ret;
 
-  v128_t nonce;
-  srtp_err_status_t status;
+    /* The NULL cipher will not have an EVP */
+    if (!kdf->evp) return srtp_err_status_ok;
+
+    octet_string_set_to_zero(key, length);
+
+    /*
+     * Invoke the OpenSSL SRTP KDF function
+     * This is useful if OpenSSL is in FIPS mode and FIP
+     * compliance is required for SRTP.
+     */
+    ret = kdf_srtp(kdf->evp, (char *)&kdf->master_key, (char *)&kdf->master_salt, NULL, NULL, label, (char *)key);
+    if (ret == -1) {
+        return (srtp_err_status_algo_fail);
+    }
+
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf) {
+    memset(kdf->master_key, 0x0, MAX_SRTP_KEY_LEN);
+    memset(kdf->master_salt, 0x0, MAX_SRTP_KEY_LEN);
+    kdf->evp = NULL;
+
+    return srtp_err_status_ok;  
+}
+
+#else /* if OPENSSL_KDF */
+
+/*
+ * srtp_kdf_t represents a key derivation function.  The SRTP
+ * default KDF is the only one implemented at present.
+ */
+typedef struct { 
+    srtp_cipher_t *cipher;    /* cipher used for key derivation  */  
+} srtp_kdf_t;
+
+static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf, srtp_cipher_type_id_t cipher_id, const uint8_t *key, int length) 
+{
+    srtp_err_status_t stat;
+    stat = srtp_crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, length, 0);
+    if (stat) return stat;
+
+    stat = srtp_cipher_init(kdf->cipher, key);
+    if (stat) {
+        srtp_cipher_dealloc(kdf->cipher);
+        return stat;
+    }
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label, uint8_t *key, unsigned int length) 
+{
+    srtp_err_status_t status;
+    v128_t nonce;
   
-  /* set eigth octet of nonce to <label>, set the rest of it to zero */
-  v128_set_to_zero(&nonce);
-  nonce.v8[7] = label;
+    /* set eigth octet of nonce to <label>, set the rest of it to zero */
+    v128_set_to_zero(&nonce);
+    nonce.v8[7] = label;
  
-  status = srtp_cipher_set_iv(kdf->cipher, (const uint8_t*)&nonce, direction_encrypt);
-  if (status)
-    return status;
+    status = srtp_cipher_set_iv(kdf->cipher, (const uint8_t*)&nonce, direction_encrypt);
+    if (status) return status;
   
-  /* generate keystream output */
-  octet_string_set_to_zero(key, length);
-  status = srtp_cipher_encrypt(kdf->cipher, key, &length);
-  if (status)
-    return status;
+    /* generate keystream output */
+    octet_string_set_to_zero(key, length);
+    status = srtp_cipher_encrypt(kdf->cipher, key, &length);
+    if (status) return status;
 
-  return srtp_err_status_ok;
+    return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_kdf_clear(srtp_kdf_t *kdf) {
-  srtp_err_status_t status;
-  status = srtp_cipher_dealloc(kdf->cipher);
-  if (status)
-    return status;
-  kdf->cipher = NULL;
-
-  return srtp_err_status_ok;  
+static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf) {
+    srtp_err_status_t status;
+    status = srtp_cipher_dealloc(kdf->cipher);
+    if (status) return status;
+    kdf->cipher = NULL;
+    return srtp_err_status_ok;  
 }
+#endif /* else OPENSSL_KDF */
 
 /*
  *  end of key derivation functions 
  */
 
-#define MAX_SRTP_KEY_LEN 256
 
 
 /* Get the base key length corresponding to a given combined key+salt
@@ -547,7 +617,11 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   memcpy(tmp_key, key, (rtp_base_key_len + rtp_salt_len));
 
   /* initialize KDF state     */
+#if defined(OPENSSL) && defined(OPENSSL_KDF)
+  stat = srtp_kdf_init(&kdf, (const uint8_t *)tmp_key, rtp_base_key_len, rtp_salt_len); 
+#else
   stat = srtp_kdf_init(&kdf, SRTP_AES_ICM, (const uint8_t *)tmp_key, kdf_keylen);
+#endif
   if (stat) {
     return srtp_err_status_init_fail;
   }
