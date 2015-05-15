@@ -79,7 +79,7 @@ extern "C" {
  * SRTP_MAX_TAG_LEN is the maximum tag length supported by libSRTP
  */
 
-#define SRTP_MAX_TAG_LEN 12 
+#define SRTP_MAX_TAG_LEN 16 
 
 /**
  * SRTP_MAX_TRAILER_LEN is the maximum length of the SRTP trailer
