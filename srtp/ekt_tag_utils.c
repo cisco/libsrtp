@@ -26,13 +26,9 @@
  *
  */
 
-#include <string.h>
-#include <arpa/inet.h>
 #include "srtp_priv.h"
 #include "err.h"
 #include "srtp.h"
-#include "ekt_tag_utils.h"
-
 
 /*
  * Reference the external module name
@@ -44,7 +40,6 @@ static const unsigned char Alternative_IV[] =   /* AIV per RFC 5649         */
     0xA6, 0x59, 0x59, 0xA6
 };
 static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF;
-                                                /* Max length per RFC 5649  */
 
 /*
  *  srtp_ekt_plaintext_encrypt
