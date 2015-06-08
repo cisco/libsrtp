@@ -2028,6 +2028,7 @@ srtp_create(srtp_t *session,               /* handle for session     */
     if (stat) {
       /* clean up everything */
       srtp_dealloc(*session);
+      *session = NULL;
       return stat;
     }    
 
