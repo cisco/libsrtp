@@ -73,7 +73,7 @@ static srtp_err_status_t srtp_null_cipher_alloc (srtp_cipher_t **c, int key_len,
     /* set pointers */
     (*c)->algorithm = SRTP_NULL_CIPHER;
     (*c)->type = &srtp_null_cipher;
-    (*c)->state = 0x1; /* The null cipher does not maintain state */
+    (*c)->state = (void *) 0x1; /* The null cipher does not maintain state */
 
     /* set key size */
     (*c)->key_len = key_len;
