@@ -515,7 +515,8 @@ static srtp_err_status_t srtp_aes_key_unwrap_nopad(srtp_aes_wrap_ctx_t *c,
                                                    unsigned int *enc_len,
                                                    unsigned char *integrity_data)
 {
-    int i, j, k;                                /* Loop counters            */
+    unsigned int i;                             /* Loop counter             */
+    int j, k;                                   /* Loop counters            */
     unsigned int n;                             /* Number of 64-bit blocks  */
     unsigned int t, tt;                         /* Step counters            */
     unsigned char *A;                           /* Integrity check register */
@@ -616,7 +617,8 @@ static srtp_err_status_t srtp_aes_key_wrap_nopad(srtp_aes_wrap_ctx_t *c,
                                                  unsigned char *buf,
                                                  unsigned int *enc_len)
 {
-    int i, j, k;                                /* Loop counters            */
+    unsigned int i;                             /* Loop counter             */
+    int j, k;                                   /* Loop counters            */
     unsigned int n;                             /* Number of 64-bit blocks  */
     unsigned int t, tt;                         /* Step counters            */
     unsigned char *A;                           /* Integrity check register */
