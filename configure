@@ -698,6 +698,8 @@ enable_option_checking
 enable_debug
 enable_generic_aesicm
 enable_openssl
+with_openssl_dir
+enable_openssl_kdf
 enable_stdout
 enable_console
 '
@@ -1326,8 +1328,14 @@ Optional Features:
   --disable-debug         do not compile in dynamic debugging system
   --enable-generic-aesicm compile in changes for ISMAcryp
   --enable-openssl        compile in OpenSSL crypto engine
+  --enable-openssl-kdf    Use OpenSSL KDF algorithm
   --enable-stdout         use stdout for debug/error reporting
   --enable-console        use /dev/console for error reporting
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-openssl-dir      Location of OpenSSL installation
 
 Some influential environment variables:
   CC          C compiler command
@@ -5507,8 +5515,19 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl" >&5
 $as_echo "$enable_openssl" >&6; }
 if test "$enable_openssl" = "yes"; then
-   LDFLAGS="$LDFLAGS $(pkg-config --libs openssl)";
-   CFLAGS="$CFLAGS $(pkg-config --cflags openssl)";
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for user specified OpenSSL directory" >&5
+$as_echo_n "checking for user specified OpenSSL directory... " >&6; }
+
+# Check whether --with-openssl-dir was given.
+if test "${with_openssl_dir+set}" = set; then :
+  withval=$with_openssl_dir; openssl_dir="$withval"
+else
+  openssl_dir=""
+fi
+
+
+   LDFLAGS="$LDFLAGS -L$openssl_dir/lib $(pkg-config --libs openssl)";
+   CFLAGS="$CFLAGS -I$openssl_dir/include $(pkg-config --cflags openssl)";
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
 $as_echo_n "checking for dlopen in -ldl... " >&6; }
@@ -5763,6 +5782,73 @@ $as_echo "#define OPENSSL 1" >>confdefs.h
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    USE_OPENSSL=1
 
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to leverage OpenSSL KDF algorithm" >&5
+$as_echo_n "checking whether to leverage OpenSSL KDF algorithm... " >&6; }
+   # Check whether --enable-openssl-kdf was given.
+if test "${enable_openssl_kdf+set}" = set; then :
+  enableval=$enable_openssl_kdf;
+else
+  enable_openssl_kdf=no
+fi
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl_kdf" >&5
+$as_echo "$enable_openssl_kdf" >&6; }
+   if test "$enable_openssl_kdf" = "yes"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for kdf_srtp in -lcrypto" >&5
+$as_echo_n "checking for kdf_srtp in -lcrypto... " >&6; }
+if ${ac_cv_lib_crypto_kdf_srtp+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcrypto  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char kdf_srtp ();
+int
+main ()
+{
+return kdf_srtp ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_crypto_kdf_srtp=yes
+else
+  ac_cv_lib_crypto_kdf_srtp=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_kdf_srtp" >&5
+$as_echo "$ac_cv_lib_crypto_kdf_srtp" >&6; }
+if test "x$ac_cv_lib_crypto_kdf_srtp" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBCRYPTO 1
+_ACEOF
+
+  LIBS="-lcrypto $LIBS"
+
+else
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "can't find openssl KDF lib
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
+
+$as_echo "#define OPENSSL_KDF 1" >>confdefs.h
+
+   fi
 else
    AES_ICM_OBJS="crypto/cipher/aes_wrap.o crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5

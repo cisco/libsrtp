@@ -27,6 +27,8 @@ The configure script accepts the following options:
    --disable-stdout    use stdout for error reporting
    --enable-console    use /dev/console for error reporting
    --enable-openssl    use OpenSSL crypto primitives
+   --with-openssl-dir  Specify location of OpenSSL installation
+   --enable-openssl-kdf use OpenSSL SRTP KDF algorithm
    --gdoi              use GDOI key management (disabled at present)
 
 By default, debugging is enabled and stdout is used for debugging.
