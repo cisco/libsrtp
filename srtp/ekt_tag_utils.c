@@ -129,7 +129,7 @@ int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
 
 
     /* allocate key wrap cipher */
-    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_WRAP, &kw, ekt_key_length/8, 0); 
+    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AESKW_128, &kw, ekt_key_length/8, 0); 
     if (stat) {
         debug_print(mod_srtp, "Failed to allocate key wrap cipher", NULL);
 	return stat;
@@ -256,7 +256,7 @@ int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
     }
 
     /* allocate key wrap cipher */
-    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_WRAP, &kw, ekt_key_length/8, 0); 
+    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AESKW_128, &kw, ekt_key_length/8, 0); 
     if (stat) {
         debug_print(mod_srtp, "Failed to allocate key wrap cipher", NULL);
 	return stat;
