@@ -263,7 +263,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                                                  test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-	if (c->algorithm == SRTP_AESKW_128) {
+	if (c->algorithm == SRTP_AES_WRAP) {
 	    status = srtp_cipher_set_iv(c, NULL, direction_encrypt);
 	} else {
 	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
@@ -366,7 +366,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                                                  test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-	if (c->algorithm == SRTP_AESKW_128) {
+	if (c->algorithm == SRTP_AES_WRAP) {
 	    status = srtp_cipher_set_iv(c, NULL, direction_decrypt);
 	} else {
 	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
@@ -458,7 +458,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* choose a length at random (leaving room for IV and padding) */
         length = rand() % (SELF_TEST_BUF_OCTETS - 64);
-	if (!length && (c->algorithm == SRTP_AESKW_128)) {
+	if (!length && (c->algorithm == SRTP_AES_WRAP)) {
 	    /* AES key wrap doesn't allow zero-length input */
 	    continue;
 	}
@@ -499,7 +499,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         }
 
         /* set initialization vector */
-	if (c->algorithm == SRTP_AESKW_128) {
+	if (c->algorithm == SRTP_AES_WRAP) {
 	    status = srtp_cipher_set_iv(c, NULL, direction_encrypt);
 	} else {
 	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
@@ -553,7 +553,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-	if (c->algorithm == SRTP_AESKW_128) {
+	if (c->algorithm == SRTP_AES_WRAP) {
 	    status = srtp_cipher_set_iv(c, NULL, direction_decrypt);
 	} else {
 	    status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);

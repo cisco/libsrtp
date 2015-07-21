@@ -159,7 +159,7 @@ srtp_err_status_t srtp_crypto_kernel_init ()
         return status;
     }
 #endif
-    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_wrap, SRTP_AESKW_128);
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_wrap, SRTP_AES_WRAP);
     if (status) {
         return status;
     }

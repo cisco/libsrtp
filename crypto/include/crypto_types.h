@@ -98,14 +98,11 @@
 #define SRTP_AES_256_GCM        7            
 
 /* 
- * AES-128 Key Wrap Mode              
+ * AES Key Wrap Mode              
  */
-#define SRTP_AESKW_128	8 
-
-/* 
- * AES-256 Key Wrap Mode              
- */
-#define SRTP_AESKW_256	9 
+#define SRTP_AES_WRAP		8 
+#define SRTP_AESKW_128		SRTP_AES_WRAP 
+#define SRTP_AESKW_256		SRTP_AES_WRAP 
 
 /*
  * The null authentication function performs no authentication.

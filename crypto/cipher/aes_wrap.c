@@ -120,7 +120,7 @@ static srtp_err_status_t srtp_aes_wrap_alloc (srtp_cipher_t **c, int key_len, in
     (*c)->state = wrap;
 
     /* setup cipher parameters */
-    (*c)->algorithm = SRTP_AESKW_128;
+    (*c)->algorithm = SRTP_AES_WRAP;
     (*c)->type = &srtp_aes_wrap;
     wrap->key_size = key_len;
     wrap->alternate_iv_len = 4; /* default to 4 byte IV for RFC 5649 */
@@ -1037,6 +1037,6 @@ srtp_cipher_type_t srtp_aes_wrap = {
     (srtp_cipher_test_case_t*)     &srtp_aes_wrap_test_case_2,
 #endif
     (srtp_debug_module_t*)         &srtp_mod_aes_wrap,
-    (srtp_cipher_type_id_t)        SRTP_AESKW_128
+    (srtp_cipher_type_id_t)        SRTP_AES_WRAP
 };
 

@@ -104,7 +104,7 @@ static int aeskw_with_padding_test(const unsigned char *key,
     printf("Testing wrap/unwrap with key size %d and PT length %d\n", key_length/8, plaintext_length);
 
     /* allocate key wrap cipher */
-    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AESKW_128, &kw, key_length/8, 0);
+    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_WRAP, &kw, key_length/8, 0);
     if (stat) {
         printf("Error: Failed to allocate key wrap cipher\n");
         return stat;
@@ -407,7 +407,7 @@ static int aes_wrap_test(unsigned char *kek, int keysize, unsigned char *expecte
     printf("Testing wrap/unwrap with key size %d and PT length %d\n", keysize, pt_len);
 
     /* allocate key wrap cipher */
-    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AESKW_128, &kw, keysize, 0);
+    stat = srtp_crypto_kernel_alloc_cipher(SRTP_AES_WRAP, &kw, keysize, 0);
     if (stat) {
         printf("Failed to allocate key wrap cipher\n");
         return stat;
