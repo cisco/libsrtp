@@ -151,9 +151,9 @@ typedef struct srtp_cipher_type_t {
     cipher_encrypt_func_t decrypt;
     cipher_set_iv_func_t set_iv;
     cipher_get_tag_func_t get_tag;
-    char                       *description;
-    srtp_cipher_test_case_t         *test_data;
-    srtp_debug_module_t             *debug;
+    const char                       *description;
+    const srtp_cipher_test_case_t         *test_data;
+    const srtp_debug_module_t             *debug;
     srtp_cipher_type_id_t id;
 } srtp_cipher_type_t;
 
@@ -162,7 +162,7 @@ typedef struct srtp_cipher_type_t {
  * key length, key and salt values
  */
 typedef struct srtp_cipher_t {
-    srtp_cipher_type_t *type;
+    const srtp_cipher_type_t *type;
     void          *state;
     int key_len;
     int algorithm;
