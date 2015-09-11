@@ -68,7 +68,7 @@ typedef enum {
  */
 typedef struct srtp_kernel_cipher_type {
     srtp_cipher_type_id_t id;
-    srtp_cipher_type_t    *cipher_type;
+    const srtp_cipher_type_t    *cipher_type;
     struct srtp_kernel_cipher_type *next;
 } srtp_kernel_cipher_type_t;
 
@@ -77,7 +77,7 @@ typedef struct srtp_kernel_cipher_type {
  */
 typedef struct srtp_kernel_auth_type {
     srtp_auth_type_id_t id;
-    srtp_auth_type_t    *auth_type;
+    const srtp_auth_type_t    *auth_type;
     struct srtp_kernel_auth_type *next;
 } srtp_kernel_auth_type_t;
 
