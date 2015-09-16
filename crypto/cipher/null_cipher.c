@@ -58,7 +58,7 @@ extern srtp_debug_module_t srtp_mod_cipher;
 
 static srtp_err_status_t srtp_null_cipher_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
-    extern srtp_cipher_type_t srtp_null_cipher;
+    extern const srtp_cipher_type_t srtp_null_cipher;
 
     debug_print(srtp_mod_cipher,
                 "allocating cipher with key length %d", key_len);
@@ -84,7 +84,7 @@ static srtp_err_status_t srtp_null_cipher_alloc (srtp_cipher_t **c, int key_len,
 
 static srtp_err_status_t srtp_null_cipher_dealloc (srtp_cipher_t *c)
 {
-    extern srtp_cipher_type_t srtp_null_cipher;
+    extern const srtp_cipher_type_t srtp_null_cipher;
 
     /* zeroize entire state*/
     octet_string_set_to_zero((uint8_t*)c, sizeof(srtp_cipher_t));
@@ -115,9 +115,9 @@ static srtp_err_status_t srtp_null_cipher_encrypt (srtp_null_cipher_ctx_t *c,
     return srtp_err_status_ok;
 }
 
-static char srtp_null_cipher_description[] = "null cipher";
+static const char srtp_null_cipher_description[] = "null cipher";
 
-static srtp_cipher_test_case_t srtp_null_cipher_test_0 = {
+static const srtp_cipher_test_case_t srtp_null_cipher_test_0 = {
     0,    /* octets in key            */
     NULL, /* key                      */
     0,    /* packet index             */
@@ -136,7 +136,7 @@ static srtp_cipher_test_case_t srtp_null_cipher_test_0 = {
  * note: the decrypt function is idential to the encrypt function
  */
 
-srtp_cipher_type_t srtp_null_cipher = {
+const srtp_cipher_type_t srtp_null_cipher = {
     (cipher_alloc_func_t)srtp_null_cipher_alloc,
     (cipher_dealloc_func_t)srtp_null_cipher_dealloc,
     (cipher_init_func_t)srtp_null_cipher_init,
@@ -145,8 +145,8 @@ srtp_cipher_type_t srtp_null_cipher = {
     (cipher_decrypt_func_t)srtp_null_cipher_encrypt,
     (cipher_set_iv_func_t)srtp_null_cipher_set_iv,
     (cipher_get_tag_func_t)0,
-    (char*)srtp_null_cipher_description,
-    (srtp_cipher_test_case_t*)&srtp_null_cipher_test_0,
+    (const char*)srtp_null_cipher_description,
+    (const srtp_cipher_test_case_t*)&srtp_null_cipher_test_0,
     (srtp_debug_module_t*)NULL,
     (srtp_cipher_type_id_t)SRTP_NULL_CIPHER
 };

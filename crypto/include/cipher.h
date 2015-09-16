@@ -95,7 +95,7 @@ typedef srtp_err_status_t (*cipher_set_segment_func_t)
  * a cipher_set_aad_func_t processes the AAD data for AEAD ciphers
  */
 typedef srtp_err_status_t (*cipher_set_aad_func_t)
-    (void *state, uint8_t *aad, uint32_t aad_len);
+    (void *state, const uint8_t *aad, uint32_t aad_len);
 
 
 /* a cipher_encrypt_func_t encrypts data in-place */
@@ -153,7 +153,7 @@ typedef struct srtp_cipher_type_t {
     cipher_get_tag_func_t get_tag;
     const char                       *description;
     const srtp_cipher_test_case_t         *test_data;
-    const srtp_debug_module_t             *debug;
+    srtp_debug_module_t             *debug;
     srtp_cipher_type_id_t id;
 } srtp_cipher_type_t;
 
@@ -208,6 +208,6 @@ srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c, uint8_t *buffer, uint32_t
 srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_get_tag(srtp_cipher_t *c, uint8_t *buffer, uint32_t *tag_len);
-srtp_err_status_t srtp_cipher_set_aad(srtp_cipher_t *c, uint8_t *aad, uint32_t aad_len);
+srtp_err_status_t srtp_cipher_set_aad(srtp_cipher_t *c, const uint8_t *aad, uint32_t aad_len);
 
 #endif /* CIPHER_H */

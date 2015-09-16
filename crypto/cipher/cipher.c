@@ -131,7 +131,7 @@ srtp_err_status_t srtp_cipher_get_tag (srtp_cipher_t *c, uint8_t *buffer, uint32
     return (((c)->type)->get_tag(((c)->state), buffer, tag_len));
 }
 
-srtp_err_status_t srtp_cipher_set_aad (srtp_cipher_t *c, uint8_t *aad, uint32_t aad_len)
+srtp_err_status_t srtp_cipher_set_aad (srtp_cipher_t *c, const uint8_t *aad, uint32_t aad_len)
 {
     if (!c || !c->type || !c->state) {
 	return (srtp_err_status_bad_param);
