@@ -484,8 +484,8 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label
 }
 
 static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf) {
-    memset(kdf->master_key, 0x0, MAX_SRTP_KEY_LEN);
-    memset(kdf->master_salt, 0x0, MAX_SRTP_KEY_LEN);
+    memset(kdf->master_key, 0x0, MAX_SRTP_AESKEY_LEN);
+    memset(kdf->master_salt, 0x0, MAX_SRTP_SALT_LEN);
     kdf->evp = NULL;
 
     return srtp_err_status_ok;  
