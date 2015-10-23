@@ -59,7 +59,7 @@ srtp_debug_module_t srtp_mod_hmac = {
 
 static srtp_err_status_t srtp_hmac_alloc (srtp_auth_t **a, int key_len, int out_len)
 {
-    extern srtp_auth_type_t srtp_hmac;
+    extern const srtp_auth_type_t srtp_hmac;
     uint8_t *pointer;
 
     debug_print(srtp_mod_hmac, "allocating auth func with key length %d", key_len);
@@ -215,23 +215,23 @@ static srtp_err_status_t srtp_hmac_compute (srtp_hmac_ctx_t *state, const void *
 
 /* begin test case 0 */
 
-static uint8_t srtp_hmac_test_case_0_key[20] = {
+static const uint8_t srtp_hmac_test_case_0_key[20] = {
     0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
     0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
     0x0b, 0x0b, 0x0b, 0x0b
 };
 
-static uint8_t srtp_hmac_test_case_0_data[8] = {
+static const uint8_t srtp_hmac_test_case_0_data[8] = {
     0x48, 0x69, 0x20, 0x54, 0x68, 0x65, 0x72, 0x65 /* "Hi There" */
 };
 
-static uint8_t srtp_hmac_test_case_0_tag[20] = {
+static const uint8_t srtp_hmac_test_case_0_tag[20] = {
     0xb6, 0x17, 0x31, 0x86, 0x55, 0x05, 0x72, 0x64,
     0xe2, 0x8b, 0xc0, 0xb6, 0xfb, 0x37, 0x8c, 0x8e,
     0xf1, 0x46, 0xbe, 0x00
 };
 
-static srtp_auth_test_case_t srtp_hmac_test_case_0 = {
+static const srtp_auth_test_case_t srtp_hmac_test_case_0 = {
     20,                         /* octets in key            */
     srtp_hmac_test_case_0_key,  /* key                      */
     8,                          /* octets in data           */
@@ -243,21 +243,21 @@ static srtp_auth_test_case_t srtp_hmac_test_case_0 = {
 
 /* end test case 0 */
 
-static char srtp_hmac_description[] = "hmac sha-1 authentication function";
+static const char srtp_hmac_description[] = "hmac sha-1 authentication function";
 
 /*
  * srtp_auth_type_t hmac is the hmac metaobject
  */
 
-srtp_auth_type_t srtp_hmac  = {
+const srtp_auth_type_t srtp_hmac  = {
     (auth_alloc_func)srtp_hmac_alloc,
     (auth_dealloc_func)srtp_hmac_dealloc,
     (auth_init_func)srtp_hmac_init,
     (auth_compute_func)srtp_hmac_compute,
     (auth_update_func)srtp_hmac_update,
     (auth_start_func)srtp_hmac_start,
-    (char*)srtp_hmac_description,
-    (srtp_auth_test_case_t*)&srtp_hmac_test_case_0,
+    (const char*)srtp_hmac_description,
+    (const srtp_auth_test_case_t*)&srtp_hmac_test_case_0,
     (srtp_debug_module_t*)&srtp_mod_hmac,
     (srtp_auth_type_id_t)SRTP_HMAC_SHA1
 };
