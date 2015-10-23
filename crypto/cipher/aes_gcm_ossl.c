@@ -255,7 +255,8 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (srtp_aes_gcm_ctx_t *c, ui
      * Set dummy tag, OpenSSL requires the Tag to be set before
      * processing AAD
      */
-    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, aad);
+    unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
+    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, &dummy_tag);
 
     rv = EVP_Cipher(&c->ctx, NULL, aad, aad_len);
     if (rv != aad_len) {
