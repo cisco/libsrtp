@@ -240,7 +240,7 @@ static srtp_err_status_t srtp_aes_icm_context_init (srtp_aes_icm_ctx_t *c, const
  * the offset
  */
 
-static srtp_err_status_t srtp_aes_icm_set_iv (srtp_aes_icm_ctx_t *c, const uint8_t *iv, int direction)
+static srtp_err_status_t srtp_aes_icm_set_iv (srtp_aes_icm_ctx_t *c, uint8_t *iv, int direction)
 {
     v128_t nonce;
 
@@ -433,7 +433,7 @@ static const uint8_t srtp_aes_icm_test_case_0_key[30] = {
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static const uint8_t srtp_aes_icm_test_case_0_nonce[16] = {
+static uint8_t srtp_aes_icm_test_case_0_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
@@ -475,7 +475,7 @@ static const uint8_t srtp_aes_icm_test_case_1_key[46] = {
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static const uint8_t srtp_aes_icm_test_case_1_nonce[16] = {
+static uint8_t srtp_aes_icm_test_case_1_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };

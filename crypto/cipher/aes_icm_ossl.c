@@ -264,7 +264,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init (srtp_aes_icm_ctx_t *
  * aes_icm_set_iv(c, iv) sets the counter value to the exor of iv with
  * the offset
  */
-static srtp_err_status_t srtp_aes_icm_openssl_set_iv (srtp_aes_icm_ctx_t *c, const uint8_t *iv, int dir)
+static srtp_err_status_t srtp_aes_icm_openssl_set_iv (srtp_aes_icm_ctx_t *c, uint8_t *iv, int dir)
 {
     const EVP_CIPHER *evp;
     v128_t nonce;
@@ -351,7 +351,7 @@ static const uint8_t srtp_aes_icm_test_case_0_key[SRTP_AES_128_KEYSIZE_WSALT] = 
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static const uint8_t srtp_aes_icm_test_case_0_nonce[16] = {
+static uint8_t srtp_aes_icm_test_case_0_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
@@ -397,7 +397,7 @@ static const uint8_t srtp_aes_icm_192_test_case_1_key[SRTP_AES_192_KEYSIZE_WSALT
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static const uint8_t srtp_aes_icm_192_test_case_1_nonce[16] = {
+static uint8_t srtp_aes_icm_192_test_case_1_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
@@ -444,7 +444,7 @@ static const uint8_t srtp_aes_icm_256_test_case_2_key[SRTP_AES_256_KEYSIZE_WSALT
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static const uint8_t srtp_aes_icm_256_test_case_2_nonce[16] = {
+static uint8_t srtp_aes_icm_256_test_case_2_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };

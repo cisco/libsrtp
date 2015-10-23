@@ -197,7 +197,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_context_init (srtp_aes_gcm_ctx_t *
  * aes_gcm_openssl_set_iv(c, iv) sets the counter value to the exor of iv with
  * the offset
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, const uint8_t *iv, int direction)
+static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uint8_t *iv, int direction)
 {
     const EVP_CIPHER *evp;
 
@@ -384,7 +384,7 @@ static const uint8_t srtp_aes_gcm_test_case_0_key[SRTP_AES_128_GCM_KEYSIZE_WSALT
     0x09, 0x0a, 0x0b, 0x0c,
 };
 
-static const uint8_t srtp_aes_gcm_test_case_0_iv[12] = {
+static uint8_t srtp_aes_gcm_test_case_0_iv[12] = {
     0xca, 0xfe, 0xba, 0xbe, 0xfa, 0xce, 0xdb, 0xad,
     0xde, 0xca, 0xf8, 0x88
 };
@@ -458,7 +458,7 @@ static const uint8_t srtp_aes_gcm_test_case_1_key[SRTP_AES_256_GCM_KEYSIZE_WSALT
 
 };
 
-static const uint8_t srtp_aes_gcm_test_case_1_iv[12] = {
+static uint8_t srtp_aes_gcm_test_case_1_iv[12] = {
     0xca, 0xfe, 0xba, 0xbe, 0xfa, 0xce, 0xdb, 0xad,
     0xde, 0xca, 0xf8, 0x88
 };
@@ -543,7 +543,7 @@ const srtp_cipher_type_t srtp_aes_gcm_128_openssl = {
 /*
  * This is the vector function table for this crypto engine.
  */
-srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
+const srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
     (cipher_alloc_func_t)srtp_aes_gcm_openssl_alloc,
     (cipher_dealloc_func_t)srtp_aes_gcm_openssl_dealloc,
     (cipher_init_func_t)srtp_aes_gcm_openssl_context_init,

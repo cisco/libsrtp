@@ -82,7 +82,7 @@ srtp_err_status_t srtp_cipher_init (srtp_cipher_t *c, const uint8_t *key)
 }
 
 
-srtp_err_status_t srtp_cipher_set_iv (srtp_cipher_t *c, const uint8_t *iv, int direction)
+srtp_err_status_t srtp_cipher_set_iv (srtp_cipher_t *c, uint8_t *iv, int direction)
 {
     if (!c || !c->type || !c->state) {
 	return (srtp_err_status_bad_param);
@@ -254,7 +254,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                                                  test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
+        status = srtp_cipher_set_iv(c, (uint8_t*)test_case->idx, direction_encrypt);
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -353,7 +353,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
                                                  test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
+        status = srtp_cipher_set_iv(c, (uint8_t*)test_case->idx, direction_decrypt);
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -478,7 +478,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         }
 
         /* set initialization vector */
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_encrypt);
+        status = srtp_cipher_set_iv(c, (uint8_t*)test_case->idx, direction_encrypt);
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -528,7 +528,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-        status = srtp_cipher_set_iv(c, (const uint8_t*)test_case->idx, direction_decrypt);
+        status = srtp_cipher_set_iv(c, (uint8_t*)test_case->idx, direction_decrypt);
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
@@ -619,7 +619,7 @@ uint64_t srtp_cipher_bits_per_second (srtp_cipher_t *c, int octets_in_buffer, in
     v128_set_to_zero(&nonce);
     timer = clock();
     for (i = 0; i < num_trials; i++, nonce.v32[3] = i) {
-        srtp_cipher_set_iv(c, (const uint8_t*)&nonce, direction_encrypt);
+        srtp_cipher_set_iv(c, (uint8_t*)&nonce, direction_encrypt);
         srtp_cipher_encrypt(c, enc_buf, &len);
     }
     timer = clock() - timer;
