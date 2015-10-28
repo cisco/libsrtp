@@ -8,3 +8,4 @@ os:
   - osx
 script:
   - ./configure && make && make runtest
+  - ./configure --enable-openssl && make && make runtest
