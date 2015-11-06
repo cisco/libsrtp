@@ -75,6 +75,9 @@ srtp_dealloc_big_policy(srtp_policy_t *list);
 srtp_err_status_t
 srtp_test_remove_stream(void);
 
+srtp_err_status_t
+srtp_test_update(void);
+
 double
 srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
 
@@ -316,6 +319,17 @@ main (int argc, char *argv[])
         if (srtp_test_remove_stream() == srtp_err_status_ok) {
             printf("passed\n");
         } else{
+            printf("failed\n");
+            exit(1);
+        }
+
+        /*
+         * test the function srtp_update()
+         */
+        printf("testing srtp_update()...");
+        if (srtp_test_update() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
             printf("failed\n");
             exit(1);
         }
@@ -1603,6 +1617,154 @@ srtp_test_remove_stream ()
     }
 
     return srtp_err_status_ok;
+}
+
+
+unsigned char test_alt_key[46] = {
+  0xe5, 0x19, 0x6f, 0x01, 0x5e, 0xf1, 0x9b, 0xe1,
+  0xd7, 0x47, 0xa7, 0x27, 0x07, 0xd7, 0x47, 0x33,
+  0x01, 0xc2, 0x35, 0x4d, 0x59, 0x6a, 0xf7, 0x84,
+  0x96, 0x98, 0xeb, 0xaa, 0xac, 0xf6, 0xa1, 0x45,
+  0xc7, 0x15, 0xe2, 0xea, 0xfe, 0x55, 0x67, 0x96,
+  0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6
+};
+
+/*
+ * srtp_test_update() verifies updating/rekeying exsisting streams.
+ * As stated in https://tools.ietf.org/html/rfc3711#section-3.3.1
+ * the value of the ROC must not be reset after a rekey, this test
+ * atempts to prove that srtp_update does not reset the ROC.
+ */
+
+srtp_err_status_t
+srtp_test_update() {
+
+  srtp_err_status_t status;
+  uint32_t ssrc = 0x12121212;
+  int msg_len_octets = 32;
+  int protected_msg_len_octets;
+  srtp_hdr_t * msg;
+  srtp_t srtp_snd, srtp_recv;
+  srtp_policy_t policy;
+
+  srtp_crypto_policy_set_rtp_default(&policy.rtp);
+  srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+  policy.ekt = NULL;
+  policy.window_size = 128;
+  policy.allow_repeat_tx = 0;
+  policy.next = NULL;
+  policy.ssrc.type  = ssrc_any_outbound;
+  policy.key  = test_key;
+
+  /* create a send and recive ctx with defualt profile and test_key */
+  status = srtp_create(&srtp_recv, &policy);
+  if (status)
+    return status;
+
+  policy.ssrc.type  = ssrc_any_inbound;
+  status = srtp_create(&srtp_snd, &policy);
+  if (status)
+    return status;
+
+  /* protect and unprotect two msg's that will cause the ROC to be equal to 1 */
+  msg = srtp_create_test_packet(msg_len_octets, ssrc);
+  if (msg == NULL)
+    return srtp_err_status_alloc_fail;
+  msg->seq = htons(65535);
+
+  protected_msg_len_octets = msg_len_octets;
+  status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets);
+  if (status)
+    return srtp_err_status_fail;
+
+  status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+  if (status)
+    return status;
+
+  free(msg);
+
+  msg = srtp_create_test_packet(msg_len_octets, ssrc);
+  if (msg == NULL)
+    return srtp_err_status_alloc_fail;
+  msg->seq = htons(1);
+
+  protected_msg_len_octets = msg_len_octets;
+  status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets);
+  if (status)
+    return srtp_err_status_fail;
+
+  status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+  if (status)
+    return status;
+
+  free(msg);
+
+  /* update send ctx to use test_alt_key */
+  policy.ssrc.type = ssrc_any_outbound;
+  policy.key = test_alt_key;
+  status = srtp_update(srtp_snd, &policy);
+  if (status)
+    return status;
+
+  /* create and protect msg with new key and ROC still equal to 1 */
+  msg = srtp_create_test_packet(msg_len_octets, ssrc);
+  if (msg == NULL)
+    return srtp_err_status_alloc_fail;
+  msg->seq = htons(2);
+
+  protected_msg_len_octets = msg_len_octets;
+  status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets);
+  if (status)
+    return srtp_err_status_fail;
+
+  /* verify that recive ctx will fail to unprotect as it still uses test_key */
+  status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+  if (status == srtp_err_status_ok)
+    return srtp_err_status_fail;
+
+  /* create a new recvieve ctx with test_alt_key but since it is new it will have ROC equal to 1
+   * and therefore should fail to unprotected */
+  {
+    srtp_t srtp_recv_roc_0;
+
+    policy.ssrc.type  = ssrc_any_inbound;
+    policy.key = test_alt_key;
+    status = srtp_create(&srtp_recv_roc_0, &policy);
+    if (status)
+      return status;
+
+    status = srtp_unprotect(srtp_recv_roc_0, msg, &protected_msg_len_octets);
+    if (status == srtp_err_status_ok)
+      return srtp_err_status_fail;
+
+    status = srtp_dealloc(srtp_recv_roc_0);
+    if (status)
+      return status;
+  }
+
+  /* update recive ctx to use test_alt_key */
+  policy.ssrc.type = ssrc_any_inbound;
+  policy.key = test_alt_key;
+  status = srtp_update(srtp_recv, &policy);
+  if (status)
+    return status;
+
+  /* verify that can still unprotect, therfore key is updated and ROC value is preserved */
+  status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+  if (status)
+    return status;
+
+  free(msg);
+
+  status = srtp_dealloc(srtp_snd);
+  if (status)
+    return status;
+
+  status = srtp_dealloc(srtp_recv);
+  if (status)
+    return status;
+
+  return srtp_err_status_ok;
 }
 
 /*
