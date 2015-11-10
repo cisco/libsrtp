@@ -2065,8 +2065,9 @@ srtp_update(srtp_t session, const srtp_policy_t *policy) {
   srtp_err_status_t stat;
 
   /* sanity check arguments */
-  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL)) {
     return srtp_err_status_bad_param;
+  }
 
   while (policy != NULL) {
     stat = srtp_update_stream(session, policy);
@@ -2081,6 +2082,130 @@ srtp_update(srtp_t session, const srtp_policy_t *policy) {
 }
 
 
+static srtp_err_status_t
+update_template_streams(srtp_t session, const srtp_policy_t *policy) {
+  srtp_err_status_t status;
+  srtp_stream_t new_stream_template;
+  srtp_stream_t new_stream_list = NULL;
+
+  if (session->stream_template == NULL) {
+    return srtp_err_status_bad_param;
+  }
+
+  /* allocate new template stream  */
+  status = srtp_stream_alloc(&new_stream_template, policy);
+  if (status) {
+    return status;
+  }
+
+  /* initialize new template stream  */
+  status = srtp_stream_init(new_stream_template, policy);
+  if (status) {
+    srtp_crypto_free(new_stream_template);
+    return status;
+  }
+
+  /* for all old templated streams */
+  for (;;) {
+    srtp_stream_t stream;
+    uint32_t ssrc;
+    srtp_xtd_seq_num_t old_index;
+
+    stream = session->stream_list;
+    while ((stream != NULL) && (stream->rtp_auth != session->stream_template->rtp_auth)) {
+      stream = stream->next;
+    }
+    if (stream == NULL) {
+      /* no more templated streams */
+      break;
+    }
+
+    /* save old extendard seq */
+    ssrc = stream->ssrc;
+    old_index = stream->rtp_rdbx.index;
+
+    /* remove stream */
+    status = srtp_remove_stream(session, ssrc);
+    if (status) {
+      /* free new allocations */
+      while (new_stream_list != NULL) {
+        srtp_stream_t next = new_stream_list->next;
+        srtp_stream_dealloc(new_stream_list, new_stream_template);
+        new_stream_list = next;
+      }
+      srtp_stream_dealloc(new_stream_template, NULL);
+      return status;
+    }
+
+    /* allocate and initialize a new stream */
+    status = srtp_stream_clone(new_stream_template, ssrc, &stream);
+    if (status) {
+      /* free new allocations */
+      while (new_stream_list != NULL) {
+        srtp_stream_t next = new_stream_list->next;
+        srtp_stream_dealloc(new_stream_list, new_stream_template);
+        new_stream_list = next;
+      }
+      srtp_stream_dealloc(new_stream_template, NULL);
+      return status;
+    }
+
+    /* add new stream to the head of the new_stream_list */
+    stream->next = new_stream_list;
+    new_stream_list = stream;
+
+    /* restore old extended seq */
+    stream->rtp_rdbx.index = old_index;
+  }
+  /* dealloc old template */
+  srtp_stream_dealloc(session->stream_template, NULL);
+  /* set new template */
+  session->stream_template = new_stream_template;
+  /* add new list */
+  if (new_stream_list) {
+    new_stream_list->next = session->stream_list;
+    session->stream_list = new_stream_list;
+  }
+  return status;
+}
+
+
+static srtp_err_status_t
+update_stream(srtp_t session, const srtp_policy_t *policy) {
+  srtp_err_status_t status;
+  srtp_xtd_seq_num_t old_index;
+  srtp_stream_t stream;
+
+  stream = srtp_get_stream(session, policy->ssrc.value);
+  if (stream == NULL) {
+    return srtp_err_status_bad_param;
+  }
+
+  /* save old extendard seq */
+  old_index = stream->rtp_rdbx.index;
+
+  status = srtp_remove_stream(session, policy->ssrc.value);
+  if (status) {
+    return status;
+  }
+
+  status = srtp_add_stream(session, policy);
+  if (status) {
+    return status;
+  }
+
+  stream = srtp_get_stream(session, policy->ssrc.value);
+  if (stream == NULL) {
+    return srtp_err_status_fail;
+  }
+
+  /* restore old extended seq */
+  stream->rtp_rdbx.index = old_index;
+
+  return status;
+}
+
+
 srtp_err_status_t
 srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
   srtp_err_status_t status;
@@ -2091,114 +2216,12 @@ srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
 
   switch (policy->ssrc.type) {
   case (ssrc_any_outbound):
-  case (ssrc_any_inbound): {
-    if (session->stream_template == NULL) {
-      return srtp_err_status_bad_param;
-    }
-
-    srtp_stream_t new_stream_template;
-    srtp_stream_t new_stream_list = NULL;
-
-    /* allocate new template stream  */
-    status = srtp_stream_alloc(&new_stream_template, policy);
-    if (status) {
-      return status;
-    }
-
-    /* initialize new template stream  */
-    status = srtp_stream_init(new_stream_template, policy);
-    if (status) {
-      srtp_crypto_free(new_stream_template);
-      return status;
-    }
-
-    /* for all old templated streams */
-    for (;;) {
-      srtp_stream_t stream = session->stream_list;
-      while ((stream != NULL) && (stream->rtp_auth != session->stream_template->rtp_auth)) {
-        stream = stream->next;
-      }
-      if (stream == NULL) {
-        /* no more templated streams */
-        break;
-      }
-
-      uint32_t ssrc = stream->ssrc;
-      /* save old extendard seq */
-      srtp_xtd_seq_num_t old_index = stream->rtp_rdbx.index;
-
-      /* remove stream */
-      status = srtp_remove_stream(session, ssrc);
-      if (status) {
-        /* free new allocations */
-        while (new_stream_list != NULL) {
-          srtp_stream_t next = new_stream_list->next;
-          status = srtp_stream_dealloc(new_stream_list, new_stream_template);
-          if (status)
-            return status;
-          new_stream_list = next;
-        }
-        srtp_stream_dealloc(new_stream_template, NULL);
-        return status;
-      }
-
-      /* allocate and initialize a new stream */
-      status = srtp_stream_clone(new_stream_template, ssrc, &stream);
-      if (status) {
-        /* free new allocations */
-        while (new_stream_list != NULL) {
-          srtp_stream_t next = new_stream_list->next;
-          status = srtp_stream_dealloc(new_stream_list, new_stream_template);
-          if (status)
-            return status;
-          new_stream_list = next;
-        }
-        srtp_stream_dealloc(new_stream_template, NULL);
-        return status;
-      }
-
-      /* add new stream to the head of the new_stream_list */
-      stream->next = new_stream_list;
-      new_stream_list = stream;
-
-      /* restore old extended seq */
-      stream->rtp_rdbx.index = old_index;
-    }
-    /* dealloc old template */
-    srtp_stream_dealloc(session->stream_template, NULL);
-    /* set new template */
-    session->stream_template = new_stream_template;
-    /* add new list */
-    if (new_stream_list) {
-      new_stream_list->next = session->stream_list;
-      session->stream_list = new_stream_list;
-    }
+  case (ssrc_any_inbound):
+    status = update_template_streams(session, policy);
     break;
-  }
-  case (ssrc_specific): {
-    srtp_stream_t stream = srtp_get_stream(session, policy->ssrc.value);
-    if (stream == NULL)
-      return srtp_err_status_bad_param;
-
-    /* save old extendard seq */
-    srtp_xtd_seq_num_t old_index = stream->rtp_rdbx.index;
-
-    status = srtp_remove_stream(session, policy->ssrc.value);
-    if (status)
-      return status;
-
-    status = srtp_add_stream(session, policy);
-    if (status)
-      return status;
-
-    stream = srtp_get_stream(session, policy->ssrc.value);
-    if (stream == NULL)
-      return srtp_err_status_fail;
-
-    /* restore old extended seq */
-    stream->rtp_rdbx.index = old_index;
+  case (ssrc_specific):
+    status = update_stream(session, policy);
     break;
-  }
   case (ssrc_undefined):
   default:
     return srtp_err_status_bad_param;
