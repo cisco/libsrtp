@@ -1024,7 +1024,8 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
          srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
          enc_start += (ntohs(xtn_hdr->length) + 1);
      }
-     if (!((uint8_t*)enc_start < (uint8_t*)hdr + (*pkt_octet_len - tag_len)))
+     /* note: the passed size is without the auth tag */
+     if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
          return srtp_err_status_parse_err;
      enc_octet_len = (unsigned int)(*pkt_octet_len -
                                     ((uint8_t*)enc_start - (uint8_t*)hdr));
@@ -1381,7 +1382,8 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
        srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
        enc_start += (ntohs(xtn_hdr->length) + 1);
      }
-     if (!((uint8_t*)enc_start < (uint8_t*)hdr + (*pkt_octet_len - tag_len)))
+     /* note: the passed size is without the auth tag */
+     if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
        return srtp_err_status_parse_err;
      enc_octet_len = (unsigned int)(*pkt_octet_len -
                                     ((uint8_t*)enc_start - (uint8_t*)hdr));
