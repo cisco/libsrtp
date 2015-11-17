@@ -237,7 +237,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 }
 
 srtp_err_status_t
-srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) { 
+srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_template) {
   srtp_err_status_t status;
   
   /*
@@ -247,8 +247,8 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
    */
 
   /* deallocate cipher, if it is not the same as that in template */
-  if (session->stream_template
-      && stream->rtp_cipher == session->stream_template->rtp_cipher) {
+  if (stream_template
+      && stream->rtp_cipher == stream_template->rtp_cipher) {
     /* do nothing */
   } else {
     status = srtp_cipher_dealloc(stream->rtp_cipher); 
@@ -257,8 +257,8 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
   }
 
   /* deallocate auth function, if it is not the same as that in template */
-  if (session->stream_template
-      && stream->rtp_auth == session->stream_template->rtp_auth) {
+  if (stream_template
+      && stream->rtp_auth == stream_template->rtp_auth) {
     /* do nothing */
   } else {
     status = auth_dealloc(stream->rtp_auth);
@@ -267,8 +267,8 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
   }
 
   /* deallocate key usage limit, if it is not the same as that in template */
-  if (session->stream_template
-      && stream->limit == session->stream_template->limit) {
+  if (stream_template
+      && stream->limit == stream_template->limit) {
     /* do nothing */
   } else {
     srtp_crypto_free(stream->limit);
@@ -278,8 +278,8 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
    * deallocate rtcp cipher, if it is not the same as that in
    * template 
    */
-  if (session->stream_template
-      && stream->rtcp_cipher == session->stream_template->rtcp_cipher) {
+  if (stream_template
+      && stream->rtcp_cipher == stream_template->rtcp_cipher) {
     /* do nothing */
   } else {
     status = srtp_cipher_dealloc(stream->rtcp_cipher); 
@@ -291,8 +291,8 @@ srtp_stream_dealloc(srtp_t session, srtp_stream_ctx_t *stream) {
    * deallocate rtcp auth function, if it is not the same as that in
    * template 
    */
-  if (session->stream_template
-      && stream->rtcp_auth == session->stream_template->rtcp_auth) {
+  if (stream_template
+      && stream->rtcp_auth == stream_template->rtcp_auth) {
     /* do nothing */
   } else {
     status = auth_dealloc(stream->rtcp_auth);
@@ -1907,7 +1907,7 @@ srtp_dealloc(srtp_t session) {
   stream = session->stream_list;
   while (stream != NULL) {
     srtp_stream_t next = stream->next;
-    status = srtp_stream_dealloc(session, stream);
+    status = srtp_stream_dealloc(stream, session->stream_template);
     if (status)
       return status;
     stream = next;
@@ -1915,23 +1915,9 @@ srtp_dealloc(srtp_t session) {
   
   /* deallocate stream template, if there is one */
   if (session->stream_template != NULL) {
-    status = auth_dealloc(session->stream_template->rtcp_auth); 
-    if (status) 
-      return status; 
-    status = srtp_cipher_dealloc(session->stream_template->rtcp_cipher); 
-    if (status) 
-      return status; 
-    srtp_crypto_free(session->stream_template->limit);
-    status = srtp_cipher_dealloc(session->stream_template->rtp_cipher); 
-    if (status) 
-      return status; 
-    status = auth_dealloc(session->stream_template->rtp_auth);
+    status = srtp_stream_dealloc(session->stream_template, NULL);
     if (status)
       return status;
-    status = srtp_rdbx_dealloc(&session->stream_template->rtp_rdbx);
-    if (status)
-      return status;
-    srtp_crypto_free(session->stream_template);
   }
 
   /* deallocate session context */
@@ -2068,9 +2054,180 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
     last_stream->next = stream->next;
 
   /* deallocate the stream */
-  status = srtp_stream_dealloc(session, stream);
+  status = srtp_stream_dealloc(stream, session->stream_template);
   if (status)
     return status;
+
+  return srtp_err_status_ok;
+}
+
+
+srtp_err_status_t
+srtp_update(srtp_t session, const srtp_policy_t *policy) {
+  srtp_err_status_t stat;
+
+  /* sanity check arguments */
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL)) {
+    return srtp_err_status_bad_param;
+  }
+
+  while (policy != NULL) {
+    stat = srtp_update_stream(session, policy);
+    if (stat) {
+      return stat;
+    }
+
+    /* set policy to next item in list  */
+    policy = policy->next;
+  }
+  return srtp_err_status_ok;
+}
+
+
+static srtp_err_status_t
+update_template_streams(srtp_t session, const srtp_policy_t *policy) {
+  srtp_err_status_t status;
+  srtp_stream_t new_stream_template;
+  srtp_stream_t new_stream_list = NULL;
+
+  if (session->stream_template == NULL) {
+    return srtp_err_status_bad_param;
+  }
+
+  /* allocate new template stream  */
+  status = srtp_stream_alloc(&new_stream_template, policy);
+  if (status) {
+    return status;
+  }
+
+  /* initialize new template stream  */
+  status = srtp_stream_init(new_stream_template, policy);
+  if (status) {
+    srtp_crypto_free(new_stream_template);
+    return status;
+  }
+
+  /* for all old templated streams */
+  for (;;) {
+    srtp_stream_t stream;
+    uint32_t ssrc;
+    srtp_xtd_seq_num_t old_index;
+
+    stream = session->stream_list;
+    while ((stream != NULL) && (stream->rtp_auth != session->stream_template->rtp_auth)) {
+      stream = stream->next;
+    }
+    if (stream == NULL) {
+      /* no more templated streams */
+      break;
+    }
+
+    /* save old extendard seq */
+    ssrc = stream->ssrc;
+    old_index = stream->rtp_rdbx.index;
+
+    /* remove stream */
+    status = srtp_remove_stream(session, ssrc);
+    if (status) {
+      /* free new allocations */
+      while (new_stream_list != NULL) {
+        srtp_stream_t next = new_stream_list->next;
+        srtp_stream_dealloc(new_stream_list, new_stream_template);
+        new_stream_list = next;
+      }
+      srtp_stream_dealloc(new_stream_template, NULL);
+      return status;
+    }
+
+    /* allocate and initialize a new stream */
+    status = srtp_stream_clone(new_stream_template, ssrc, &stream);
+    if (status) {
+      /* free new allocations */
+      while (new_stream_list != NULL) {
+        srtp_stream_t next = new_stream_list->next;
+        srtp_stream_dealloc(new_stream_list, new_stream_template);
+        new_stream_list = next;
+      }
+      srtp_stream_dealloc(new_stream_template, NULL);
+      return status;
+    }
+
+    /* add new stream to the head of the new_stream_list */
+    stream->next = new_stream_list;
+    new_stream_list = stream;
+
+    /* restore old extended seq */
+    stream->rtp_rdbx.index = old_index;
+  }
+  /* dealloc old template */
+  srtp_stream_dealloc(session->stream_template, NULL);
+  /* set new template */
+  session->stream_template = new_stream_template;
+  /* add new list */
+  if (new_stream_list) {
+    new_stream_list->next = session->stream_list;
+    session->stream_list = new_stream_list;
+  }
+  return status;
+}
+
+
+static srtp_err_status_t
+update_stream(srtp_t session, const srtp_policy_t *policy) {
+  srtp_err_status_t status;
+  srtp_xtd_seq_num_t old_index;
+  srtp_stream_t stream;
+
+  stream = srtp_get_stream(session, policy->ssrc.value);
+  if (stream == NULL) {
+    return srtp_err_status_bad_param;
+  }
+
+  /* save old extendard seq */
+  old_index = stream->rtp_rdbx.index;
+
+  status = srtp_remove_stream(session, policy->ssrc.value);
+  if (status) {
+    return status;
+  }
+
+  status = srtp_add_stream(session, policy);
+  if (status) {
+    return status;
+  }
+
+  stream = srtp_get_stream(session, policy->ssrc.value);
+  if (stream == NULL) {
+    return srtp_err_status_fail;
+  }
+
+  /* restore old extended seq */
+  stream->rtp_rdbx.index = old_index;
+
+  return status;
+}
+
+
+srtp_err_status_t
+srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
+  srtp_err_status_t status;
+
+  /* sanity check arguments */
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
+    return srtp_err_status_bad_param;
+
+  switch (policy->ssrc.type) {
+  case (ssrc_any_outbound):
+  case (ssrc_any_inbound):
+    status = update_template_streams(session, policy);
+    break;
+  case (ssrc_specific):
+    status = update_stream(session, policy);
+    break;
+  case (ssrc_undefined):
+  default:
+    return srtp_err_status_bad_param;
+  }
 
   return srtp_err_status_ok;
 }

@@ -622,6 +622,57 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
 srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
 
 /**
+ * @brief srtp_update() udpates all streams in the session.
+ *
+ * The function call srtp_update(session, policy) updates
+ * all the streams in the session applying the given policy
+ * and key. The exsisting ROC value of all streams will be
+ * preserved.
+ *
+ * @param session is the SRTP session that contains the streams
+ *        to be updated.
+ *
+ * @param policy is the srtp_policy_t struct that describes the policy
+ * for the session.  The struct may be a single element, or it may be
+ * the head of a list, in which case each element of the list is
+ * processed. The final element of the list @b must
+ * have its `next' field set to NULL.
+ *
+ * @return
+ *    - srtp_err_status_ok           if stream creation succeded.
+ *    - srtp_err_status_alloc_fail   if stream allocation failed
+ *    - srtp_err_status_init_fail    if stream initialization failed.
+ *    - [other]                 otherwise.
+ *
+ */
+
+srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy);
+
+/**
+ * @brief srtp_update_stream() udpates a SRTP stream.
+ *
+ * The function call srtp_update_stream(session, policy) updates
+ * the stream(s) in the session that match applying the given
+ * policy and key. The exsisting ROC value of all stream(s) will
+ * be preserved.
+ *
+ * @param session is the SRTP session that contains the streams
+ *        to be updated.
+ *
+ * @param policy is the srtp_policy_t struct that describes the policy
+ * for the session.
+ *
+ * @return
+ *    - srtp_err_status_ok           if stream creation succeded.
+ *    - srtp_err_status_alloc_fail   if stream allocation failed
+ *    - srtp_err_status_init_fail    if stream initialization failed.
+ *    - [other]                      otherwise.
+ *
+ */
+
+srtp_err_status_t srtp_update_stream(srtp_t session, const srtp_policy_t *policy);
+
+/**
  * @brief srtp_crypto_policy_set_rtp_default() sets a crypto policy
  * structure to the SRTP default policy for RTP protection.
  *
