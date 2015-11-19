@@ -2205,7 +2205,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
   /* restore old extended seq */
   stream->rtp_rdbx.index = old_index;
 
-  return status;
+  return srtp_err_status_ok;
 }
 
 
@@ -2230,7 +2230,7 @@ srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
     return srtp_err_status_bad_param;
   }
 
-  return srtp_err_status_ok;
+  return status;
 }
 
 
