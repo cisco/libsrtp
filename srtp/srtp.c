@@ -2169,7 +2169,11 @@ update_template_streams(srtp_t session, const srtp_policy_t *policy) {
   session->stream_template = new_stream_template;
   /* add new list */
   if (new_stream_list) {
-    new_stream_list->next = session->stream_list;
+    srtp_stream_t tail = new_stream_list;
+    while (tail->next) {
+      tail = tail->next;
+    }
+    tail->next = session->stream_list;
     session->stream_list = new_stream_list;
   }
   return status;
