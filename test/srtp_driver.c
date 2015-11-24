@@ -326,8 +326,7 @@ main (int argc, char *argv[])
             exit(1);
         }
 
-//FIXME: need to get this working with the OpenSSL AES module
-#ifndef OPENSSL
+#ifdef OPENSSL
         /*
          * run validation test against the reference packets for
          * AES-256

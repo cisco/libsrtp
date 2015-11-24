@@ -74,6 +74,10 @@ extern srtp_debug_module_t mod_alloc;
 extern srtp_cipher_type_t srtp_null_cipher;
 extern srtp_cipher_type_t srtp_aes_icm;
 #ifdef OPENSSL
+#ifndef SRTP_NO_AES192
+extern srtp_cipher_type_t srtp_aes_icm_192;
+#endif
+extern srtp_cipher_type_t srtp_aes_icm_256;
 extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
 extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
@@ -149,6 +153,16 @@ srtp_err_status_t srtp_crypto_kernel_init ()
         return status;
     }
 #ifdef OPENSSL
+#ifndef SRTP_NO_AES192
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_icm_192, SRTP_AES_192_ICM);
+    if (status) {
+        return status;
+    }
+#endif
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_icm_256, SRTP_AES_256_ICM);
+    if (status) {
+        return status;
+    }
     status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_gcm_128_openssl, SRTP_AES_128_GCM);
     if (status) {
         return status;
