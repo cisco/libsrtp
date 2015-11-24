@@ -234,6 +234,9 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }
 
   if (p->enc_xtn_hdr && p->enc_xtn_hdr_count > 0) {
+    srtp_cipher_type_id_t enc_xtn_hdr_cipher_type;
+    int enc_xtn_hdr_cipher_key_len;
+
     str->enc_xtn_hdr = (int*) srtp_crypto_alloc(p->enc_xtn_hdr_count * sizeof(p->enc_xtn_hdr[0]));
     if (!str->enc_xtn_hdr) {
       auth_dealloc(str->rtcp_auth);
@@ -247,11 +250,27 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     memcpy(str->enc_xtn_hdr, p->enc_xtn_hdr, p->enc_xtn_hdr_count * sizeof(p->enc_xtn_hdr[0]));
     str->enc_xtn_hdr_count = p->enc_xtn_hdr_count;
 
+    /* For GCM ciphers, the corresponding ICM cipher is used for header extensions encryption. */
+    switch (p->rtp.cipher_type) {
+    case SRTP_AES_128_GCM:
+      enc_xtn_hdr_cipher_type = SRTP_AES_128_ICM;
+      enc_xtn_hdr_cipher_key_len = 30;
+      break;
+    case SRTP_AES_256_GCM:
+      enc_xtn_hdr_cipher_type = SRTP_AES_256_ICM;
+      enc_xtn_hdr_cipher_key_len = 46;
+      break;
+    default:
+      enc_xtn_hdr_cipher_type = p->rtp.cipher_type;
+      enc_xtn_hdr_cipher_key_len = p->rtp.cipher_key_len;
+      break;
+    }
+
     /* allocate cipher for extensions header encryption */
-    stat = srtp_crypto_kernel_alloc_cipher(p->rtp.cipher_type,
+    stat = srtp_crypto_kernel_alloc_cipher(enc_xtn_hdr_cipher_type,
               &str->rtp_xtn_hdr_cipher,
-              p->rtp.cipher_key_len,
-              p->rtp.auth_tag_len);
+              enc_xtn_hdr_cipher_key_len,
+              0);
     if (stat) {
       srtp_crypto_free(str->enc_xtn_hdr);
       auth_dealloc(str->rtcp_auth);
@@ -727,36 +746,70 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
 
   if (srtp->rtp_xtn_hdr_cipher) {
     /* generate extensions header encryption key  */
-    stat = srtp_kdf_generate(&kdf, label_rtp_header_encryption,
-           tmp_key, rtp_base_key_len);
+    int rtp_xtn_hdr_keylen;
+    int rtp_xtn_hdr_base_key_len;
+    int rtp_xtn_hdr_salt_len;
+    srtp_kdf_t tmp_kdf;
+    srtp_kdf_t *xtn_hdr_kdf;
+
+    if (srtp->rtp_xtn_hdr_cipher->type != srtp->rtp_cipher->type) {
+      /* With GCM ciphers, the header extensions are still encrypted using the corresponding ICM cipher. */
+      /* See https://tools.ietf.org/html/draft-ietf-avtcore-srtp-aes-gcm-17#section-8.3 */
+      uint8_t tmp_xtn_hdr_key[MAX_SRTP_KEY_LEN];
+      rtp_xtn_hdr_keylen = srtp_cipher_get_key_length(srtp->rtp_xtn_hdr_cipher);
+      rtp_xtn_hdr_base_key_len = base_key_length(srtp->rtp_xtn_hdr_cipher->type, rtp_xtn_hdr_keylen);
+      rtp_xtn_hdr_salt_len = rtp_xtn_hdr_keylen - rtp_xtn_hdr_base_key_len;
+      memset(tmp_xtn_hdr_key, 0x0, MAX_SRTP_KEY_LEN);
+      memcpy(tmp_xtn_hdr_key, key, (rtp_xtn_hdr_base_key_len + rtp_xtn_hdr_salt_len));
+      xtn_hdr_kdf = &tmp_kdf;
+
+      /* initialize KDF state     */
+#if defined(OPENSSL) && defined(OPENSSL_KDF)
+      stat = srtp_kdf_init(xtn_hdr_kdf, (const uint8_t *)tmp_xtn_hdr_key, rtp_xtn_hdr_base_key_len, rtp_xtn_hdr_salt_len);
+#else
+      stat = srtp_kdf_init(xtn_hdr_kdf, SRTP_AES_ICM, (const uint8_t *)tmp_xtn_hdr_key, kdf_keylen);
+#endif
+      octet_string_set_to_zero(tmp_xtn_hdr_key, MAX_SRTP_KEY_LEN);
+      if (stat) {
+        return srtp_err_status_init_fail;
+      }
+    } else {
+      /* Reuse main KDF. */
+      rtp_xtn_hdr_keylen = rtp_keylen;
+      rtp_xtn_hdr_base_key_len = rtp_base_key_len;
+      rtp_xtn_hdr_salt_len = rtp_salt_len;
+      xtn_hdr_kdf = &kdf;
+    }
+
+    stat = srtp_kdf_generate(xtn_hdr_kdf, label_rtp_header_encryption,
+           tmp_key, rtp_xtn_hdr_base_key_len);
     if (stat) {
       /* zeroize temp buffer */
       octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
       return srtp_err_status_init_fail;
     }
     debug_print(mod_srtp, "extensions cipher key: %s",
-          srtp_octet_string_hex_string(tmp_key, rtp_base_key_len));
+          srtp_octet_string_hex_string(tmp_key, rtp_xtn_hdr_base_key_len));
 
     /*
      * if the cipher in the srtp context uses a salt, then we need
      * to generate the salt value
      */
-    if (rtp_salt_len > 0) {
-      debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt", NULL);
+    if (rtp_xtn_hdr_salt_len > 0) {
+      debug_print(mod_srtp, "found rtp_xtn_hdr_salt_len > 0, generating salt", NULL);
 
       /* generate encryption salt, put after encryption key */
-      stat = srtp_kdf_generate(&kdf, label_rtp_header_salt,
-             tmp_key + rtp_base_key_len, rtp_salt_len);
+      stat = srtp_kdf_generate(xtn_hdr_kdf, label_rtp_header_salt,
+             tmp_key + rtp_xtn_hdr_base_key_len, rtp_xtn_hdr_salt_len);
       if (stat) {
         /* zeroize temp buffer */
         octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
         return srtp_err_status_init_fail;
       }
-      memcpy(srtp->salt, tmp_key + rtp_base_key_len, SRTP_AEAD_SALT_LEN);
     }
-    if (rtp_salt_len > 0) {
+    if (rtp_xtn_hdr_salt_len > 0) {
       debug_print(mod_srtp, "extensions cipher salt: %s",
-      srtp_octet_string_hex_string(tmp_key + rtp_base_key_len, rtp_salt_len));
+      srtp_octet_string_hex_string(tmp_key + rtp_xtn_hdr_base_key_len, rtp_xtn_hdr_salt_len));
     }
 
     /* initialize extensions header cipher */
@@ -1004,364 +1057,6 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    return srtp_err_status_ok;
  }
 
-/*
- * AEAD uses a new IV formation method.  This function implements
- * section 9.1 from draft-ietf-avtcore-srtp-aes-gcm-07.txt.  The
- * calculation is defined as, where (+) is the xor operation:
- *
- *
- *              0  0  0  0  0  0  0  0  0  0  1  1
- *              0  1  2  3  4  5  6  7  8  9  0  1
- *            +--+--+--+--+--+--+--+--+--+--+--+--+
- *            |00|00|    SSRC   |     ROC   | SEQ |---+
- *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
- *                                                    |
- *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
- *            |         Encryption Salt           |->(+)
- *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
- *                                                    |
- *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
- *            |       Initialization Vector       |<--+
- *            +--+--+--+--+--+--+--+--+--+--+--+--+*
- *
- * Input:  *stream - pointer to SRTP stream context, used to retrieve
- *                   the SALT 
- *         *iv     - Pointer to receive the calculated IV
- *         *seq    - The ROC and SEQ value to use for the
- *                   IV calculation.
- *         *hdr    - The RTP header, used to get the SSRC value
- *
- */
-static void srtp_calc_aead_iv(srtp_stream_ctx_t *stream, v128_t *iv, 
-	                      srtp_xtd_seq_num_t *seq, srtp_hdr_t *hdr)
-{
-    v128_t	in;
-    v128_t	salt;
-
-#ifdef NO_64BIT_MATH
-    uint32_t local_roc = ((high32(*seq) << 16) |
-                         (low32(*seq) >> 16));
-    uint16_t local_seq = (uint16_t) (low32(*seq));
-#else
-    uint32_t local_roc = (uint32_t)(*seq >> 16);
-    uint16_t local_seq = (uint16_t) *seq;
-#endif
-
-    memset(&in, 0, sizeof(v128_t));
-    memset(&salt, 0, sizeof(v128_t));
-
-    in.v16[5] = htons(local_seq);
-    local_roc = htonl(local_roc);
-    memcpy(&in.v16[3], &local_roc, sizeof(local_roc));
-
-    /*
-     * Copy in the RTP SSRC value
-     */
-    memcpy(&in.v8[2], &hdr->ssrc, 4);
-    debug_print(mod_srtp, "Pre-salted RTP IV = %s\n", v128_hex_string(&in));
-
-    /*
-     * Get the SALT value from the context
-     */
-    memcpy(salt.v8, stream->salt, SRTP_AEAD_SALT_LEN);
-    debug_print(mod_srtp, "RTP SALT = %s\n", v128_hex_string(&salt));
-
-    /*
-     * Finally, apply tyhe SALT to the input
-     */
-    v128_xor(iv, &in, &salt);
-}
-
-
-/*
- * This function handles outgoing SRTP packets while in AEAD mode,
- * which currently supports AES-GCM encryption.  All packets are
- * encrypted and authenticated.
- */
-static srtp_err_status_t
-srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, 
-	           void *rtp_hdr, unsigned int *pkt_octet_len)
-{
-    srtp_hdr_t *hdr = (srtp_hdr_t*)rtp_hdr;
-    uint32_t *enc_start;        /* pointer to start of encrypted portion  */
-    unsigned int enc_octet_len = 0; /* number of octets in encrypted portion  */
-    srtp_xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
-    int delta;                  /* delta of local pkt idx and that in hdr */
-    srtp_err_status_t status;
-    uint32_t tag_len;
-    v128_t iv;
-    unsigned int aad_len;
-
-    debug_print(mod_srtp, "function srtp_protect_aead", NULL);
-
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit, and call
-     * the event handler if we hit either.
-     */
-    switch (srtp_key_limit_update(stream->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    case srtp_key_event_soft_limit:
-    default:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    }
-
-    /* get tag length from stream */
-    tag_len = srtp_auth_get_tag_length(stream->rtp_auth);
-
-    /*
-     * find starting point for encryption and length of data to be
-     * encrypted - the encrypted portion starts after the rtp header
-     * extension, if present; otherwise, it starts after the last csrc,
-     * if any are present
-     */
-     enc_start = (uint32_t*)hdr + uint32s_in_rtp_header + hdr->cc;
-     if (hdr->x == 1) {
-         srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
-         enc_start += (ntohs(xtn_hdr->length) + 1);
-     }
-     /* note: the passed size is without the auth tag */
-     if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
-         return srtp_err_status_parse_err;
-     enc_octet_len = (unsigned int)(*pkt_octet_len -
-                                    ((uint8_t*)enc_start - (uint8_t*)hdr));
-
-    /*
-     * estimate the packet index using the start of the replay window
-     * and the sequence number from the header
-     */
-    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-    if (status) {
-	if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx) {
-	    return status;  /* we've been asked to reuse an index */
-	}
-    } else {
-	srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
-    }
-
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated packet index: %08x%08x",
-                 high32(est), low32(est));
-#else
-    debug_print(mod_srtp, "estimated packet index: %016llx", est);
-#endif
-
-    /*
-     * AEAD uses a new IV formation method
-     */
-    srtp_calc_aead_iv(stream, &iv, &est, hdr);
-    status = srtp_cipher_set_iv(stream->rtp_cipher, (uint8_t*)&iv, direction_encrypt);
-    if (status) {
-        return srtp_err_status_cipher_fail;
-    }
-
-    /* shift est, put into network byte order */
-#ifdef NO_64BIT_MATH
-    est = be64_to_cpu(make64((high32(est) << 16) |
-                             (low32(est) >> 16),
-                             low32(est) << 16));
-#else
-    est = be64_to_cpu(est << 16);
-#endif
-
-    /*
-     * Set the AAD over the RTP header 
-     */
-    aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
-    status = srtp_cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
-    if (status) {
-        return ( srtp_err_status_cipher_fail);
-    }
-
-    /* Encrypt the payload  */
-    status = srtp_cipher_encrypt(stream->rtp_cipher,
-                            (uint8_t*)enc_start, &enc_octet_len);
-    if (status) {
-        return srtp_err_status_cipher_fail;
-    }
-    /*
-     * If we're doing GCM, we need to get the tag
-     * and append that to the output
-     */
-    status = srtp_cipher_get_tag(stream->rtp_cipher, 
-                            (uint8_t*)enc_start+enc_octet_len, &tag_len);
-    if (status) {
-	return ( srtp_err_status_cipher_fail);
-    }
-    enc_octet_len += tag_len;
-
-    /* increase the packet length by the length of the auth tag */
-    *pkt_octet_len += tag_len;
-
-    return srtp_err_status_ok;
-}
-
-
-/*
- * This function handles incoming SRTP packets while in AEAD mode,
- * which currently supports AES-GCM encryption.  All packets are
- * encrypted and authenticated.  Note, the auth tag is at the end
- * of the packet stream and is automatically checked by GCM
- * when decrypting the payload.
- */
-static srtp_err_status_t
-srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta, 
-	             srtp_xtd_seq_num_t est, void *srtp_hdr, unsigned int *pkt_octet_len)
-{
-    srtp_hdr_t *hdr = (srtp_hdr_t*)srtp_hdr;
-    uint32_t *enc_start;        /* pointer to start of encrypted portion  */
-    unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
-    v128_t iv;
-    srtp_err_status_t status;
-    int tag_len;
-    unsigned int aad_len;
-
-    debug_print(mod_srtp, "function srtp_unprotect_aead", NULL);
-
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est), low32(est));
-#else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
-#endif
-
-    /* get tag length from stream */
-    tag_len = srtp_auth_get_tag_length(stream->rtp_auth);
-
-    /*
-     * AEAD uses a new IV formation method 
-     */
-    srtp_calc_aead_iv(stream, &iv, &est, hdr);
-    status = srtp_cipher_set_iv(stream->rtp_cipher, (uint8_t*)&iv, direction_decrypt);
-    if (status) {
-        return srtp_err_status_cipher_fail;
-    }
-
-    /*
-     * find starting point for decryption and length of data to be
-     * decrypted - the encrypted portion starts after the rtp header
-     * extension, if present; otherwise, it starts after the last csrc,
-     * if any are present
-     */
-    enc_start = (uint32_t*)hdr + uint32s_in_rtp_header + hdr->cc;
-    if (hdr->x == 1) {
-        srtp_hdr_xtnd_t *xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
-        enc_start += (ntohs(xtn_hdr->length) + 1);
-    }
-    if (!((uint8_t*)enc_start < (uint8_t*)hdr + (*pkt_octet_len - tag_len)))
-        return srtp_err_status_parse_err;
-    /*
-     * We pass the tag down to the cipher when doing GCM mode 
-     */
-    enc_octet_len = (unsigned int)(*pkt_octet_len - 
-                                   ((uint8_t*)enc_start - (uint8_t*)hdr));
-
-    /*
-     * Sanity check the encrypted payload length against
-     * the tag size.  It must always be at least as large
-     * as the tag length.
-     */
-    if (enc_octet_len < (unsigned int) tag_len) {
-        return srtp_err_status_cipher_fail;
-    }
-
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit, and call
-     * the event handler if we hit either.
-     */
-    switch (srtp_key_limit_update(stream->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_soft_limit:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    default:
-        break;
-    }
-
-    /*
-     * Set the AAD for AES-GCM, which is the RTP header
-     */
-    aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
-    status = srtp_cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
-    if (status) {
-        return ( srtp_err_status_cipher_fail);
-    }
-
-    /* Decrypt the ciphertext.  This also checks the auth tag based 
-     * on the AAD we just specified above */
-    status = srtp_cipher_decrypt(stream->rtp_cipher, (uint8_t*)enc_start, &enc_octet_len);
-    if (status) {
-        return status;
-    }
-
-    /*
-     * verify that stream is for received traffic - this check will
-     * detect SSRC collisions, since a stream that appears in both
-     * srtp_protect() and srtp_unprotect() will fail this test in one of
-     * those functions.
-     *
-     * we do this check *after* the authentication check, so that the
-     * latter check will catch any attempts to fool us into thinking
-     * that we've got a collision
-     */
-    if (stream->direction != dir_srtp_receiver) {
-        if (stream->direction == dir_unknown) {
-            stream->direction = dir_srtp_receiver;
-        } else {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
-        }
-    }
-
-    /*
-     * if the stream is a 'provisional' one, in which the template context
-     * is used, then we need to allocate a new stream at this point, since
-     * the authentication passed
-     */
-    if (stream == ctx->stream_template) {
-        srtp_stream_ctx_t *new_stream;
-
-        /*
-         * allocate and initialize a new stream
-         *
-         * note that we indicate failure if we can't allocate the new
-         * stream, and some implementations will want to not return
-         * failure here
-         */
-        status = srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
-        if (status) {
-            return status;
-        }
-
-        /* add new stream to the head of the stream_list */
-        new_stream->next = ctx->stream_list;
-        ctx->stream_list = new_stream;
-
-        /* set stream (the pointer used in this function) */
-        stream = new_stream;
-    }
-
-    /*
-     * the message authentication function passed, so add the packet
-     * index into the replay database
-     */
-    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
-
-    /* decrease the packet length by the length of the auth tag */
-    *pkt_octet_len -= tag_len;
-
-    return srtp_err_status_ok;
-}
-
 
 /*
  * Check if the given extension header id is / should be encrypted.
@@ -1466,6 +1161,404 @@ srtp_process_header_encryption(srtp_stream_ctx_t *stream, srtp_hdr_xtnd_t *xtn_h
   }
 
   return srtp_err_status_ok;
+}
+
+
+/*
+ * AEAD uses a new IV formation method.  This function implements
+ * section 9.1 from draft-ietf-avtcore-srtp-aes-gcm-07.txt.  The
+ * calculation is defined as, where (+) is the xor operation:
+ *
+ *
+ *              0  0  0  0  0  0  0  0  0  0  1  1
+ *              0  1  2  3  4  5  6  7  8  9  0  1
+ *            +--+--+--+--+--+--+--+--+--+--+--+--+
+ *            |00|00|    SSRC   |     ROC   | SEQ |---+
+ *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
+ *                                                    |
+ *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
+ *            |         Encryption Salt           |->(+)
+ *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
+ *                                                    |
+ *            +--+--+--+--+--+--+--+--+--+--+--+--+   |
+ *            |       Initialization Vector       |<--+
+ *            +--+--+--+--+--+--+--+--+--+--+--+--+*
+ *
+ * Input:  *stream - pointer to SRTP stream context, used to retrieve
+ *                   the SALT 
+ *         *iv     - Pointer to receive the calculated IV
+ *         *seq    - The ROC and SEQ value to use for the
+ *                   IV calculation.
+ *         *hdr    - The RTP header, used to get the SSRC value
+ *
+ */
+static void srtp_calc_aead_iv(srtp_stream_ctx_t *stream, v128_t *iv, 
+	                      srtp_xtd_seq_num_t *seq, srtp_hdr_t *hdr)
+{
+    v128_t	in;
+    v128_t	salt;
+
+#ifdef NO_64BIT_MATH
+    uint32_t local_roc = ((high32(*seq) << 16) |
+                         (low32(*seq) >> 16));
+    uint16_t local_seq = (uint16_t) (low32(*seq));
+#else
+    uint32_t local_roc = (uint32_t)(*seq >> 16);
+    uint16_t local_seq = (uint16_t) *seq;
+#endif
+
+    memset(&in, 0, sizeof(v128_t));
+    memset(&salt, 0, sizeof(v128_t));
+
+    in.v16[5] = htons(local_seq);
+    local_roc = htonl(local_roc);
+    memcpy(&in.v16[3], &local_roc, sizeof(local_roc));
+
+    /*
+     * Copy in the RTP SSRC value
+     */
+    memcpy(&in.v8[2], &hdr->ssrc, 4);
+    debug_print(mod_srtp, "Pre-salted RTP IV = %s\n", v128_hex_string(&in));
+
+    /*
+     * Get the SALT value from the context
+     */
+    memcpy(salt.v8, stream->salt, SRTP_AEAD_SALT_LEN);
+    debug_print(mod_srtp, "RTP SALT = %s\n", v128_hex_string(&salt));
+
+    /*
+     * Finally, apply tyhe SALT to the input
+     */
+    v128_xor(iv, &in, &salt);
+}
+
+
+/*
+ * This function handles outgoing SRTP packets while in AEAD mode,
+ * which currently supports AES-GCM encryption.  All packets are
+ * encrypted and authenticated.
+ */
+static srtp_err_status_t
+srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, 
+	           void *rtp_hdr, unsigned int *pkt_octet_len)
+{
+    srtp_hdr_t *hdr = (srtp_hdr_t*)rtp_hdr;
+    uint32_t *enc_start;        /* pointer to start of encrypted portion  */
+    unsigned int enc_octet_len = 0; /* number of octets in encrypted portion  */
+    srtp_xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
+    int delta;                  /* delta of local pkt idx and that in hdr */
+    srtp_err_status_t status;
+    uint32_t tag_len;
+    v128_t iv;
+    unsigned int aad_len;
+    srtp_hdr_xtnd_t *xtn_hdr = NULL;
+
+    debug_print(mod_srtp, "function srtp_protect_aead", NULL);
+
+    /*
+     * update the key usage limit, and check it to make sure that we
+     * didn't just hit either the soft limit or the hard limit, and call
+     * the event handler if we hit either.
+     */
+    switch (srtp_key_limit_update(stream->limit)) {
+    case srtp_key_event_normal:
+        break;
+    case srtp_key_event_hard_limit:
+        srtp_handle_event(ctx, stream, event_key_hard_limit);
+        return srtp_err_status_key_expired;
+    case srtp_key_event_soft_limit:
+    default:
+        srtp_handle_event(ctx, stream, event_key_soft_limit);
+        break;
+    }
+
+    /* get tag length from stream */
+    tag_len = srtp_auth_get_tag_length(stream->rtp_auth);
+
+    /*
+     * find starting point for encryption and length of data to be
+     * encrypted - the encrypted portion starts after the rtp header
+     * extension, if present; otherwise, it starts after the last csrc,
+     * if any are present
+     */
+     enc_start = (uint32_t*)hdr + uint32s_in_rtp_header + hdr->cc;
+     if (hdr->x == 1) {
+         xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
+         enc_start += (ntohs(xtn_hdr->length) + 1);
+     }
+     /* note: the passed size is without the auth tag */
+     if (!((uint8_t*)enc_start < (uint8_t*)hdr + *pkt_octet_len))
+         return srtp_err_status_parse_err;
+     enc_octet_len = (unsigned int)(*pkt_octet_len -
+                                    ((uint8_t*)enc_start - (uint8_t*)hdr));
+
+    /*
+     * estimate the packet index using the start of the replay window
+     * and the sequence number from the header
+     */
+    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
+    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+    if (status) {
+	if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx) {
+	    return status;  /* we've been asked to reuse an index */
+	}
+    } else {
+	srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+    }
+
+#ifdef NO_64BIT_MATH
+    debug_print2(mod_srtp, "estimated packet index: %08x%08x",
+                 high32(est), low32(est));
+#else
+    debug_print(mod_srtp, "estimated packet index: %016llx", est);
+#endif
+
+    /*
+     * AEAD uses a new IV formation method
+     */
+    srtp_calc_aead_iv(stream, &iv, &est, hdr);
+    /* shift est, put into network byte order */
+#ifdef NO_64BIT_MATH
+    est = be64_to_cpu(make64((high32(est) << 16) |
+                             (low32(est) >> 16),
+                             low32(est) << 16));
+#else
+    est = be64_to_cpu(est << 16);
+#endif
+
+    status = srtp_cipher_set_iv(stream->rtp_cipher, (uint8_t*)&iv, direction_encrypt);
+    if (!status && stream->rtp_xtn_hdr_cipher) {
+      iv.v32[0] = 0;
+      iv.v32[1] = hdr->ssrc;
+      iv.v64[1] = est;
+      status = srtp_cipher_set_iv(stream->rtp_xtn_hdr_cipher, (uint8_t*)&iv, direction_encrypt);
+    }
+    if (status) {
+        return srtp_err_status_cipher_fail;
+    }
+
+    if (xtn_hdr && stream->rtp_xtn_hdr_cipher) {
+      /*
+       * extensions header encryption RFC 6904
+       */
+      status = srtp_process_header_encryption(stream, xtn_hdr);
+      if (status) {
+        return status;
+      }
+    }
+
+    /*
+     * Set the AAD over the RTP header 
+     */
+    aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
+    status = srtp_cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
+    if (status) {
+        return ( srtp_err_status_cipher_fail);
+    }
+
+    /* Encrypt the payload  */
+    status = srtp_cipher_encrypt(stream->rtp_cipher,
+                            (uint8_t*)enc_start, &enc_octet_len);
+    if (status) {
+        return srtp_err_status_cipher_fail;
+    }
+    /*
+     * If we're doing GCM, we need to get the tag
+     * and append that to the output
+     */
+    status = srtp_cipher_get_tag(stream->rtp_cipher, 
+                            (uint8_t*)enc_start+enc_octet_len, &tag_len);
+    if (status) {
+	return ( srtp_err_status_cipher_fail);
+    }
+    enc_octet_len += tag_len;
+
+    /* increase the packet length by the length of the auth tag */
+    *pkt_octet_len += tag_len;
+
+    return srtp_err_status_ok;
+}
+
+
+/*
+ * This function handles incoming SRTP packets while in AEAD mode,
+ * which currently supports AES-GCM encryption.  All packets are
+ * encrypted and authenticated.  Note, the auth tag is at the end
+ * of the packet stream and is automatically checked by GCM
+ * when decrypting the payload.
+ */
+static srtp_err_status_t
+srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta, 
+	             srtp_xtd_seq_num_t est, void *srtp_hdr, unsigned int *pkt_octet_len)
+{
+    srtp_hdr_t *hdr = (srtp_hdr_t*)srtp_hdr;
+    uint32_t *enc_start;        /* pointer to start of encrypted portion  */
+    unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
+    v128_t iv;
+    srtp_err_status_t status;
+    int tag_len;
+    unsigned int aad_len;
+    srtp_hdr_xtnd_t *xtn_hdr = NULL;
+
+    debug_print(mod_srtp, "function srtp_unprotect_aead", NULL);
+
+#ifdef NO_64BIT_MATH
+    debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est), low32(est));
+#else
+    debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
+#endif
+
+    /* get tag length from stream */
+    tag_len = srtp_auth_get_tag_length(stream->rtp_auth);
+
+    /*
+     * AEAD uses a new IV formation method 
+     */
+    srtp_calc_aead_iv(stream, &iv, &est, hdr);
+    status = srtp_cipher_set_iv(stream->rtp_cipher, (uint8_t*)&iv, direction_decrypt);
+    if (!status && stream->rtp_xtn_hdr_cipher) {
+      iv.v32[0] = 0;
+      iv.v32[1] = hdr->ssrc;
+#ifdef NO_64BIT_MATH
+      iv.v64[1] = be64_to_cpu(make64((high32(est) << 16) | (low32(est) >> 16),
+                  low32(est) << 16));
+#else
+      iv.v64[1] = be64_to_cpu(est << 16);
+#endif
+      status = srtp_cipher_set_iv(stream->rtp_xtn_hdr_cipher, (uint8_t*)&iv, direction_encrypt);
+    }
+    if (status) {
+        return srtp_err_status_cipher_fail;
+    }
+
+    /*
+     * find starting point for decryption and length of data to be
+     * decrypted - the encrypted portion starts after the rtp header
+     * extension, if present; otherwise, it starts after the last csrc,
+     * if any are present
+     */
+    enc_start = (uint32_t*)hdr + uint32s_in_rtp_header + hdr->cc;
+    if (hdr->x == 1) {
+        xtn_hdr = (srtp_hdr_xtnd_t*)enc_start;
+        enc_start += (ntohs(xtn_hdr->length) + 1);
+    }
+    if (!((uint8_t*)enc_start < (uint8_t*)hdr + (*pkt_octet_len - tag_len)))
+        return srtp_err_status_parse_err;
+    /*
+     * We pass the tag down to the cipher when doing GCM mode 
+     */
+    enc_octet_len = (unsigned int)(*pkt_octet_len - 
+                                   ((uint8_t*)enc_start - (uint8_t*)hdr));
+
+    /*
+     * Sanity check the encrypted payload length against
+     * the tag size.  It must always be at least as large
+     * as the tag length.
+     */
+    if (enc_octet_len < (unsigned int) tag_len) {
+        return srtp_err_status_cipher_fail;
+    }
+
+    /*
+     * update the key usage limit, and check it to make sure that we
+     * didn't just hit either the soft limit or the hard limit, and call
+     * the event handler if we hit either.
+     */
+    switch (srtp_key_limit_update(stream->limit)) {
+    case srtp_key_event_normal:
+        break;
+    case srtp_key_event_soft_limit:
+        srtp_handle_event(ctx, stream, event_key_soft_limit);
+        break;
+    case srtp_key_event_hard_limit:
+        srtp_handle_event(ctx, stream, event_key_hard_limit);
+        return srtp_err_status_key_expired;
+    default:
+        break;
+    }
+
+    /*
+     * Set the AAD for AES-GCM, which is the RTP header
+     */
+    aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
+    status = srtp_cipher_set_aad(stream->rtp_cipher, (uint8_t*)hdr, aad_len);
+    if (status) {
+        return ( srtp_err_status_cipher_fail);
+    }
+
+    if (xtn_hdr && stream->rtp_xtn_hdr_cipher) {
+      /*
+       * extensions header encryption RFC 6904
+       */
+      status = srtp_process_header_encryption(stream, xtn_hdr);
+      if (status) {
+        return status;
+      }
+    }
+
+    /* Decrypt the ciphertext.  This also checks the auth tag based 
+     * on the AAD we just specified above */
+    status = srtp_cipher_decrypt(stream->rtp_cipher, (uint8_t*)enc_start, &enc_octet_len);
+    if (status) {
+        return status;
+    }
+
+    /*
+     * verify that stream is for received traffic - this check will
+     * detect SSRC collisions, since a stream that appears in both
+     * srtp_protect() and srtp_unprotect() will fail this test in one of
+     * those functions.
+     *
+     * we do this check *after* the authentication check, so that the
+     * latter check will catch any attempts to fool us into thinking
+     * that we've got a collision
+     */
+    if (stream->direction != dir_srtp_receiver) {
+        if (stream->direction == dir_unknown) {
+            stream->direction = dir_srtp_receiver;
+        } else {
+            srtp_handle_event(ctx, stream, event_ssrc_collision);
+        }
+    }
+
+    /*
+     * if the stream is a 'provisional' one, in which the template context
+     * is used, then we need to allocate a new stream at this point, since
+     * the authentication passed
+     */
+    if (stream == ctx->stream_template) {
+        srtp_stream_ctx_t *new_stream;
+
+        /*
+         * allocate and initialize a new stream
+         *
+         * note that we indicate failure if we can't allocate the new
+         * stream, and some implementations will want to not return
+         * failure here
+         */
+        status = srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
+        if (status) {
+            return status;
+        }
+
+        /* add new stream to the head of the stream_list */
+        new_stream->next = ctx->stream_list;
+        ctx->stream_list = new_stream;
+
+        /* set stream (the pointer used in this function) */
+        stream = new_stream;
+    }
+
+    /*
+     * the message authentication function passed, so add the packet
+     * index into the replay database
+     */
+    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+
+    /* decrease the packet length by the length of the auth tag */
+    *pkt_octet_len -= tag_len;
+
+    return srtp_err_status_ok;
 }
 
 
