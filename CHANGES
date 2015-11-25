@@ -1,5 +1,17 @@
 Changelog
 
+1.5.3
+
+  Fix for CVE-2015-6360.
+
+  Pull request 103 - Makefile.in: Don't hard-code ar.
+
+  Pull request 99 - Various fixes for compiling with Visual Studio.
+ 
+  Pull request 98 - Do not duplicate shared library when installing.
+
+  Please see commit log for a full list of other minor fixes.
+
 1.5.2
  
   Autoconf checks for libz and libdl for buildroot support.
