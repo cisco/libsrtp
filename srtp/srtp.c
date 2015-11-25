@@ -2113,6 +2113,7 @@ update_template_streams(srtp_t session, const srtp_policy_t *policy) {
     srtp_stream_t stream;
     uint32_t ssrc;
     srtp_xtd_seq_num_t old_index;
+    srtp_rdb_t old_rtcp_rdb;
 
     stream = session->stream_list;
     while ((stream != NULL) && (stream->rtp_auth != session->stream_template->rtp_auth)) {
@@ -2126,6 +2127,7 @@ update_template_streams(srtp_t session, const srtp_policy_t *policy) {
     /* save old extendard seq */
     ssrc = stream->ssrc;
     old_index = stream->rtp_rdbx.index;
+    old_rtcp_rdb = stream->rtcp_rdb;
 
     /* remove stream */
     status = srtp_remove_stream(session, ssrc);
@@ -2159,6 +2161,7 @@ update_template_streams(srtp_t session, const srtp_policy_t *policy) {
 
     /* restore old extended seq */
     stream->rtp_rdbx.index = old_index;
+    stream->rtcp_rdb = old_rtcp_rdb;
   }
   /* dealloc old template */
   srtp_stream_dealloc(session->stream_template, NULL);
@@ -2177,6 +2180,7 @@ static srtp_err_status_t
 update_stream(srtp_t session, const srtp_policy_t *policy) {
   srtp_err_status_t status;
   srtp_xtd_seq_num_t old_index;
+  srtp_rdb_t old_rtcp_rdb;
   srtp_stream_t stream;
 
   stream = srtp_get_stream(session, policy->ssrc.value);
@@ -2186,6 +2190,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
 
   /* save old extendard seq */
   old_index = stream->rtp_rdbx.index;
+  old_rtcp_rdb = stream->rtcp_rdb;
 
   status = srtp_remove_stream(session, policy->ssrc.value);
   if (status) {
@@ -2204,6 +2209,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
 
   /* restore old extended seq */
   stream->rtp_rdbx.index = old_index;
+  stream->rtcp_rdb = old_rtcp_rdb;
 
   return srtp_err_status_ok;
 }
