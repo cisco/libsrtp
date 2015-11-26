@@ -175,13 +175,13 @@ test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/util.c test/getopt_s.
 endif
 
 crypto/test/aes_calc$(EXE): crypto/test/aes_calc.c test/util.c
-	$(COMPILE) -I./test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 crypto/test/datatypes_driver$(EXE): crypto/test/datatypes_driver.c test/util.c
-	$(COMPILE) -I./test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 crypto/test/sha1_driver$(EXE): crypto/test/sha1_driver.c test/util.c
-	$(COMPILE) -I./test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test/srtp_driver$(EXE): test/srtp_driver.c test/util.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
