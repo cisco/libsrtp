@@ -66,8 +66,10 @@ srtp_validate(void);
 srtp_err_status_t
 srtp_validate_encrypted_extensions_headers(void);
 
+#ifdef OPENSSL
 srtp_err_status_t
 srtp_validate_encrypted_extensions_headers_gcm(void);
+#endif
 
 srtp_err_status_t
 srtp_validate_aes_256(void);
@@ -338,6 +340,7 @@ main (int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+#endif
 
         /*
          * run validation test against the reference packets for
@@ -351,7 +354,6 @@ main (int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
-#endif
 
         /*
          * test the function srtp_remove_stream()
@@ -1623,6 +1625,7 @@ srtp_validate_encrypted_extensions_headers() {
 }
 
 
+#ifdef OPENSSL
 /*
  * Headers of test vectors taken from RFC 6904, Appendix A
  */
@@ -1735,7 +1738,7 @@ srtp_validate_encrypted_extensions_headers_gcm() {
 
     return srtp_err_status_ok;
 }
-
+#endif
 
 /*
  * srtp_validate_aes_256() verifies the correctness of libsrtp by comparing
