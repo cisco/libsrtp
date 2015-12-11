@@ -1492,6 +1492,13 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
         return ( srtp_err_status_cipher_fail);
     }
 
+    /* Decrypt the ciphertext.  This also checks the auth tag based
+     * on the AAD we just specified above */
+    status = srtp_cipher_decrypt(stream->rtp_cipher, (uint8_t*)enc_start, &enc_octet_len);
+    if (status) {
+        return status;
+    }
+
     if (xtn_hdr && stream->rtp_xtn_hdr_cipher) {
       /*
        * extensions header encryption RFC 6904
@@ -1500,13 +1507,6 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
       if (status) {
         return status;
       }
-    }
-
-    /* Decrypt the ciphertext.  This also checks the auth tag based 
-     * on the AAD we just specified above */
-    status = srtp_cipher_decrypt(stream->rtp_cipher, (uint8_t*)enc_start, &enc_octet_len);
-    if (status) {
-        return status;
     }
 
     /*
