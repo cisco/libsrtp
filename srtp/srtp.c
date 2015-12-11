@@ -1102,6 +1102,9 @@ srtp_process_header_encryption(srtp_stream_ctx_t *stream, srtp_hdr_xtnd_t *xtn_h
       uint32_t xlen_with_header = 1+xlen;
       xtn_hdr_data++;
 
+      if (xtn_hdr_data + xlen > xtn_hdr_end)
+        return srtp_err_status_parse_err;
+
       if (xid == 15) {
         /* found header 15, stop further processing. */
         break;
@@ -1134,6 +1137,9 @@ srtp_process_header_encryption(srtp_stream_ctx_t *stream, srtp_hdr_xtnd_t *xtn_h
       unsigned int xlen = *(xtn_hdr_data+1);
       uint32_t xlen_with_header = 2+xlen;
       xtn_hdr_data += 2;
+
+      if (xtn_hdr_data + xlen > xtn_hdr_end)
+        return srtp_err_status_parse_err;
 
       status = srtp_cipher_output(stream->rtp_xtn_hdr_cipher, keystream, &xlen_with_header);
       if (status)
