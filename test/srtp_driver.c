@@ -1621,8 +1621,11 @@ srtp_validate_encrypted_extensions_headers() {
      * unprotect ciphertext, then compare with plaintext
      */
     status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
-    if (status || (len != 28))
+    if (status) {
         return status;
+    } else if (len != sizeof(srtp_plaintext_ref)) {
+        return srtp_err_status_fail;
+    }
 
     if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len))
         return srtp_err_status_fail;
@@ -1640,6 +1643,7 @@ srtp_validate_encrypted_extensions_headers() {
 
 
 #ifdef OPENSSL
+
 /*
  * Headers of test vectors taken from RFC 6904, Appendix A
  */
@@ -1736,8 +1740,11 @@ srtp_validate_encrypted_extensions_headers_gcm() {
      * unprotect ciphertext, then compare with plaintext
      */
     status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
-    if (status || (len != 28))
+    if (status) {
         return status;
+    } else if (len != sizeof(srtp_plaintext_ref)) {
+        return srtp_err_status_fail;
+    }
 
     if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len))
         return srtp_err_status_fail;
