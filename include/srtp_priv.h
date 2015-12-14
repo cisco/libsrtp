@@ -104,6 +104,7 @@ typedef enum direction_t {
 typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
   srtp_cipher_t  *rtp_cipher;
+  srtp_cipher_t  *rtp_xtn_hdr_cipher;
   srtp_auth_t    *rtp_auth;
   srtp_rdbx_t     rtp_rdbx;
   srtp_sec_serv_t rtp_services;
@@ -117,6 +118,8 @@ typedef struct srtp_stream_ctx_t_ {
   srtp_ekt_stream_t ekt; 
   uint8_t    salt[SRTP_AEAD_SALT_LEN];   /* used with GCM mode for SRTP */
   uint8_t    c_salt[SRTP_AEAD_SALT_LEN]; /* used with GCM mode for SRTCP */
+  int       *enc_xtn_hdr;
+  int        enc_xtn_hdr_count;
   struct srtp_stream_ctx_t_ *next;   /* linked list of streams */
 } strp_stream_ctx_t_;
 
