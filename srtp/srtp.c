@@ -328,8 +328,8 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
     srtp_crypto_free(stream->limit);
   }   
 
-  if (session->stream_template
-      && stream->rtp_xtn_hdr_cipher == session->stream_template->rtp_xtn_hdr_cipher) {
+  if (stream_template
+      && stream->rtp_xtn_hdr_cipher == stream_template->rtp_xtn_hdr_cipher) {
     /* do nothing */
   } else if (stream->rtp_xtn_hdr_cipher) {
     status = srtp_cipher_dealloc(stream->rtp_xtn_hdr_cipher);
@@ -369,8 +369,8 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
 
   /* DAM - need to deallocate EKT here */
 
-  if (session->stream_template
-      && stream->enc_xtn_hdr == session->stream_template->enc_xtn_hdr) {
+  if (stream_template
+      && stream->enc_xtn_hdr == stream_template->enc_xtn_hdr) {
     /* do nothing */
   } else if (stream->enc_xtn_hdr) {
     srtp_crypto_free(stream->enc_xtn_hdr);
