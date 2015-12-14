@@ -822,6 +822,15 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
       octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
       return srtp_err_status_init_fail;
     }
+
+    if (xtn_hdr_kdf != &kdf) {
+      /* release memory for custom header extension encryption kdf */
+      stat = srtp_kdf_clear(xtn_hdr_kdf);
+      if (stat) {
+        octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+        return srtp_err_status_init_fail;
+      }
+    }
   }
 
   /* generate authentication key */
