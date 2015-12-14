@@ -2046,6 +2046,7 @@ srtp_test_update() {
   srtp_t srtp_snd, srtp_recv;
   srtp_policy_t policy;
 
+  memset(&policy, 0, sizeof(policy));
   srtp_crypto_policy_set_rtp_default(&policy.rtp);
   srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
   policy.ekt = NULL;
