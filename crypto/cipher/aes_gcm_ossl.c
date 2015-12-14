@@ -262,7 +262,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (srtp_aes_gcm_ctx_t *c, co
      * OpenSSL copy its content to the context), so we can make 
      * aad read-only in this function and all its wrappers.
      */
-    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, (void*)aad);
+    unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
+    memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
+    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, &dummy_tag);
 
     rv = EVP_Cipher(&c->ctx, NULL, aad, aad_len);
     if (rv != aad_len) {
