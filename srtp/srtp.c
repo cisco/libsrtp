@@ -141,6 +141,33 @@ unsigned int srtp_get_version ()
     return rv;
 }
 
+/* Release (maybe partially allocated) stream. */
+inline void
+srtp_stream_free(srtp_stream_ctx_t *str) {
+  if (str->rtp_xtn_hdr_cipher) {
+    srtp_cipher_dealloc(str->rtp_xtn_hdr_cipher);
+  }
+  if (str->enc_xtn_hdr) {
+    srtp_crypto_free(str->enc_xtn_hdr);
+  }
+  if (str->rtcp_auth) {
+    auth_dealloc(str->rtcp_auth);
+  }
+  if (str->rtcp_cipher) {
+    srtp_cipher_dealloc(str->rtcp_cipher);
+  }
+  if (str->limit) {
+    srtp_crypto_free(str->limit);
+  }
+  if (str->rtp_auth) {
+    auth_dealloc(str->rtp_auth);
+  }
+  if (str->rtp_cipher) {
+    srtp_cipher_dealloc(str->rtp_cipher);
+  }
+  srtp_crypto_free(str);
+}
+
 srtp_err_status_t
 srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 		  const srtp_policy_t *p) {
@@ -159,15 +186,17 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   str = (srtp_stream_ctx_t *) srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
   if (str == NULL)
     return srtp_err_status_alloc_fail;
-  *str_ptr = str;  
-  
+
+  memset(str, 0, sizeof(srtp_stream_ctx_t));
+  *str_ptr = str;
+
   /* allocate cipher */
   stat = srtp_crypto_kernel_alloc_cipher(p->rtp.cipher_type, 
 				    &str->rtp_cipher, 
 				    p->rtp.cipher_key_len,
 				    p->rtp.auth_tag_len); 
   if (stat) {
-    srtp_crypto_free(str);
+    srtp_stream_free(str);
     return stat;
   }
 
@@ -177,17 +206,14 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				  p->rtp.auth_key_len, 
 				  p->rtp.auth_tag_len); 
   if (stat) {
-    srtp_cipher_dealloc(str->rtp_cipher);
-    srtp_crypto_free(str);
+    srtp_stream_free(str);
     return stat;
   }
   
   /* allocate key limit structure */
   str->limit = (srtp_key_limit_ctx_t*) srtp_crypto_alloc(sizeof(srtp_key_limit_ctx_t));
   if (str->limit == NULL) {
-    auth_dealloc(str->rtp_auth);
-    srtp_cipher_dealloc(str->rtp_cipher);
-    srtp_crypto_free(str); 
+    srtp_stream_free(str);
     return srtp_err_status_alloc_fail;
   }
 
@@ -200,10 +226,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				    p->rtcp.cipher_key_len, 
 				    p->rtcp.auth_tag_len); 
   if (stat) {
-    auth_dealloc(str->rtp_auth);
-    srtp_cipher_dealloc(str->rtp_cipher);
-    srtp_crypto_free(str->limit);
-    srtp_crypto_free(str);
+    srtp_stream_free(str);
     return stat;
   }
 
@@ -213,24 +236,15 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 				  p->rtcp.auth_key_len, 
 				  p->rtcp.auth_tag_len); 
   if (stat) {
-    srtp_cipher_dealloc(str->rtcp_cipher);
-    auth_dealloc(str->rtp_auth);
-    srtp_cipher_dealloc(str->rtp_cipher);
-    srtp_crypto_free(str->limit);
-    srtp_crypto_free(str);
-   return stat;
+    srtp_stream_free(str);
+    return stat;
   }  
 
   /* allocate ekt data associated with stream */
   stat = srtp_ekt_alloc(&str->ekt, p->ekt);
   if (stat) {
-    auth_dealloc(str->rtcp_auth);
-    srtp_cipher_dealloc(str->rtcp_cipher);
-    auth_dealloc(str->rtp_auth);
-    srtp_cipher_dealloc(str->rtp_cipher);
-    srtp_crypto_free(str->limit);
-    srtp_crypto_free(str);
-   return stat;    
+    srtp_stream_free(str);
+    return stat;
   }
 
   if (p->enc_xtn_hdr && p->enc_xtn_hdr_count > 0) {
@@ -239,12 +253,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 
     str->enc_xtn_hdr = (int*) srtp_crypto_alloc(p->enc_xtn_hdr_count * sizeof(p->enc_xtn_hdr[0]));
     if (!str->enc_xtn_hdr) {
-      auth_dealloc(str->rtcp_auth);
-      srtp_cipher_dealloc(str->rtcp_cipher);
-      auth_dealloc(str->rtp_auth);
-      srtp_cipher_dealloc(str->rtp_cipher);
-      srtp_crypto_free(str->limit);
-      srtp_crypto_free(str);
+      srtp_stream_free(str);
       return srtp_err_status_alloc_fail;
     }
     memcpy(str->enc_xtn_hdr, p->enc_xtn_hdr, p->enc_xtn_hdr_count * sizeof(p->enc_xtn_hdr[0]));
@@ -272,13 +281,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
               enc_xtn_hdr_cipher_key_len,
               0);
     if (stat) {
-      srtp_crypto_free(str->enc_xtn_hdr);
-      auth_dealloc(str->rtcp_auth);
-      srtp_cipher_dealloc(str->rtcp_cipher);
-      auth_dealloc(str->rtp_auth);
-      srtp_cipher_dealloc(str->rtp_cipher);
-      srtp_crypto_free(str->limit);
-      srtp_crypto_free(str);
+      srtp_stream_free(str);
       return stat;
     }
   } else {
