@@ -135,6 +135,8 @@ test_dtls_srtp(void) {
   srtp_profile_t profile;
   srtp_err_status_t err;
 
+  memset(&policy, 0x0, sizeof(srtp_policy_t));
+
   /* create a 'null' SRTP session */
   err = srtp_create(&s, NULL);
   if (err) 

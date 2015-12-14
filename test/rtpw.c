@@ -185,6 +185,8 @@ main (int argc, char *argv[]) {
   }
 #endif
 
+  memset(&policy, 0x0, sizeof(srtp_policy_t));
+
   printf("Using %s [0x%x]\n", srtp_get_version_string(), srtp_get_version());
 
   if (setup_signal_handler(argv[0]) != 0) {
