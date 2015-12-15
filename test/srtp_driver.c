@@ -81,6 +81,14 @@ srtp_err_status_t
 srtp_dealloc_big_policy(srtp_policy_t *list);
 
 srtp_err_status_t
+srtp_test_empty_payload(void);
+
+#ifdef OPENSSL
+srtp_err_status_t
+srtp_test_empty_payload_gcm(void);
+#endif
+
+srtp_err_status_t
 srtp_test_remove_stream(void);
 
 srtp_err_status_t
@@ -357,6 +365,28 @@ main (int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
+        /*
+         * test packets with empty payload
+         */
+        printf("testing srtp_protect and srtp_unprotect against "
+               "packets with empty payload\n");
+        if (srtp_test_empty_payload() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else{
+            printf("failed\n");
+            exit(1);
+        }
+#ifdef OPENSSL
+        printf("testing srtp_protect and srtp_unprotect against "
+               "packets with empty payload (GCM)\n");
+        if (srtp_test_empty_payload_gcm() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else{
+            printf("failed\n");
+            exit(1);
+        }
+#endif
 
         /*
          * test the function srtp_remove_stream()
@@ -1927,6 +1957,161 @@ srtp_dealloc_big_policy (srtp_policy_t *list)
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t
+srtp_test_empty_payload()
+{
+    srtp_t srtp_snd, srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+    srtp_hdr_t *mesg;
+
+    /*
+     * create a session with a single stream using the default srtp
+     * policy and with the SSRC value 0xcafebabe
+     */
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type  = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key  = test_key;
+    policy.ekt = NULL;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_snd, &policy);
+    if (status) {
+        return status;
+    }
+
+    mesg = srtp_create_test_packet(0, policy.ssrc.value);
+    if (mesg == NULL) {
+        return srtp_err_status_fail;
+    }
+
+    len = 12;  /* only the header */
+    status = srtp_protect(srtp_snd, mesg, &len);
+    if (status) {
+        return status;
+    } else if (len != 12 + 10) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * create a receiver session context comparable to the one created
+     * above - we need to do this so that the replay checking doesn't
+     * complain
+     */
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    /*
+     * unprotect ciphertext, then compare with plaintext
+     */
+    status = srtp_unprotect(srtp_recv, mesg, &len);
+    if (status) {
+        return status;
+    } else if (len != 12) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_snd);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+
+#ifdef OPENSSL
+srtp_err_status_t
+srtp_test_empty_payload_gcm()
+{
+    srtp_t srtp_snd, srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+    srtp_hdr_t *mesg;
+
+    /*
+     * create a session with a single stream using the default srtp
+     * policy and with the SSRC value 0xcafebabe
+     */
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+    policy.ssrc.type  = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key  = test_key;
+    policy.ekt = NULL;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_snd, &policy);
+    if (status) {
+        return status;
+    }
+
+    mesg = srtp_create_test_packet(0, policy.ssrc.value);
+    if (mesg == NULL) {
+        return srtp_err_status_fail;
+    }
+
+    len = 12;  /* only the header */
+    status = srtp_protect(srtp_snd, mesg, &len);
+    if (status) {
+        return status;
+    } else if (len != 12 + 8) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * create a receiver session context comparable to the one created
+     * above - we need to do this so that the replay checking doesn't
+     * complain
+     */
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    /*
+     * unprotect ciphertext, then compare with plaintext
+     */
+    status = srtp_unprotect(srtp_recv, mesg, &len);
+    if (status) {
+        return status;
+    } else if (len != 12) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_snd);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+#endif  // OPENSSL
 
 srtp_err_status_t
 srtp_test_remove_stream ()
