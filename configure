@@ -4810,49 +4810,6 @@ case $host_os in
 esac
    # define executable suffix; this is needed for `make clean'
 
-if test "$cross_compiling" != yes -a "$HOST_IS_WINDOWS" != yes; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for /dev/urandom" >&5
-$as_echo_n "checking for /dev/urandom... " >&6; }
-if ${ac_cv_file__dev_urandom+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "/dev/urandom"; then
-  ac_cv_file__dev_urandom=yes
-else
-  ac_cv_file__dev_urandom=no
-fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_file__dev_urandom" >&5
-$as_echo "$ac_cv_file__dev_urandom" >&6; }
-if test "x$ac_cv_file__dev_urandom" = xyes; then :
-  DEV_URANDOM=/dev/urandom
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for /dev/random" >&5
-$as_echo_n "checking for /dev/random... " >&6; }
-if ${ac_cv_file__dev_random+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "/dev/random"; then
-  ac_cv_file__dev_random=yes
-else
-  ac_cv_file__dev_random=no
-fi
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_file__dev_random" >&5
-$as_echo "$ac_cv_file__dev_random" >&6; }
-if test "x$ac_cv_file__dev_random" = xyes; then :
-  DEV_URANDOM=/dev/random
-fi
-
-fi
-
-fi
-
-
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
 $as_echo_n "checking for ANSI C header files... " >&6; }
@@ -5851,20 +5808,6 @@ $as_echo "#define OPENSSL_KDF 1" >>confdefs.h
    fi
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking which random device to use" >&5
-$as_echo_n "checking which random device to use... " >&6; }
-   if test -n "$DEV_URANDOM"; then
-
-cat >>confdefs.h <<_ACEOF
-#define DEV_URANDOM "$DEV_URANDOM"
-_ACEOF
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: $DEV_URANDOM" >&5
-$as_echo "$DEV_URANDOM" >&6; }
-   else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: standard rand() function..." >&5
-$as_echo "standard rand() function..." >&6; }
-   fi
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
 

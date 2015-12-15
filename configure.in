@@ -43,13 +43,6 @@ case $host_os in
 esac
 AC_SUBST(EXE)   # define executable suffix; this is needed for `make clean'
 
-if test "$cross_compiling" != yes -a "$HOST_IS_WINDOWS" != yes; then
-   dnl Check for /dev/urandom
-   AC_CHECK_FILE(/dev/urandom, DEV_URANDOM=/dev/urandom,
-      [AC_CHECK_FILE(/dev/random, DEV_URANDOM=/dev/random)])
-fi
-
-
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -160,13 +153,6 @@ if test "$enable_openssl" = "yes"; then
    fi
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
-   AC_MSG_CHECKING(which random device to use)
-   if test -n "$DEV_URANDOM"; then
-      AC_DEFINE_UNQUOTED(DEV_URANDOM, "$DEV_URANDOM",[Path to random device])
-      AC_MSG_RESULT([$DEV_URANDOM])
-   else
-      AC_MSG_RESULT([standard rand() function...])
-   fi
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
 AC_SUBST(AES_ICM_OBJS)                              

@@ -49,9 +49,6 @@
 int 
 main(void) {
   int err_count = 0;
-#ifndef OPENSSL
-  char *str;
-#endif
 
 #ifdef WORDS_BIGENDIAN
   printf("CPU set to big-endian\t\t\t(WORDS_BIGENDIAN == 1)\n");
@@ -82,19 +79,6 @@ main(void) {
   printf("using stdout for error reporting\t(ERR_REPORTING_STDOUT == 1)\n");
 #endif
 
-#ifndef OPENSSL
-#ifdef DEV_URANDOM
-  str = DEV_URANDOM;
-#else
-  str = "";
-#endif
-  printf("using %s as a random source\t(DEV_URANDOM == %s)\n",
-	 str, str);
-  if (strcmp("", str) == 0) {
-    err_count++;
-  }
-#endif
-  
   if (err_count)
     printf("warning: configuration is probably in error "
 	   "(found %d problems)\n", err_count);
