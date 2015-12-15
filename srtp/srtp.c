@@ -142,7 +142,7 @@ unsigned int srtp_get_version ()
 }
 
 /* Release (maybe partially allocated) stream. */
-inline void
+static void
 srtp_stream_free(srtp_stream_ctx_t *str) {
   if (str->rtp_xtn_hdr_cipher) {
     srtp_cipher_dealloc(str->rtp_xtn_hdr_cipher);
