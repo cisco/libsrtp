@@ -303,7 +303,25 @@ srtp_err_status_t srtp_rdbx_add_index (srtp_rdbx_t *rdbx, int delta)
     return srtp_err_status_ok;
 }
 
+/*
+ * srtp_rdbx_get_roc(rdbx)
+ *
+ * Returns the current rollover counter
+ *
+ */
+uint32_t srtp_rdbx_get_roc(srtp_rdbx_t *rdbx)
+{
+    uint32_t roc;
+    bitvector_set_to_zero(&rdbx->bitmask);
 
+#ifdef NO_64BIT_MATH
+    roc = ((high32(rdbx->index) << 16) | (low32(rdbx->index) >> 16));
+#else
+    roc = (uint32_t)(rdbx->index >> 16);
+#endif
+
+    return roc;
+}
 
 /*
  * srtp_rdbx_estimate_index(rdbx, guess, s)

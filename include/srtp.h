@@ -5,6 +5,13 @@
  *
  * David A. McGrew
  * Cisco Systems, Inc.
+ *
+ * CHANGE LOG
+ * ----------
+ * 2015-12-11 - Nivedita Melinkeri
+ *     - Made changes to support EKT and PRIME mode
+ *     - Modified srtp policy to allow applications pass PRIME and
+ *       EKT configurations
  */
 /*
  *	
@@ -205,6 +212,51 @@ typedef struct {
 #endif
 
 
+/*
+ * srtp_service_flags represents the services an application can request
+ */
+typedef enum srtp_service_flags_t
+{
+  SRTP_SERVICE_CONFIDENTIALITY = 1,
+  SRTP_SERVICE_AUTHENTICATION = 2,
+  SRTP_SERVICE_CONFIDENTIALITY_AND_AUTHENTICATION = 3,
+  SRTP_SERVICE_CHK_REPLAY = 4,
+  SRTP_SERVICE_CONFIDENTIALITY_AND_CHK_REPLAY = 5,
+  SRTP_SERVICE_AUTHENTICATION_AND_CHK_REPLAY = 6,
+  SRTP_SERVICE_EKT_TAG = 8,
+  SRTP_SERVICE_EKT_TAG_AND_CONFIDENTIALITY = 9,
+  SRTP_SERVICE_EKT_TAG_AND_AUTHENTICATION = 10,
+  SRTP_SERVICE_EKT_TAG_CONFIDENTIALITY_AND_AUTENTICATION = 11,
+  SRTP_SERVICE_EKT_TAG_CHK_REPLAY = 12,
+  SRTP_SERVICE_EKT_TAG_CHK_REPLAY_AND_CONFIDENTIALITY = 13,
+  SRTP_SERVICE_EKT_TAG_CHK_REPLAY_AND_AUTHENTICAION = 14,
+  SRTP_SERVICE_ALL = 15
+} srtp_service_flags_t;
+
+/*
+ * EKT-specific definitions
+ */
+typedef enum srtp_ekt_cipher_t {
+    EKT_CIPHER_AESKW_128 = 0,
+    EKT_CIPHER_AESKW_192 = 1,
+    EKT_CIPHER_AESKW_256 = 2
+} srtp_ekt_cipher_t;
+
+typedef enum srtp_ekt_ctx_type_t {
+  EKT_CTX_TYPE_NO_EKT = 0,
+  EKT_CTX_TYPE_PRIME = 1,
+  EKT_CTX_TYPE_EKT = 2
+} srtp_ekt_ctx_type_t;
+
+typedef enum srtp_ekt_mode_t {
+  EKT_MODE_NO_EKT = 0,              /* SRTP only - No EKT       */
+  EKT_MODE_REGULAR = 1,             /* SRTP with plain EKT      */
+  EKT_MODE_PRIME_END_TO_END = 2,
+  EKT_MODE_PRIME_HOP_BY_HOP = 3
+} srtp_ekt_mode_t;
+
+typedef uint16_t srtp_ekt_spi_t;
+
 
 /** 
  *  @brief A srtp_cipher_type_id_t is an identifier for a particular cipher
@@ -267,7 +319,11 @@ typedef enum {
   srtp_err_status_parse_err    = 21, /**< error parsing data                      */
   srtp_err_status_encode_err   = 22, /**< error encoding data                     */
   srtp_err_status_semaphore_err = 23,/**< error while using semaphores            */
-  srtp_err_status_pfkey_err    = 24  /**< error while using pfkey                 */
+  srtp_err_status_pfkey_err    = 24, /**< error while using pfkey                 */
+  srtp_status_key_not_found = 25,    /**< error key for specified MKI no found    */
+  srtp_err_status_spi_not_found = 26,/**< error SPI not found in SPI info list    */
+  srtp_err_no_ekt = 27,              /**< error no long ekt tag in packet         */
+  srtp_err_status_ekt_tag_ssrc_mismatch = 28 /** error SSRC in header and EKT tag mismatch */
 } srtp_err_status_t;
 
 typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
@@ -318,6 +374,42 @@ typedef struct srtp_crypto_policy_t {
 				    *   services to be applied.          */
 } srtp_crypto_policy_t;
 
+/*
+ * srtp_policy_t structure can contain a pointer to an
+ * srtp_ekt_policy_t structure
+ *
+ * this structure holds all of the high level EKT information, and it
+ * is passed into libsrtp to indicate what policy should be in effect
+ * while senduing EKT tags.
+ * The key held in this structure will be sent in ekt tags.
+ */
+typedef struct srtp_ekt_policy_t {
+  srtp_ekt_spi_t spi;                                   /* security parameter index */
+  uint8_t *key;                                         /* The key to be sent in EKT tags.
+                                                         * In case of prime-end-to-end it is also the SRTP master key for end-to-end media */
+  srtp_crypto_policy_t prime_end_to_end_rtp_crypto;     /* SRTP crypto policy used to send end-to-end packets for prime-end-to-end mode.  */
+  srtp_crypto_policy_t prime_end_to_end_rtcp_crypto;    /* SRTCP crypto policy used to send end-to-end packets for prime-end-to-end mode.  */
+  srtp_ekt_ctx_type_t ekt_ctx_type;                     /* This field represents the EKT mode - none, prime, or regular EKT*/
+  int total_auto_ekt_tags_at_roc_change;                /* This field indicates the number of
+                                                         * pkts which will have ekt tags attached after every ROC change
+                                                         * 0 indicates */
+  int packet_interval_for_auto_ekt;                     /* This field indicates the number of RTP/RTCP
+                                                         * pkts after which will have ekt tags attached after every ROC change
+                                                         * 0 indicates */
+} srtp_ekt_policy_t;
+
+/*
+ * This structure holds the information about SPI.
+ * It is passed into libsrtp. The key in this structure is used to encrypt
+ * EKT tags.
+ */
+typedef struct srtp_ekt_spi_policy_t {
+  srtp_ekt_spi_t spi;               /* security parameter index (SPI)       */
+  srtp_ekt_cipher_t ekt_cipher;     /* The cipher used to generate EKT tag  */
+  uint8_t* ekt_key;                 /* The EKT Key for this SPI             */
+  uint8_t* ekt_master_salt;         /* EKT master salt for this SPI         */
+  unsigned ekt_master_salt_length;  /* Salt length                          */
+} srtp_ekt_spi_policy_t;
 
 /** 
  * @brief srtp_ssrc_type_t describes the type of an SSRC.
@@ -351,18 +443,6 @@ typedef struct {
   srtp_ssrc_type_t type;  /**< The type of this particular SSRC */
   unsigned int     value; /**< The value of this SSRC, if it is not a wildcard */
 } srtp_ssrc_t;
-
-
-/**
- * @brief points to an EKT policy
- */
-typedef struct srtp_ekt_policy_ctx_t *srtp_ekt_policy_t;
-
-
-/**
- * @brief points to EKT stream data
- */
-typedef struct srtp_ekt_stream_ctx_t *srtp_ekt_stream_t;
 
 
 /** 
@@ -402,8 +482,7 @@ typedef struct srtp_policy_t {
   srtp_crypto_policy_t rtcp;   /**< SRTCP crypto policy.                 */
   unsigned char *key;          /**< Pointer to the SRTP master key for
 				*    this stream.                        */
-  srtp_ekt_policy_t ekt;       /**< Pointer to the EKT policy structure
-                                *   for this stream (if any)             */ 
+  srtp_ekt_policy_t ekt_policy;/**< EKT policy structure for stream      */
   unsigned long window_size;   /**< The window size to use for replay
 				*   protection. */
   int        allow_repeat_tx;  /**< Whether retransmissions of
@@ -412,10 +491,9 @@ typedef struct srtp_policy_t {
 				*   transmissions must have the same RTP
 				*   payload, or a severe security weakness
 				*   is introduced!)                      */
+  srtp_ekt_spi_t spi;          /**< Active SPI value                     */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;
-
-
 
 
 /**
@@ -509,6 +587,46 @@ srtp_err_status_t srtp_shutdown(void);
  */
 
 srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
+
+/**
+ * @brief srtp_protect_with_flags() is the Secure RTP sender-side packet
+ * processing function.
+ *
+ * The function call srtp_protect_with_flags() performs the exact same
+ * functions as srtp_protect(), but the caller can specify the functions
+ * that need to be performed, such as authenticate only, encrypt only,
+ * authenticate and encrypt, etc.  The function will use this flag in
+ * addition to the configuration of the context to decide how the packet
+ * needs to be processed.
+ *
+ * @warning This function assumes that it can write the authentication
+ * tag into the location in memory immediately following the RTP
+ * packet, and assumes that the RTP packet is aligned on a 32-bit
+ * boundary.
+ *
+ * @warning This function assumes that it can write SRTP_MAX_TRAILER_LEN
+ * into the location in memory immediately following the RTP packet.
+ * Callers MUST ensure that this much writable memory is available in
+ * the buffer that holds the RTP packet.
+ *
+ * @param ctx is the SRTP context to use in processing the packet.
+ *
+ * @param rtp_hdr is a pointer to the RTP packet (before the call); after
+ * the function returns, it points to the srtp packet.
+ *
+ * @param len_ptr is a pointer to the length in octets of the complete
+ * RTP packet (header and body) before the function call, and of the
+ * complete SRTP packet after the call, if srtp_err_status_ok was returned.
+ * Otherwise, the value of the data to which it points is undefined.
+ *
+ * @flags flags to identify what processing needs to be performed.
+ *
+ * @return
+ *    - srtp_err_status_ok            no problems
+ *    - srtp_err_status_replay_fail   rtp sequence number was non-increasing
+ *    - @e other                 failure in cryptographic mechanisms
+ */
+srtp_err_status_t srtp_protect_with_flags(srtp_t ctx, void *rtp_hdr, int *len_ptr, srtp_service_flags_t flags);
 	     
 /**
  * @brief srtp_unprotect() is the Secure RTP receiver-side packet
@@ -555,6 +673,46 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
 
 
 /**
+ * @brief srtp_unprotect_with_flags() is the Secure RTP receiver-side packet
+ * processing function.
+ *
+ * The function call srtp_unprotect_with_flags() performs the exact same
+ * functions as srtp_unprotect(), but caller can specify the functions that
+ * need to be performed, such as authenticate only, decrypt only, authenticate
+ * and decrypt, etc. The function will use this flag in addition to the
+ * configuration of the context to decide how the packet needs to be
+ * processed.
+ *
+ * @warning This function assumes that the SRTP packet is aligned on a
+ * 32-bit boundary.
+ *
+ * @param ctx is the SRTP session which applies to the particular packet.
+ *
+ * @param srtp_hdr is a pointer to the header of the SRTP packet
+ * (before the call).  after the function returns, it points to the
+ * rtp packet if srtp_err_status_ok was returned; otherwise, the value of
+ * the data to which it points is undefined.
+ *
+ * @param len_ptr is a pointer to the length in octets of the complete
+ * srtp packet (header and body) before the function call, and of the
+ * complete rtp packet after the call, if srtp_err_status_ok was returned.
+ * Otherwise, the value of the data to which it points is undefined.
+ *
+ * @flags flags to identify what processing needs to be performed.
+ *
+ * @return
+ *    - srtp_err_status_ok          if the RTP packet is valid.
+ *    - srtp_err_status_auth_fail   if the SRTP packet failed the message
+ *                             authentication check.
+ *    - srtp_err_status_replay_fail if the SRTP packet is a replay (e.g. packet has
+ *                             already been processed and accepted).
+ *    - [other]  if there has been an error in the cryptographic mechanisms.
+ *
+ */
+srtp_err_status_t srtp_unprotect_with_flags(srtp_t ctx, void *srtp_hdr, int *len_ptr, srtp_service_flags_t flags);
+
+
+/**
  * @brief srtp_create() allocates and initializes an SRTP session.
 
  * The function call srtp_create(session, policy, key) allocates and
@@ -578,6 +736,24 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
  */
 
 srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t *policy);
+
+
+/**
+ * @brief srtp_ekt_set_spi_info() inserts a SPI info structure in the SPI list.
+ *
+ * The function call srtp_ekt_set_spi_info() inserts SPI info structure
+ * containing an EKT key and corresponding index.
+ *
+ * @param session is the SRTP context for which the spi_info will be inserted.
+ *
+ * @param spi_info structure which needs to inserted.
+ *
+ * @return
+ *    - srtp_err_status_ok if the spi was set successfully.
+ *    - [other]           otherwise.
+ *
+ */
+srtp_err_status_t srtp_ekt_set_spi_info(srtp_t srtp_ctx, srtp_ekt_spi_policy_t *spi_info);
 
 
 /**

@@ -5,6 +5,14 @@
  *
  * David A. McGrew
  * Cisco Systems, Inc.
+ *
+ * CHANGE LOG
+ * ----------
+ * 2015-12-11 - Nivedita Melinkeri
+ *     - Modified srtp stream context to create end-to-end context tunneled
+ *       inside hop-by-hop context
+ *     - Added definitions of helper functions to clean up exisitng code and
+ *       support EKT and PRIME mode
  */
 /*
  *	
@@ -82,6 +90,10 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
  */
 srtp_err_status_t srtp_stream_init(srtp_stream_t srtp, const srtp_policy_t *p);
 
+/*
+ * base_key_length returns the length of the key for the given cipher
+ */
+inline int base_key_length(const srtp_cipher_type_t *cipher, int key_length);
 
 /*
  * libsrtp internal datatypes 
@@ -92,6 +104,28 @@ typedef enum direction_t {
   dir_srtp_sender   = 1, 
   dir_srtp_receiver = 2
 } direction_t;
+
+typedef enum srtp_packet_type_t {
+    SRTP_PACKET_RTP = 0,
+    SRTP_PACKET_RTCP = 1
+} srtp_packet_type_t;
+
+/*
+ * srtp_ekt_data_t holds the data corresponding to an EKT key, SPI, etc
+ */
+typedef struct srtp_ekt_data_t {
+  srtp_ekt_spi_t spi;                   /* The SPI used to generate the EKT
+                                         * tag, associated with a key and
+                                         * cipher                           */
+  unsigned int auto_ekt_pkts_left;      /* Number of ekt tags remaining to be
+                                         * generated automatically          */
+  unsigned int total_ekt_tags_to_generate_after_rollover;
+                                        /* Total number of EKT tags to be
+                                         * generated after rollover         */
+  unsigned int auto_ekt_packet_interval;
+  unsigned int packets_left_to_generate_auto_ekt;
+  uint8_t key[SRTP_MAX_KEY_LEN];        /* The key to be sent in EKT tag    */
+} srtp_ekt_data_t;
 
 /* 
  * an srtp_stream_t has its own SSRC, encryption key, authentication
@@ -114,12 +148,37 @@ typedef struct srtp_stream_ctx_t_ {
   srtp_key_limit_ctx_t *limit;
   direction_t direction;
   int        allow_repeat_tx;
-  srtp_ekt_stream_t ekt; 
+  uint8_t master_key[SRTP_MAX_KEY_LEN];  /* Currently active master key required
+                                          * to send in ekt tag */
+  srtp_ekt_data_t ekt_data;              /* List of SPIs corresponding to this
+                                          * stream */
+  srtp_ekt_mode_t ektMode;               /* EKT, PRIME, HOP_BY_HOP */
+  struct srtp_stream_ctx_t_ *prime_end_to_end_stream_ctx;
+                                         /* stream ctx for end-to-end stream
+                                          * for PRIME */
   uint8_t    salt[SRTP_AEAD_SALT_LEN];   /* used with GCM mode for SRTP */
   uint8_t    c_salt[SRTP_AEAD_SALT_LEN]; /* used with GCM mode for SRTCP */
   struct srtp_stream_ctx_t_ *next;   /* linked list of streams */
 } strp_stream_ctx_t_;
 
+
+/*
+ * SPI info structure holds the information for list of security parameter
+ * index exchanged with far end.  Each node holds a ekt_key identified by a
+ * index.
+ */
+typedef struct srtp_ekt_spi_info_t {
+  srtp_ekt_spi_t spi;                   /* security parameter index */
+  srtp_ekt_cipher_t ekt_cipher;         /* The cipher used to generate EKT tag */
+  uint8_t ekt_key[SRTP_MAX_KEY_LEN];    /* The key assosciated with this SPI
+                                         * This key will be used to encrypt the
+                                         * actual key in the tag */
+  uint8_t ekt_salt[SRTP_MAX_KEY_LEN];   /* Salt used for any srtp master key
+                                         * sent/recvd using the ekt_key
+                                         * in this spi node */
+  unsigned ekt_salt_length;             /* Length of the EKT salt */
+  struct srtp_ekt_spi_info_t *next;
+} srtp_ekt_spi_info_t;
 
 /*
  * an srtp_ctx_t holds a stream list and a service description
@@ -128,6 +187,8 @@ typedef struct srtp_stream_ctx_t_ {
 typedef struct srtp_ctx_t_ {
   struct srtp_stream_ctx_t_ *stream_list;     /* linked list of streams            */
   struct srtp_stream_ctx_t_ *stream_template; /* act as template for other streams */
+  srtp_ekt_spi_info_t        *spi_info;       /* list of spi for the session */
+  srtp_ekt_spi_t spi;                         /* Current SPI                 */
   void *user_data;                    /* user custom data */
 } srtp_ctx_t_;
 

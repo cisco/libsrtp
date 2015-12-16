@@ -5,6 +5,12 @@
  * 
  * David McGrew
  * Cisco Systems, Inc.
+ *
+ * CHANGE LOG
+ * ----------
+ * 2015-12-11 - Nivedita Melinkeri
+ *     - Added functions to support current EKT and PRIME specs
+ *
  */
 /*
  *	
@@ -43,216 +49,352 @@
  */
 
 
+#include "srtp.h"
 #include "srtp_priv.h"
 #include "err.h"
 #include "ekt.h"
+#include "rdbx.h"
+#include "ekt_tag_utils.h"
 
 extern srtp_debug_module_t mod_srtp;
 
-/*
- *  The EKT Authentication Tag format.
- *
- *    0                   1                   2                   3
- *    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *   :                   Base Authentication Tag                     :
- *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *   :                     Encrypted Master Key                      :
- *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *   |                       Rollover Counter                        |
- *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *   |    Initial Sequence Number    |   Security Parameter Index    |
- *   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *
- */			 
+inline int
+srtp_get_ekt_cipher_key_length(srtp_ekt_cipher_t ekt_cipher)
+{
+    int key_len;
 
-#define EKT_OCTETS_AFTER_BASE_TAG 24
-#define EKT_OCTETS_AFTER_EMK       8
-#define EKT_OCTETS_AFTER_ROC       4
-#define EKT_SPI_LEN                2
+    /* The key length depends on the EKT cipher employed */
+    switch (ekt_cipher)
+    {
+    case EKT_CIPHER_AESKW_128:
+        key_len = 16;
+        break;
+    case EKT_CIPHER_AESKW_192:
+        key_len = 24;
+        break;
+    case EKT_CIPHER_AESKW_256:
+        key_len = 32;
+        break;
+    default:
+        key_len = 0;
+        break;
+    }
 
-unsigned srtp_ekt_octets_after_base_tag(srtp_ekt_stream_t ekt) {
-  /*
-   * if the pointer ekt is NULL, then EKT is not in effect, so we
-   * indicate this by returning zero
-   */
-  if (!ekt)
-    return 0;
-
-  switch(ekt->data->ekt_cipher_type) {
-  case SRTP_EKT_CIPHER_AES_128_ECB:
-    return 16 + EKT_OCTETS_AFTER_EMK;
-    break;
-  default:
-    break;
-  }
-  return 0;
+    return key_len;
 }
 
-static inline srtp_ekt_spi_t srtcp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
-  const uint8_t *spi_location;
-  
-  spi_location = packet_start + (pkt_octet_len - EKT_SPI_LEN);
-  
-  return *((const srtp_ekt_spi_t *)spi_location);
+srtp_err_status_t ekt_get_spi_info(srtp_ctx_t_ *ctx, srtp_ekt_spi_t spi, srtp_ekt_spi_info_t **spi_info)
+{
+    srtp_ekt_spi_info_t *pSpiInfo;
+
+    pSpiInfo = ctx->spi_info;
+
+    while (pSpiInfo != NULL)
+    {
+        if (pSpiInfo->spi == spi)
+        {
+            *spi_info = pSpiInfo;
+            return srtp_err_status_ok;
+
+        }
+        pSpiInfo = pSpiInfo->next;
+    }
+    spi_info = NULL;
+    return srtp_err_status_spi_not_found;
 }
 
-static inline uint32_t srtcp_packet_get_ekt_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
-  const uint8_t *roc_location;
-  
-  roc_location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_ROC);
-  
-  return *((const uint32_t *)roc_location);
+unsigned int ekt_get_tag_length(srtp_ekt_mode_t ektMode, srtp_ekt_spi_info_t *spi_info) {
+
+    unsigned int tag_len, padding_len;
+
+    /*
+     * if the pointer ekt is NULL, then EKT is not in effect, so we
+     * indicate this by returning zero
+     */
+    if (!spi_info)
+        return 0;
+
+    if (ektMode == EKT_MODE_PRIME_END_TO_END) {
+        tag_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher) + sizeof(srtp_ssrc_t);
+        padding_len = tag_len % 8;
+        tag_len += padding_len;
+        tag_len += 8;
+        tag_len = tag_len + sizeof(srtp_roc_t) + sizeof(srtp_ekt_spi_t);
+    }
+    else {
+        tag_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher) + sizeof(srtp_roc_t) + sizeof(srtp_ssrc_t);
+        padding_len = tag_len % 8;
+        tag_len += padding_len;
+        tag_len += 8;
+        tag_len = tag_len + sizeof(srtp_ekt_spi_t);
+    }
+
+    return tag_len;
 }
 
-static inline const uint8_t * srtcp_packet_get_emk_location(const uint8_t *packet_start, unsigned pkt_octet_len) {
-  const uint8_t *location;
-  
-  location = packet_start + (pkt_octet_len - EKT_OCTETS_AFTER_BASE_TAG);
+srtp_ekt_spi_t
+srtp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
+    const uint8_t *spi_location;
+    srtp_ekt_spi_t spi;
 
-  return location;
+    spi_location = packet_start + (pkt_octet_len - sizeof(srtp_ekt_spi_t));
+    spi = *((unsigned short *)(spi_location));
+    spi = ntohs(spi);
+    return spi;
 }
 
+srtp_roc_t
+srtp_packet_get_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
+    srtp_roc_t *roc_location;
 
-srtp_err_status_t srtp_ekt_alloc(srtp_ekt_stream_t *stream_data, srtp_ekt_policy_t policy) {
+    roc_location =
+        (srtp_roc_t *)(packet_start + (pkt_octet_len - sizeof(srtp_roc_t)));
 
-  /*
-   * if the policy pointer is NULL, then EKT is not in use
-   * so we just set the EKT stream data pointer to NULL
-   */
-  if (!policy) {
-    *stream_data = NULL;
+    return ntohl(*((srtp_roc_t *)(roc_location)));
+}
+
+srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
+                                srtp_ctx_t *ctx,
+                                const void  *srtp_hdr,
+                                uint8_t *master_key,
+                                int *pkt_octet_len,
+                                int *ektTagPresent)
+{
+    uint8_t *ektTag,
+            ektTag_plainText[SRTP_MAX_EKT_TAG_LEN],
+            ektTagLength;
+    unsigned int ektTag_plainTextLength,
+                 ektTag_plainTextExpectedLength,
+                 ektTag_offset;
+    int kek_len,
+        master_salt_len;
+    int master_key_len,
+        master_key_base_len;
+    srtp_err_status_t rc;
+    srtp_ekt_spi_info_t *spi_info = NULL;
+    srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
+    uint32_t ssrc;
+    srtp_roc_t roc;
+    srtp_ekt_spi_t spi;
+
+    /*
+     * Retrieve the SPI and then check if it is short EKT tag or full EKT tag.
+     * If short EKT tag then return else process the tag. SPI is sent in
+     * plaintext.
+     */
+    spi = srtp_packet_get_ekt_spi(srtp_hdr, *pkt_octet_len);
+    *pkt_octet_len -= sizeof(srtp_ekt_spi_t);
+
+    *ektTagPresent = spi & 0x0001;
+    if (!(*ektTagPresent))
+        return srtp_err_no_ekt;
+    spi = spi & 0xfffe;
+
+    /*
+     * Get SPI info for SPI received. SPI info will contain EKT key required
+     * to decrypt the EKT tag.
+     */
+    rc = ekt_get_spi_info(ctx, spi, &spi_info);
+    if (rc != srtp_err_status_ok || spi_info == NULL)
+        return rc;
+
+    /* Compute the key lengths */
+    kek_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher);
+    master_key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
+    master_key_base_len = base_key_length(stream->rtp_cipher->type, master_key_len);
+
+    /*
+     * For PRIME ROC is in plain text. Therefore retrieve ROC here.
+     * Also compute the expected plain encrypted EKT tag lengths.
+     */
+    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+        roc = srtp_packet_get_roc(srtp_hdr, *pkt_octet_len);
+        *pkt_octet_len -= sizeof(srtp_roc_t);
+
+        ektTag_plainTextExpectedLength = master_key_base_len + sizeof(uint32_t);
+        ektTagLength = ekt_get_tag_length(stream->ektMode, spi_info) - sizeof(srtp_ekt_spi_t) - sizeof(srtp_roc_t);
+    }
+    else {
+        ektTag_plainTextExpectedLength = master_key_base_len + sizeof(uint32_t) + sizeof (srtp_roc_t);
+        ektTagLength = ekt_get_tag_length(stream->ektMode, spi_info) - sizeof(srtp_ekt_spi_t);
+        /*
+         * Set ROC = 0 to ensure that srtp_ekt_ciphertext_decrypt does
+         * not change the default IV used in AES Key Wrap
+         */
+        roc = 0;
+    }
+
+    /* Check to ensure that the EKT tag is properly bounded */
+    if ((ektTagLength > SRTP_MAX_EKT_TAG_LEN) || (ektTagLength == 0)) {
+        return srtp_err_status_parse_err;
+    }
+
+    /* Retrieve the EKT cipher text and decrypt to obtain the plain text. */
+    ektTag = (uint8_t *)((uint8_t *)srtp_hdr + *pkt_octet_len - ektTagLength);
+
+    /* Decrypt the EKT cipher text */
+    rc = srtp_ekt_ciphertext_decrypt((void*)spi_info->ekt_key, (kek_len << 3), ektTag, ektTagLength, roc, ektTag_plainText, &ektTag_plainTextLength);
+    if (rc != srtp_err_status_ok)
+        return rc;
+
+    /* Check if the EKT tag length is valid */
+    if (ektTag_plainTextExpectedLength != ektTag_plainTextLength)
+        return srtp_err_status_bad_param;
+
+    /* Retrieve the the master key */
+    master_salt_len = master_key_len - master_key_base_len;
+    memcpy(master_key, ektTag_plainText, master_key_base_len);
+    ektTag_offset = master_key_base_len;
+
+    /*
+     * Copy the salt in the key. All EKT keys use the salt from assosciated
+     * SPI info and the computed length should match the value in spi_info.
+     */
+    if (master_salt_len != spi_info->ekt_salt_length)
+        return srtp_err_status_bad_param;
+    memcpy((void *)(master_key + master_key_base_len), (const void *)(spi_info->ekt_key + master_key_base_len), master_salt_len);
+
+    /* Retrieve the SSRC */
+    memcpy((void *)&ssrc, (void *)(ektTag_plainText + ektTag_offset), sizeof(uint32_t));
+    ektTag_offset += sizeof(uint32_t);
+    ssrc = ntohl(ssrc);
+    if (ssrc != hdr->ssrc)
+        return srtp_err_status_ekt_tag_ssrc_mismatch;
+
+    /* For non-PRIME ROC is in the decrypted text */
+    if (stream->ektMode == EKT_MODE_REGULAR) {
+        memcpy((void *)&roc, (void *)(ektTag_plainText + ektTag_offset), sizeof(srtp_roc_t));
+        ektTag_offset += sizeof(srtp_roc_t);
+        roc = ntohl(roc);
+    }
+
+    *pkt_octet_len -= ektTagLength;
+
     return srtp_err_status_ok;
-  }
-
-  /* TODO */
-  *stream_data = NULL;
-
-  return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_ekt_stream_init_from_policy(srtp_ekt_stream_t stream_data, srtp_ekt_policy_t policy) {
-  if (!stream_data)
+srtp_err_status_t
+ekt_generate_tag(srtp_stream_ctx_t *stream,
+                 srtp_ctx_t   *ctx,
+                 void         *srtp_hdr,
+                 uint8_t      *ekt_cipherText,
+                 unsigned int *ekt_cipherTextLength,
+                 srtp_service_flags_t flags)
+{
+    srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
+    srtp_roc_t roc;
+    srtp_ekt_spi_info_t *spi_info = NULL;
+    uint8_t ektTag[SRTP_MAX_EKT_TAG_LEN],
+            ektTagLen,
+            *ektTagPtr;
+    int kek_len,
+        key_len,
+        base_key_len;
+    srtp_err_status_t rc;
+    uint32_t ssrc;
+    srtp_ekt_spi_t spi;
+
+    *ekt_cipherTextLength = 0;
+
+    /*
+     * For EKT, the application will configure the stream to generate EKT tag
+     * for n packets after every ROC change. Therefore check if ROC has just
+     * changed and set tag generation.
+     */
+    if (ntohs(hdr->seq) == 0 && (stream->ekt_data.total_ekt_tags_to_generate_after_rollover > 0))
+        stream->ekt_data.auto_ekt_pkts_left = stream->ekt_data.total_ekt_tags_to_generate_after_rollover;
+
+    /*
+     * Full EKT tag is generated if:
+     *  - Application has requested to generate EKT tag.
+     *  - auto_ekt_pkts_left is greater than 0. (auto_ekt_pkts_left is set to
+     *    n every time the ROC changes.)
+     *  - packets_left_to_generate_auto_ekt is equal to 0. (An EKT tag is
+     *    generated every packets_left_to_generate_auto_ekt packets.)
+     *  - If full EKT tag is not to be generated then add short EKT tag.
+     */
+    if (!(flags & SRTP_SERVICE_EKT_TAG) && stream->ekt_data.auto_ekt_pkts_left == 0 && stream->ekt_data.packets_left_to_generate_auto_ekt > 0)
+    {
+        stream->ekt_data.packets_left_to_generate_auto_ekt--;
+        /* Set SPI value to 0 in the packet */
+        *((srtp_ekt_spi_t *)ekt_cipherText) = 0;
+        *ekt_cipherTextLength += sizeof(stream->ekt_data.spi);
+        return srtp_err_status_ok;
+    }
+
+    /*
+     * Get SPI info for SPI received. SPI info will contain KEK required to
+     * decrypt the EKT tag. Get the kek length
+     */
+    rc = ekt_get_spi_info(ctx, stream->ekt_data.spi, &spi_info);
+    if (rc != srtp_err_status_ok)
+        return rc;
+
+    /* Determine the EKT Key length */
+    kek_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher);
+
+    /* Copy master key into ekt tag */
+    key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
+    base_key_len = base_key_length(stream->rtp_cipher->type, key_len);
+
+    memcpy((void *)ektTag, stream->master_key, base_key_len);
+    debug_print(mod_srtp, "writing EKT EMK: %s,",
+                srtp_octet_string_hex_string(ektTag, base_key_len));
+    ektTagLen = base_key_len;
+
+    /* copy SSRC into packet */
+    ssrc = htonl(stream->ssrc);
+    memcpy((void *)(ektTag + ektTagLen), &ssrc, sizeof(ssrc));
+    debug_print(mod_srtp, "writing EKT SSRC: %s,",
+                srtp_octet_string_hex_string(ektTag + ektTagLen, sizeof(stream->ssrc)));
+    ektTagLen += sizeof(stream->ssrc);
+
+    roc = htonl(srtp_rdbx_get_roc(&stream->rtp_rdbx));
+
+    /*
+     * For non-PRIME ROC is in the ciphertext. Therefore insert ROC here.
+     */
+    if (stream->ektMode == EKT_MODE_REGULAR) {
+        /* copy ROC into packet */
+        memcpy((void *)(ektTag + ektTagLen), (void *)&roc, sizeof(roc));
+        debug_print(mod_srtp, "writing EKT ROC: %s,",
+            srtp_octet_string_hex_string(&roc, sizeof(roc)));
+        ektTagLen += sizeof(roc);
+    }
+
+    /* Encrypt the EKT tag */
+    srtp_ekt_plaintext_encrypt((void*)(spi_info->ekt_key), (kek_len << 3), ektTag, ektTagLen, roc, ekt_cipherText, ekt_cipherTextLength);
+    ektTagPtr = ekt_cipherText + *ekt_cipherTextLength;
+
+    /*
+     * For PRIME ROC is in plain text. Therefore insert ROC here.
+     * Also compute the expected plain encrypted EKT tag lengths.
+     */
+    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+        /* copy ROC into packet */
+        memcpy(ektTagPtr, (void *)&roc, sizeof(roc));
+        *((srtp_roc_t *)ektTagPtr) = htonl(roc); // >> 1;
+        roc = *((srtp_roc_t *)(ektTagPtr));
+        roc = ntohl(roc);
+        debug_print(mod_srtp, "writing EKT ROC: %s,",
+            srtp_octet_string_hex_string(&roc, sizeof(roc)));
+        ektTagPtr += sizeof(roc);
+        *ekt_cipherTextLength += sizeof(roc);
+    }
+
+    /* copy SPI into packet */
+    spi = (stream->ekt_data.spi) | 0x0001;
+    *((srtp_ekt_spi_t *)ektTagPtr) = htons(spi);
+    debug_print(mod_srtp, "writing EKT SPI: %s,",
+                srtp_octet_string_hex_string(   ektTagPtr,
+                                                sizeof(stream->ekt_data.spi)));
+    *ekt_cipherTextLength += sizeof(stream->ekt_data.spi);
+
+    if (stream->ekt_data.auto_ekt_pkts_left > 0)
+        stream->ekt_data.auto_ekt_pkts_left--;
+
+    stream->ekt_data.packets_left_to_generate_auto_ekt =
+                        stream->ekt_data.auto_ekt_packet_interval;
+
     return srtp_err_status_ok;
-
-  return srtp_err_status_ok;
 }
-
-
-void aes_decrypt_with_raw_key(void *ciphertext, const void *key, int key_len) {
-#ifndef OPENSSL
-//FIXME: need to get this working through the crypto module interface
-  srtp_aes_expanded_key_t expanded_key;
-
-  srtp_aes_expand_decryption_key(key, key_len, &expanded_key);
-  srtp_aes_decrypt(ciphertext, &expanded_key);
-#endif
-}
-
-/*
- * The function srtp_stream_init_from_ekt() initializes a stream using
- * the EKT data from an SRTCP trailer.  
- */
-
-srtp_err_status_t srtp_stream_init_from_ekt(srtp_stream_t stream, const void *srtcp_hdr, unsigned pkt_octet_len) {
-  srtp_err_status_t err;
-  const uint8_t *master_key;
-  srtp_policy_t srtp_policy;
-  uint32_t roc;
-
-  /*
-   * NOTE: at present, we only support a single ekt_policy at a time.  
-   */
-  if (stream->ekt->data->spi != 
-      srtcp_packet_get_ekt_spi(srtcp_hdr, pkt_octet_len))
-    return srtp_err_status_no_ctx;
-
-  if (stream->ekt->data->ekt_cipher_type != SRTP_EKT_CIPHER_AES_128_ECB)
-    return srtp_err_status_bad_param;
-
-  /* decrypt the Encrypted Master Key field */
-  master_key = srtcp_packet_get_emk_location(srtcp_hdr, pkt_octet_len);
-  /* FIX!? This decrypts the master key in-place, and never uses it */
-  /* FIX!? It's also passing to ekt_dec_key (which is an aes_expanded_key_t)
-   * to a function which expects a raw (unexpanded) key */
-  aes_decrypt_with_raw_key((void*)master_key, &stream->ekt->data->ekt_dec_key, 16);
-
-  /* set the SRTP ROC */
-  roc = srtcp_packet_get_ekt_roc(srtcp_hdr, pkt_octet_len);
-  err = srtp_rdbx_set_roc(&stream->rtp_rdbx, roc);
-  if (err) return err;
-
-  err = srtp_stream_init(stream, &srtp_policy);
-  if (err) return err;
-
-  return srtp_err_status_ok;
-}
-
-void srtp_ekt_write_data(srtp_ekt_stream_t ekt, uint8_t *base_tag, unsigned base_tag_len, int *packet_len, srtp_xtd_seq_num_t pkt_index) {
-  uint32_t roc;
-  uint16_t isn;
-  unsigned emk_len;
-  uint8_t *packet;
-
-  /* if the pointer ekt is NULL, then EKT is not in effect */
-  if (!ekt) {
-    debug_print(mod_srtp, "EKT not in use", NULL);
-    return;
-  }
-
-  /* write zeros into the location of the base tag */
-  octet_string_set_to_zero(base_tag, base_tag_len);
-  packet = base_tag + base_tag_len;
-
-  /* copy encrypted master key into packet */
-  emk_len = srtp_ekt_octets_after_base_tag(ekt);
-  memcpy(packet, ekt->encrypted_master_key, emk_len);
-  debug_print(mod_srtp, "writing EKT EMK: %s,", 
-	      srtp_octet_string_hex_string(packet, emk_len));
-  packet += emk_len;
-
-  /* copy ROC into packet */
-  roc = (uint32_t)(pkt_index >> 16);
-  *((uint32_t *)packet) = be32_to_cpu(roc);
-  debug_print(mod_srtp, "writing EKT ROC: %s,", 
-	      srtp_octet_string_hex_string(packet, sizeof(roc)));
-  packet += sizeof(roc);
-
-  /* copy ISN into packet */
-  isn = (uint16_t)pkt_index;
-  *((uint16_t *)packet) = htons(isn);
-  debug_print(mod_srtp, "writing EKT ISN: %s,", 
-	      srtp_octet_string_hex_string(packet, sizeof(isn)));
-  packet += sizeof(isn);
-
-  /* copy SPI into packet */
-  *((uint16_t *)packet) = htons(ekt->data->spi);
-  debug_print(mod_srtp, "writing EKT SPI: %s,", 
-	      srtp_octet_string_hex_string(packet, sizeof(ekt->data->spi)));
-
-  /* increase packet length appropriately */
-  *packet_len += EKT_OCTETS_AFTER_EMK + emk_len;
-}
-
-
-/*
- * The function call srtcp_ekt_trailer(ekt, auth_len, auth_tag   )
- * 
- * If the pointer ekt is NULL, then the other inputs are unaffected.
- *
- * auth_tag is a pointer to the pointer to the location of the
- * authentication tag in the packet.  If EKT is in effect, then the
- * auth_tag pointer is set to the location 
- */
-
-void srtcp_ekt_trailer(srtp_ekt_stream_t ekt, unsigned *auth_len, void **auth_tag, void *tag_copy) { 
-  /* 
-   * if there is no EKT policy, then the other inputs are unaffected
-   */
-  if (!ekt) 
-    return;
-      
-  /* copy auth_tag into temporary location */
-  
-}
-

@@ -438,7 +438,7 @@ main (int argc, char *argv[]) {
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = ssrc;
     policy.key  = (uint8_t *) key;
-    policy.ekt  = NULL;
+    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
     policy.next = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
@@ -496,11 +496,11 @@ main (int argc, char *argv[]) {
     srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtp);
     srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtcp);
     policy.key                 = (uint8_t *)key;
+    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
     policy.ssrc.type           = ssrc_specific;
     policy.ssrc.value          = ssrc;
     policy.window_size         = 0;
     policy.allow_repeat_tx     = 0;
-    policy.ekt                 = NULL;
     policy.next                = NULL;
   }
 

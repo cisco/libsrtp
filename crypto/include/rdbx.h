@@ -94,6 +94,15 @@ srtp_err_status_t srtp_rdbx_init(srtp_rdbx_t *rdbx, unsigned long ws);
 
 
 /*
+ * srtp_rdbx_get_roc(rdbx)
+ *
+ * Returns the current rollover counter
+ *
+ */
+uint32_t srtp_rdbx_get_roc(srtp_rdbx_t *rdbx);
+
+
+/*
  * srtp_rdbx_dealloc(rdbx_ptr)
  *
  * frees memory associated with the rdbx

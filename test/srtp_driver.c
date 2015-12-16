@@ -353,7 +353,7 @@ main (int argc, char *argv[])
         policy.ssrc.type  = ssrc_specific;
         policy.ssrc.value = 0xdecafbad;
         policy.key  = test_key;
-        policy.ekt = NULL;
+        policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
         policy.next = NULL;
@@ -1279,7 +1279,7 @@ srtp_validate ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key;
-    policy.ekt = NULL;
+    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -1396,7 +1396,7 @@ srtp_validate_aes_256 ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = aes_256_test_key;
-    policy.ekt = NULL;
+    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -1577,7 +1577,7 @@ srtp_test_remove_stream ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key;
-    policy.ekt = NULL;
+    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -1638,9 +1638,18 @@ const srtp_policy_t default_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     test_key,
-    NULL,      /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
+    0,         /* Active SPI value */
     NULL
 };
 
@@ -1663,9 +1672,18 @@ const srtp_policy_t aes_only_policy = {
         sec_serv_conf       /* security services flag      */
     },
     test_key,
-    NULL,      /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
+    0,         /* Active SPI value */
     NULL
 };
 
@@ -1688,9 +1706,18 @@ const srtp_policy_t hmac_only_policy = {
         sec_serv_auth       /* security services flag      */
     },
     test_key,
-    NULL,      /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
+    0,         /* Active SPI value */
     NULL
 };
 
@@ -1714,9 +1741,18 @@ const srtp_policy_t aes128_gcm_8_policy = {
         sec_serv_conf_and_auth          /* security services flag      */
     },
     test_key,
-    NULL,        /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
+    0,           /* Active SPI value */
     NULL
 };
 
@@ -1739,9 +1775,18 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
         sec_serv_auth                   /* security services flag      */
     },
     test_key,
-    NULL,        /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
+    0,           /* Active SPI value */
     NULL
 };
 
@@ -1764,9 +1809,18 @@ const srtp_policy_t aes256_gcm_8_policy = {
         sec_serv_conf_and_auth          /* security services flag      */
     },
     test_key,
-    NULL,        /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
+    0,           /* Active SPI value */
     NULL
 };
 
@@ -1789,9 +1843,18 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
         sec_serv_auth                   /* security services flag      */
     },
     test_key,
-    NULL,        /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
+    0,           /* Active SPI value */
     NULL
 };
 #endif
@@ -1815,9 +1878,18 @@ const srtp_policy_t null_policy = {
         sec_serv_none       /* security services flag      */
     },
     test_key,
-    NULL,      /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
+    0,         /* Active SPI value */
     NULL
 };
 
@@ -1850,9 +1922,18 @@ const srtp_policy_t aes_256_hmac_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     test_256_key,
-    NULL,      /* indicates that EKT is not in use */
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
+    0,         /* Active SPI value */
     NULL
 };
 
@@ -1860,41 +1941,6 @@ uint8_t ekt_test_key[16] = {
     0x77, 0x26, 0x9d, 0xac, 0x16, 0xa3, 0x28, 0xca,
     0x8e, 0xc9, 0x68, 0x4b, 0xcc, 0xc4, 0xd2, 0x1b
 };
-
-#include "ekt.h"
-
-srtp_ekt_policy_ctx_t ekt_test_policy = {
-    0xa5a5,                     /* SPI */
-    SRTP_EKT_CIPHER_AES_128_ECB,
-    ekt_test_key,
-    NULL
-};
-
-const srtp_policy_t hmac_only_with_ekt_policy = {
-    { ssrc_any_outbound, 0 }, /* SSRC                        */
-    {
-        SRTP_NULL_CIPHER,          /* cipher type                 */
-        0,                    /* cipher key length in octets */
-        SRTP_HMAC_SHA1,            /* authentication func type    */
-        20,                   /* auth key length in octets   */
-        4,                    /* auth tag length in octets   */
-        sec_serv_auth         /* security services flag      */
-    },
-    {
-        SRTP_NULL_CIPHER,        /* cipher type                 */
-        0,                  /* cipher key length in octets */
-        SRTP_HMAC_SHA1,          /* authentication func type    */
-        20,                 /* auth key length in octets   */
-        4,                  /* auth tag length in octets   */
-        sec_serv_auth       /* security services flag      */
-    },
-    test_key,
-    &ekt_test_policy,      /* indicates that EKT is not in use */
-    128,                   /* replay window size */
-    0,                     /* retransmission not allowed */
-    NULL
-};
-
 
 /*
  * an array of pointers to the policies listed above
@@ -1919,7 +1965,6 @@ policy_array[] = {
 #endif
     &null_policy,
     &aes_256_hmac_policy,
-    &hmac_only_with_ekt_policy,
     NULL
 };
 
@@ -1942,8 +1987,17 @@ const srtp_policy_t wildcard_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     test_key,
-    NULL,
+    {                          /* EKT policy                     */
+        0,                     /* SPI value                   */
+        NULL,                  /* Key sent in EKT tags        */
+        {},                    /* Empty PRIME RTP policy      */
+        {},                    /* Empty PRIME RTCP policy     */
+        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        0,                     /* EKT tags sent at ROC change */
+        0                      /* EKT Tag interval            */
+    },
     128,                 /* replay window size */
     0,                   /* retransmission not allowed */
+    0,                   /* Active SPI value */
     NULL
 };
