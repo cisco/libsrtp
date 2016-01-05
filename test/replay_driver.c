@@ -233,7 +233,7 @@ rdb_check_adds_per_second(void) {
   uint32_t i;
   srtp_rdb_t rdb;
   clock_t timer;
-  int failures;                    /* count number of failures        */
+  int failures = 0;                    /* count number of failures        */
   
   if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
     printf("rdb_init failed\n");
