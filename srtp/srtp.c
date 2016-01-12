@@ -2379,9 +2379,9 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	}
     }
     /* 
-     * put the idx# into network byte order and process it as AAD
+     * Process the sequence# as AAD
      */
-    tseq = htonl(*trailer);
+    tseq = *trailer;
     status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)&tseq, 
                             sizeof(srtcp_trailer_t));
     if (status) {
@@ -2530,9 +2530,9 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     }
 
     /* 
-     * put the idx# into network byte order, and process it as AAD 
+     * Process the sequence# as AAD 
      */
-    tseq = htonl(*trailer);
+    tseq = *trailer;
     status = cipher_set_aad(stream->rtcp_cipher, (uint8_t*)&tseq, 
                             sizeof(srtcp_trailer_t));
     if (status) {
