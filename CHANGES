@@ -1,5 +1,11 @@
 Changelog
 
+1.5.4
+
+  Use BE byte ordering of RTCP trailer.
+
+  Allow zero length payload on unprotect.
+
 1.5.3
 
   Fix for CVE-2015-6360.
