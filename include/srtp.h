@@ -559,9 +559,8 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
 
- * The function call srtp_create(session, policy, key) allocates and
- * initializes an SRTP session context, applying the given policy and
- * key.
+ * The function call srtp_create(session, policy) allocates and
+ * initializes an SRTP session context, applying the given policy. 
  *
  * @param session is a pointer to the SRTP session to which the policy is
  * to be added.
@@ -1392,7 +1391,7 @@ srtp_get_user_data(srtp_t ctx);
  * reached, an SRTP stream will enter an `expired' state in which no
  * more packets can be protected or unprotected.  When this happens,
  * it is likely that you will want to either deallocate the stream
- * (using srtp_stream_dealloc()), and possibly allocate a new one.
+ * (using srtp_remove_stream()), and possibly allocate a new one.
  *
  * When an SRTP stream expires, the other streams in the same session
  * are unaffected, unless key sharing is used by that stream.  In the
