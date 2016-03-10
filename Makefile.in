@@ -250,7 +250,9 @@ install:
 		$(INSTALL) -d $(DESTDIR)$(SHAREDLIB_DIR); \
 		cp libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
 		cp libsrtp2.$(SHAREDLIBSUFFIXNOVER) $(DESTDIR)$(SHAREDLIB_DIR)/; \
-		ln -sfn libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
+		if [ -n "$(SHAREDLIBVERSION)" ]; then \
+			ln -sfn libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
+		fi; \
 	fi
 	if [ "$(pkgconfig_DATA)" != "" ]; then \
 		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
