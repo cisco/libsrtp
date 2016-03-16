@@ -93,7 +93,7 @@ srtp_err_status_t srtp_stream_init(srtp_stream_t srtp, const srtp_policy_t *p);
 /*
  * base_key_length returns the length of the key for the given cipher
  */
-inline int base_key_length(const srtp_cipher_type_t *cipher, int key_length);
+int base_key_length(const srtp_cipher_type_t *cipher, int key_length);
 
 /*
  * libsrtp internal datatypes 
@@ -138,6 +138,7 @@ typedef struct srtp_ekt_data_t {
 typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
   srtp_cipher_t  *rtp_cipher;
+  srtp_cipher_t  *rtp_xtn_hdr_cipher;
   srtp_auth_t    *rtp_auth;
   srtp_rdbx_t     rtp_rdbx;
   srtp_sec_serv_t rtp_services;
@@ -158,6 +159,8 @@ typedef struct srtp_stream_ctx_t_ {
                                           * for PRIME */
   uint8_t    salt[SRTP_AEAD_SALT_LEN];   /* used with GCM mode for SRTP */
   uint8_t    c_salt[SRTP_AEAD_SALT_LEN]; /* used with GCM mode for SRTCP */
+  int       *enc_xtn_hdr;
+  int        enc_xtn_hdr_count;
   struct srtp_stream_ctx_t_ *next;   /* linked list of streams */
 } strp_stream_ctx_t_;
 

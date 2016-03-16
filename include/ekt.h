@@ -65,7 +65,7 @@ extern "C" {
 
 typedef uint32_t srtp_roc_t;
 
-inline int srtp_get_ekt_cipher_key_length(srtp_ekt_cipher_t ekt_cipher);
+int srtp_get_ekt_cipher_key_length(srtp_ekt_cipher_t ekt_cipher);
 
 srtp_ekt_spi_t srtp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len);
 

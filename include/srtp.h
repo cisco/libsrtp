@@ -76,8 +76,11 @@ extern "C" {
 
 /*
  * SRTP_MAX_KEY_LEN is the maximum key length supported by libSRTP
+ * This master key field sometimes also stores a key + salt value, so
+ * the the value is defined to be large enough to hold a 256-bit key
+ * and 128-bit salt.
  */
-#define SRTP_MAX_KEY_LEN      64
+#define SRTP_MAX_KEY_LEN      64+16
 
 /*
  * SRTP_MAX_TAG_LEN is the maximum tag length supported by libSRTP
@@ -492,6 +495,8 @@ typedef struct srtp_policy_t {
 				*   payload, or a severe security weakness
 				*   is introduced!)                      */
   srtp_ekt_spi_t spi;          /**< Active SPI value                     */
+  int *enc_xtn_hdr;            /**< List of header ids to encrypt.       */
+  int enc_xtn_hdr_count;       /**< Number of entries in list of header ids. */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */
 } srtp_policy_t;
 
@@ -715,9 +720,8 @@ srtp_err_status_t srtp_unprotect_with_flags(srtp_t ctx, void *srtp_hdr, int *len
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
 
- * The function call srtp_create(session, policy, key) allocates and
- * initializes an SRTP session context, applying the given policy and
- * key.
+ * The function call srtp_create(session, policy) allocates and
+ * initializes an SRTP session context, applying the given policy.
  *
  * @param session is a pointer to the SRTP session to which the policy is
  * to be added.
@@ -784,7 +788,8 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
  * @param session is the SRTP session from which the stream
  *        will be removed.
  *
- * @param ssrc is the SSRC value of the stream to be removed.
+ * @param ssrc is the SSRC value of the stream to be removed
+ *             in network byte order.
  *
  * @warning Wildcard SSRC values cannot be removed from a
  *          session.
@@ -796,6 +801,65 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
  */
 
 srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
+
+/**
+ * @brief srtp_update() udpates all streams in the session.
+ *
+ * The function call srtp_update(session, policy, ekt_mode)
+ * updates all the streams in the session applying the given policy
+ * and key. The exsisting ROC value of all streams will be
+ * preserved.
+ *
+ * @param session is the SRTP session that contains the streams
+ *        to be updated.
+ *
+ * @param policy is the srtp_policy_t struct that describes the policy
+ * for the session.  The struct may be a single element, or it may be
+ * the head of a list, in which case each element of the list is
+ * processed. The final element of the list @b must
+ * have its `next' field set to NULL.
+ *
+ * @param ekt_mode is the EKT mode to apply to the stream
+ *
+ * @return
+ *    - srtp_err_status_ok           if stream creation succeded.
+ *    - srtp_err_status_alloc_fail   if stream allocation failed
+ *    - srtp_err_status_init_fail    if stream initialization failed.
+ *    - [other]                 otherwise.
+ *
+ */
+
+srtp_err_status_t srtp_update(srtp_t session,
+                              const srtp_policy_t *policy,
+                              const srtp_ekt_mode_t ekt_mode);
+
+/**
+ * @brief srtp_update_stream() udpates a SRTP stream.
+ *
+ * The function call srtp_update_stream(session, policy, ekt_mode)
+ * updates the stream(s) in the session that match applying the given
+ * policy and key. The exsisting ROC value of all stream(s) will
+ * be preserved.
+ *
+ * @param session is the SRTP session that contains the streams
+ *        to be updated.
+ *
+ * @param policy is the srtp_policy_t struct that describes the policy
+ * for the session.
+ *
+ * @param ekt_mode is the EKT mode to apply to the stream
+ *
+ * @return
+ *    - srtp_err_status_ok           if stream creation succeded.
+ *    - srtp_err_status_alloc_fail   if stream allocation failed
+ *    - srtp_err_status_init_fail    if stream initialization failed.
+ *    - [other]                      otherwise.
+ *
+ */
+
+srtp_err_status_t srtp_update_stream(srtp_t session,
+                                     const srtp_policy_t *policy,
+                                     const srtp_ekt_mode_t ekt_mode);
 
 /**
  * @brief srtp_crypto_policy_set_rtp_default() sets a crypto policy
@@ -1515,7 +1579,7 @@ srtp_get_user_data(srtp_t ctx);
  * reached, an SRTP stream will enter an `expired' state in which no
  * more packets can be protected or unprotected.  When this happens,
  * it is likely that you will want to either deallocate the stream
- * (using srtp_stream_dealloc()), and possibly allocate a new one.
+ * (using srtp_remove_stream()), and possibly allocate a new one.
  *
  * When an SRTP stream expires, the other streams in the same session
  * are unaffected, unless key sharing is used by that stream.  In the

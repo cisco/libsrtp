@@ -9,9 +9,6 @@
 /* Define if building for a RISC machine (assume slow byte access). */
 #undef CPU_RISC
 
-/* Path to random device */
-#undef DEV_URANDOM
-
 /* Define to compile in dynamic debugging system. */
 #undef ENABLE_DEBUGGING
 

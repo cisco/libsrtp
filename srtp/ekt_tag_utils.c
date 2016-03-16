@@ -145,7 +145,7 @@ int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
     /*
      * Set the IV 
      */
-    stat = srtp_cipher_set_iv(kw, (const uint8_t*)alternative_iv, direction_encrypt);
+    stat = srtp_cipher_set_iv(kw, (uint8_t*)alternative_iv, direction_encrypt);
     if (stat) {
         debug_print(mod_srtp, "Failed to set key wrap IV", NULL);
         return stat;
@@ -272,7 +272,7 @@ int srtp_ekt_ciphertext_decrypt(const unsigned char *ekt_key,
     /*
      * Set the IV 
      */
-    stat = srtp_cipher_set_iv(kw, (const uint8_t*)alternative_iv, direction_decrypt);
+    stat = srtp_cipher_set_iv(kw, (uint8_t*)alternative_iv, direction_decrypt);
     if (stat) {
         debug_print(mod_srtp, "Failed to set key wrap IV", NULL);
         return stat;

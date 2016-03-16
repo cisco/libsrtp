@@ -82,8 +82,8 @@ endif
 %.o: %.c
 	$(COMPILE) -c $< -o $@
 
-%$(EXE): %.c ../test/getopt_s.c
-	$(COMPILE) $(LDFLAGS) $< ../test/getopt_s.c -o $@ $(CRYPTOLIB) $(LIBS)
+%$(EXE): %.c $(srcdir)/../test/getopt_s.c
+	$(COMPILE) $(LDFLAGS) $< $(srcdir)/../test/getopt_s.c -o $@ $(CRYPTOLIB) $(LIBS)
 
 all: $(testapp)
 

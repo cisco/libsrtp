@@ -51,7 +51,7 @@
 #include "err.h"                /* error codes    */
 #include "crypto_types.h"       /* for values of auth_type_id_t */
 
-typedef struct srtp_auth_type_t *auth_type_pointer;
+typedef const struct srtp_auth_type_t *auth_type_pointer;
 typedef struct srtp_auth_t      *auth_pointer_t;
 
 typedef srtp_err_status_t (*auth_alloc_func)
@@ -63,11 +63,11 @@ typedef srtp_err_status_t (*auth_init_func)
 typedef srtp_err_status_t (*auth_dealloc_func)(auth_pointer_t ap);
 
 typedef srtp_err_status_t (*auth_compute_func)
-    (void *state, uint8_t *buffer, int octets_to_auth,
+    (void *state, const uint8_t *buffer, int octets_to_auth,
     int tag_len, uint8_t *tag);
 
 typedef srtp_err_status_t (*auth_update_func)
-    (void *state, uint8_t *buffer, int octets_to_auth);
+    (void *state, const uint8_t *buffer, int octets_to_auth);
 
 typedef srtp_err_status_t (*auth_start_func)(void *state);
 
@@ -104,12 +104,12 @@ int srtp_auth_get_prefix_length(const struct srtp_auth_t *a);
  */
 typedef struct srtp_auth_test_case_t {
     int key_length_octets;                        /* octets in key            */
-    uint8_t *key;                                 /* key                      */
+    const uint8_t *key;                                 /* key                      */
     int data_length_octets;                       /* octets in data           */
-    uint8_t *data;                                /* data                     */
+    const uint8_t *data;                                /* data                     */
     int tag_length_octets;                        /* octets in tag            */
-    uint8_t *tag;                                 /* tag                      */
-    struct srtp_auth_test_case_t *next_test_case; /* pointer to next testcase */
+    const uint8_t *tag;                                 /* tag                      */
+    const struct srtp_auth_test_case_t *next_test_case; /* pointer to next testcase */
 } srtp_auth_test_case_t;
 
 /* srtp_auth_type_t */
@@ -120,14 +120,14 @@ typedef struct srtp_auth_type_t {
     auth_compute_func compute;
     auth_update_func update;
     auth_start_func start;
-    char                *description;
-    srtp_auth_test_case_t    *test_data;
+    const char                *description;
+    const srtp_auth_test_case_t    *test_data;
     srtp_debug_module_t      *debug;
     srtp_auth_type_id_t id;
 } srtp_auth_type_t;
 
 typedef struct srtp_auth_t {
-    srtp_auth_type_t *type;
+    const srtp_auth_type_t *type;
     void        *state;
     int out_len;                  /* length of output tag in octets */
     int key_len;                  /* length of key in octets        */
