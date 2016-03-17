@@ -183,105 +183,6 @@ srtp_stream_free(srtp_stream_ctx_t *str) {
 }
 
 srtp_err_status_t
-srtp_stream_clone_cipher(srtp_stream_ctx_t *str,
-                         const srtp_stream_ctx_t *stream_template)
-{
-    int rtp_cipher_key_len,
-        rtp_auth_key_len,
-        rtp_tag_len;
-    int rtp_xtn_cipher_key_len;
-    int rtcp_cipher_key_len,
-        rtcp_auth_key_len,
-        rtcp_tag_len;
-    srtp_err_status_t stat;
-
-    /* allocate cipher */
-    rtp_cipher_key_len =
-        srtp_cipher_get_key_length(stream_template->rtp_cipher);
-    rtp_tag_len = srtp_auth_get_tag_length(stream_template->rtp_auth);
-    stat =
-        srtp_crypto_kernel_alloc_cipher(stream_template->rtp_cipher->type->id,
-                                        &(str->rtp_cipher),
-                                        rtp_cipher_key_len,
-                                        rtp_tag_len);
-    if (stat) {
-        srtp_stream_free(str);
-        return stat;
-    }
-
-    /* allocate cipher */
-    if (stream_template->rtp_xtn_hdr_cipher)
-    {
-        rtp_xtn_cipher_key_len =
-            srtp_cipher_get_key_length(stream_template->rtp_xtn_hdr_cipher);
-        stat = srtp_crypto_kernel_alloc_cipher(
-                                stream_template->rtp_xtn_hdr_cipher->type->id,
-                                &(str->rtp_xtn_hdr_cipher),
-                                rtp_xtn_cipher_key_len,
-                                0);
-        if (stat) {
-            srtp_stream_free(str);
-            return stat;
-        }
-    }
-    else
-    {
-        str->rtp_xtn_hdr_cipher = NULL;
-    }
-
-    /* allocate auth function */
-    rtp_auth_key_len = srtp_auth_get_key_length(stream_template->rtp_auth);
-    stat = srtp_crypto_kernel_alloc_auth(stream_template->rtp_auth->type->id,
-                                         &str->rtp_auth,
-                                         rtp_auth_key_len,
-                                         rtp_tag_len);
-
-    if (stat) {
-        srtp_stream_free(str);
-        return stat;
-    }
-
-    /* allocate key limit structure */
-    str->limit =
-        (srtp_key_limit_ctx_t*)srtp_crypto_alloc(sizeof(srtp_key_limit_ctx_t));
-    if (str->limit == NULL) {
-        srtp_stream_free(str);
-        return srtp_err_status_alloc_fail;
-    }
-
-    /*
-     * ...and now the RTCP-specific initialization - first, allocate the cipher
-     */
-    rtcp_cipher_key_len =
-        srtp_cipher_get_key_length(stream_template->rtcp_cipher);
-    rtcp_tag_len = srtp_auth_get_tag_length(stream_template->rtcp_auth);
-    stat =
-        srtp_crypto_kernel_alloc_cipher(stream_template->rtcp_cipher->type->id,
-                                        &str->rtcp_cipher,
-                                        rtcp_cipher_key_len,
-                                        rtcp_tag_len);
-
-    if (stat) {
-        srtp_stream_free(str);
-        return stat;
-    }
-
-    /* allocate auth function */
-    rtcp_auth_key_len = srtp_auth_get_key_length(stream_template->rtp_auth);
-    stat = srtp_crypto_kernel_alloc_auth(stream_template->rtcp_auth->type->id,
-                                         &str->rtcp_auth,
-                                         rtcp_auth_key_len,
-                                         rtcp_tag_len);
-
-    if (stat) {
-        srtp_stream_free(str);
-        return stat;
-    }
-
-    return srtp_err_status_ok;
-}
-
-srtp_err_status_t
 srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 		  const srtp_policy_t *p,
                   const srtp_ekt_mode_t ekt_mode) {
@@ -544,37 +445,27 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     return srtp_err_status_alloc_fail;
   *str_ptr = str;  
 
-  if (stream_template->ektMode == EKT_MODE_PRIME_END_TO_END &&
-      stream_template->direction == dir_srtp_receiver) {
-    srtp_stream_clone_cipher(str, stream_template);
-    key_len = srtp_cipher_get_key_length(str->rtp_cipher);
-    memcpy(str->master_key, stream_template->master_key, key_len);
-    srtp_stream_init_keys(str, (const void *)(str->master_key));
-  }
-  else
-  {
-    /* set cipher and auth pointers to those of the template */
-    str->rtp_cipher = stream_template->rtp_cipher;
-    str->rtp_auth = stream_template->rtp_auth;
-    str->rtp_xtn_hdr_cipher = stream_template->rtp_xtn_hdr_cipher;
-    str->rtcp_cipher = stream_template->rtcp_cipher;
-    str->rtcp_auth = stream_template->rtcp_auth;
+  /* set cipher and auth pointers to those of the template */
+  str->rtp_cipher = stream_template->rtp_cipher;
+  str->rtp_auth = stream_template->rtp_auth;
+  str->rtp_xtn_hdr_cipher = stream_template->rtp_xtn_hdr_cipher;
+  str->rtcp_cipher = stream_template->rtcp_cipher;
+  str->rtcp_auth = stream_template->rtcp_auth;
 
-    /* Copy the salt values */
-    memcpy(str->salt, stream_template->salt, SRTP_AEAD_SALT_LEN);
-    memcpy(str->c_salt, stream_template->c_salt, SRTP_AEAD_SALT_LEN);
+  /* Copy the salt values */
+  memcpy(str->salt, stream_template->salt, SRTP_AEAD_SALT_LEN);
+  memcpy(str->c_salt, stream_template->c_salt, SRTP_AEAD_SALT_LEN);
 
-    /*Copy master key copy as provided by the application */
-    key_len = srtp_cipher_get_key_length(str->rtp_cipher);
-    memcpy(str->master_key, stream_template->master_key, key_len);
+  /*Copy master key copy as provided by the application */
+  key_len = srtp_cipher_get_key_length(str->rtp_cipher);
+  memcpy(str->master_key, stream_template->master_key, key_len);
 
-    /* set key limit to point to that of the template */
-    status = srtp_key_limit_clone(stream_template->limit, &str->limit);
-    if (status) {
-        srtp_crypto_free(*str_ptr);
-        *str_ptr = NULL;
-        return status;
-    }
+  /* set key limit to point to that of the template */
+  status = srtp_key_limit_clone(stream_template->limit, &str->limit);
+  if (status) {
+      srtp_crypto_free(*str_ptr);
+      *str_ptr = NULL;
+      return status;
   }
 
   /* initialize replay databases */
