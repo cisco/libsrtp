@@ -64,8 +64,8 @@ static const uint32_t AES_Key_Wrap_with_Padding_Max = 0xFFFFFFFF;
  *          must be in the range of 1 to AES_Key_Wrap_with_Padding_Max.
  *      rollover_counter [in]
  *          The SRTP "rollover counter" value.  This parameter should always
- *          be zero (0) if draft-jones-avtcore-private-media-framework is
- *          not being used.
+ *          be zero (0) except when draft-jones-perc-private-media-framework-01
+ *          is being used.
  *      ekt_ciphertext [out]
  *          A pointer to a buffer to hold the "EKT_Ciphertext".  This function
  *          does not allocate memory and expects the caller to pass a pointer
@@ -190,10 +190,8 @@ int srtp_ekt_plaintext_encrypt( const unsigned char *ekt_key,
  *          This is a the length of the ekt_ciphertext.
  *      rollover_counter [in]
  *          The SRTP "rollover counter" value.  This parameter should always
- *          be zero (0) if draft-jones-avtcore-private-media-framework is
- *          not being used.
- *      ekt_plaintext_length [in]
- *          The length in octets of the ekt_plaintext paramter.
+ *          be zero (0) except when draft-jones-perc-private-media-framework-01
+ *          is being used.
  *      ekt_plaintext [out]
  *          A pointer to a buffer to hold the "EKT_Plaintext".  This function
  *          does not allocate memory and expects the caller to pass a pointer
