@@ -3373,13 +3373,11 @@ update_template_streams(srtp_t session,
   if (status) {
     return status;
   }
-  
+
   /* Initialize the PRIME inner context to NULL */
   new_stream_template->prime_end_to_end_stream_ctx = NULL;
-  
-  /*
-   * If PRIME, we create the inner end-to-end context.
-   */
+
+  /* If PRIME, we create the inner end-to-end context */
   if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME) {
     status = srtp_stream_alloc(
                             &new_stream_template->prime_end_to_end_stream_ctx,
