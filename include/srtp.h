@@ -805,8 +805,8 @@ srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
 /**
  * @brief srtp_update() udpates all streams in the session.
  *
- * The function call srtp_update(session, policy, ekt_mode)
- * updates all the streams in the session applying the given policy
+ * The function call srtp_update(session, policy) updates
+ * all the streams in the session applying the given policy
  * and key. The exsisting ROC value of all streams will be
  * preserved.
  *
@@ -819,8 +819,6 @@ srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
  * processed. The final element of the list @b must
  * have its `next' field set to NULL.
  *
- * @param ekt_mode is the EKT mode to apply to the stream
- *
  * @return
  *    - srtp_err_status_ok           if stream creation succeded.
  *    - srtp_err_status_alloc_fail   if stream allocation failed
@@ -829,15 +827,13 @@ srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
  *
  */
 
-srtp_err_status_t srtp_update(srtp_t session,
-                              const srtp_policy_t *policy,
-                              const srtp_ekt_mode_t ekt_mode);
+srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy);
 
 /**
  * @brief srtp_update_stream() udpates a SRTP stream.
  *
- * The function call srtp_update_stream(session, policy, ekt_mode)
- * updates the stream(s) in the session that match applying the given
+ * The function call srtp_update_stream(session, policy) updates
+ * the stream(s) in the session that match applying the given
  * policy and key. The exsisting ROC value of all stream(s) will
  * be preserved.
  *
@@ -847,8 +843,6 @@ srtp_err_status_t srtp_update(srtp_t session,
  * @param policy is the srtp_policy_t struct that describes the policy
  * for the session.
  *
- * @param ekt_mode is the EKT mode to apply to the stream
- *
  * @return
  *    - srtp_err_status_ok           if stream creation succeded.
  *    - srtp_err_status_alloc_fail   if stream allocation failed
@@ -857,9 +851,7 @@ srtp_err_status_t srtp_update(srtp_t session,
  *
  */
 
-srtp_err_status_t srtp_update_stream(srtp_t session,
-                                     const srtp_policy_t *policy,
-                                     const srtp_ekt_mode_t ekt_mode);
+srtp_err_status_t srtp_update_stream(srtp_t session, const srtp_policy_t *policy);
 
 /**
  * @brief srtp_crypto_policy_set_rtp_default() sets a crypto policy

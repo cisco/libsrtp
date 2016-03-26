@@ -2294,7 +2294,7 @@ srtp_test_update() {
   /* update send ctx to use test_alt_key */
   policy.ssrc.type = ssrc_any_outbound;
   policy.key = test_alt_key;
-  status = srtp_update(srtp_snd, &policy, EKT_MODE_NO_EKT);
+  status = srtp_update(srtp_snd, &policy);
   if (status)
     return status;
 
@@ -2337,7 +2337,7 @@ srtp_test_update() {
   /* update recive ctx to use test_alt_key */
   policy.ssrc.type = ssrc_any_inbound;
   policy.key = test_alt_key;
-  status = srtp_update(srtp_recv, &policy, EKT_MODE_NO_EKT);
+  status = srtp_update(srtp_recv, &policy);
   if (status)
     return status;
 

@@ -3328,8 +3328,7 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
 
 srtp_err_status_t
 srtp_update(srtp_t session,
-            const srtp_policy_t *policy,
-            const srtp_ekt_mode_t ekt_mode) {
+            const srtp_policy_t *policy) {
   srtp_err_status_t stat;
 
   /* sanity check arguments */
@@ -3338,7 +3337,7 @@ srtp_update(srtp_t session,
   }
 
   while (policy != NULL) {
-    stat = srtp_update_stream(session, policy, ekt_mode);
+    stat = srtp_update_stream(session, policy);
     if (stat) {
       return stat;
     }
@@ -3352,8 +3351,7 @@ srtp_update(srtp_t session,
 
 static srtp_err_status_t
 update_template_streams(srtp_t session,
-                        const srtp_policy_t *policy,
-                        const srtp_ekt_mode_t ekt_mode) {
+                        const srtp_policy_t *policy) {
   srtp_err_status_t status;
   srtp_stream_t new_stream_template;
   srtp_stream_t new_stream_list = NULL;
@@ -3362,10 +3360,35 @@ update_template_streams(srtp_t session,
     return srtp_err_status_bad_param;
   }
 
-  /* allocate new template stream  */
-  status = srtp_stream_alloc(&new_stream_template, policy, ekt_mode);
+  /* Allocate new template stream. For PRIME, allocate the outer context. */
+  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME)
+    status = srtp_stream_alloc(&new_stream_template,
+                               policy,
+                               EKT_MODE_PRIME_HOP_BY_HOP);
+  else if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_EKT)
+    status = srtp_stream_alloc(&new_stream_template, policy, EKT_MODE_REGULAR);
+  else
+    status = srtp_stream_alloc(&new_stream_template, policy, EKT_MODE_NO_EKT);
+
   if (status) {
     return status;
+  }
+  
+  /* Initialize the PRIME inner context to NULL */
+  new_stream_template->prime_end_to_end_stream_ctx = NULL;
+  
+  /*
+   * If PRIME, we create the inner end-to-end context.
+   */
+  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME) {
+    status = srtp_stream_alloc(
+                            &new_stream_template->prime_end_to_end_stream_ctx,
+                            policy,
+                            EKT_MODE_PRIME_END_TO_END);
+    if (status) {
+      srtp_stream_dealloc(new_stream_template, session->stream_template);
+      return status;
+    }
   }
 
   /* initialize new template stream  */
@@ -3492,8 +3515,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
 
 srtp_err_status_t
 srtp_update_stream(srtp_t session,
-                   const srtp_policy_t *policy,
-                   const srtp_ekt_mode_t ekt_mode) {
+                   const srtp_policy_t *policy) {
   srtp_err_status_t status;
 
   /* sanity check arguments */
@@ -3503,7 +3525,7 @@ srtp_update_stream(srtp_t session,
   switch (policy->ssrc.type) {
   case (ssrc_any_outbound):
   case (ssrc_any_inbound):
-    status = update_template_streams(session, policy, ekt_mode);
+    status = update_template_streams(session, policy);
     break;
   case (ssrc_specific):
     status = update_stream(session, policy);
