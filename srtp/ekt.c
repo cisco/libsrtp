@@ -188,7 +188,7 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     *ektTagPresent = spi & 0x0001;
     if (!(*ektTagPresent))
         return srtp_err_no_ekt;
-    spi = spi & 0xfffe;
+    spi = (spi & 0xfffe) >> 1;
 
     /*
      * Get SPI info for SPI received. SPI info will contain EKT key required
@@ -383,7 +383,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
     }
 
     /* copy SPI into packet */
-    spi = (stream->ekt_data.spi) | 0x0001;
+    spi = (stream->ekt_data.spi << 1) | 0x0001;
     *((srtp_ekt_spi_t *)ektTagPtr) = htons(spi);
     debug_print(mod_srtp, "writing EKT SPI: %s,",
                 srtp_octet_string_hex_string(   ektTagPtr,
