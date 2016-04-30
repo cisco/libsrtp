@@ -452,11 +452,11 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   str->rtcp_cipher = stream_template->rtcp_cipher;
   str->rtcp_auth = stream_template->rtcp_auth;
 
-  /* Copy the salt values */
+  /* copy the salt values */
   memcpy(str->salt, stream_template->salt, SRTP_AEAD_SALT_LEN);
   memcpy(str->c_salt, stream_template->c_salt, SRTP_AEAD_SALT_LEN);
 
-  /*Copy master key copy as provided by the application */
+  /* copy master key copy as provided by the application */
   key_len = srtp_cipher_get_key_length(str->rtp_cipher);
   memcpy(str->master_key, stream_template->master_key, key_len);
 
@@ -2925,8 +2925,8 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
     }
 
     /*
-    * the message authentication function passed, so add the packet
-    * index into the replay database
+     * the message authentication function passed, so add the packet
+     * index into the replay database
     */
     srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
 
