@@ -3309,8 +3309,10 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
    */
   if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP &&
       stream->prime_end_to_end_stream_ctx != NULL) {
-      status = srtp_stream_dealloc(stream->prime_end_to_end_stream_ctx,
-                                   session->stream_template);
+      status = srtp_stream_dealloc(
+            stream->prime_end_to_end_stream_ctx,
+            session->stream_template ?
+                session->stream_template->prime_end_to_end_stream_ctx:NULL);
       if (status) {
           srtp_stream_dealloc(stream, session->stream_template);
           return status;
