@@ -178,20 +178,24 @@ static srtp_err_status_t srtp_aes_wrap_context_init (srtp_aes_wrap_ctx_t *c, con
     v128_copy_octet_string((v128_t*)&c->key, key);
 
     /* if the key is greater than 16 bytes, copy the second
-     * half.  Note, we treat AES-192 and AES-256 the same here
-     * for simplicity.  The storage location receiving the
+     * half.  Note, we treat AES-192 and AES-256 separately here
+     * as the source key storage is different. The storage location receiving the
      * key is statically allocated to handle a full 32 byte key
      * regardless of the cipher in use.
      */
-    if (c->key_size == SRTP_AES_256_KEYSIZE ||
-#ifndef SRTP_NO_AES192
-        c->key_size == SRTP_AES_192_KEYSIZE
-#endif
-        ) {
+    if (c->key_size == SRTP_AES_256_KEYSIZE) {
         debug_print(srtp_mod_aes_wrap, "Copying last 16 bytes of key: %s",
                     v128_hex_string((v128_t*)(key + SRTP_AES_128_KEYSIZE)));
         v128_copy_octet_string(((v128_t*)(&c->key.v8)) + 1, key + SRTP_AES_128_KEYSIZE);
     }
+#ifndef SRTP_NO_AES192
+    else if (c->key_size == SRTP_AES_192_KEYSIZE) {
+        debug_print(srtp_mod_aes_wrap, "Copying last 8 bytes of key: %s",
+                    srtp_octet_string_hex_string((key + SRTP_AES_128_KEYSIZE), SRTP_AES_128_KEYSIZE / 2));
+       
+        v128_copy_octet_string((v128_t*)(&(c->key.v64[1])), key + SRTP_AES_128_KEYSIZE / 2);
+    }
+#endif
 
     debug_print(srtp_mod_aes_wrap, "key:  %s", v128_hex_string((v128_t*)&c->key));
 
