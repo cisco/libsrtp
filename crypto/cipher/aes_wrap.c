@@ -190,7 +190,7 @@ static srtp_err_status_t srtp_aes_wrap_context_init (srtp_aes_wrap_ctx_t *c, con
         ) {
         debug_print(srtp_mod_aes_wrap, "Copying last 16 bytes of key: %s",
                     v128_hex_string((v128_t*)(key + SRTP_AES_128_KEYSIZE)));
-        v128_copy_octet_string(((v128_t*)(&c->key.v8)) + 1, key + SRTP_AES_128_KEYSIZE);
+        memcpy(((v128_t*)(&c->key.v8)) + 1, key + SRTP_AES_128_KEYSIZE, c->key_size - SRTP_AES_128_KEYSIZE);
     }
 
     debug_print(srtp_mod_aes_wrap, "key:  %s", v128_hex_string((v128_t*)&c->key));
