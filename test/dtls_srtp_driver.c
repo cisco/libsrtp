@@ -192,7 +192,7 @@ test_dtls_srtp(void) {
   err = srtp_crypto_policy_set_from_profile_for_rtcp(&policy.rtcp, profile);
   if (err) return err;
   policy.ssrc.type  = ssrc_any_inbound;
-  policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+  policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
   policy.window_size = 128;
   policy.allow_repeat_tx = 0;
   policy.next = NULL;

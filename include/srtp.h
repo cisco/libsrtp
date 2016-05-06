@@ -6,12 +6,6 @@
  * David A. McGrew
  * Cisco Systems, Inc.
  *
- * CHANGE LOG
- * ----------
- * 2015-12-11 - Nivedita Melinkeri
- *     - Made changes to support EKT and PRIME mode
- *     - Modified srtp policy to allow applications pass PRIME and
- *       EKT configurations
  */
 /*
  *	
@@ -218,49 +212,46 @@ typedef struct {
 /*
  * srtp_service_flags represents the services an application can request
  *
- *           |- DEFAULT -|
  *  7  6  5  4  3  2  1  0
  *  |  |  |  |  |  |  |  |
- *  |  |  |  |  |  |  |  +--- Confidentiality (1)  |
- *  |  |  |  |  |  |  +------ Authentication  (2)  |
- *  |  |  |  |  |  +--------- Check Replay    (4)  |-- SERVICE_DEFAULT
- *  |  |  |  |  +------------ PRIME E2E       (8)  |
- *  |  |  |  +--------------- PRIME HBH       (16) |
- *  |  |  +------------------ EKT Tag         (32)
+ *  |  |  |  |  |  |  |  +--- Check Replay    (1)  |
+ *  |  |  |  |  |  |  +------ PRIME HBH       (2)  |-- SERVICE_DEFAULT
+ *  |  |  |  |  |  +--------- PRIME E2E       (4)  |
+ *  |  |  |  |  +------------ Add EKT Tag     (8)
+ *  |  |  |  +--------------- RESERVED        (16)
+ *  |  |  +------------------ RESERVED        (32)
  *  |  +--------------------- RESERVED        (64)
  *  +------------------------ RESERVED        (128)
  */
 typedef enum srtp_service_flags_t
 {
-  SRTP_SERVICE_CONFIDENTIALITY = 1,
-  SRTP_SERVICE_AUTHENTICATION = 2,
-  SRTP_SERVICE_CHK_REPLAY = 4,
-  SRTP_SERVICE_PRIME_E2E = 8,
-  SRTP_SERVICE_PRIME_HBH = 16,
-  SRTP_SERVICE_DEFAULT = 31,
-  SRTP_SERVICE_EKT_TAG = 32
+  srtp_service_chk_replay = 1,
+  srtp_service_prime_e2e = 2,
+  srtp_service_prime_hbh = 4,
+  srtp_service_default = 7,
+  srtp_service_ekt_tag = 8
 } srtp_service_flags_t;
 
 /*
  * EKT-specific definitions
  */
 typedef enum srtp_ekt_cipher_t {
-    EKT_CIPHER_AESKW_128 = 0,
-    EKT_CIPHER_AESKW_192 = 1,
-    EKT_CIPHER_AESKW_256 = 2
+    ekt_cipher_aeskw_128 = 0,
+    ekt_cipher_aeskw_192 = 1,
+    ekt_cipher_aeskw_256 = 2
 } srtp_ekt_cipher_t;
 
 typedef enum srtp_ekt_ctx_type_t {
-  EKT_CTX_TYPE_NO_EKT = 0,
-  EKT_CTX_TYPE_PRIME = 1,
-  EKT_CTX_TYPE_EKT = 2
+  ekt_ctx_type_no_ekt = 0,
+  ekt_ctx_type_prime = 1,
+  ekt_ctx_type_ekt = 2
 } srtp_ekt_ctx_type_t;
 
 typedef enum srtp_ekt_mode_t {
-  EKT_MODE_NO_EKT = 0,              /* SRTP only - No EKT       */
-  EKT_MODE_REGULAR = 1,             /* SRTP with plain EKT      */
-  EKT_MODE_PRIME_END_TO_END = 2,
-  EKT_MODE_PRIME_HOP_BY_HOP = 3
+  ekt_mode_no_ekt = 0,              /* SRTP only - No EKT       */
+  ekt_mode_regular = 1,             /* SRTP with plain EKT      */
+  ekt_mode_prime_end_to_end = 2,
+  ekt_mode_prime_hop_by_hop = 3
 } srtp_ekt_mode_t;
 
 typedef uint16_t srtp_ekt_spi_t;

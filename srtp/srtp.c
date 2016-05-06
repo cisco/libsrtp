@@ -6,17 +6,6 @@
  * David A. McGrew
  * Cisco Systems, Inc.
  *
- * CHANGE LOG
- * ----------
- * 2015-12-11 - Nivedita Melinkeri
- *     - Added functionality to configure PRIME and EKT mode
- *     - Created helper functions to reduce complexity of srtp_protect
- *       and srtp_unprotect
- *     - Add wrapper function srtp_protect_with_flags and
- *       srtp_unprotect_with_flags to allow applications to receive control
- *       in between protect and unprotect operations
- *     - Added code to send and recieve EKT tags
- *     - Added code to support PRIME using inner and outer stream context.
  */
 /*
  *	
@@ -184,7 +173,7 @@ srtp_stream_free(srtp_stream_ctx_t *str) {
 
 srtp_err_status_t
 srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
-		  const srtp_policy_t *p,
+                  const srtp_policy_t *p,
                   const srtp_ekt_mode_t ekt_mode) {
   srtp_stream_ctx_t *str;
   srtp_err_status_t stat;
@@ -210,7 +199,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   str->ektMode = ekt_mode;
 
   /* Set RTP and RTCP ciphers to crypto config inside the ekt_policy */
-  if (ekt_mode == EKT_MODE_PRIME_END_TO_END) {
+  if (ekt_mode == ekt_mode_prime_end_to_end) {
     rtp = &(p->ekt_policy.prime_end_to_end_rtp_crypto);
     rtcp = &(p->ekt_policy.prime_end_to_end_rtcp_crypto);
   }
@@ -492,7 +481,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   str->ekt_data = stream_template->ekt_data;
   str->prime_end_to_end_stream_ctx = NULL;
 
-  if (stream_template->ektMode == EKT_MODE_PRIME_HOP_BY_HOP &&
+  if (stream_template->ektMode == ekt_mode_prime_hop_by_hop &&
       stream_template->prime_end_to_end_stream_ctx != NULL) {
     /* clone end-to-end data for stream */
     status = srtp_stream_clone(stream_template->prime_end_to_end_stream_ctx,
@@ -998,7 +987,7 @@ srtp_set_iv(void *hdr,
         cipher->type->id == SRTP_AES_256_ICM) {
 
         iv.v32[0] = 0;
-        if (packetType == SRTP_PACKET_RTCP)
+        if (packetType == srtp_packet_rtcp)
         {
             srtcp_hdr_t *srtcp_hdr = (srtcp_hdr_t *)hdr;
             iv.v32[1] = srtcp_hdr->ssrc;
@@ -1025,7 +1014,7 @@ srtp_set_iv(void *hdr,
         iv.v32[0] = 0;
         iv.v32[1] = 0;
         iv.v32[2] = 0;
-        if (packetType == SRTP_PACKET_RTCP)
+        if (packetType == srtp_packet_rtcp)
         {
             uint32_t seq_num = (uint32_t)est;
             iv.v32[3] = htonl(seq_num);
@@ -1045,8 +1034,7 @@ srtp_generate_authentication_tag(srtp_stream_ctx_t *stream,
                                  uint8_t *hdr,
                                  int* pkt_octet_len,
                                  srtp_xtd_seq_num_t est,
-                                 srtp_packet_type_t packetType,
-                                 srtp_service_flags_t flags)
+                                 srtp_packet_type_t packetType)
 {
     uint8_t *auth_start;        /* pointer to start of auth. portion      */
     int tag_len;
@@ -1057,10 +1045,7 @@ srtp_generate_authentication_tag(srtp_stream_ctx_t *stream,
     srtp_sec_serv_t services;
     srtp_err_status_t status;
 
-    if (!(flags & SRTP_SERVICE_AUTHENTICATION))
-        return srtp_err_status_ok;
-
-    if (packetType == SRTP_PACKET_RTP) {
+    if (packetType == srtp_packet_rtp) {
         cipher = stream->rtp_cipher;
         services = stream->rtp_services;
         auth = stream->rtp_auth;
@@ -1115,7 +1100,7 @@ srtp_generate_authentication_tag(srtp_stream_ctx_t *stream,
      * If RTP then authenticate the packet concatenated with ROC
      * If RTCP then just authenticate the entire packet
      */
-    if (packetType == SRTP_PACKET_RTP) {
+    if (packetType == srtp_packet_rtp) {
         /* run auth func over packet */
         status = auth_update(auth, (uint8_t *)auth_start, *pkt_octet_len);
         if (status) return status;
@@ -1160,8 +1145,7 @@ int srtp_estimate_index(srtp_rdbx_t *rdbx,
 }
 
 srtp_err_status_t
-srtp_get_est_pkt_index(srtp_ctx_t *srtp,
-                       srtp_hdr_t *hdr,
+srtp_get_est_pkt_index(srtp_hdr_t *hdr,
                        int *pkt_octet_len,
                        srtp_stream_ctx_t *stream,
                        srtp_xtd_seq_num_t *est,
@@ -1180,8 +1164,8 @@ srtp_get_est_pkt_index(srtp_ctx_t *srtp,
      * sent an updated ROC in the packet which needs to be used. Therefore
      * extract ROC from the packet.
      */
-    if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP) {
-        if (flags & SRTP_SERVICE_PRIME_HBH) {
+    if (stream->ektMode == ekt_mode_prime_hop_by_hop) {
+        if (flags & srtp_service_prime_hbh) {
             /* Get the auth tag length and sanity check length */
             auth_tag_length = srtp_auth_get_tag_length(stream->rtp_auth);
             if ((*pkt_octet_len - auth_tag_length - sizeof(srtp_ekt_spi_t)) <=
@@ -1346,8 +1330,7 @@ srtp_err_status_t
 srtp_encrypt(srtp_stream_ctx_t *stream,
              void *hdr,
              int pkt_octet_len,
-             srtp_packet_type_t packetType,
-             srtp_service_flags_t flags)
+             srtp_packet_type_t packetType)
 {
     uint32_t *enc_start = NULL;     /* pointer to start of encrypted portion  */
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion  */
@@ -1355,21 +1338,18 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     srtp_err_status_t status;
 
-    if (!(flags & SRTP_SERVICE_CONFIDENTIALITY))
-        return srtp_err_status_ok;
-
     /*
-     * find starting point for encryption and length of data to be
-     * encrypted
+     * find starting point for encryption and length of data to be encrypted
      * if we're not providing confidentiality, set enc_start to NULL
      */
-    if (packetType == SRTP_PACKET_RTP && stream->rtp_services & sec_serv_conf) {
+    if (packetType == srtp_packet_rtp && stream->rtp_services & sec_serv_conf) {
 
         srtp_hdr_t *rtp_hdr = (srtp_hdr_t*)hdr;
 
         /*
          * the encrypted portion starts after the rtp header
-         * extension, if present; otherwise, it starts after the last csrc, if any are present
+         * extension, if present; otherwise, it starts after the last csrc,
+         * if any are present
          */
         enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + rtp_hdr->cc;
         if (rtp_hdr->x == 1) {
@@ -1386,9 +1366,7 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
 
         if (enc_octet_len < 0) return srtp_err_status_parse_err;
 
-        /*
-         * extension header encryption RFC 6904
-         */
+        /* extension header encryption RFC 6904 */
         if (xtn_hdr && stream->rtp_xtn_hdr_cipher) {
             status = srtp_process_header_encryption(stream, xtn_hdr);
             if (status) {
@@ -1398,7 +1376,7 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
 
         cipher = stream->rtp_cipher;
     }
-    else if (packetType == SRTP_PACKET_RTCP &&
+    else if (packetType == srtp_packet_rtcp &&
              stream->rtcp_services & sec_serv_conf) {
 
         enc_start = (uint32_t *)hdr + uint32s_in_rtcp_header;
@@ -1533,7 +1511,7 @@ srtp_stream_init(srtp_stream_t srtp,
   srtp->next = NULL;
 
   /* set the security service flags */
-  if (srtp->ektMode == EKT_MODE_PRIME_END_TO_END) {
+  if (srtp->ektMode == ekt_mode_prime_end_to_end) {
     srtp->rtp_services = p->ekt_policy.prime_end_to_end_rtp_crypto.sec_serv;
     srtp->rtcp_services = p->ekt_policy.prime_end_to_end_rtcp_crypto.sec_serv;
   }
@@ -1563,8 +1541,8 @@ srtp_stream_init(srtp_stream_t srtp,
   /* DAM - no RTCP key limit at present */
 
   /* Initialize the EKT data */
-  if (srtp->ektMode == EKT_MODE_PRIME_END_TO_END ||
-      srtp->ektMode == EKT_MODE_REGULAR)
+  if (srtp->ektMode == ekt_mode_prime_end_to_end ||
+      srtp->ektMode == ekt_mode_regular)
       srtp_ekt_init_from_policy((srtp_ekt_policy_t *)(&(p->ekt_policy)),
                                 &srtp->ekt_data);
 
@@ -1709,14 +1687,12 @@ static void srtp_calc_aead_iv(srtp_stream_ctx_t *stream, v128_t *iv,
  * encrypted and authenticated.
  */
 static srtp_err_status_t
-srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, 
-	           void *rtp_hdr, unsigned int *pkt_octet_len)
+srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, void *rtp_hdr,
+                   srtp_xtd_seq_num_t est, unsigned int *pkt_octet_len)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t*)rtp_hdr;
     uint32_t *enc_start;        /* pointer to start of encrypted portion  */
     int enc_octet_len = 0; /* number of octets in encrypted portion  */
-    srtp_xtd_seq_num_t est;          /* estimated xtd_seq_num_t of *hdr        */
-    int delta;                  /* delta of local pkt idx and that in hdr */
     srtp_err_status_t status;
     uint32_t tag_len;
     v128_t iv;
@@ -1765,27 +1741,6 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      if (enc_octet_len < 0) return srtp_err_status_parse_err;
 
     /*
-     * estimate the packet index using the start of the replay window
-     * and the sequence number from the header
-     */
-    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-    if (status) {
-        if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx) {
-            return status;  /* we've been asked to reuse an index */
-        }
-    } else {
-        srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
-    }
-
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated packet index: %08x%08x",
-                 high32(est), low32(est));
-#else
-    debug_print(mod_srtp, "estimated packet index: %016llx", est);
-#endif
-
-    /*
      * AEAD uses a new IV formation method
      */
     srtp_calc_aead_iv(stream, &iv, &est, hdr);
@@ -1796,7 +1751,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
                              stream->rtp_xtn_hdr_cipher,
                              est,
                              direction_encrypt,
-                             SRTP_PACKET_RTP);
+                             srtp_packet_rtp);
     }
     if (status)
         return srtp_err_status_cipher_fail;
@@ -1816,7 +1771,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
     aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
 
     /* Depending on PRIME mode or not, set the AAD accordingly */
-    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END)
+    if (stream->ektMode == ekt_mode_prime_end_to_end)
     {
         unsigned int rtp_header_aad_len = octets_in_rtp_header;
         uint8_t prime_hdr[octets_in_rtp_header];
@@ -1892,8 +1847,9 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
  * when decrypting the payload.
  */
 static srtp_err_status_t
-srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta, 
-	             srtp_xtd_seq_num_t est, void *srtp_hdr, unsigned int *pkt_octet_len)
+srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
+                     srtp_xtd_seq_num_t est, void *srtp_hdr,
+                     unsigned int *pkt_octet_len)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t*)srtp_hdr;
     uint32_t *enc_start;        /* pointer to start of encrypted portion  */
@@ -1925,7 +1881,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
                              stream->rtp_xtn_hdr_cipher,
                              est,
                              direction_encrypt,
-                             SRTP_PACKET_RTP);
+                             srtp_packet_rtp);
     }
     if (status)
         return srtp_err_status_cipher_fail;
@@ -1984,7 +1940,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
 
     /* Depending on PRIME mode or not, set the AAD accordingly */
-    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END)
+    if (stream->ektMode == ekt_mode_prime_end_to_end)
     {
         unsigned int rtp_header_aad_len = octets_in_rtp_header;
         uint8_t prime_hdr[octets_in_rtp_header];
@@ -2066,12 +2022,6 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
         }
     }
 
-    /*
-     * the message authentication function passed, so add the packet
-     * index into the replay database
-     */
-    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
-
     /* decrease the packet length by the length of the auth tag */
     *pkt_octet_len -= tag_len;
 
@@ -2084,7 +2034,6 @@ srtp_process_protect(srtp_ctx_t *ctx,
                      void *hdr,
                      int *pkt_octet_len,
                      srtp_stream_ctx_t *stream,
-                     int delta,
                      srtp_xtd_seq_num_t est,
                      srtp_service_flags_t flags) {
     uint8_t *ektp;
@@ -2102,6 +2051,7 @@ srtp_process_protect(srtp_ctx_t *ctx,
         status = srtp_protect_aead(ctx,
                                    stream,
                                    hdr,
+                                   est,
                                    (unsigned int*) pkt_octet_len);
         if (status != srtp_err_status_ok)
             return status;
@@ -2110,8 +2060,8 @@ srtp_process_protect(srtp_ctx_t *ctx,
          * Add EKT tag to the packet if EKT mode is regular or end-to-end
          */
         ektp = (uint8_t *)hdr + *pkt_octet_len;
-        if (stream->ektMode == EKT_MODE_REGULAR ||
-            stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+        if (stream->ektMode == ekt_mode_regular ||
+            stream->ektMode == ekt_mode_prime_end_to_end) {
             status = ekt_generate_tag(stream,
                                       ctx,
                                       hdr,
@@ -2151,13 +2101,13 @@ srtp_process_protect(srtp_ctx_t *ctx,
                          stream->rtp_cipher,
                          est,
                          direction_encrypt,
-                         SRTP_PACKET_RTP);
+                         srtp_packet_rtp);
     if (!status && stream->rtp_xtn_hdr_cipher) {
         status = srtp_set_iv(hdr,
                              stream->rtp_xtn_hdr_cipher,
                              est,
                              direction_encrypt,
-                             SRTP_PACKET_RTP);
+                             srtp_packet_rtp);
     }
     if (status)
         return srtp_err_status_cipher_fail;
@@ -2172,7 +2122,7 @@ srtp_process_protect(srtp_ctx_t *ctx,
 #endif
 
     /* Encrypt the packet */
-    status = srtp_encrypt(stream, hdr, *pkt_octet_len, SRTP_PACKET_RTP, flags);
+    status = srtp_encrypt(stream, hdr, *pkt_octet_len, srtp_packet_rtp);
     if (status != srtp_err_status_ok)
         return status;
 
@@ -2185,16 +2135,15 @@ srtp_process_protect(srtp_ctx_t *ctx,
                                               hdr,
                                               pkt_octet_len,
                                               est,
-                                              SRTP_PACKET_RTP,
-                                              flags);
+                                              srtp_packet_rtp);
     if (status != srtp_err_status_ok)
         return status;
 
     /*
      * If this stream uses EKT, insert the EKT Tag if required
      */
-    if (stream->ektMode == EKT_MODE_REGULAR ||
-        stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+    if (stream->ektMode == ekt_mode_regular ||
+        stream->ektMode == ekt_mode_prime_end_to_end) {
         ektp = (uint8_t *)hdr + *pkt_octet_len;
         status = ekt_generate_tag(stream, ctx, hdr, ektp, &ekt_tag_len, flags);
         if (status != srtp_err_status_ok)
@@ -2241,7 +2190,7 @@ srtp_protect_with_flags(srtp_ctx_t *ctx,
              * So force generate the EKT tag regardless of what application
              * requested.
              */
-            flags |= SRTP_SERVICE_EKT_TAG;
+            flags |= srtp_service_ekt_tag;
 
             /* allocate and initialize a new stream */
             status = srtp_stream_clone(ctx->stream_template,
@@ -2286,10 +2235,8 @@ srtp_protect_with_flags(srtp_ctx_t *ctx,
      */
     delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
 
-    /*
-     * Check for replay if user has requested replay check.
-     */
-    if (flags & SRTP_SERVICE_CHK_REPLAY) {
+    /* Check for replay if user has requested replay check */
+    if (flags & srtp_service_chk_replay) {
         status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
         if (status) {
             if (status != srtp_err_status_replay_fail ||
@@ -2310,33 +2257,30 @@ srtp_protect_with_flags(srtp_ctx_t *ctx,
      * For PRIME endpoints -  We first encrypt the packet using end-to-end ctx
      * and then we authenticate the packet with hop-by-hop ctx.
      */
-    if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP)
+    if (stream->ektMode == ekt_mode_prime_hop_by_hop)
     {
         /* Process using end-to-end ctx */
-        if (flags & SRTP_SERVICE_PRIME_E2E) {
+        if (flags & srtp_service_prime_e2e) {
             if (stream->prime_end_to_end_stream_ctx == NULL)
                 return srtp_err_status_bad_param;
-            if (stream->prime_end_to_end_stream_ctx != NULL)
-                status = srtp_process_protect(
-                                    ctx,
-                                    rtp_hdr,
-                                    pkt_octet_len,
-                                    stream->prime_end_to_end_stream_ctx,
-                                    delta,
-                                    est,
-                                    flags);
+            status = srtp_process_protect(
+                                ctx,
+                                rtp_hdr,
+                                pkt_octet_len,
+                                stream->prime_end_to_end_stream_ctx,
+                                est,
+                                flags);
             if (status)
                 return status;
         }
 
         /* Process using hop-by-hop ctx */
-        if (flags & SRTP_SERVICE_PRIME_HBH) {
+        if (flags & srtp_service_prime_hbh) {
                 status = srtp_process_protect(
                                     ctx,
                                     rtp_hdr,
                                     pkt_octet_len,
                                     stream,
-                                    delta,
                                     est,
                                     flags);
             if (status)
@@ -2349,7 +2293,6 @@ srtp_protect_with_flags(srtp_ctx_t *ctx,
                                       rtp_hdr,
                                       pkt_octet_len,
                                       stream,
-                                      delta,
                                       est,
                                       flags);
         if (status)
@@ -2372,13 +2315,15 @@ srtp_protect(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len) {
                             ctx,
                             rtp_hdr,
                             pkt_octet_len,
-                            SRTP_SERVICE_DEFAULT));
+                            srtp_service_default));
 
 }
 
 srtp_err_status_t
-srtp_decrypt(srtp_stream_ctx_t *stream, void* pkt_hdr,  int* pkt_octet_len, srtp_xtd_seq_num_t est, srtp_packet_type_t packet_type) {
-
+srtp_decrypt(srtp_stream_ctx_t *stream,
+             void* pkt_hdr,
+             int* pkt_octet_len,
+             srtp_packet_type_t packet_type) {
     uint32_t *enc_start = NULL;     /* pointer to start of encrypted portion */
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
     int e_bit_in_packet;        /* whether the E-bit was found in the packet */
@@ -2388,7 +2333,7 @@ srtp_decrypt(srtp_stream_ctx_t *stream, void* pkt_hdr,  int* pkt_octet_len, srtp
     srtp_cipher_t *cipher;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
 
-    if (packet_type == SRTP_PACKET_RTCP) {
+    if (packet_type == srtp_packet_rtcp) {
 
         srtcp_hdr_t *hdr = (srtcp_hdr_t *)pkt_hdr;
 
@@ -2433,7 +2378,7 @@ srtp_decrypt(srtp_stream_ctx_t *stream, void* pkt_hdr,  int* pkt_octet_len, srtp
             return srtp_err_status_ok;
         }
     }
-    else if (packet_type == SRTP_PACKET_RTP &&
+    else if (packet_type == srtp_packet_rtp &&
              (stream->rtp_services & sec_serv_conf)) {
         srtp_hdr_t *hdr = (srtp_hdr_t *)pkt_hdr;
         enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
@@ -2497,7 +2442,7 @@ srtp_authenticate(srtp_stream_ctx_t *stream,
      * if we're providing authentication, set the auth_start and auth_tag
      * pointers to the proper locations; otherwise return without authenticating
      */
-    if (packetType == SRTP_PACKET_RTP) {
+    if (packetType == srtp_packet_rtp) {
         cipher = stream->rtp_cipher;
         services = stream->rtp_services;
         auth = stream->rtp_auth;
@@ -2535,7 +2480,7 @@ srtp_authenticate(srtp_stream_ctx_t *stream,
     status = auth_start(auth);
     if (status) return status;
 
-    if (packetType == SRTP_PACKET_RTP) {
+    if (packetType == srtp_packet_rtp) {
 
         /*
          * if we're using a universal hash, then we need to compute the
@@ -2607,10 +2552,7 @@ srtp_process_unprotect(void *srtp_hdr,
                        int *pkt_octet_len,
                        srtp_ctx_t *ctx,
                        srtp_stream_ctx_t *stream,
-                       int delta,
-                       srtp_xtd_seq_num_t est,
-                       srtp_service_flags_t flags)
-{
+                       srtp_xtd_seq_num_t est) {
     int ektTagPresent;
     uint8_t master_key_in_tag[MAX_SRTP_KEY_LEN],
             master_key_in_stream[MAX_SRTP_KEY_LEN];
@@ -2622,8 +2564,8 @@ srtp_process_unprotect(void *srtp_hdr,
      *   If EKT tag is present then extract the EKT tag.
      */
     ektTagPresent = 0;
-    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END ||
-        stream->ektMode == EKT_MODE_REGULAR) {
+    if (stream->ektMode == ekt_mode_prime_end_to_end ||
+        stream->ektMode == ekt_mode_regular) {
         status = ekt_parse_tag(stream,
                                ctx,
                                srtp_hdr,
@@ -2634,9 +2576,7 @@ srtp_process_unprotect(void *srtp_hdr,
             return status;
     }
 
-    /*
-     * Update the key in the context if a new key is received in the EKT tag.
-     */
+    /* Update the key in the context if a new key is received in the EKT tag */
     if (ektTagPresent) {
         key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
         if (memcmp(master_key_in_tag, stream->master_key, key_len)) {
@@ -2672,7 +2612,6 @@ srtp_process_unprotect(void *srtp_hdr,
         stream->rtp_cipher->algorithm == SRTP_AES_256_GCM) {
         status = srtp_unprotect_aead(ctx,
                                      stream,
-                                     delta,
                                      est,
                                      srtp_hdr,
                                      (unsigned int*) pkt_octet_len);
@@ -2694,14 +2633,14 @@ srtp_process_unprotect(void *srtp_hdr,
                              stream->rtp_cipher,
                              est,
                              direction_decrypt,
-                             SRTP_PACKET_RTP);
+                             srtp_packet_rtp);
 
         if (!status && stream->rtp_xtn_hdr_cipher) {
             status = srtp_set_iv(srtp_hdr,
                                  stream->rtp_xtn_hdr_cipher,
                                  est,
                                  direction_encrypt,
-                                 SRTP_PACKET_RTP);
+                                 srtp_packet_rtp);
         }
         if (status) {
             if (replaced_stream_key) {
@@ -2720,27 +2659,20 @@ srtp_process_unprotect(void *srtp_hdr,
         est = be64_to_cpu(est << 16);
 #endif
 
-        /*
-         * Authenticate the RTP packet.
-         */
-        if (flags & SRTP_SERVICE_AUTHENTICATION)
-        {
-            status = srtp_authenticate(stream,
-                                       srtp_hdr,
-                                       (unsigned int*) pkt_octet_len,
-                                       est,
-                                       SRTP_PACKET_RTP);
+        /* Authenticate the RTP packet */
+        status = srtp_authenticate(stream,
+                                    srtp_hdr,
+                                    (unsigned int*) pkt_octet_len,
+                                    est,
+                                    srtp_packet_rtp);
 
-            /*
-             * If failed authentication then return error.
-             */
-            if (status != srtp_err_status_ok) {
-                if (replaced_stream_key) {
-                    memcpy(stream->master_key, master_key_in_stream, key_len);
-                    srtp_stream_init_keys(stream, stream->master_key);
-                }
-                return status;
+        /* If failed authentication then return error */
+        if (status != srtp_err_status_ok) {
+            if (replaced_stream_key) {
+                memcpy(stream->master_key, master_key_in_stream, key_len);
+                srtp_stream_init_keys(stream, stream->master_key);
             }
+            return status;
         }
 
         /*
@@ -2761,19 +2693,16 @@ srtp_process_unprotect(void *srtp_hdr,
             break;
         }
 
-        if (flags & SRTP_SERVICE_CONFIDENTIALITY) {
-            status = srtp_decrypt(stream,
-                                  srtp_hdr,
-                                  pkt_octet_len,
-                                  est,
-                                  SRTP_PACKET_RTP);
-            if (status) {
-                if (replaced_stream_key) {
-                    memcpy(stream->master_key, master_key_in_stream, key_len);
-                    srtp_stream_init_keys(stream, stream->master_key);
-                }
-                return srtp_err_status_cipher_fail;
+        status = srtp_decrypt(stream,
+                              srtp_hdr,
+                              pkt_octet_len,
+                              srtp_packet_rtp);
+        if (status) {
+            if (replaced_stream_key) {
+                memcpy(stream->master_key, master_key_in_stream, key_len);
+                srtp_stream_init_keys(stream, stream->master_key);
             }
+            return srtp_err_status_cipher_fail;
         }
     }
 
@@ -2844,8 +2773,7 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
     }
 
     /* Get the estimated packet index value */
-    status = srtp_get_est_pkt_index(ctx,
-                                    hdr,
+    status = srtp_get_est_pkt_index(hdr,
                                     pkt_octet_len,
                                     stream,
                                     &est,
@@ -2855,7 +2783,7 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
         return status;
 
     /* Check if the packet is being replayed */
-    if (flags & SRTP_SERVICE_CHK_REPLAY) {
+    if (flags & srtp_service_chk_replay) {
         /*
          * If the SSRC is not a new one then we have rdbx database therefore
          * check if the packet is being replayed.
@@ -2873,34 +2801,30 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
      * PRIME, if we are an endpoint then we first authenticate the packet with
      * hop-by-hop ctx and then we decrypt the packet using end-to-end ctx.
      */
-    if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP)
+    if (stream->ektMode == ekt_mode_prime_hop_by_hop)
     {
         /*
         * The flag is checked before authenticating the actual packet. But the
         * check here avoids uneccessary function call.
         */
-        if (flags & SRTP_SERVICE_PRIME_HBH) {
+        if (flags & srtp_service_prime_hbh) {
             status = srtp_process_unprotect(srtp_hdr,
                                             pkt_octet_len,
                                             ctx,
                                             stream,
-                                            delta,
-                                            est,
-                                            flags);
+                                            est);
             if (status)
                 return status;
         }
 
-        if (flags & SRTP_SERVICE_PRIME_E2E) {
+        if (flags & srtp_service_prime_e2e) {
             if (stream->prime_end_to_end_stream_ctx == NULL)
                 return srtp_err_status_bad_param;
             status = srtp_process_unprotect(srtp_hdr,
                                             pkt_octet_len,
                                             ctx,
                                             stream->prime_end_to_end_stream_ctx,
-                                            delta,
-                                            est,
-                                            flags);
+                                            est);
             if (status)
                 return status;
         }
@@ -2911,9 +2835,7 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
                                         pkt_octet_len,
                                         ctx,
                                         stream,
-                                        delta,
-                                        est,
-                                        flags);
+                                        est);
         if (status)
             return status;
     }
@@ -2951,7 +2873,7 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
      * the message authentication function passed, so add the packet
      * index into the replay database
     */
-    if (flags & SRTP_SERVICE_CHK_REPLAY) {
+    if (flags & srtp_service_chk_replay) {
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
 
@@ -2965,7 +2887,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len) {
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
   
-  status = srtp_unprotect_with_flags(ctx, rtp_hdr, pkt_octet_len, SRTP_SERVICE_DEFAULT);
+  status = srtp_unprotect_with_flags(ctx, rtp_hdr, pkt_octet_len, srtp_service_default);
   if (status) {
     debug_print(mod_srtp, "function srtp_unprotect: failed to unprotect packet", NULL);
   }
@@ -3103,12 +3025,12 @@ srtp_add_stream(srtp_t session,
    * Allocate stream context.
    * For PRIME allocate the outer context.
    */
-  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME)
-    status = srtp_stream_alloc(&tmp, policy, EKT_MODE_PRIME_HOP_BY_HOP);
-  else if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_EKT)
-    status = srtp_stream_alloc(&tmp, policy, EKT_MODE_REGULAR);
+  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime)
+    status = srtp_stream_alloc(&tmp, policy, ekt_mode_prime_hop_by_hop);
+  else if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_ekt)
+    status = srtp_stream_alloc(&tmp, policy, ekt_mode_regular);
   else
-    status = srtp_stream_alloc(&tmp, policy, EKT_MODE_NO_EKT);
+    status = srtp_stream_alloc(&tmp, policy, ekt_mode_no_ekt);
   if (status) {
     return status;
   }
@@ -3119,10 +3041,10 @@ srtp_add_stream(srtp_t session,
    * If PRIME then we have allocated the outer hop-by-hop context.
    * Now we need to allocate and intialize the inner end-to-end context.
    */
-  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME) {
+  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime) {
     status = srtp_stream_alloc(&tmp->prime_end_to_end_stream_ctx,
                                policy,
-                               EKT_MODE_PRIME_END_TO_END);
+                               ekt_mode_prime_end_to_end);
     if (status) {
       srtp_stream_dealloc(tmp, session->stream_template);
       return status;
@@ -3132,8 +3054,8 @@ srtp_add_stream(srtp_t session,
   int key_len = srtp_cipher_get_key_length(tmp->rtp_cipher);
 
   /* Initialize PRIME outer context and non EKT stream context */
-  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_NO_EKT ||
-      policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME) {
+  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_no_ekt ||
+      policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime) {
 
     /* Copy master key copy as provided by the application */
     memcpy(tmp->master_key, policy->key, key_len);
@@ -3146,13 +3068,13 @@ srtp_add_stream(srtp_t session,
     }
   }
 
-  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_EKT ||
-      policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME) {
+  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_ekt ||
+      policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime) {
 
     srtp_stream_ctx_t *tmp_stream_ctx;
 
-    /* For PRIME the ete context uses the EKT keys */
-    if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME)
+    /* For PRIME the E2E context uses the EKT keys */
+    if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime)
       tmp_stream_ctx = tmp->prime_end_to_end_stream_ctx;
     else
       tmp_stream_ctx = tmp;
@@ -3161,7 +3083,7 @@ srtp_add_stream(srtp_t session,
     int key_len = srtp_cipher_get_key_length(tmp_stream_ctx->rtp_cipher);
     int base_key_len = base_key_length(tmp_stream_ctx->rtp_cipher->type,
                                        key_len);
-    int salt_len = key_len - base_key_len;
+    unsigned salt_len = key_len - base_key_len;
 
     /* Get the SPI info */
     srtp_ekt_spi_info_t *spi_info = NULL;
@@ -3332,7 +3254,7 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
    * the outer stream context. We need to dealloc the outer context even if
    * there is a problem while deallocating the inner context.
    */
-  if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP &&
+  if (stream->ektMode == ekt_mode_prime_hop_by_hop &&
       stream->prime_end_to_end_stream_ctx != NULL) {
       status = srtp_stream_dealloc(
             stream->prime_end_to_end_stream_ctx,
@@ -3388,14 +3310,14 @@ update_template_streams(srtp_t session,
   }
 
   /* Allocate new template stream. For PRIME, allocate the outer context. */
-  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME)
+  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime)
     status = srtp_stream_alloc(&new_stream_template,
                                policy,
-                               EKT_MODE_PRIME_HOP_BY_HOP);
-  else if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_EKT)
-    status = srtp_stream_alloc(&new_stream_template, policy, EKT_MODE_REGULAR);
+                               ekt_mode_prime_hop_by_hop);
+  else if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_ekt)
+    status = srtp_stream_alloc(&new_stream_template, policy, ekt_mode_regular);
   else
-    status = srtp_stream_alloc(&new_stream_template, policy, EKT_MODE_NO_EKT);
+    status = srtp_stream_alloc(&new_stream_template, policy, ekt_mode_no_ekt);
 
   if (status) {
     return status;
@@ -3405,11 +3327,11 @@ update_template_streams(srtp_t session,
   new_stream_template->prime_end_to_end_stream_ctx = NULL;
 
   /* If PRIME, we create the inner end-to-end context */
-  if (policy->ekt_policy.ekt_ctx_type == EKT_CTX_TYPE_PRIME) {
+  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime) {
     status = srtp_stream_alloc(
                             &new_stream_template->prime_end_to_end_stream_ctx,
                             policy,
-                            EKT_MODE_PRIME_END_TO_END);
+                            ekt_mode_prime_end_to_end);
     if (status) {
       srtp_stream_dealloc(new_stream_template, session->stream_template);
       return status;
@@ -3863,8 +3785,9 @@ static void srtp_calc_aead_iv_srtcp(srtp_stream_ctx_t *stream, v128_t *iv,
  * AES-GCM mode with 128 or 256 bit keys. 
  */
 static srtp_err_status_t
-srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream, 
-                        void *rtcp_hdr, unsigned int *pkt_octet_len)
+srtp_protect_rtcp_aead (srtp_stream_ctx_t *stream,
+                        void *rtcp_hdr,
+                        unsigned int *pkt_octet_len)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t*)rtcp_hdr;
     uint32_t *enc_start;        /* pointer to start of encrypted portion  */
@@ -4011,8 +3934,9 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
  * when decrypting the payload.
  */
 static srtp_err_status_t
-srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream, 
-                          void *srtcp_hdr, unsigned int *pkt_octet_len,
+srtp_unprotect_rtcp_aead (srtp_stream_ctx_t *stream, 
+                          void *srtcp_hdr,
+                          unsigned int *pkt_octet_len,
                           uint32_t *seq_num)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t*)srtcp_hdr;
@@ -4178,13 +4102,13 @@ srtp_process_protect_rtcp(srtp_ctx_t *ctx, void *rtcp_hdr, int *pkt_octet_len, s
   */
   if (stream->rtcp_cipher->algorithm == SRTP_AES_128_GCM ||
     stream->rtcp_cipher->algorithm == SRTP_AES_256_GCM) {
-    status = srtp_protect_rtcp_aead(ctx, stream, rtcp_hdr, (unsigned int*)pkt_octet_len);
+    status = srtp_protect_rtcp_aead(stream, rtcp_hdr, (unsigned int*)pkt_octet_len);
     if (status)
       return status;
 
     /* For EKT and PRIME end-to-end, generate the EKT tag */
-    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END ||
-        stream->ektMode == EKT_MODE_REGULAR) {
+    if (stream->ektMode == ekt_mode_prime_end_to_end ||
+        stream->ektMode == ekt_mode_regular) {
         ektp = (uint8_t *)hdr + *pkt_octet_len;
         status = ekt_generate_tag(stream, ctx, hdr, ektp, &ekt_tag_len, flags);
         *pkt_octet_len += ekt_tag_len;
@@ -4196,20 +4120,19 @@ srtp_process_protect_rtcp(srtp_ctx_t *ctx, void *rtcp_hdr, int *pkt_octet_len, s
                        stream->rtcp_cipher,
                        est,
                        direction_encrypt,
-                       SRTP_PACKET_RTCP);
+                       srtp_packet_rtcp);
   if (!status && stream->rtp_xtn_hdr_cipher) {
     status = srtp_set_iv(hdr,
                          stream->rtp_xtn_hdr_cipher,
                          est,
                          direction_encrypt,
-                         SRTP_PACKET_RTP);
+                         srtp_packet_rtp);
   }
   if (status)
     return srtp_err_status_cipher_fail;
 
-  /* if we're encrypting, XOR keystream into the message */
-  if (stream->rtcp_services & sec_serv_conf)
-    status = srtp_encrypt(stream, rtcp_hdr, *pkt_octet_len, SRTP_PACKET_RTCP, flags);
+  /* Encrypt the packet */
+  status = srtp_encrypt(stream, rtcp_hdr, *pkt_octet_len, srtp_packet_rtcp);
   if (status)
     return srtp_err_status_cipher_fail;
 
@@ -4217,20 +4140,19 @@ srtp_process_protect_rtcp(srtp_ctx_t *ctx, void *rtcp_hdr, int *pkt_octet_len, s
 
   /*
    * Generate authentication tag. For PRIME this function auth tag will not
-   * be generated for ETE ctx because the auth func for ETE ctx is set to NULL.
+   * be generated for E2E ctx because the auth func for E2E ctx is set to NULL.
    */
   status = srtp_generate_authentication_tag(stream,
                                             rtcp_hdr,
                                             pkt_octet_len,
                                             est,
-                                            SRTP_PACKET_RTCP,
-                                            flags);
+                                            srtp_packet_rtcp);
   if (status != srtp_err_status_ok)
     return status;
 
   /* For EKT and PRIME end-to-end, generate the EKT tag */
-  if (stream->ektMode == EKT_MODE_REGULAR ||
-      stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+  if (stream->ektMode == ekt_mode_regular ||
+      stream->ektMode == ekt_mode_prime_end_to_end) {
     ektp = (uint8_t *) hdr + *pkt_octet_len;
     status = ekt_generate_tag(stream, ctx, hdr, ektp, &ekt_tag_len, flags);
     if (status)
@@ -4320,7 +4242,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     return srtp_protect_rtcp_with_flags(ctx,
                                         rtcp_hdr,
                                         pkt_octet_len,
-                                        SRTP_SERVICE_DEFAULT);
+                                        srtp_service_default);
 }
 
 
@@ -4345,8 +4267,8 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
    * If EKT tag is present then extract the EKT tag and initialize the key
    * in the context with the key received in the EKT tag
    */
-  if (stream->ektMode == EKT_MODE_REGULAR ||
-      stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+  if (stream->ektMode == ekt_mode_regular ||
+      stream->ektMode == ekt_mode_prime_end_to_end) {
 
     ektTagPresent = 0;
     status = ekt_parse_tag(stream,
@@ -4393,8 +4315,7 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
    */
   if (stream->rtcp_cipher->algorithm == SRTP_AES_128_GCM ||
       stream->rtcp_cipher->algorithm == SRTP_AES_256_GCM) {
-    status = srtp_unprotect_rtcp_aead(ctx,
-                                      stream,
+    status = srtp_unprotect_rtcp_aead(stream,
                                       srtcp_hdr,
                                       (unsigned int*) pkt_octet_len,
                                       seq_num);
@@ -4434,7 +4355,7 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
                        stream->rtcp_cipher,
                        est,
                        direction_decrypt,
-                       SRTP_PACKET_RTCP);
+                       srtp_packet_rtcp);
   if (status) {
     if (replaced_stream_key) {
         memcpy(stream->master_key, master_key_in_stream, key_len);
@@ -4444,7 +4365,7 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
   }
 
   /* Authenticate the RTP packet */
-  status = srtp_authenticate(stream, srtcp_hdr, (unsigned int*)pkt_octet_len, est, SRTP_PACKET_RTCP);
+  status = srtp_authenticate(stream, srtcp_hdr, (unsigned int*)pkt_octet_len, est, srtp_packet_rtcp);
 
   if (status) {
     if (replaced_stream_key) {
@@ -4454,7 +4375,7 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
     return status;
   }
 
-  status = srtp_decrypt(stream, hdr, pkt_octet_len, est, SRTP_PACKET_RTCP);
+  status = srtp_decrypt(stream, hdr, pkt_octet_len, srtp_packet_rtcp);
   if (status != srtp_err_status_cant_check && status != srtp_err_status_ok) {
     if (replaced_stream_key) {
         memcpy(stream->master_key, master_key_in_stream, key_len);
@@ -4590,7 +4511,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   status = srtp_unprotect_rtcp_with_flags(ctx,
                                           srtcp_hdr,
                                           pkt_octet_len,
-                                          SRTP_SERVICE_DEFAULT);
+                                          srtp_service_default);
 
   if (status) {
     debug_print(mod_srtp, "function srtp_unprotect_rtcp: failed to unprotect packet", NULL);

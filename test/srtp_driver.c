@@ -444,7 +444,7 @@ main (int argc, char *argv[])
         policy.ssrc.type  = ssrc_specific;
         policy.ssrc.value = 0xdecafbad;
         policy.key  = test_key;
-        policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+        policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
         policy.next = NULL;
@@ -1490,7 +1490,7 @@ srtp_validate ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -1611,7 +1611,7 @@ srtp_validate_encrypted_extensions_headers() {
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key_ext_headers;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.enc_xtn_hdr = headers;
@@ -1730,7 +1730,7 @@ srtp_validate_encrypted_extensions_headers_gcm() {
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key_ext_headers;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.enc_xtn_hdr = headers;
@@ -1845,7 +1845,7 @@ srtp_validate_aes_256 ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = aes_256_test_key;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -1976,7 +1976,7 @@ srtp_test_empty_payload()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2054,7 +2054,7 @@ srtp_test_empty_payload_gcm()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2182,7 +2182,7 @@ srtp_test_remove_stream ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key;
-    policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2241,7 +2241,7 @@ srtp_test_update() {
   memset(&policy, 0, sizeof(policy));
   srtp_crypto_policy_set_rtp_default(&policy.rtp);
   srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-  policy.ekt_policy.ekt_ctx_type = EKT_CTX_TYPE_NO_EKT;
+  policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_no_ekt;
   policy.window_size = 128;
   policy.allow_repeat_tx = 0;
   policy.next = NULL;
@@ -2397,7 +2397,7 @@ const srtp_policy_t default_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2433,7 +2433,7 @@ const srtp_policy_t aes_only_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2469,7 +2469,7 @@ const srtp_policy_t hmac_only_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2506,7 +2506,7 @@ const srtp_policy_t aes128_gcm_8_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2542,7 +2542,7 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2578,7 +2578,7 @@ const srtp_policy_t aes256_gcm_8_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2614,7 +2614,7 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2651,7 +2651,7 @@ const srtp_policy_t null_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2697,7 +2697,7 @@ const srtp_policy_t aes_256_hmac_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },
@@ -2764,7 +2764,7 @@ const srtp_policy_t wildcard_policy = {
         NULL,                  /* Key sent in EKT tags        */
         {},                    /* Empty PRIME RTP policy      */
         {},                    /* Empty PRIME RTCP policy     */
-        EKT_CTX_TYPE_NO_EKT,   /* EKT is not in use           */
+        ekt_ctx_type_no_ekt,   /* EKT is not in use           */
         0,                     /* EKT tags sent at ROC change */
         0                      /* EKT Tag interval            */
     },

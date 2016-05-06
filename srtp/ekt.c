@@ -6,11 +6,6 @@
  * David McGrew
  * Cisco Systems, Inc.
  *
- * CHANGE LOG
- * ----------
- * 2015-12-11 - Nivedita Melinkeri
- *     - Added functions to support current EKT and PRIME specs
- *
  */
 /*
  *	
@@ -66,13 +61,13 @@ srtp_get_ekt_cipher_key_length(srtp_ekt_cipher_t ekt_cipher)
     /* The key length depends on the EKT cipher employed */
     switch (ekt_cipher)
     {
-    case EKT_CIPHER_AESKW_128:
+    case ekt_cipher_aeskw_128:
         key_len = 16;
         break;
-    case EKT_CIPHER_AESKW_192:
+    case ekt_cipher_aeskw_192:
         key_len = 24;
         break;
-    case EKT_CIPHER_AESKW_256:
+    case ekt_cipher_aeskw_256:
         key_len = 32;
         break;
     default:
@@ -114,7 +109,7 @@ unsigned int ekt_get_tag_length(srtp_ekt_mode_t ektMode, srtp_ekt_spi_info_t *sp
     if (!spi_info)
         return 0;
 
-    if (ektMode == EKT_MODE_PRIME_END_TO_END) {
+    if (ektMode == ekt_mode_prime_end_to_end) {
         tag_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher) + sizeof(srtp_ssrc_t);
         padding_len = tag_len % 8;
         tag_len += padding_len;
@@ -161,8 +156,8 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
                                 int *ektTagPresent)
 {
     uint8_t *ektTag,
-            ektTag_plainText[SRTP_MAX_EKT_TAG_LEN],
-            ektTagLength;
+            ektTag_plainText[SRTP_MAX_EKT_TAG_LEN];
+    int ektTagLength;
     unsigned int ektTag_plainTextLength,
                  ektTag_plainTextExpectedLength,
                  ektTag_offset;
@@ -207,7 +202,7 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
      * For PRIME ROC is in plain text. Therefore retrieve ROC here.
      * Also compute the expected plain encrypted EKT tag lengths.
      */
-    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+    if (stream->ektMode == ekt_mode_prime_end_to_end) {
         roc = srtp_packet_get_roc(srtp_hdr, *pkt_octet_len);
         *pkt_octet_len -= sizeof(srtp_roc_t);
 
@@ -262,7 +257,7 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
         return srtp_err_status_ekt_tag_ssrc_mismatch;
 
     /* For non-PRIME ROC is in the decrypted text */
-    if (stream->ektMode == EKT_MODE_REGULAR) {
+    if (stream->ektMode == ekt_mode_regular) {
         memcpy((void *)&roc, (void *)(ektTag_plainText + ektTag_offset), sizeof(srtp_roc_t));
         ektTag_offset += sizeof(srtp_roc_t);
         roc = ntohl(roc);
@@ -313,7 +308,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
      *    generated every packets_left_to_generate_auto_ekt packets.)
      *  - If full EKT tag is not to be generated then add short EKT tag.
      */
-    if (!(flags & SRTP_SERVICE_EKT_TAG) && stream->ekt_data.auto_ekt_pkts_left == 0 && stream->ekt_data.packets_left_to_generate_auto_ekt > 0)
+    if (!(flags & srtp_service_ekt_tag) && stream->ekt_data.auto_ekt_pkts_left == 0 && stream->ekt_data.packets_left_to_generate_auto_ekt > 0)
     {
         stream->ekt_data.packets_left_to_generate_auto_ekt--;
         /* Set SPI value to 0 in the packet */
@@ -354,7 +349,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
     /*
      * For non-PRIME ROC is in the ciphertext. Therefore insert ROC here.
      */
-    if (stream->ektMode == EKT_MODE_REGULAR) {
+    if (stream->ektMode == ekt_mode_regular) {
         /* copy ROC into packet */
         memcpy((void *)(ektTag + ektTagLen), (void *)&roc, sizeof(roc));
         debug_print(mod_srtp, "writing EKT ROC: %s,",
@@ -370,7 +365,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
      * For PRIME ROC is in plain text. Therefore insert ROC here.
      * Also compute the expected plain encrypted EKT tag lengths.
      */
-    if (stream->ektMode == EKT_MODE_PRIME_END_TO_END) {
+    if (stream->ektMode == ekt_mode_prime_end_to_end) {
         /* copy ROC into packet */
         memcpy(ektTagPtr, (void *)&roc, sizeof(roc));
         *((srtp_roc_t *)ektTagPtr) = htonl(roc); // >> 1;

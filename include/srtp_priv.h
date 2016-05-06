@@ -106,8 +106,8 @@ typedef enum direction_t {
 } direction_t;
 
 typedef enum srtp_packet_type_t {
-    SRTP_PACKET_RTP = 0,
-    SRTP_PACKET_RTCP = 1
+    srtp_packet_rtp = 0,
+    srtp_packet_rtcp = 1
 } srtp_packet_type_t;
 
 /*
