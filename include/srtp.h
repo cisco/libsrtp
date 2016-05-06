@@ -219,7 +219,7 @@ typedef struct {
  * srtp_service_flags represents the services an application can request
  *
  *           |- DEFAULT -|
- *  8  7  6  5  4  3  2  1
+ *  7  6  5  4  3  2  1  0
  *  |  |  |  |  |  |  |  |
  *  |  |  |  |  |  |  |  +--- Confidentiality (1)  |
  *  |  |  |  |  |  |  +------ Authentication  (2)  |
