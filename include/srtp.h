@@ -217,23 +217,28 @@ typedef struct {
 
 /*
  * srtp_service_flags represents the services an application can request
+ *
+ *           |- DEFAULT -|
+ *  8  7  6  5  4  3  2  1
+ *  |  |  |  |  |  |  |  |
+ *  |  |  |  |  |  |  |  +--- Confidentiality (1)  |
+ *  |  |  |  |  |  |  +------ Authentication  (2)  |
+ *  |  |  |  |  |  +--------- Check Replay    (4)  |-- SERVICE_DEFAULT
+ *  |  |  |  |  +------------ PRIME E2E       (8)  |
+ *  |  |  |  +--------------- PRIME HBH       (16) |
+ *  |  |  +------------------ EKT Tag         (32)
+ *  |  +--------------------- RESERVED        (64)
+ *  +------------------------ RESERVED        (128)
  */
 typedef enum srtp_service_flags_t
 {
   SRTP_SERVICE_CONFIDENTIALITY = 1,
   SRTP_SERVICE_AUTHENTICATION = 2,
-  SRTP_SERVICE_CONFIDENTIALITY_AND_AUTHENTICATION = 3,
   SRTP_SERVICE_CHK_REPLAY = 4,
-  SRTP_SERVICE_CONFIDENTIALITY_AND_CHK_REPLAY = 5,
-  SRTP_SERVICE_AUTHENTICATION_AND_CHK_REPLAY = 6,
-  SRTP_SERVICE_EKT_TAG = 8,
-  SRTP_SERVICE_EKT_TAG_AND_CONFIDENTIALITY = 9,
-  SRTP_SERVICE_EKT_TAG_AND_AUTHENTICATION = 10,
-  SRTP_SERVICE_EKT_TAG_CONFIDENTIALITY_AND_AUTENTICATION = 11,
-  SRTP_SERVICE_EKT_TAG_CHK_REPLAY = 12,
-  SRTP_SERVICE_EKT_TAG_CHK_REPLAY_AND_CONFIDENTIALITY = 13,
-  SRTP_SERVICE_EKT_TAG_CHK_REPLAY_AND_AUTHENTICAION = 14,
-  SRTP_SERVICE_ALL = 15
+  SRTP_SERVICE_PRIME_E2E = 8,
+  SRTP_SERVICE_PRIME_HBH = 16,
+  SRTP_SERVICE_DEFAULT = 31,
+  SRTP_SERVICE_EKT_TAG = 32
 } srtp_service_flags_t;
 
 /*

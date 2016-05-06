@@ -1160,14 +1160,14 @@ int srtp_estimate_index(srtp_rdbx_t *rdbx,
 }
 
 srtp_err_status_t
-srtp_check_pkt_replay(srtp_ctx_t *srtp,
-                      srtp_hdr_t *hdr,
-                      int *pkt_octet_len,
-                      srtp_stream_ctx_t *stream,
-                      srtp_xtd_seq_num_t *est,
-                      int *delta)
+srtp_get_est_pkt_index(srtp_ctx_t *srtp,
+                       srtp_hdr_t *hdr,
+                       int *pkt_octet_len,
+                       srtp_stream_ctx_t *stream,
+                       srtp_xtd_seq_num_t *est,
+                       int *delta,
+                       srtp_service_flags_t flags)
 {
-    srtp_err_status_t status;
     uint32_t roc;
     int primeEKTTagPresent = 0;
     srtp_ekt_spi_t spi = 0;
@@ -1181,11 +1181,19 @@ srtp_check_pkt_replay(srtp_ctx_t *srtp,
      * extract ROC from the packet.
      */
     if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP) {
-        /* Get the auth tag length and sanity check length */
-        auth_tag_length = srtp_auth_get_tag_length(stream->rtp_auth);
-        if ((*pkt_octet_len - auth_tag_length - sizeof(srtp_ekt_spi_t)) <=
-            octets_in_rtp_header) {
-            return srtp_err_status_bad_param;
+        if (flags & SRTP_SERVICE_PRIME_HBH) {
+            /* Get the auth tag length and sanity check length */
+            auth_tag_length = srtp_auth_get_tag_length(stream->rtp_auth);
+            if ((*pkt_octet_len - auth_tag_length - sizeof(srtp_ekt_spi_t)) <=
+                octets_in_rtp_header) {
+                return srtp_err_status_bad_param;
+            }
+        } else {
+            /*
+             * If not performing PRIME HBH operations, the auth tag must
+             * be removed already, so set the auth tag length to 0.
+             */
+            auth_tag_length = 0;
         }
 
         /* Retrieve the SPI */
@@ -1214,17 +1222,6 @@ srtp_check_pkt_replay(srtp_ctx_t *srtp,
     else {
         /* estimate packet index from seq. num. in header */
         *delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, est, ntohs(hdr->seq));
-    }
-
-    /*
-     * If the SSRC is not a new one then we have rdbx database therefore
-     * check if the packet is being replayed.
-     */
-    if (stream != srtp->stream_template) {
-        /* check replay database */
-        status = srtp_rdbx_check(&stream->rtp_rdbx, *delta);
-        if (status)
-            return status;
     }
 
 #ifdef NO_64BIT_MATH
@@ -2310,35 +2307,41 @@ srtp_protect_with_flags(srtp_ctx_t *ctx,
 
     /*
      * if the pkt looks good then authenticate and encrypt the packet
-     * For Prime endpoints -  We first encrypt the packet using end-to-end ctx
+     * For PRIME endpoints -  We first encrypt the packet using end-to-end ctx
      * and then we authenticate the packet with hop-by-hop ctx.
      */
     if (stream->ektMode == EKT_MODE_PRIME_HOP_BY_HOP)
     {
         /* Process using end-to-end ctx */
-        if (stream->prime_end_to_end_stream_ctx != NULL &&
-            flags & SRTP_SERVICE_CONFIDENTIALITY)
-            status = srtp_process_protect(ctx,
-                                          rtp_hdr,
-                                          pkt_octet_len,
-                                          stream->prime_end_to_end_stream_ctx,
-                                          delta,
-                                          est,
-                                          flags);
-        if (status)
-            return status;
+        if (flags & SRTP_SERVICE_PRIME_E2E) {
+            if (stream->prime_end_to_end_stream_ctx == NULL)
+                return srtp_err_status_bad_param;
+            if (stream->prime_end_to_end_stream_ctx != NULL)
+                status = srtp_process_protect(
+                                    ctx,
+                                    rtp_hdr,
+                                    pkt_octet_len,
+                                    stream->prime_end_to_end_stream_ctx,
+                                    delta,
+                                    est,
+                                    flags);
+            if (status)
+                return status;
+        }
 
         /* Process using hop-by-hop ctx */
-        if (flags & SRTP_SERVICE_AUTHENTICATION)
-            status = srtp_process_protect(ctx,
-                                          rtp_hdr,
-                                          pkt_octet_len,
-                                          stream,
-                                          delta,
-                                          est,
-                                          flags);
-        if (status)
-            return status;
+        if (flags & SRTP_SERVICE_PRIME_HBH) {
+                status = srtp_process_protect(
+                                    ctx,
+                                    rtp_hdr,
+                                    pkt_octet_len,
+                                    stream,
+                                    delta,
+                                    est,
+                                    flags);
+            if (status)
+                return status;
+        }
     }
     else
     {
@@ -2369,8 +2372,7 @@ srtp_protect(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len) {
                             ctx,
                             rtp_hdr,
                             pkt_octet_len,
-                            SRTP_SERVICE_CONFIDENTIALITY_AND_AUTHENTICATION |
-                            SRTP_SERVICE_CHK_REPLAY));
+                            SRTP_SERVICE_DEFAULT));
 
 }
 
@@ -2841,15 +2843,30 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
         }
     }
 
-    /* Check if the packet is being replayed */
-    status = srtp_check_pkt_replay(ctx,
-                                   hdr,
-                                   pkt_octet_len,
-                                   stream,
-                                   &est,
-                                   &delta);
+    /* Get the estimated packet index value */
+    status = srtp_get_est_pkt_index(ctx,
+                                    hdr,
+                                    pkt_octet_len,
+                                    stream,
+                                    &est,
+                                    &delta,
+                                    flags);
     if (status)
         return status;
+
+    /* Check if the packet is being replayed */
+    if (flags & SRTP_SERVICE_CHK_REPLAY) {
+        /*
+         * If the SSRC is not a new one then we have rdbx database therefore
+         * check if the packet is being replayed.
+         */
+        if (stream != ctx->stream_template) {
+            /* check replay database */
+            status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+            if (status)
+                return status;
+        }
+    }
 
     /*
      * If the packet looks good then authenticate and decrypt the packet. For
@@ -2862,25 +2879,31 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
         * The flag is checked before authenticating the actual packet. But the
         * check here avoids uneccessary function call.
         */
-        status = srtp_process_unprotect(srtp_hdr,
-                                        pkt_octet_len,
-                                        ctx,
-                                        stream,
-                                        delta,
-                                        est,
-                                        flags);
-        if (status)
-            return status;
+        if (flags & SRTP_SERVICE_PRIME_HBH) {
+            status = srtp_process_unprotect(srtp_hdr,
+                                            pkt_octet_len,
+                                            ctx,
+                                            stream,
+                                            delta,
+                                            est,
+                                            flags);
+            if (status)
+                return status;
+        }
 
-        status = srtp_process_unprotect(srtp_hdr,
-                                        pkt_octet_len,
-                                        ctx,
-                                        stream->prime_end_to_end_stream_ctx,
-                                        delta,
-                                        est,
-                                        flags);
-        if (status)
-            return status;
+        if (flags & SRTP_SERVICE_PRIME_E2E) {
+            if (stream->prime_end_to_end_stream_ctx == NULL)
+                return srtp_err_status_bad_param;
+            status = srtp_process_unprotect(srtp_hdr,
+                                            pkt_octet_len,
+                                            ctx,
+                                            stream->prime_end_to_end_stream_ctx,
+                                            delta,
+                                            est,
+                                            flags);
+            if (status)
+                return status;
+        }
     }
     else
     {
@@ -2928,7 +2951,9 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
      * the message authentication function passed, so add the packet
      * index into the replay database
     */
-    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+    if (flags & SRTP_SERVICE_CHK_REPLAY) {
+        srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+    }
 
     return srtp_err_status_ok;
 }
@@ -2940,7 +2965,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len) {
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
   
-  status = srtp_unprotect_with_flags(ctx, rtp_hdr, pkt_octet_len, SRTP_SERVICE_ALL);
+  status = srtp_unprotect_with_flags(ctx, rtp_hdr, pkt_octet_len, SRTP_SERVICE_DEFAULT);
   if (status) {
     debug_print(mod_srtp, "function srtp_unprotect: failed to unprotect packet", NULL);
   }
@@ -4295,7 +4320,7 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     return srtp_protect_rtcp_with_flags(ctx,
                                         rtcp_hdr,
                                         pkt_octet_len,
-                                        SRTP_SERVICE_ALL);
+                                        SRTP_SERVICE_DEFAULT);
 }
 
 
@@ -4565,7 +4590,7 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   status = srtp_unprotect_rtcp_with_flags(ctx,
                                           srtcp_hdr,
                                           pkt_octet_len,
-                                          SRTP_SERVICE_ALL);
+                                          SRTP_SERVICE_DEFAULT);
 
   if (status) {
     debug_print(mod_srtp, "function srtp_unprotect_rtcp: failed to unprotect packet", NULL);
