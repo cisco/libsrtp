@@ -490,7 +490,6 @@ typedef struct srtp_policy_t {
 				*   transmissions must have the same RTP
 				*   payload, or a severe security weakness
 				*   is introduced!)                      */
-  srtp_ekt_spi_t spi;          /**< Active SPI value                     */
   int *enc_xtn_hdr;            /**< List of header ids to encrypt.       */
   int enc_xtn_hdr_count;       /**< Number of entries in list of header ids. */
   struct srtp_policy_t *next;  /**< Pointer to next stream policy.       */

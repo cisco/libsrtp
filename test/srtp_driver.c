@@ -2403,7 +2403,6 @@ const srtp_policy_t default_policy = {
     },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
-    0,         /* Active SPI value */
     NULL,      /* no encrypted extension headers */
     0,         /* list of encrypted extension headers is empty */
     NULL
@@ -2439,7 +2438,6 @@ const srtp_policy_t aes_only_policy = {
     },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
-    0,         /* Active SPI value */
     NULL,      /* no encrypted extension headers */
     0,         /* list of encrypted extension headers is empty */
     NULL
@@ -2475,7 +2473,6 @@ const srtp_policy_t hmac_only_policy = {
     },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
-    0,         /* Active SPI value */
     NULL,      /* no encrypted extension headers */
     0,         /* list of encrypted extension headers is empty */
     NULL
@@ -2512,7 +2509,6 @@ const srtp_policy_t aes128_gcm_8_policy = {
     },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
-    0,           /* Active SPI value */
     NULL,        /* no encrypted extension headers */
     0,           /* list of encrypted extension headers is empty */
     NULL
@@ -2548,7 +2544,6 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
     },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
-    0,           /* Active SPI value */
     NULL,        /* no encrypted extension headers */
     0,           /* list of encrypted extension headers is empty */
     NULL
@@ -2584,7 +2579,6 @@ const srtp_policy_t aes256_gcm_8_policy = {
     },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
-    0,           /* Active SPI value */
     NULL,        /* no encrypted extension headers */
     0,           /* list of encrypted extension headers is empty */
     NULL
@@ -2620,7 +2614,6 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
     },
     128,         /* replay window size */
     0,           /* retransmission not allowed */
-    0,           /* Active SPI value */
     NULL,        /* no encrypted extension headers */
     0,           /* list of encrypted extension headers is empty */
     NULL
@@ -2657,7 +2650,6 @@ const srtp_policy_t null_policy = {
     },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
-    0,         /* Active SPI value */
     NULL,      /* no encrypted extension headers */
     0,         /* list of encrypted extension headers is empty */
     NULL
@@ -2703,7 +2695,6 @@ const srtp_policy_t aes_256_hmac_policy = {
     },
     128,       /* replay window size */
     0,         /* retransmission not allowed */
-    0,         /* Active SPI value */
     NULL,      /* no encrypted extension headers */
     0,         /* list of encrypted extension headers is empty */
     NULL
@@ -2770,7 +2761,6 @@ const srtp_policy_t wildcard_policy = {
     },
     128,                 /* replay window size */
     0,                   /* retransmission not allowed */
-    0,                   /* Active SPI value */
     NULL,                /* no encrypted extension headers */
     0,                   /* list of encrypted extension headers is empty */
     NULL
