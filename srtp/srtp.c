@@ -4324,8 +4324,10 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
         memcpy(stream->master_key, master_key_in_stream, key_len);
         srtp_stream_init_keys(stream, stream->master_key);
       }
-      return status;
     }
+
+    /* AES GCM packet is authenticated already, so return */
+    return status;
   }
 
   /* Get tag length from stream context */
@@ -4364,7 +4366,7 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
     return status;
   }
 
-  /* Authenticate the RTP packet */
+  /* Authenticate the RTCP packet */
   status = srtp_authenticate(stream, srtcp_hdr, (unsigned int*)pkt_octet_len, est, srtp_packet_rtcp);
 
   if (status) {
