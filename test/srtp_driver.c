@@ -1619,7 +1619,6 @@ srtp_validate_gcm ()
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key  = test_key_gcm;
-    policy.ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
