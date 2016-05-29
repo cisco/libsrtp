@@ -2579,6 +2579,13 @@ srtp_process_unprotect(void *srtp_hdr,
     /* Update the key in the context if a new key is received in the EKT tag */
     if (ektTagPresent) {
         key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
+        if (stream->rtp_xtn_hdr_cipher) {
+            int xtn_hdr_key_len =
+                srtp_cipher_get_key_length(stream->rtp_xtn_hdr_cipher);
+            if (xtn_hdr_key_len > key_len) {
+                key_len = xtn_hdr_key_len;
+            }
+        }
         if (memcmp(master_key_in_tag, stream->master_key, key_len)) {
             status = srtp_stream_init_keys(stream, master_key_in_tag);
             if (status != srtp_err_status_ok) {

@@ -196,6 +196,14 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     /* Compute the key lengths */
     kek_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher);
     master_key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
+    if (stream->rtp_xtn_hdr_cipher)
+    {
+        int xtn_hdr_key_len =
+            srtp_cipher_get_key_length(stream->rtp_xtn_hdr_cipher);
+        if (xtn_hdr_key_len > master_key_len) {
+            master_key_len = xtn_hdr_key_len;
+        }
+    }
     master_key_base_len = base_key_length(stream->rtp_cipher->type, master_key_len);
 
     /*
