@@ -3052,6 +3052,12 @@ srtp_add_stream(srtp_t session,
   }
 
   int key_len = srtp_cipher_get_key_length(tmp->rtp_cipher);
+  if (tmp->rtp_xtn_hdr_cipher) {
+      int xtn_hdr_key_len = srtp_cipher_get_key_length(tmp->rtp_xtn_hdr_cipher);
+      if (xtn_hdr_key_len > key_len) {
+          key_len = xtn_hdr_key_len;
+      }
+  }
 
   /* Initialize PRIME outer context and non EKT stream context */
   if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_no_ekt ||
@@ -3081,6 +3087,13 @@ srtp_add_stream(srtp_t session,
 
     /* Initialize the key lengths */
     int key_len = srtp_cipher_get_key_length(tmp_stream_ctx->rtp_cipher);
+    if (tmp_stream_ctx->rtp_xtn_hdr_cipher) {
+        int xtn_hdr_key_len =
+                srtp_cipher_get_key_length(tmp_stream_ctx->rtp_xtn_hdr_cipher);
+        if (xtn_hdr_key_len > key_len) {
+            key_len = xtn_hdr_key_len;
+        }
+    }
     int base_key_len = base_key_length(tmp_stream_ctx->rtp_cipher->type,
                                        key_len);
     unsigned salt_len = key_len - base_key_len;
