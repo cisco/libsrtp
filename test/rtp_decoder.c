@@ -186,6 +186,9 @@ main (int argc, char *argv[]) {
     fprintf(stderr, "none");
   fprintf(stderr, "\n");
   
+  /* Ensure the policy structure is initialized to zero */
+  memset(&policy, 0, sizeof(policy));
+
   /* set up the srtp policy and master key */    
   if (sec_servs) {
     /* 
@@ -269,7 +272,6 @@ main (int argc, char *argv[]) {
     } 
 
     policy.key  = (uint8_t *) key;
-    policy.ekt  = NULL;
     policy.next = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
