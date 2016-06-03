@@ -63,8 +63,10 @@
 srtp_err_status_t
 srtp_validate(void);
 
+#ifdef OPENSSL
 srtp_err_status_t
 srtp_validate_gcm(void);
+#endif
 
 srtp_err_status_t
 srtp_validate_encrypted_extensions_headers(void);
