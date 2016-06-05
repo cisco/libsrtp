@@ -124,8 +124,8 @@ if test "$enable_openssl" = "yes"; then
       [AS_HELP_STRING([--with-openssl-dir], [Location of OpenSSL installation])],
       [openssl_dir="$withval"], openssl_dir="")
 
-   LDFLAGS="$LDFLAGS -L$openssl_dir/lib $(pkg-config --libs openssl)";
-   CFLAGS="$CFLAGS -I$openssl_dir/include $(pkg-config --cflags openssl)";
+   LDFLAGS="$LDFLAGS -L$openssl_dir/lib $($PKG_CONFIG --libs openssl)";
+   CFLAGS="$CFLAGS -I$openssl_dir/include $($PKG_CONFIG --cflags openssl)";
 
    AC_CHECK_LIB([dl], [dlopen], [],
              [AC_MSG_WARN([can't find libdl])])
