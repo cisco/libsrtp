@@ -4089,6 +4089,26 @@ srtp_process_protect_rtcp(srtp_ctx_t *ctx, void *rtcp_hdr, int *pkt_octet_len, s
 
   debug_print(mod_srtp, "function srtp_protect_rtcp", NULL);
 
+  /*
+  * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
+  * the request to our AEAD handler.
+  */
+  if (stream->rtcp_cipher->algorithm == SRTP_AES_128_GCM ||
+    stream->rtcp_cipher->algorithm == SRTP_AES_256_GCM) {
+    status = srtp_protect_rtcp_aead(stream, rtcp_hdr, (unsigned int*)pkt_octet_len);
+    if (status)
+      return status;
+
+    /* For EKT and PRIME end-to-end, generate the EKT tag */
+    if (stream->ektMode == ekt_mode_prime_end_to_end ||
+        stream->ektMode == ekt_mode_regular) {
+        ektp = (uint8_t *)hdr + *pkt_octet_len;
+        status = ekt_generate_tag(stream, ctx, hdr, ektp, &ekt_tag_len, flags);
+        *pkt_octet_len += ekt_tag_len;
+    }
+    return status;
+  }
+
   /* all of the packet, except the header, gets encrypted */
   /* NOTE: hdr->length is not usable - it refers to only the first
            RTCP report in the compound packet! */
@@ -4115,26 +4135,6 @@ srtp_process_protect_rtcp(srtp_ctx_t *ctx, void *rtcp_hdr, int *pkt_octet_len, s
 #else
   est = seq_num;
 #endif
-
-  /*
-  * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
-  * the request to our AEAD handler.
-  */
-  if (stream->rtcp_cipher->algorithm == SRTP_AES_128_GCM ||
-    stream->rtcp_cipher->algorithm == SRTP_AES_256_GCM) {
-    status = srtp_protect_rtcp_aead(stream, rtcp_hdr, (unsigned int*)pkt_octet_len);
-    if (status)
-      return status;
-
-    /* For EKT and PRIME end-to-end, generate the EKT tag */
-    if (stream->ektMode == ekt_mode_prime_end_to_end ||
-        stream->ektMode == ekt_mode_regular) {
-        ektp = (uint8_t *)hdr + *pkt_octet_len;
-        status = ekt_generate_tag(stream, ctx, hdr, ektp, &ekt_tag_len, flags);
-        *pkt_octet_len += ekt_tag_len;
-    }
-    return status;
-  }
 
   status = srtp_set_iv(rtcp_hdr,
                        stream->rtcp_cipher,
