@@ -219,9 +219,11 @@ static srtp_err_status_t srtp_aes_wrap_set_iv (srtp_aes_wrap_ctx_t *c, const uin
     /*
      * Allocate space for the IV
      */
-    c->alternate_iv = malloc(c->alternate_iv_len);
     if (!c->alternate_iv) {
-        return srtp_err_status_alloc_fail;
+        c->alternate_iv = malloc(c->alternate_iv_len);
+        if (!c->alternate_iv) {
+            return srtp_err_status_alloc_fail;
+        }
     }
 
     /*
@@ -263,6 +265,10 @@ static srtp_err_status_t srtp_aes_wrap_set_iv_len (srtp_aes_wrap_ctx_t *c, const
      * RFC 5649 uses 4 byte IV, RFC 3394 uses 8 bytes
      */
     if (iv_len == 4 || iv_len == 8) {
+        if (c->alternate_iv && c->alternate_iv_len != iv_len) {
+           free(c->alternate_iv);
+           c->alternate_iv = 0;
+        }
         c->alternate_iv_len = iv_len;
         return srtp_err_status_ok;
     } else {
