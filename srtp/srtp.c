@@ -3324,6 +3324,7 @@ update_template_streams(srtp_t session,
   srtp_err_status_t status;
   srtp_stream_t new_stream_template;
   srtp_stream_t new_stream_list = NULL;
+  int key_len;
 
   if (session->stream_template == NULL) {
     return srtp_err_status_bad_param;
@@ -3357,6 +3358,10 @@ update_template_streams(srtp_t session,
       return status;
     }
   }
+
+  /* Copy master key copy as provided by the application */
+  key_len = srtp_cipher_get_key_length(new_stream_template->rtp_cipher);
+  memcpy(new_stream_template->master_key, policy->key, key_len);
 
   /* initialize new template stream  */
   status = srtp_stream_init(new_stream_template, policy);
