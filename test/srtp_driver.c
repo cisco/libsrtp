@@ -1584,13 +1584,13 @@ srtp_validate_gcm ()
         0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7,
         0xa8, 0xa9, 0xaa, 0xab
     };
-    uint8_t srtp_plaintext_ref[28] = {
+    uint8_t rtp_plaintext_ref[28] = {
         0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
         0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
         0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
         0xab, 0xab, 0xab, 0xab
     };
-    uint8_t srtp_plaintext[44] = {
+    uint8_t rtp_plaintext[44] = {
         0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
         0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
         0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
@@ -1606,6 +1606,28 @@ srtp_validate_gcm ()
         0xf7, 0x96, 0xb2, 0x01, 0xdf, 0x31, 0x31, 0xa1,
         0x27, 0xe8, 0xa3, 0x92
     };
+    uint8_t rtcp_plaintext_ref[24] = {
+        0x81, 0xc8, 0x00, 0x0b, 0xca, 0xfe, 0xba, 0xbe,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+    };
+    uint8_t rtcp_plaintext[44] = {
+        0x81, 0xc8, 0x00, 0x0b, 0xca, 0xfe, 0xba, 0xbe,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint8_t srtcp_ciphertext[44] = {
+        0x81, 0xc8, 0x00, 0x0b, 0xca, 0xfe, 0xba, 0xbe,
+        0xc9, 0x8b, 0x8b, 0x5d, 0xf0, 0x39, 0x2a, 0x55,
+        0x85, 0x2b, 0x6c, 0x21, 0xac, 0x8e, 0x70, 0x25,
+        0xc5, 0x2c, 0x6f, 0xbe, 0xa2, 0xb3, 0xb4, 0x46,
+        0xea, 0x31, 0x12, 0x3b, 0xa8, 0x8c, 0xe6, 0x1e,
+        0x80, 0x00, 0x00, 0x01
+    };
+
     srtp_t srtp_snd, srtp_recv;
     srtp_err_status_t status;
     int len;
@@ -1632,20 +1654,38 @@ srtp_validate_gcm ()
     }
 
     /*
-     * protect plaintext, then compare with ciphertext
+     * protect plaintext rtp, then compare with srtp ciphertext
      */
     len = 28;
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+    status = srtp_protect(srtp_snd, rtp_plaintext, &len);
     if (status || (len != 44)) {
         return srtp_err_status_fail;
     }
 
-    debug_print(mod_driver, "ciphertext:\n  %s",
-                octet_string_hex_string(srtp_plaintext, len));
-    debug_print(mod_driver, "ciphertext reference:\n  %s",
+    debug_print(mod_driver, "srtp ciphertext:\n  %s",
+                octet_string_hex_string(rtp_plaintext, len));
+    debug_print(mod_driver, "srtp ciphertext reference:\n  %s",
                 octet_string_hex_string(srtp_ciphertext, len));
 
-    if (octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+    if (octet_string_is_eq(rtp_plaintext, srtp_ciphertext, len)) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * protect plaintext rtcp, then compare with srtcp ciphertext
+     */
+    len = 24;
+    status = srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len);
+    if (status || (len != 44)) {
+        return srtp_err_status_fail;
+    }
+
+    debug_print(mod_driver, "srtcp ciphertext:\n  %s",
+                octet_string_hex_string(rtcp_plaintext, len));
+    debug_print(mod_driver, "srtcp ciphertext reference:\n  %s",
+                octet_string_hex_string(srtcp_ciphertext, len));
+
+    if (octet_string_is_eq(rtcp_plaintext, srtcp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -1660,14 +1700,28 @@ srtp_validate_gcm ()
     }
 
     /*
-     * unprotect ciphertext, then compare with plaintext
+     * unprotect srtp ciphertext, then compare with rtp plaintext
      */
+    len = 44;
     status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status || (len != 28)) {
         return status;
     }
 
-    if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (octet_string_is_eq(srtp_ciphertext, rtp_plaintext_ref, len)) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * unprotect srtcp ciphertext, then compare with rtcp plaintext
+     */
+    len = 44;
+    status = srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
+    if (status || (len != 24)) {
+        return status;
+    }
+
+    if (octet_string_is_eq(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
