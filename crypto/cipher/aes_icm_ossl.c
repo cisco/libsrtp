@@ -120,11 +120,6 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc (srtp_cipher_t **c, int key_
     /*
      * Verify the key_len is valid for one of: AES-128/192/256
      */
-    if (key_len != SRTP_AES_128_KEYSIZE_WSALT && key_len != SRTP_AES_192_KEYSIZE_WSALT &&
-        key_len != SRTP_AES_256_KEYSIZE_WSALT) {
-        return srtp_err_status_bad_param;
-    }
-
     if (key_len != SRTP_AES_128_KEYSIZE_WSALT &&
 #ifndef SRTP_NO_AES192
         key_len != SRTP_AES_192_KEYSIZE_WSALT &&
