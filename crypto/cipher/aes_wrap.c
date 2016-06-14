@@ -124,6 +124,14 @@ static srtp_err_status_t srtp_aes_wrap_alloc (srtp_cipher_t **c, int key_len, in
     (*c)->type = &srtp_aes_wrap;
     wrap->key_size = key_len;
     wrap->alternate_iv_len = 4; /* default to 4 byte IV for RFC 5649 */
+    /* Allocate space for the max IV length */
+    wrap->alternate_iv = malloc(8);
+    if (!wrap->alternate_iv) {
+        srtp_crypto_free(wrap);
+        srtp_crypto_free(*c);
+        *c = NULL;
+        return srtp_err_status_alloc_fail;
+    }
 
     /* set key size        */
     (*c)->key_len = key_len;
@@ -215,14 +223,6 @@ static srtp_err_status_t srtp_aes_wrap_set_iv (srtp_aes_wrap_ctx_t *c, const uin
      * Set the encryption direction
      */
     c->direction = dir;
-
-    /*
-     * Allocate space for the IV
-     */
-    c->alternate_iv = malloc(c->alternate_iv_len);
-    if (!c->alternate_iv) {
-        return srtp_err_status_alloc_fail;
-    }
 
     /*
      * Populate the alternate IV value from either the user provided value
@@ -730,7 +730,7 @@ static srtp_err_status_t srtp_aes_key_unwrap_padded (srtp_aes_wrap_ctx_t *c,
     /*
      * Verify the integrity data is correct
      */
-    if (c->alternate_iv && c->alternate_iv_len == 8) {
+    if (c->alternate_iv_len == 8) {
         /*
          * Perform RFC 3394 integrity check
          */
@@ -796,7 +796,7 @@ static srtp_err_status_t srtp_aes_key_wrap_padded (srtp_aes_wrap_ctx_t *c, unsig
     /*
      * Store the initialization vector as the first 4 octets of the ciphertext
      */
-    if (c->alternate_iv && c->alternate_iv_len == 8) {
+    if (c->alternate_iv_len == 8) {
         /*
          * We're doing RFC 3394 key wrap
          */
