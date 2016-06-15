@@ -76,6 +76,10 @@ extern cipher_type_t aes_icm;
 #ifndef OPENSSL
 extern cipher_type_t aes_cbc;
 #else
+#ifndef SRTP_NO_AES192
+extern cipher_type_t aes_icm_192;
+#endif
+extern cipher_type_t aes_icm_256;
 extern cipher_type_t aes_gcm_128_openssl;
 extern cipher_type_t aes_gcm_256_openssl;
 #endif
@@ -170,6 +174,16 @@ crypto_kernel_init() {
   if (status) 
     return status;
 #else
+#ifndef SRTP_NO_AES192
+  status = crypto_kernel_load_cipher_type(&aes_icm_192, AES_192_ICM);
+  if (status) {
+      return status;
+  }
+#endif
+  status = crypto_kernel_load_cipher_type(&aes_icm_256, AES_256_ICM);
+  if (status) {
+      return status;
+  }
   status = crypto_kernel_load_cipher_type(&aes_gcm_128_openssl, AES_128_GCM);
   if (status) {
       return status;
