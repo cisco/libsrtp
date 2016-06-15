@@ -153,7 +153,6 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
         break;
 #ifndef SRTP_NO_AES192
     case AES_192_KEYSIZE_WSALT:
-        (*c)->algorithm = AES_192_ICM;
         (*c)->type = &aes_icm_192;
         aes_icm_192.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_192_KEYSIZE;
@@ -537,7 +536,7 @@ cipher_type_t aes_icm_192 = {
     (int)                          0,                /* instance count */
     (cipher_test_case_t*)          &aes_icm_192_test_case_1,
     (debug_module_t*)              &mod_aes_icm,
-    (cipher_type_id_t)             AES_192_ICM
+    (cipher_type_id_t)             AES_ICM
 };
 #endif
 

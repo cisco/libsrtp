@@ -489,7 +489,6 @@ static inline int base_key_length(const cipher_type_t *cipher, int key_length)
 {
   switch (cipher->id) {
   case AES_ICM:
-  case AES_192_ICM:
   case AES_256_ICM:
     /* The legacy modes are derived from
      * the configured key length on the policy */
