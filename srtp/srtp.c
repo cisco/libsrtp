@@ -488,7 +488,7 @@ srtp_kdf_clear(srtp_kdf_t *kdf) {
 static inline int base_key_length(const cipher_type_t *cipher, int key_length)
 {
   switch (cipher->id) {
-  case AES_128_ICM:
+  case AES_ICM:
   case AES_192_ICM:
   case AES_256_ICM:
     /* The legacy modes are derived from

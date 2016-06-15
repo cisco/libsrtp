@@ -1543,7 +1543,7 @@ unsigned char test_key[46] = {
 const srtp_policy_t default_policy = {
   { ssrc_any_outbound, 0 },  /* SSRC                           */
   {                      /* SRTP policy                    */                  
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     HMAC_SHA1,              /* authentication func type    */
     16,                     /* auth key length in octets   */
@@ -1551,7 +1551,7 @@ const srtp_policy_t default_policy = {
     sec_serv_conf_and_auth  /* security services flag      */
   },
   {                      /* SRTCP policy                   */
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     HMAC_SHA1,              /* authentication func type    */
     16,                     /* auth key length in octets   */
@@ -1568,7 +1568,7 @@ const srtp_policy_t default_policy = {
 const srtp_policy_t aes_tmmh_policy = {
   { ssrc_any_outbound, 0 },     /* SSRC                        */
   { 
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     UST_TMMHv2,             /* authentication func type    */
     94,                     /* auth key length in octets   */
@@ -1576,7 +1576,7 @@ const srtp_policy_t aes_tmmh_policy = {
     sec_serv_conf_and_auth  /* security services flag      */
   },
   { 
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     UST_TMMHv2,             /* authentication func type    */
     94,                     /* auth key length in octets   */
@@ -1593,7 +1593,7 @@ const srtp_policy_t aes_tmmh_policy = {
 const srtp_policy_t tmmh_only_policy = {
   { ssrc_any_outbound, 0 },     /* SSRC                        */
   {
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     UST_TMMHv2,             /* authentication func type    */
     94,                     /* auth key length in octets   */
@@ -1601,7 +1601,7 @@ const srtp_policy_t tmmh_only_policy = {
     sec_serv_auth           /* security services flag      */
   },
   {
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     UST_TMMHv2,             /* authentication func type    */
     94,                     /* auth key length in octets   */
@@ -1618,7 +1618,7 @@ const srtp_policy_t tmmh_only_policy = {
 const srtp_policy_t aes_only_policy = {
   { ssrc_any_outbound, 0 },     /* SSRC                        */ 
   {
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     NULL_AUTH,              /* authentication func type    */
     0,                      /* auth key length in octets   */
@@ -1626,7 +1626,7 @@ const srtp_policy_t aes_only_policy = {
     sec_serv_conf           /* security services flag      */
   },
   {
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     NULL_AUTH,              /* authentication func type    */
     0,                      /* auth key length in octets   */
@@ -1905,7 +1905,7 @@ policy_array[] = {
 const srtp_policy_t wildcard_policy = {
   { ssrc_any_outbound, 0 }, /* SSRC                        */
   {                      /* SRTP policy                    */                  
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     HMAC_SHA1,              /* authentication func type    */
     16,                     /* auth key length in octets   */
@@ -1913,7 +1913,7 @@ const srtp_policy_t wildcard_policy = {
     sec_serv_conf_and_auth  /* security services flag      */
   },
   {                      /* SRTCP policy                   */
-    AES_128_ICM,            /* cipher type                 */
+    AES_ICM,                /* cipher type                 */
     30,                     /* cipher key length in octets */
     HMAC_SHA1,              /* authentication func type    */
     16,                     /* auth key length in octets   */

@@ -142,11 +142,11 @@ err_status_t aes_icm_openssl_alloc (cipher_t **c, int key_len, int tlen)
     *c = (cipher_t*)allptr;
     (*c)->state = allptr + sizeof(cipher_t);
     icm = (aes_icm_ctx_t*)(*c)->state;
+    (*c)->algorithm = AES_ICM;
 
     /* increment ref_count */
     switch (key_len) {
     case AES_128_KEYSIZE_WSALT:
-        (*c)->algorithm = AES_128_ICM;
         (*c)->type = &aes_icm;
         aes_icm.ref_count++;
         ((aes_icm_ctx_t*)(*c)->state)->key_size = AES_128_KEYSIZE;
