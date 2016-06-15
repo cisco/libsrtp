@@ -122,11 +122,6 @@ aes_icm_alloc_ismacryp(cipher_t **c, int key_len, int forIsmacryp) {
   /* set pointers */
   *c = (cipher_t *)pointer;
   (*c)->algorithm = AES_ICM;
-  switch (key_len) {
-  case 46:
-      (*c)->algorithm = AES_256_ICM;
-      break;
-  }
   (*c)->type = &aes_icm;
   (*c)->state = pointer + sizeof(cipher_t);
 

@@ -489,7 +489,6 @@ static inline int base_key_length(const cipher_type_t *cipher, int key_length)
 {
   switch (cipher->id) {
   case AES_ICM:
-  case AES_256_ICM:
     /* The legacy modes are derived from
      * the configured key length on the policy */
     return key_length - 14;
@@ -1352,8 +1351,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
    /* 
     * if we're using rindael counter mode, set nonce and seq 
     */
-   if (stream->rtp_cipher->type->id == AES_ICM ||
-       stream->rtp_cipher->type->id == AES_256_ICM) {
+   if (stream->rtp_cipher->type->id == AES_ICM) {
      v128_t iv;
 
      iv.v32[0] = 0;
@@ -1544,8 +1542,7 @@ srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len) {
    * set the cipher's IV properly, depending on whatever cipher we
    * happen to be using
    */
-  if (stream->rtp_cipher->type->id == AES_ICM ||
-      stream->rtp_cipher->type->id == AES_256_ICM) {
+  if (stream->rtp_cipher->type->id == AES_ICM) {
 
     /* aes counter mode */
     iv.v32[0] = 0;
