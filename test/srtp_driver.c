@@ -2476,6 +2476,30 @@ srtp_test_update() {
 
   free(msg);
 
+  /* update send ctx with same test_key t verify update works*/
+  policy.ssrc.type = ssrc_any_outbound;
+  policy.key = test_key;
+  status = srtp_update(srtp_snd, &policy);
+  if (status)
+    return status;
+
+  msg = srtp_create_test_packet(msg_len_octets, ssrc);
+  if (msg == NULL)
+    return srtp_err_status_alloc_fail;
+  msg->seq = htons(2);
+
+  protected_msg_len_octets = msg_len_octets;
+  status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets);
+  if (status)
+    return srtp_err_status_fail;
+
+  status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+  if (status)
+    return status;
+
+  free(msg);
+
+
   /* update send ctx to use test_alt_key */
   policy.ssrc.type = ssrc_any_outbound;
   policy.key = test_alt_key;
@@ -2487,7 +2511,7 @@ srtp_test_update() {
   msg = srtp_create_test_packet(msg_len_octets, ssrc);
   if (msg == NULL)
     return srtp_err_status_alloc_fail;
-  msg->seq = htons(2);
+  msg->seq = htons(3);
 
   protected_msg_len_octets = msg_len_octets;
   status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets);
