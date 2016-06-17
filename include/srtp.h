@@ -389,12 +389,11 @@ typedef struct srtp_ekt_policy_t {
   srtp_crypto_policy_t prime_end_to_end_rtp_crypto;     /* SRTP crypto policy used to send end-to-end packets for prime-end-to-end mode.  */
   srtp_crypto_policy_t prime_end_to_end_rtcp_crypto;    /* SRTCP crypto policy used to send end-to-end packets for prime-end-to-end mode.  */
   srtp_ekt_ctx_type_t ekt_ctx_type;                     /* This field represents the EKT mode - none, prime, or regular EKT*/
-  int total_auto_ekt_tags_at_roc_change;                /* This field indicates the number of
-                                                         * pkts which will have ekt tags attached after every ROC change
-                                                         * 0 indicates */
-  int packet_interval_for_auto_ekt;                     /* This field indicates the number of RTP/RTCP
-                                                         * pkts after which will have ekt tags attached after every ROC change
-                                                         * 0 indicates */
+  int total_auto_ekt_tags_at_roc_change;                /* This field indicates the number of packets which will have EKT tags attached
+                                                           after every ROC change.  0 indicates that a ROC change will not prompt EKT tag
+                                                           insertion. */
+  int packet_interval_for_auto_ekt;                     /* This field indicates the number of RTP/RTCP packets after an ekt tag is attached.
+                                                           0 indicates that an EKT tag is to be applied to every packet. */
 } srtp_ekt_policy_t;
 
 /*
