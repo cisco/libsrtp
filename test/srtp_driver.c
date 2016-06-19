@@ -99,6 +99,9 @@ srtp_test_remove_stream(void);
 srtp_err_status_t
 srtp_test_update(void);
 
+srtp_err_status_t
+srtp_validate_ekt(void);
+
 double
 srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
 
@@ -130,6 +133,8 @@ double
 mips_estimate(int num_trials, int *ignore);
 
 extern uint8_t test_key[46];
+extern uint8_t ekt_test_key[16];
+extern uint8_t null_test_key[46];
 
 void
 usage (char *prog_name)
@@ -423,6 +428,17 @@ main (int argc, char *argv[])
         if (srtp_test_update() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        /*
+         * test the function srtp_validate_ekt()
+         */
+        printf("testing srtp_validate_ekt()...");
+        if (srtp_validate_ekt() == srtp_err_status_ok) {
+            printf("passed\n\n");
+        } else{
             printf("failed\n");
             exit(1);
         }
@@ -2569,6 +2585,173 @@ srtp_test_update() {
 }
 
 /*
+ * srtp_validate_ekt() verifies that EKT tags are generated properly
+ * and that packets are properly formed.  The expected ciphertext
+ * is based on the EKT text in draft-ietf-avtcore-srtp-ekt-03, except
+ * that the ISN field is not present (as agreed in IETF meetings
+ * during 2015).  Thus, the expected EKT_Plaintext value is defined as:
+ *
+ *     EKT_Plaintext = SRTP_Master_Key || SSRC || ROC
+ */
+
+
+srtp_err_status_t
+srtp_validate_ekt ()
+{
+    uint8_t srtp_plaintext_ref[28] = {
+        0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab
+    };
+    uint8_t srtp_plaintext[72] = {
+        0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint8_t srtp_ciphertext[72] = {
+        0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x4e, 0x55, 0xdc, 0x4c,
+        0xe7, 0x99, 0x78, 0xd8, 0x8c, 0xa4, 0xd2, 0x15,
+        0x94, 0x9d, 0x24, 0x02, 0xb7, 0x8d, 0x6a, 0xcc,
+        0x99, 0xea, 0x17, 0x9b, 0x8d, 0xbb, 0x99, 0x6d,
+        0x43, 0xd9, 0xa4, 0x30, 0xe1, 0xf3, 0x87, 0x44,
+        0x1f, 0x3c, 0x7b, 0xdf, 0xb3, 0x3c, 0x40, 0xb8,
+        0x5a, 0x59, 0x11, 0xd6, 0x5b, 0xaa, 0x59, 0x1d,
+        0x69, 0x1a, 0x84, 0xbd, 0x16, 0x39, 0x43, 0x21
+    };
+    srtp_t srtp_snd, srtp_recv;
+    srtp_err_status_t status;
+    srtp_ekt_spi_policy_t spi_policy;
+    int len;
+    srtp_policy_t policy;
+    srtp_ekt_spi_t spi;
+
+    /* Asign SPI value */
+    spi = 0x2190;
+
+    /* Create and initialze the SPI policy */
+    memset(&spi_policy, 0, sizeof(spi_policy));
+    spi_policy.spi = spi;
+    spi_policy.ekt_cipher = ekt_cipher_aeskw_128;
+    spi_policy.ekt_key = ekt_test_key;
+    spi_policy.ekt_master_salt = test_key + 16;
+    spi_policy.ekt_master_salt_length = 14;
+
+    /*
+     * Create a session with a single stream using the default srtp
+     * policy and with the SSRC value 0xcafebabe
+     */
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type  = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key  = test_key;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_ekt;
+    policy.ekt_policy.spi = spi;
+    policy.ekt_policy.key = test_key;
+    policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_ekt;
+    policy.ekt_policy.total_auto_ekt_tags_at_roc_change = 5;
+    policy.ekt_policy.packet_interval_for_auto_ekt = 100;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    /* Create the send context */
+    status = srtp_create(&srtp_snd, NULL);
+    if (status) {
+        return status;
+    }
+
+    /* Apply the SPI policy */
+    status = srtp_ekt_set_spi_info(srtp_snd, &spi_policy);
+    if (status) {
+        return status;
+    }
+
+    /* Add the SRTP stream for the defined policy */
+    status = srtp_add_stream(srtp_snd, &policy);
+    if (status) {
+        return status;
+    }
+
+    /* Protect plaintext, then compare with ciphertext */
+    len = 28;
+    status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+    if (status || (len != 72)) {
+        return srtp_err_status_fail;
+    }
+
+    debug_print(mod_driver, "ciphertext:\n  %s",
+                octet_string_hex_string(srtp_plaintext, len));
+    debug_print(mod_driver, "ciphertext reference:\n  %s",
+                octet_string_hex_string(srtp_ciphertext, len));
+
+    if (octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * Create a receiver session context comparable to the one created
+     * above - we need to do this so that the replay checking doesn't
+     * complain.
+     */
+    status = srtp_create(&srtp_recv, NULL);
+    if (status) {
+        return status;
+    }
+
+    /* Apply the SPI policy */
+    srtp_ekt_set_spi_info(srtp_recv, &spi_policy);
+
+    /*
+     * For the receive stream, we wish to get the encryption key from
+     * the EKT tag, so we will assign a null key initially.  Note that
+     * the EKT key and master salt are set in policy.ekt_policy.
+     * The policy.ekt_policy.key is also reassigned since, for EKT, the
+     * library will form the SRTP master key using the key in ekt_policy
+     * and salt found in spi_policy.
+     */
+    policy.key  = null_test_key;
+    policy.ekt_policy.key = null_test_key;
+
+    /* Add the SRTP stream for the defined policy */
+    status = srtp_add_stream(srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    /* Unprotect ciphertext, then compare with plaintext */
+    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    if (status || (len != 28)) {
+        return status;
+    }
+
+    if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_snd);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    return srtp_err_status_ok;
+}
+
+/*
  * srtp policy definitions - these definitions are used above
  */
 
@@ -2912,6 +3095,16 @@ const srtp_policy_t aes_256_hmac_policy = {
 uint8_t ekt_test_key[16] = {
     0x77, 0x26, 0x9d, 0xac, 0x16, 0xa3, 0x28, 0xca,
     0x8e, 0xc9, 0x68, 0x4b, 0xcc, 0xc4, 0xd2, 0x1b
+};
+
+uint8_t null_test_key[46] =
+{
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 /*

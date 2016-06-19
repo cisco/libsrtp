@@ -98,33 +98,46 @@ srtp_err_status_t ekt_get_spi_info(srtp_ctx_t_ *ctx, srtp_ekt_spi_t spi, srtp_ek
     return srtp_err_status_spi_not_found;
 }
 
-unsigned int ekt_get_tag_length(srtp_ekt_mode_t ektMode, srtp_ekt_spi_info_t *spi_info) {
+unsigned int ekt_get_tag_length(srtp_ekt_mode_t ektMode, int master_key_len) {
 
-    unsigned int tag_len, padding_len;
+    unsigned int plaintext_length,
+                 ciphertext_length,
+                 data_blocks,
+                 ekt_tag_length;
 
-    /*
-     * if the pointer ekt is NULL, then EKT is not in effect, so we
-     * indicate this by returning zero
-     */
-    if (!spi_info)
-        return 0;
-
-    if (ektMode == ekt_mode_prime_end_to_end) {
-        tag_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher) + sizeof(srtp_ssrc_t);
-        padding_len = tag_len % 8;
-        tag_len += padding_len;
-        tag_len += 8;
-        tag_len = tag_len + sizeof(srtp_roc_t) + sizeof(srtp_ekt_spi_t);
+    /* The EKT Plaintext contents depends on the EKT mode */
+    if (ektMode == ekt_mode_prime_end_to_end)
+    {
+        /* Plaintext is: SRTP_Master_Key || SSRC */
+        plaintext_length = master_key_len + sizeof(uint32_t);
     }
     else {
-        tag_len = srtp_get_ekt_cipher_key_length(spi_info->ekt_cipher) + sizeof(srtp_roc_t) + sizeof(srtp_ssrc_t);
-        padding_len = tag_len % 8;
-        tag_len += padding_len;
-        tag_len += 8;
-        tag_len = tag_len + sizeof(srtp_ekt_spi_t);
+        /* Plaintext is: SRTP_Master_Key || SSRC || ROC */
+        plaintext_length =
+            master_key_len + sizeof(uint32_t) + sizeof(srtp_roc_t);
     }
 
-    return tag_len;
+    /* Determine the length of the AES Key Wrap ciphertext */
+    data_blocks = plaintext_length / 8;
+    if (plaintext_length % 8) {
+        data_blocks++;
+    }
+    if (data_blocks < 2) {
+        ciphertext_length = 16;
+    }
+    else {
+        ciphertext_length = data_blocks * 8 + 8;
+    }
+
+    /* Compute the EKT Tag length as the ciphertext length + SPI field */
+    ekt_tag_length = ciphertext_length + sizeof(srtp_ekt_spi_t);
+
+    /* For PRIME mode, the ROC is outside the plaintext in EKT tag */
+    if (ektMode == ekt_mode_prime_end_to_end) {
+        ekt_tag_length += sizeof(srtp_roc_t);
+    }
+
+    return ekt_tag_length;
 }
 
 srtp_ekt_spi_t
@@ -207,7 +220,7 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     master_key_base_len = base_key_length(stream->rtp_cipher->type, master_key_len);
 
     /*
-     * For PRIME ROC is in plain text. Therefore retrieve ROC here.
+     * For PRIME, ROC is in plaintext. Therefore, retrieve ROC here.
      * Also compute the expected plain encrypted EKT tag lengths.
      */
     if (stream->ektMode == ekt_mode_prime_end_to_end) {
@@ -215,11 +228,12 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
         *pkt_octet_len -= sizeof(srtp_roc_t);
 
         ektTag_plainTextExpectedLength = master_key_base_len + sizeof(uint32_t);
-        ektTagLength = ekt_get_tag_length(stream->ektMode, spi_info) - sizeof(srtp_ekt_spi_t) - sizeof(srtp_roc_t);
+        ektTagLength = ekt_get_tag_length(stream->ektMode, master_key_base_len) - sizeof(srtp_ekt_spi_t) - sizeof(srtp_roc_t);
     }
     else {
         ektTag_plainTextExpectedLength = master_key_base_len + sizeof(uint32_t) + sizeof (srtp_roc_t);
-        ektTagLength = ekt_get_tag_length(stream->ektMode, spi_info) - sizeof(srtp_ekt_spi_t);
+        ektTagLength = ekt_get_tag_length(stream->ektMode, master_key_base_len) - sizeof(srtp_ekt_spi_t);
+
         /*
          * Set ROC = 0 to ensure that srtp_ekt_ciphertext_decrypt does
          * not change the default IV used in AES Key Wrap
@@ -235,7 +249,7 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     /* Retrieve the EKT cipher text and decrypt to obtain the plain text. */
     ektTag = (uint8_t *)((uint8_t *)srtp_hdr + *pkt_octet_len - ektTagLength);
 
-    /* Decrypt the EKT cipher text */
+    /* Decrypt the EKT ciphertext */
     rc = srtp_ekt_ciphertext_decrypt((void*)spi_info->ekt_key, (kek_len << 3), ektTag, ektTagLength, roc, ektTag_plainText, &ektTag_plainTextLength);
     if (rc != srtp_err_status_ok)
         return rc;
@@ -260,7 +274,6 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     /* Retrieve the SSRC */
     memcpy((void *)&ssrc, (void *)(ektTag_plainText + ektTag_offset), sizeof(uint32_t));
     ektTag_offset += sizeof(uint32_t);
-    ssrc = ntohl(ssrc);
     if (ssrc != hdr->ssrc)
         return srtp_err_status_ekt_tag_ssrc_mismatch;
 
@@ -272,6 +285,19 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     }
 
     *pkt_octet_len -= ektTagLength;
+
+    /*
+     * TODO: we do nothing with the ROC at present.  This is OK for
+     * point-to-point sessions, but in a conferencing session where an endpoint
+     * joins late or when an endpoint has not received media for an extended
+     * period of time, the ROC value might not be what the endpoint assumes
+     * it is.  Given this ROC value and assuming the "RTP packet index" is
+     * not less than what the endpoint assumes it is, we should change the
+     * replay database to use this new ROC and the sequence number from
+     * the packet.  However, if the packet fails authentication then we
+     * need to revert back, as that might mean that a rogue entity is sending
+     * bogus packets.
+     */
 
     return srtp_err_status_ok;
 }
@@ -294,7 +320,6 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
         key_len,
         base_key_len;
     srtp_err_status_t rc;
-    uint32_t ssrc;
     srtp_ekt_spi_t spi;
 
     *ekt_cipherTextLength = 0;
@@ -321,7 +346,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
         stream->ekt_data.packets_left_to_generate_auto_ekt--;
         /* Set SPI value to 0 in the packet */
         *((srtp_ekt_spi_t *)ekt_cipherText) = 0;
-        *ekt_cipherTextLength += sizeof(stream->ekt_data.spi);
+        *ekt_cipherTextLength += sizeof(srtp_ekt_spi_t);
         return srtp_err_status_ok;
     }
 
@@ -341,14 +366,13 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
     base_key_len = base_key_length(stream->rtp_cipher->type, key_len);
 
     memcpy((void *)ektTag, stream->master_key, base_key_len);
-    debug_print(mod_srtp, "writing EKT EMK: %s,",
+    debug_print(mod_srtp, "writing EKT EMK: %s",
                 srtp_octet_string_hex_string(ektTag, base_key_len));
     ektTagLen = base_key_len;
 
     /* copy SSRC into packet */
-    ssrc = htonl(stream->ssrc);
-    memcpy((void *)(ektTag + ektTagLen), &ssrc, sizeof(ssrc));
-    debug_print(mod_srtp, "writing EKT SSRC: %s,",
+    memcpy((void *)(ektTag + ektTagLen), &stream->ssrc, sizeof(stream->ssrc));
+    debug_print(mod_srtp, "writing EKT SSRC: %s",
                 srtp_octet_string_hex_string(ektTag + ektTagLen, sizeof(stream->ssrc)));
     ektTagLen += sizeof(stream->ssrc);
 
@@ -360,13 +384,20 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
     if (stream->ektMode == ekt_mode_regular) {
         /* copy ROC into packet */
         memcpy((void *)(ektTag + ektTagLen), (void *)&roc, sizeof(roc));
-        debug_print(mod_srtp, "writing EKT ROC: %s,",
+        debug_print(mod_srtp, "writing EKT ROC: %s",
             srtp_octet_string_hex_string(&roc, sizeof(roc)));
         ektTagLen += sizeof(roc);
     }
 
     /* Encrypt the EKT tag */
-    srtp_ekt_plaintext_encrypt((void*)(spi_info->ekt_key), (kek_len << 3), ektTag, ektTagLen, roc, ekt_cipherText, ekt_cipherTextLength);
+    debug_print(mod_srtp, "EKT_TAG: %s",
+                srtp_octet_string_hex_string(ektTag, ektTagLen));
+    debug_print(mod_srtp, "EKT_TAGLEN: %i", ektTagLen);
+    if (stream->ektMode == ekt_mode_prime_end_to_end) {
+        srtp_ekt_plaintext_encrypt((void*)(spi_info->ekt_key), (kek_len << 3), ektTag, ektTagLen, ntohl(roc), ekt_cipherText, ekt_cipherTextLength);
+    } else {
+        srtp_ekt_plaintext_encrypt((void*)(spi_info->ekt_key), (kek_len << 3), ektTag, ektTagLen, 0, ekt_cipherText, ekt_cipherTextLength);
+    }
     ektTagPtr = ekt_cipherText + *ekt_cipherTextLength;
 
     /*
@@ -376,10 +407,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
     if (stream->ektMode == ekt_mode_prime_end_to_end) {
         /* copy ROC into packet */
         memcpy(ektTagPtr, (void *)&roc, sizeof(roc));
-        *((srtp_roc_t *)ektTagPtr) = htonl(roc); // >> 1;
-        roc = *((srtp_roc_t *)(ektTagPtr));
-        roc = ntohl(roc);
-        debug_print(mod_srtp, "writing EKT ROC: %s,",
+        debug_print(mod_srtp, "writing EKT ROC: %s",
             srtp_octet_string_hex_string(&roc, sizeof(roc)));
         ektTagPtr += sizeof(roc);
         *ekt_cipherTextLength += sizeof(roc);
@@ -388,7 +416,7 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
     /* copy SPI into packet */
     spi = (stream->ekt_data.spi << 1) | 0x0001;
     *((srtp_ekt_spi_t *)ektTagPtr) = htons(spi);
-    debug_print(mod_srtp, "writing EKT SPI: %s,",
+    debug_print(mod_srtp, "writing EKT SPI: %s",
                 srtp_octet_string_hex_string(   ektTagPtr,
                                                 sizeof(stream->ekt_data.spi)));
     *ekt_cipherTextLength += sizeof(stream->ekt_data.spi);

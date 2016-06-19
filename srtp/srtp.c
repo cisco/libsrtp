@@ -64,7 +64,6 @@
 # include <winsock2.h>
 #endif
 
-
 /* the debug module for srtp */
 
 srtp_debug_module_t mod_srtp = {
@@ -791,8 +790,11 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
     srtp_kdf_t *xtn_hdr_kdf;
 
     if (srtp->rtp_xtn_hdr_cipher->type != srtp->rtp_cipher->type) {
-      /* With GCM ciphers, the header extensions are still encrypted using the corresponding ICM cipher. */
-      /* See https://tools.ietf.org/html/draft-ietf-avtcore-srtp-aes-gcm-17#section-8.3 */
+      /*
+       * With GCM ciphers, the header extensions are still encrypted using the
+       * corresponding ICM cipher as per RFC 7714.  Specifically, see:
+       * https://tools.ietf.org/html/rfc7714#section-8.3
+       */
       uint8_t tmp_xtn_hdr_key[MAX_SRTP_KEY_LEN];
       rtp_xtn_hdr_keylen = srtp_cipher_get_key_length(srtp->rtp_xtn_hdr_cipher);
       rtp_xtn_hdr_base_key_len = base_key_length(srtp->rtp_xtn_hdr_cipher->type, rtp_xtn_hdr_keylen);
@@ -2556,7 +2558,7 @@ srtp_process_unprotect(void *srtp_hdr,
     int ektTagPresent;
     uint8_t master_key_in_tag[MAX_SRTP_KEY_LEN],
             master_key_in_stream[MAX_SRTP_KEY_LEN];
-    int key_len = 0;
+    int base_key_len = 0;
     int replaced_stream_key;
     srtp_err_status_t status;
 
@@ -2578,22 +2580,17 @@ srtp_process_unprotect(void *srtp_hdr,
 
     /* Update the key in the context if a new key is received in the EKT tag */
     if (ektTagPresent) {
-        key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
-        if (stream->rtp_xtn_hdr_cipher) {
-            int xtn_hdr_key_len =
-                srtp_cipher_get_key_length(stream->rtp_xtn_hdr_cipher);
-            if (xtn_hdr_key_len > key_len) {
-                key_len = xtn_hdr_key_len;
-            }
-        }
-        if (memcmp(master_key_in_tag, stream->master_key, key_len)) {
+        base_key_len =
+            base_key_length(stream->rtp_cipher->type,
+                            srtp_cipher_get_key_length(stream->rtp_cipher));
+        if (memcmp(master_key_in_tag, stream->master_key, base_key_len)) {
             status = srtp_stream_init_keys(stream, master_key_in_tag);
             if (status != srtp_err_status_ok) {
                 srtp_stream_init_keys(stream, stream->master_key);
                 return status;
             }
-            memcpy(master_key_in_stream, stream->master_key, key_len);
-            memcpy(stream->master_key, master_key_in_tag, key_len);
+            memcpy(master_key_in_stream, stream->master_key, base_key_len);
+            memcpy(stream->master_key, master_key_in_tag, base_key_len);
             replaced_stream_key = 1;
         }
         else {
@@ -2624,7 +2621,7 @@ srtp_process_unprotect(void *srtp_hdr,
                                      (unsigned int*) pkt_octet_len);
         if (status != srtp_err_status_ok) {
             if (replaced_stream_key) {
-                memcpy(stream->master_key, master_key_in_stream, key_len);
+                memcpy(stream->master_key, master_key_in_stream, base_key_len);
                 srtp_stream_init_keys(stream, stream->master_key);
             }
             return status;
@@ -2651,7 +2648,7 @@ srtp_process_unprotect(void *srtp_hdr,
         }
         if (status) {
             if (replaced_stream_key) {
-                memcpy(stream->master_key, master_key_in_stream, key_len);
+                memcpy(stream->master_key, master_key_in_stream, base_key_len);
                 srtp_stream_init_keys(stream, stream->master_key);
             }
             return srtp_err_status_cipher_fail;
@@ -2676,7 +2673,7 @@ srtp_process_unprotect(void *srtp_hdr,
         /* If failed authentication then return error */
         if (status != srtp_err_status_ok) {
             if (replaced_stream_key) {
-                memcpy(stream->master_key, master_key_in_stream, key_len);
+                memcpy(stream->master_key, master_key_in_stream, base_key_len);
                 srtp_stream_init_keys(stream, stream->master_key);
             }
             return status;
@@ -2706,7 +2703,7 @@ srtp_process_unprotect(void *srtp_hdr,
                               srtp_packet_rtp);
         if (status) {
             if (replaced_stream_key) {
-                memcpy(stream->master_key, master_key_in_stream, key_len);
+                memcpy(stream->master_key, master_key_in_stream, base_key_len);
                 srtp_stream_init_keys(stream, stream->master_key);
             }
             return srtp_err_status_cipher_fail;
@@ -3059,6 +3056,14 @@ srtp_add_stream(srtp_t session,
   }
 
   int key_len = srtp_cipher_get_key_length(tmp->rtp_cipher);
+
+  /*
+   * AES GCM uses a 96-bit salt, whereas AES CM uses a 112-bit salt.
+   * Let ensure we get the full key and salt values based on whichever
+   * has the longest value, considering both the RTP master key and salt
+   * and the key and salt length associated with the cipher for the header
+   * extensions.
+   */
   if (tmp->rtp_xtn_hdr_cipher) {
       int xtn_hdr_key_len = srtp_cipher_get_key_length(tmp->rtp_xtn_hdr_cipher);
       if (xtn_hdr_key_len > key_len) {
@@ -3127,7 +3132,7 @@ srtp_add_stream(srtp_t session,
 
     /*
      * For EKT enabled outgoing context the key used for encryption (send ctx)
-     * is sent by application in the ekt Policy. The salt for the outgoing
+     * is sent by application in the EKT Policy. The salt for the outgoing
      * key should be the salt in the EKT key. Therefore construct the master
      * key using master key provided by the application and the salt in
      * SPI - EKT master salt. For incoming context the key will be learnt
@@ -4224,7 +4229,7 @@ srtp_protect_rtcp_with_flags(srtp_t ctx,
       /* add new stream to the head of the stream_list */
       stream = ctx->stream_template;
       new_stream->next = ctx->stream_list;
-      ctx->stream_list = new_stream; // new_stream;
+      ctx->stream_list = new_stream;
 
       /* set stream (the pointer used in this function) */
       stream = new_stream;

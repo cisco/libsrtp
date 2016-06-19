@@ -10,19 +10,18 @@
  *
  *  Description:
  *      This file implements functions used for "EKT_Plaintext" encrytion
- *      and decryption.  It utilizes OpenSSL for AES encryption.  The AES Key
- *      Wrap with Padding (RFC 5649) and AES Key Wrap logic (RFC 3394) are
- *      implemented within this module.
+ *      and decryption.  The AES Key Wrap with Padding (RFC 5649) and
+ *      AES Key Wrap logic (RFC 3394) are implemented within this module.
  *
  *  Portability Issues:
  *      It is assumed that The AES ECB cipher routines will encrypt or
- *      decrypt "in place", which AES can do and the implementation
- *      in OpenSSL certainly does do.  Thus, the plaintext and ciphertext
- *      pointers are the same when attempting to encrypt data in some
- *      instances.
+ *      decrypt "in place", which AES can do and the AES implementations
+ *      in OpenSSL and integrated in libsrtp will do.  Thus, the plaintext
+ *      and ciphertext pointers are the same when attempting to encrypt data
+ *      in some instances.
  *
  *  Dependencies:
- *      OpenSSL with AES encryption via the EVP_*() APIs.
+ *      None.
  *
  */
 
