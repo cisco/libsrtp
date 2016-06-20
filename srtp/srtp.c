@@ -3016,14 +3016,11 @@ srtp_dealloc(srtp_t session) {
 }
 
 srtp_err_status_t
-srtp_add_stream(srtp_t session,
-                const srtp_policy_t *policy)  {
+srtp_stream_create(srtp_t session,
+                   const srtp_policy_t *policy,
+                   srtp_stream_ctx_t **str_ptr) {
   srtp_err_status_t status;
-  srtp_stream_t tmp;
-
-  /* sanity check arguments */
-  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
-    return srtp_err_status_bad_param;
+  srtp_stream_ctx_t *tmp;
 
   /*
    * Allocate stream context.
@@ -3038,6 +3035,8 @@ srtp_add_stream(srtp_t session,
   if (status) {
     return status;
   }
+
+  *str_ptr = tmp;
 
   tmp->prime_end_to_end_stream_ctx = NULL;
 
@@ -3157,11 +3156,30 @@ srtp_add_stream(srtp_t session,
   }
 
   /*
-   * Initialize the end-to-end context for PRIME to perform encryption and 
+   * Initialize the end-to-end context for PRIME to perform encryption and
    * decryption
    */
   if (tmp->prime_end_to_end_stream_ctx != NULL)
     tmp->prime_end_to_end_stream_ctx->rtp_services = sec_serv_conf;
+
+  return status;
+}
+
+srtp_err_status_t
+srtp_add_stream(srtp_t session,
+                const srtp_policy_t *policy)  {
+  srtp_err_status_t status;
+  srtp_stream_t tmp;
+
+  /* sanity check arguments */
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
+    return srtp_err_status_bad_param;
+
+  /* create stream */
+  status = srtp_stream_create(session, policy, &tmp);
+  if (status) {
+    return status;
+  }
 
   /*
    * set the head of the stream list or the template to point to the
@@ -3329,49 +3347,14 @@ update_template_streams(srtp_t session,
   srtp_err_status_t status;
   srtp_stream_t new_stream_template;
   srtp_stream_t new_stream_list = NULL;
-  int key_len;
 
   if (session->stream_template == NULL) {
     return srtp_err_status_bad_param;
   }
 
-  /* Allocate new template stream. For PRIME, allocate the outer context. */
-  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime)
-    status = srtp_stream_alloc(&new_stream_template,
-                               policy,
-                               ekt_mode_prime_hop_by_hop);
-  else if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_ekt)
-    status = srtp_stream_alloc(&new_stream_template, policy, ekt_mode_regular);
-  else
-    status = srtp_stream_alloc(&new_stream_template, policy, ekt_mode_no_ekt);
-
+  /* create stream */
+  status = srtp_stream_create(session, policy, &new_stream_template);
   if (status) {
-    return status;
-  }
-
-  /* Initialize the PRIME inner context to NULL */
-  new_stream_template->prime_end_to_end_stream_ctx = NULL;
-
-  /* If PRIME, we create the inner end-to-end context */
-  if (policy->ekt_policy.ekt_ctx_type == ekt_ctx_type_prime) {
-    status = srtp_stream_alloc(
-                            &new_stream_template->prime_end_to_end_stream_ctx,
-                            policy,
-                            ekt_mode_prime_end_to_end);
-    if (status) {
-      srtp_stream_dealloc(new_stream_template, session->stream_template);
-      return status;
-    }
-  }
-
-  /* Copy master key copy as provided by the application */
-  key_len = srtp_cipher_get_key_length(new_stream_template->rtp_cipher);
-  memcpy(new_stream_template->master_key, policy->key, key_len);
-
-  /* initialize new template stream  */
-  status = srtp_stream_init(new_stream_template, policy);
-  if (status) {
-    srtp_crypto_free(new_stream_template);
     return status;
   }
 
