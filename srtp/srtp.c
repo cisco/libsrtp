@@ -1366,8 +1366,6 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
         enc_octet_len = (unsigned int)(pkt_octet_len -
                                        ((uint8_t*)enc_start - (uint8_t*)hdr));
 
-        if (enc_octet_len < 0) return srtp_err_status_parse_err;
-
         /* extension header encryption RFC 6904 */
         if (xtn_hdr && stream->rtp_xtn_hdr_cipher) {
             status = srtp_process_header_encryption(stream, xtn_hdr);
