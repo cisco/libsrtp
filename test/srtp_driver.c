@@ -2632,6 +2632,11 @@ srtp_validate_ekt ()
     int len;
     srtp_policy_t policy;
     srtp_ekt_spi_t spi;
+    srtp_hdr_t *packet_header;
+    srtp_hdr_t *packet_header_ref;
+    uint16_t sequence_number;
+    uint16_t i;
+    uint8_t final_octet;
 
     /* Asign SPI value */
     spi = 0x2190;
@@ -2659,7 +2664,7 @@ srtp_validate_ekt ()
     policy.ekt_policy.key = test_key;
     policy.ekt_policy.ekt_ctx_type = ekt_ctx_type_ekt;
     policy.ekt_policy.total_auto_ekt_tags_at_roc_change = 5;
-    policy.ekt_policy.packet_interval_for_auto_ekt = 100;
+    policy.ekt_policy.packet_interval_for_auto_ekt = 99;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2736,6 +2741,162 @@ srtp_validate_ekt ()
 
     if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
+    }
+
+    /* Restore the data in the plaintext buffer */
+    memcpy(srtp_plaintext, srtp_plaintext_ref, len);
+
+    /* If we encrypt the subsequent 4 packets, each should have an EKT tag */
+    packet_header = (srtp_hdr_t *) srtp_plaintext;
+    packet_header_ref = (srtp_hdr_t *) srtp_plaintext_ref;
+    sequence_number = ntohs(packet_header->seq);
+    for (i = 1; i <= 4; i++)
+    {
+        /* Increment the packet sequence number */
+        sequence_number++;
+        packet_header->seq = htons(sequence_number);
+        packet_header_ref->seq = htons(sequence_number);
+
+        /* Encrypt the plaintext */
+        status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+        if (status || (len != 72)) {
+            return srtp_err_status_fail;
+        }
+
+        /* Ensure the full EKT tag is present */
+        final_octet = *(srtp_plaintext + len - 1) & 0x01;
+        if (!final_octet) {
+            return srtp_err_status_fail;
+        }
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /*
+     * Encrypt packets until the sequence number rolls over.  There should be
+     * 99 with a short EKT tag, followed by one with a full EKT tag, followed
+     * by 99 with a short EKT tag, and so on per the policy defined above.
+     */
+    for (i = 1; sequence_number < 65535; i++)
+    {
+        /* Increment the packet sequence number */
+        sequence_number++;
+        packet_header->seq = htons(sequence_number);
+        packet_header_ref->seq = htons(sequence_number);
+
+        /* Encrypt the plaintext */
+        status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+        if (i % 100)
+        {
+            if (status || (len != 39)) { /* 28 + 10 + 1 (short EKT field) */
+                return srtp_err_status_fail;
+            }
+
+            /* Ensure that a short EKT tag is present */
+            final_octet = *(srtp_plaintext + len - 1);
+            if (final_octet) {   /* Should be 0x00 */
+                return srtp_err_status_fail;
+            }
+        }
+        else
+        {
+            if (status || (len != 72)) { /* 28 + 10 + 1 (short EKT field) */
+                return srtp_err_status_fail;
+            }
+
+            /* Ensure that a full EKT tag is present */
+            final_octet = *(srtp_plaintext + len - 1) & 0x01;
+            if (!final_octet) {   /* Should be 0x01 */
+                return srtp_err_status_fail;
+            }
+        }
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /*
+     * Now with the rollover counter incrementing, the next 5 packets
+     * should have a full EKT tag per policy.
+     */
+    for (i = 1; i <= 5; i++)
+    {
+        /* Increment the packet sequence number */
+        sequence_number++;
+        packet_header->seq = htons(sequence_number);
+        packet_header_ref->seq = htons(sequence_number);
+
+        /* Encrypt the plaintext */
+        status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+        if (status || (len != 72)) {
+            return srtp_err_status_fail;
+        }
+
+        /* Ensure the full EKT tag is present */
+        final_octet = *(srtp_plaintext + len - 1) & 0x01;
+        if (!final_octet) {
+            return srtp_err_status_fail;
+        }
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /* Finally, the next packet should have a short EKT tag */
+    {
+        /* Increment the packet sequence number */
+        sequence_number++;
+        packet_header->seq = htons(sequence_number);
+        packet_header_ref->seq = htons(sequence_number);
+
+        /* Encrypt the plaintext */
+        status = srtp_protect(srtp_snd, srtp_plaintext, &len);
+        if (status || (len != 39)) {
+            return srtp_err_status_fail;
+        }
+
+        /* Ensure the short EKT tag is present */
+        final_octet = *(srtp_plaintext + len - 1);
+        if (final_octet)
+        {
+            return srtp_err_status_fail;
+        }
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
     }
 
     status = srtp_dealloc(srtp_snd);

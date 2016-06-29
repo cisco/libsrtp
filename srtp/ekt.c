@@ -151,6 +151,10 @@ srtp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len) {
     return spi;
 }
 
+/*
+ * srtp_packet_get_roc will retrieve the ROC from the plaintext portion of
+ * the EKT field for PRIME.  This function is not used in regular EKT.
+ */
 srtp_roc_t
 srtp_packet_get_roc(const uint8_t *packet_start, unsigned pkt_octet_len) {
     srtp_roc_t *roc_location;
@@ -185,17 +189,16 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     srtp_roc_t roc;
     srtp_ekt_spi_t spi;
 
-    /*
-     * Retrieve the SPI and then check if it is short EKT tag or full EKT tag.
-     * If short EKT tag then return else process the tag. SPI is sent in
-     * plaintext.
-     */
+    /* Check the final octet for a short EKT tag octet, returning if present */
+    *ektTagPresent = *((uint8_t *)srtp_hdr + *pkt_octet_len - 1) & 0x01;
+    if (!(*ektTagPresent)) {
+       (*pkt_octet_len)--;
+        return srtp_err_no_ekt;
+    }
+
+    /* Retrieve the SPI from the full EKT tag (in plaintext) */
     spi = srtp_packet_get_ekt_spi(srtp_hdr, *pkt_octet_len);
     *pkt_octet_len -= sizeof(srtp_ekt_spi_t);
-
-    *ektTagPresent = spi & 0x0001;
-    if (!(*ektTagPresent))
-        return srtp_err_no_ekt;
     spi = (spi & 0xfffe) >> 1;
 
     /*
@@ -242,7 +245,8 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
     }
 
     /* Check to ensure that the EKT tag is properly bounded */
-    if ((ektTagLength > SRTP_MAX_EKT_TAG_LEN) || (ektTagLength == 0)) {
+    if ((ektTagLength > SRTP_MAX_EKT_TAG_LEN) || (ektTagLength == 0) ||
+        (ektTagLength >= *pkt_octet_len)) {
         return srtp_err_status_parse_err;
     }
 
@@ -296,7 +300,8 @@ srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream,
      * replay database to use this new ROC and the sequence number from
      * the packet.  However, if the packet fails authentication then we
      * need to revert back, as that might mean that a rogue entity is sending
-     * bogus packets.
+     * bogus packets.  This function should return the ROC value as an output
+     * parameter so the calling function can act on it.
      */
 
     return srtp_err_status_ok;
@@ -339,14 +344,18 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
      *    n every time the ROC changes.)
      *  - packets_left_to_generate_auto_ekt is equal to 0. (An EKT tag is
      *    generated every packets_left_to_generate_auto_ekt packets.)
-     *  - If full EKT tag is not to be generated then add short EKT tag.
+     *
+     * If full EKT tag is not to be generated then add short EKT tag.
      */
-    if (!(flags & srtp_service_ekt_tag) && stream->ekt_data.auto_ekt_pkts_left == 0 && stream->ekt_data.packets_left_to_generate_auto_ekt > 0)
+    if (!(flags & srtp_service_ekt_tag) &&
+        stream->ekt_data.auto_ekt_pkts_left == 0 &&
+        stream->ekt_data.packets_left_to_generate_auto_ekt > 0)
     {
         stream->ekt_data.packets_left_to_generate_auto_ekt--;
-        /* Set SPI value to 0 in the packet */
-        *((srtp_ekt_spi_t *)ekt_cipherText) = 0;
-        *ekt_cipherTextLength += sizeof(srtp_ekt_spi_t);
+
+        /* Insert a short EKT tag */
+        *ekt_cipherText = 0x00;
+        (*ekt_cipherTextLength)++;
         return srtp_err_status_ok;
     }
 

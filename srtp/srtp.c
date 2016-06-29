@@ -2562,9 +2562,7 @@ srtp_process_unprotect(void *srtp_hdr,
     int replaced_stream_key;
     srtp_err_status_t status;
 
-    /*
-     *   If EKT tag is present then extract the EKT tag.
-     */
+    /* Extract the EKT tag (if present) */
     ektTagPresent = 0;
     if (stream->ektMode == ekt_mode_prime_end_to_end ||
         stream->ektMode == ekt_mode_regular) {
@@ -2575,6 +2573,11 @@ srtp_process_unprotect(void *srtp_hdr,
                                pkt_octet_len,
                                &ektTagPresent);
         if (status != srtp_err_status_ok && status != srtp_err_no_ekt)
+            return status;
+
+        /* Recheck header since EKT tag extraction reduces the packet length */
+        status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
+        if (status)
             return status;
     }
 
@@ -4292,6 +4295,11 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
                            &ektTagPresent);
     if (status != srtp_err_status_ok || status != srtp_err_no_ekt)
       return status;
+
+    /* Recheck header since EKT tag extraction reduces the packet length */
+    if (*pkt_octet_len < (int)(octets_in_rtcp_header + sizeof(srtcp_trailer_t)))
+      return srtp_err_status_bad_param;
+
     if (ektTagPresent) {
       key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
       if (memcmp(master_key_in_tag, stream->master_key, key_len)) {
