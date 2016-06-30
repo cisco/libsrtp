@@ -106,8 +106,7 @@ unsigned int ekt_get_tag_length(srtp_ekt_mode_t ektMode, int master_key_len) {
                  ekt_tag_length;
 
     /* The EKT Plaintext contents depends on the EKT mode */
-    if (ektMode == ekt_mode_prime_end_to_end)
-    {
+    if (ektMode == ekt_mode_prime_end_to_end) {
         /* Plaintext is: SRTP_Master_Key || SSRC */
         plaintext_length = master_key_len + sizeof(uint32_t);
     }
@@ -385,7 +384,13 @@ ekt_generate_tag(srtp_stream_ctx_t *stream,
                 srtp_octet_string_hex_string(ektTag + ektTagLen, sizeof(stream->ssrc)));
     ektTagLen += sizeof(stream->ssrc);
 
-    roc = htonl(srtp_rdbx_get_roc(&stream->rtp_rdbx));
+    /* Get the ROC for the stream */
+    if (stream->rtp_rdbx_prime) {
+        roc = htonl(srtp_rdbx_get_roc(stream->rtp_rdbx_prime));
+    }
+    else {
+        roc = htonl(srtp_rdbx_get_roc(&stream->rtp_rdbx));
+    }
 
     /*
      * For non-PRIME ROC is in the ciphertext. Therefore insert ROC here.

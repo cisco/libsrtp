@@ -489,6 +489,8 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     if (status) {
       return status;
     }
+    /* Assign the replay database for EKT tag generation */
+    str->prime_end_to_end_stream_ctx->rtp_rdbx_prime = &str->rtp_rdbx;
   }
 
   /* copy information about extension header encryption */
@@ -3055,6 +3057,8 @@ srtp_stream_create(srtp_t session,
       srtp_stream_dealloc(tmp, session->stream_template);
       return status;
     }
+    /* Assign the replay database for EKT tag generation */
+    tmp->prime_end_to_end_stream_ctx->rtp_rdbx_prime = &tmp->rtp_rdbx;
   }
 
   int key_len = srtp_cipher_get_key_length(tmp->rtp_cipher);

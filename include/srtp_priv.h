@@ -141,6 +141,7 @@ typedef struct srtp_stream_ctx_t_ {
   srtp_cipher_t  *rtp_xtn_hdr_cipher;
   srtp_auth_t    *rtp_auth;
   srtp_rdbx_t     rtp_rdbx;
+  srtp_rdbx_t     *rtp_rdbx_prime;       /* Points to the HBH rdbx or NULL */
   srtp_sec_serv_t rtp_services;
   srtp_cipher_t  *rtcp_cipher;
   srtp_auth_t    *rtcp_auth;
