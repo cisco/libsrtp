@@ -65,6 +65,15 @@ extern "C" {
 
 typedef uint32_t srtp_roc_t;
 
+typedef struct ekt_tag_contents_t {
+    int present;
+    uint8_t master_key[MAX_SRTP_KEY_LEN];
+    unsigned master_key_len;
+    uint32_t ssrc;
+    srtp_roc_t roc;
+    srtp_ekt_spi_t spi;
+} ekt_tag_contents_t;
+
 int srtp_get_ekt_cipher_key_length(srtp_ekt_cipher_t ekt_cipher);
 
 srtp_ekt_spi_t srtp_packet_get_ekt_spi(const uint8_t *packet_start, unsigned pkt_octet_len);
@@ -73,7 +82,7 @@ srtp_err_status_t ekt_get_spi_info(srtp_ctx_t_ *ctx, srtp_ekt_spi_t spi, srtp_ek
 
 srtp_roc_t srtp_packet_get_roc(const uint8_t *packet_start, unsigned pkt_octet_len);
 
-srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream, srtp_ctx_t *ctx, const void  *srtp_hdr, uint8_t *master_key, int *pkt_octet_len, int *ektTagPresent);
+srtp_err_status_t ekt_parse_tag(srtp_stream_ctx_t *stream, srtp_ctx_t *ctx, const void  *srtp_hdr, int *pkt_octet_len, ekt_tag_contents_t *tag_contents);
 
 srtp_err_status_t ekt_generate_tag(srtp_stream_ctx_t *stream, srtp_ctx_t *ctx, void *srtp_hdr, uint8_t *ekt_cipherText, unsigned int *ekt_cipherTextLength, srtp_service_flags_t flags);
 

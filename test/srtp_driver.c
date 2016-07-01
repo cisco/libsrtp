@@ -2645,6 +2645,59 @@ srtp_validate_ekt ()
         0x5a, 0x59, 0x11, 0xd6, 0x5b, 0xaa, 0x59, 0x1d,
         0x69, 0x1a, 0x84, 0xbd, 0x16, 0x39, 0x43, 0x21
     };
+    uint8_t srtp_ciphertext_00FC0002[72] = {
+        0x80, 0x0f, 0x00, 0x02, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xf6, 0x27, 0xe9, 0x50,
+        0xf0, 0x1f, 0x20, 0xbd, 0x71, 0x2c, 0x76, 0xa2,
+        0xd3, 0x49, 0x04, 0xe5, 0xc8, 0x1b, 0x2c, 0x78,
+        0x03, 0xd2, 0x32, 0x47, 0xbb, 0x5a, 0x66, 0x2e,
+        0xae, 0x7e, 0xb1, 0x53, 0x7d, 0x91, 0x9c, 0xf4,
+        0xf4, 0x3f, 0x42, 0x65, 0xe9, 0xdd, 0xda, 0x40,
+        0x36, 0xe1, 0x7c, 0x0f, 0xc2, 0x00, 0x31, 0x4e,
+        0x40, 0x54, 0x82, 0x8f, 0x8b, 0xd9, 0x43, 0x21
+    };
+    /*
+     * This "bad" packet has a good EKT field with a new key, but the
+     * packet should fail authentication as is has been modified.
+     * We'll see if the old key is restored and a subsequent packet
+     * decrypted properly using the previous key.
+     */
+    uint8_t srtp_ciphertext_00FC0003_bad[72] = {
+        0x80, 0x0f, 0x00, 0x03, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x3a, 0xb8, 0x12, 0x1b,
+        0x10, 0xd2, 0xcc, 0x3c, 0xe9, 0x3f, 0xf5, 0xc5,
+        0x29, 0xe0, 0xb1, 0x62, 0xa8, 0xe9, 0x7a, 0xc6,
+        0x85, 0x9e, 0x2e, 0x77, 0xce, 0x68, 0x54, 0x1e,
+        0xb0, 0x0f, 0x6e, 0x39, 0x71, 0xea, 0x0d, 0x37,
+        0x2e, 0xd4, 0xd7, 0x7f, 0x00, 0xd2, 0xf9, 0xc1,
+        0x12, 0xd3, 0x92, 0x23, 0xb3, 0x06, 0x4e, 0x7d,
+        0xbf, 0xd5, 0xcf, 0x64, 0x21, 0x50, 0x43, 0x21
+    };
+    uint8_t srtp_ciphertext_00FC0005[39] = {
+        0x80, 0x0f, 0x00, 0x05, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x0d, 0xa9, 0x8b, 0xb0,
+        0x12, 0xff, 0xb5, 0xee, 0xdf, 0x92, 0x24, 0xfa,
+        0x66, 0x41, 0x30, 0xc0, 0xd6, 0xca, 0x23, 0xa5,
+        0xa6, 0x57, 0x96, 0x97, 0x67, 0xf0, 0x00
+    };
+    uint8_t srtp_ciphertext_00fc0068_newkey[72] = {
+        0x80, 0x0f, 0x00, 0x68, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x65, 0xbe, 0xb6, 0xc7,
+        0x7c, 0x57, 0x4d, 0x03, 0xc9, 0x87, 0x87, 0xd7,
+        0x54, 0x35, 0x9b, 0xad, 0x46, 0xe4, 0xd8, 0x47,
+        0x02, 0x4e, 0xdd, 0xe3, 0x39, 0xe2, 0x4c, 0x94,
+        0xe6, 0x10, 0x64, 0x7e, 0x57, 0x56, 0x09, 0x28,
+        0xcd, 0x0e, 0xbc, 0x1f, 0x4d, 0x95, 0xb8, 0xcc,
+        0x83, 0xc6, 0xee, 0x3e, 0x87, 0xc0, 0x20, 0x7b,
+        0xb0, 0x98, 0xf9, 0xf3, 0xe2, 0x79, 0x43, 0x21
+    };
+    uint8_t srtp_ciphertext_00fc0069_newkey[39] = {
+        0x80, 0x0f, 0x00, 0x69, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x50, 0x07, 0x73, 0x27,
+        0xd2, 0x1d, 0x11, 0x82, 0xd5, 0x28, 0xea, 0x06,
+        0x45, 0x58, 0xf2, 0x64, 0xaa, 0x91, 0x41, 0x9c,
+        0x2d, 0x25, 0xf7, 0x48, 0x4f, 0x2d, 0x00
+    };
     srtp_t srtp_snd, srtp_recv;
     srtp_err_status_t status;
     srtp_ekt_spi_policy_t spi_policy;
@@ -2752,12 +2805,12 @@ srtp_validate_ekt ()
     }
 
     /* Unprotect ciphertext, then compare with plaintext */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
     if (status || (len != 28)) {
         return status;
     }
 
-    if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2917,6 +2970,98 @@ srtp_validate_ekt ()
         }
     }
 
+    /* Simulate reception of a packet with a more advanced ROC value */
+    {
+        len = 72;
+        memcpy(srtp_plaintext, srtp_ciphertext_00FC0002, len);
+
+        /* Artificially set the reference sequence number */
+        packet_header_ref->seq = htons(0x002);
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /* Simulate reception of a bad packet with a good new key */
+    {
+        len = 72;
+        memcpy(srtp_plaintext, srtp_ciphertext_00FC0003_bad, len);
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status != srtp_err_status_auth_fail) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /* Decrypt the next good packet in sequence */
+    {
+        len = 39;
+        memcpy(srtp_plaintext, srtp_ciphertext_00FC0005, len);
+
+        /* Artificially set the reference sequence number */
+        packet_header_ref->seq = htons(0x005);
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /* Introduce a good key change */
+    {
+        len = 72;
+        memcpy(srtp_plaintext, srtp_ciphertext_00fc0068_newkey, len);
+
+        /* Artificially set the reference sequence number */
+        packet_header_ref->seq = htons(0x068);
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /* Test new key retention with next good packet */
+    {
+        len = 39;
+        memcpy(srtp_plaintext, srtp_ciphertext_00fc0069_newkey, len);
+
+        /* Artificially set the reference sequence number */
+        packet_header_ref->seq = htons(0x069);
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
     status = srtp_dealloc(srtp_snd);
     if (status) {
         return status;
@@ -2998,6 +3143,21 @@ srtp_validate_prime ()
         0xce, 0x74, 0x72, 0x4c, 0x00, 0x00, 0x00, 0x00,
         0x43, 0x21, 0x55, 0x36, 0xa5, 0x69, 0x46, 0xae,
         0xd6, 0x1c, 0x28, 0x00
+    };
+    /* Ciphertext with ROC == 0x32, sequence_number = 0x004 */
+    uint8_t srtp_ciphertext_00320004[92] = {
+        0x80, 0x0f, 0x00, 0x04, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x67, 0xaf, 0x69, 0xda,
+        0x51, 0x28, 0x2e, 0xb5, 0xae, 0x98, 0x51, 0xcb,
+        0x82, 0x6b, 0xd6, 0x68, 0xd5, 0x8a, 0x11, 0x35,
+        0x2b, 0xec, 0x97, 0x55, 0xb0, 0x7b, 0xba, 0x14,
+        0x12, 0x34, 0x4d, 0x91, 0x7c, 0x3d, 0x64, 0x71,
+        0x85, 0x0b, 0x16, 0x43, 0x67, 0x00, 0x4c, 0xf5,
+        0xad, 0xc6, 0x66, 0x49, 0x36, 0x47, 0x63, 0x24,
+        0x31, 0x46, 0x2e, 0x88, 0x73, 0x6a, 0xe7, 0x9b,
+        0x43, 0x4f, 0x68, 0x03, 0x00, 0x00, 0x00, 0x32,
+        0x43, 0x21, 0x69, 0x24, 0x60, 0x45, 0x26, 0x28,
+        0xc3, 0xe0, 0x3f, 0x72
     };
     srtp_t srtp_snd, srtp_recv;
     srtp_err_status_t status;
@@ -3118,12 +3278,12 @@ srtp_validate_prime ()
     }
 
     /* Unprotect ciphertext, then compare with plaintext */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
     if (status || (len != 28)) {
         return status;
     }
 
-    if (octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -3239,6 +3399,26 @@ srtp_validate_prime ()
         if (status || (len != 55)) {
             return srtp_err_status_fail;
         }
+
+        /* Unprotect ciphertext */
+        status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);
+        if (status || (len != 28)) {
+            return status;
+        }
+
+        /* Do we get the expected plaintext back? */
+        if (octet_string_is_eq(srtp_plaintext, srtp_plaintext_ref, len)) {
+            return srtp_err_status_fail;
+        }
+    }
+
+    /* Simulate reception of a packet with a more advanced ROC value */
+    {
+        len = 92;
+        memcpy(srtp_plaintext, srtp_ciphertext_00320004, len);
+
+        /* Artificially set the reference sequence number */
+        packet_header_ref->seq = htons(0x0004);
 
         /* Unprotect ciphertext */
         status = srtp_unprotect(srtp_recv, srtp_plaintext, &len);

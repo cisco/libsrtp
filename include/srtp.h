@@ -322,7 +322,9 @@ typedef enum {
   srtp_status_key_not_found = 25,    /**< error key for specified MKI no found    */
   srtp_err_status_spi_not_found = 26,/**< error SPI not found in SPI info list    */
   srtp_err_no_ekt = 27,              /**< error no long ekt tag in packet         */
-  srtp_err_status_ekt_tag_ssrc_mismatch = 28 /** error SSRC in header and EKT tag mismatch */
+  srtp_err_status_ekt_tag_ssrc_mismatch = 28, /**< error SSRC in header and EKT tag mismatch */
+  srtp_err_status_pkt_idx_old  = 29, /**< packet index is too old to consider */
+  srtp_err_status_pkt_idx_adv  = 30 /**< packet index advanced, reset needed */
 } srtp_err_status_t;
 
 typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;

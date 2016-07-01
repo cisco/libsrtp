@@ -68,6 +68,11 @@
 #define SRTP_VERSION        PACKAGE_VERSION
 
 /*
+ * Define constants used internally
+ */
+#define MAX_SRTP_KEY_LEN 256
+
+/*
  * the following declarations are libSRTP internal functions 
  */
 

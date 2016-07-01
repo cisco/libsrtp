@@ -531,8 +531,6 @@ typedef enum {
   label_rtp_header_salt = 0x07
 } srtp_prf_label;
 
-#define MAX_SRTP_KEY_LEN 256
-
 #if defined(OPENSSL) && defined(OPENSSL_KDF)
 #define MAX_SRTP_AESKEY_LEN 32
 #define MAX_SRTP_SALT_LEN 14 
@@ -1130,22 +1128,82 @@ srtp_generate_authentication_tag(srtp_stream_ctx_t *stream,
     return srtp_err_status_ok;
 }
 
-int srtp_estimate_index(srtp_rdbx_t *rdbx,
-                        uint32_t roc,
-                        srtp_xtd_seq_num_t *est,
-                        srtp_sequence_number_t seq)
+srtp_err_status_t
+srtp_estimate_index(srtp_rdbx_t *rdbx,
+                    uint32_t roc,
+                    srtp_xtd_seq_num_t *est,
+                    srtp_sequence_number_t seq,
+                    int *delta)
 {
-    int delta;
+#ifdef NO_64BIT_MATH
+    uint32_t internal_pkt_idx_reduced;
+    uint32_t external_pkt_idx_reduced;
+    uint32_t internal_roc;
+    uint32_t roc_difference;
+#endif
 
 #ifdef NO_64BIT_MATH
     *est = (srtp_xtd_seq_num_t)make64(roc >> 16, (roc << 16) | seq);
-    delta = low32(est) - rdbx->index;
+    *delta = low32(est) - rdbx->index;
 #else
     *est = (srtp_xtd_seq_num_t)(((uint64_t)roc) << 16) | seq;
-    delta = (int)(*est - rdbx->index);
+    *delta = (int)(*est - rdbx->index);
 #endif
 
-    return delta;
+    if (*est > rdbx->index) {
+#ifdef NO_64BIT_MATH
+        internal_roc = (uint32_t)(rdbx->index >> 16);
+        roc_difference = roc - internal_roc;
+        if (roc_difference > 1)
+        {
+            *delta = 0;
+            return srtp_err_status_pkt_idx_adv;
+        }
+
+        internal_pkt_idx_reduced = (uint32_t)(rdbx->index & 0xFFFF);
+        external_pkt_idx_reduced = (uint32_t)((roc_difference << 16) | seq);
+
+        if (external_pkt_idx_reduced - internal_pkt_idx_reduced >
+                                                        seq_num_median) {
+            *delta = 0;
+            return srtp_err_status_pkt_idx_adv;
+        }
+#else
+        if (*est - rdbx->index > seq_num_median) {
+            *delta = 0;
+            return srtp_err_status_pkt_idx_adv;
+        }
+#endif
+    }
+    else if (*est < rdbx->index) {
+#ifdef NO_64BIT_MATH
+
+        internal_roc = (uint32_t)(rdbx->index >> 16);
+        roc_difference = internal_roc - roc;
+        if (roc_difference > 1)
+        {
+            *delta = 0;
+            return srtp_err_status_pkt_idx_adv;
+        }
+
+        internal_pkt_idx_reduced =
+                    (uint32_t)((roc_difference << 16) | rdbx->index & 0xFFFF);
+        external_pkt_idx_reduced = (uint32_t)(seq);
+
+        if (internal_pkt_idx_reduced - external_pkt_idx_reduced >
+                                                        seq_num_median) {
+            *delta = 0;
+            return srtp_err_status_pkt_idx_old;
+        }
+#else
+        if (rdbx->index - *est > seq_num_median) {
+            *delta = 0;
+            return srtp_err_status_pkt_idx_old;
+        }
+#endif
+    }
+
+    return srtp_err_status_ok;
 }
 
 srtp_err_status_t
@@ -1154,17 +1212,19 @@ srtp_get_est_pkt_index(srtp_hdr_t *hdr,
                        srtp_stream_ctx_t *stream,
                        srtp_xtd_seq_num_t *est,
                        int *delta,
+                       ekt_tag_contents_t *ekt_tag_contents,
                        srtp_service_flags_t flags)
 {
     uint32_t roc;
     int primeEKTTagPresent = 0;
     srtp_ekt_spi_t spi = 0;
     int auth_tag_length;
+    srtp_err_status_t result = srtp_err_status_ok;
 
     roc = 0;
 
     /*
-     * If the stream is configured to use EKT then the far end could have
+     * If the stream is configured to use PRIME then the far end could have
      * sent an updated ROC in the packet which needs to be used. Therefore
      * extract ROC from the packet.
      */
@@ -1185,7 +1245,8 @@ srtp_get_est_pkt_index(srtp_hdr_t *hdr,
         }
 
         /* Retrieve the SPI */
-        spi = srtp_packet_get_ekt_spi((const uint8_t *)hdr, (*pkt_octet_len-auth_tag_length));
+        spi = srtp_packet_get_ekt_spi((const uint8_t *)hdr,
+                                      (*pkt_octet_len-auth_tag_length));
 
         /* Check if full EKT tag is present */
         primeEKTTagPresent = spi & 0x0001;
@@ -1193,7 +1254,13 @@ srtp_get_est_pkt_index(srtp_hdr_t *hdr,
         /* If full EKT tag is present then retrieve the ROC */
         if (primeEKTTagPresent) {
             roc = srtp_packet_get_roc((void *)hdr,
-                (unsigned int)(*pkt_octet_len - auth_tag_length - sizeof(srtp_ekt_spi_t)));
+                (unsigned int)(*pkt_octet_len - auth_tag_length -
+                               sizeof(srtp_ekt_spi_t)));
+        }
+    }
+    else if (stream->ektMode == ekt_mode_regular) {
+        if (ekt_tag_contents->present) {
+            roc = ekt_tag_contents->roc;
         }
     }
 
@@ -1203,13 +1270,18 @@ srtp_get_est_pkt_index(srtp_hdr_t *hdr,
      * If it's a new SSRC never seen and there is no ROC in the pkt
      * then estimate index with ROC set to zero.
      */
-    if (primeEKTTagPresent) {
-        *delta =
-            srtp_estimate_index(&stream->rtp_rdbx, roc, est, ntohs(hdr->seq));
+    if (primeEKTTagPresent || ekt_tag_contents->present) {
+        result = srtp_estimate_index(&stream->rtp_rdbx,
+                                     roc,
+                                     est,
+                                     ntohs(hdr->seq),
+                                     delta);
     }
     else {
         /* estimate packet index from seq. num. in header */
-        *delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, est, ntohs(hdr->seq));
+        *delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx,
+                                          est,
+                                          ntohs(hdr->seq));
     }
 
 #ifdef NO_64BIT_MATH
@@ -1217,7 +1289,7 @@ srtp_get_est_pkt_index(srtp_hdr_t *hdr,
 #else
     debug_print(mod_srtp, "estimated u_packet index: %016llx", *est);
 #endif
-    return srtp_err_status_ok;
+    return result;
 }
 
 /*
@@ -2556,46 +2628,30 @@ srtp_process_unprotect(void *srtp_hdr,
                        int *pkt_octet_len,
                        srtp_ctx_t *ctx,
                        srtp_stream_ctx_t *stream,
-                       srtp_xtd_seq_num_t est) {
-    int ektTagPresent;
-    uint8_t master_key_in_tag[MAX_SRTP_KEY_LEN],
-            master_key_in_stream[MAX_SRTP_KEY_LEN];
+                       srtp_xtd_seq_num_t est,
+                       ekt_tag_contents_t *ekt_tag_contents) {
+    uint8_t master_key_in_stream[MAX_SRTP_KEY_LEN];
     int base_key_len = 0;
     int replaced_stream_key;
     srtp_err_status_t status;
 
-    /* Extract the EKT tag (if present) */
-    ektTagPresent = 0;
-    if (stream->ektMode == ekt_mode_prime_end_to_end ||
-        stream->ektMode == ekt_mode_regular) {
-        status = ekt_parse_tag(stream,
-                               ctx,
-                               srtp_hdr,
-                               master_key_in_tag,
-                               pkt_octet_len,
-                               &ektTagPresent);
-        if (status != srtp_err_status_ok && status != srtp_err_no_ekt)
-            return status;
-
-        /* Recheck header since EKT tag extraction reduces the packet length */
-        status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
-        if (status)
-            return status;
-    }
-
     /* Update the key in the context if a new key is received in the EKT tag */
-    if (ektTagPresent) {
+    if (ekt_tag_contents->present) {
         base_key_len =
             base_key_length(stream->rtp_cipher->type,
                             srtp_cipher_get_key_length(stream->rtp_cipher));
-        if (memcmp(master_key_in_tag, stream->master_key, base_key_len)) {
-            status = srtp_stream_init_keys(stream, master_key_in_tag);
+        if (memcmp(ekt_tag_contents->master_key,
+                   stream->master_key,
+                   base_key_len)) {
+            status = srtp_stream_init_keys(stream,ekt_tag_contents->master_key);
             if (status != srtp_err_status_ok) {
                 srtp_stream_init_keys(stream, stream->master_key);
                 return status;
             }
             memcpy(master_key_in_stream, stream->master_key, base_key_len);
-            memcpy(stream->master_key, master_key_in_tag, base_key_len);
+            memcpy(stream->master_key,
+                   ekt_tag_contents->master_key,
+                   base_key_len);
             replaced_stream_key = 1;
         }
         else {
@@ -2747,6 +2803,8 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
     int delta;                     /* delta of local pkt idx and that in hdr */
     srtp_err_status_t status;
     srtp_stream_ctx_t *stream;
+    int advance_packet_index = 0;
+    ekt_tag_contents_t ekt_tag_contents;
 
     debug_print(mod_srtp, "function srtp_unprotect_with_flags", NULL);
 
@@ -2781,18 +2839,53 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
         }
     }
 
+    /*
+     * For regular EKT mode, parse the EKT tag now, as we will need the
+     * SSRC and ROC information to estimate the packet index.  The ROC
+     * can change substantially if a sender's media is not received for
+     * some period of time, which might be common with switched
+     * conferencing.  Note that for PRIME, the ROC is in the clear and
+     * accessed directly when estimating the packet index.
+     */
+    if (stream->ektMode == ekt_mode_regular) {
+        status = ekt_parse_tag(stream,
+                               ctx,
+                               srtp_hdr,
+                               pkt_octet_len,
+                               &ekt_tag_contents);
+        if (status != srtp_err_status_ok && status != srtp_err_no_ekt)
+            return status;
+
+        /* Recheck header as EKT tag extraction reduces the packet length */
+        status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
+        if (status)
+            return status;
+    }
+    else {
+        ekt_tag_contents.present = 0;
+    }
+
     /* Get the estimated packet index value */
     status = srtp_get_est_pkt_index(hdr,
                                     pkt_octet_len,
                                     stream,
                                     &est,
                                     &delta,
+                                    &ekt_tag_contents,
                                     flags);
-    if (status)
+    if (status && (status != srtp_err_status_pkt_idx_adv))
         return status;
 
+    /*
+     * Replay check will be skipped if this packet is far in advance
+     * of the internally maintained packet index value.
+     */
+    if (status == srtp_err_status_pkt_idx_adv) {
+        advance_packet_index = 1;
+    }
+
     /* Check if the packet is being replayed */
-    if (flags & srtp_service_chk_replay) {
+    if ((flags & srtp_service_chk_replay) & !advance_packet_index) {
         /*
          * If the SSRC is not a new one then we have rdbx database therefore
          * check if the packet is being replayed.
@@ -2813,15 +2906,16 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
     if (stream->ektMode == ekt_mode_prime_hop_by_hop)
     {
         /*
-        * The flag is checked before authenticating the actual packet. But the
-        * check here avoids uneccessary function call.
-        */
+         * The flag is checked before authenticating the actual packet. But the
+         * check here avoids uneccessary function call.
+         */
         if (flags & srtp_service_prime_hbh) {
             status = srtp_process_unprotect(srtp_hdr,
                                             pkt_octet_len,
                                             ctx,
                                             stream,
-                                            est);
+                                            est,
+                                            &ekt_tag_contents);
             if (status)
                 return status;
         }
@@ -2829,11 +2923,28 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
         if (flags & srtp_service_prime_e2e) {
             if (stream->prime_end_to_end_stream_ctx == NULL)
                 return srtp_err_status_bad_param;
+
+            /* Before attempting to decrypt, parse the EKT tag */
+            status = ekt_parse_tag(stream->prime_end_to_end_stream_ctx,
+                                   ctx,
+                                   srtp_hdr,
+                                   pkt_octet_len,
+                                   &ekt_tag_contents);
+            if (status != srtp_err_status_ok && status != srtp_err_no_ekt)
+                return status;
+
+            /* Recheck header as EKT tag extraction reduces the packet length */
+            status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
+            if (status)
+                return status;
+
+            /* Decrypt the packet */
             status = srtp_process_unprotect(srtp_hdr,
                                             pkt_octet_len,
                                             ctx,
                                             stream->prime_end_to_end_stream_ctx,
-                                            est);
+                                            est,
+                                            &ekt_tag_contents);
             if (status)
                 return status;
         }
@@ -2844,7 +2955,8 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
                                         pkt_octet_len,
                                         ctx,
                                         stream,
-                                        est);
+                                        est,
+                                        &ekt_tag_contents);
         if (status)
             return status;
     }
@@ -2882,7 +2994,14 @@ srtp_unprotect_with_flags(srtp_ctx_t *ctx,
      * the message authentication function passed, so add the packet
      * index into the replay database
     */
-    if (flags & srtp_service_chk_replay) {
+    if ((flags & srtp_service_chk_replay) && advance_packet_index) {
+        /* A lot of packet were skipped, so reset the replay database */
+        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx,
+                              (uint32_t)(est >> 16),
+                              (uint16_t)(est & 0xFFFF));
+        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
+    }
+    else if (flags & srtp_service_chk_replay) {
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
 
@@ -4275,13 +4394,12 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
   srtcp_hdr_t *hdr = (srtcp_hdr_t *)srtcp_hdr;
   srtp_err_status_t status;
   unsigned int tag_len;
-  uint8_t master_key_in_tag[MAX_SRTP_KEY_LEN],
-          master_key_in_stream[MAX_SRTP_KEY_LEN];
+  uint8_t master_key_in_stream[MAX_SRTP_KEY_LEN];
   int key_len = 0;
   int replaced_stream_key;
-  int ektTagPresent;
   srtp_xtd_seq_num_t est;           /* RTCP paccket sequence number         */
   uint32_t *trailer;                /* pointer to start of trailer          */
+  ekt_tag_contents_t ekt_tag_contents;
 
   /*
    * If EKT tag is present then extract the EKT tag and initialize the key
@@ -4290,13 +4408,11 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
   if (stream->ektMode == ekt_mode_regular ||
       stream->ektMode == ekt_mode_prime_end_to_end) {
 
-    ektTagPresent = 0;
     status = ekt_parse_tag(stream,
                            ctx,
                            srtcp_hdr,
-                           master_key_in_tag,
                            pkt_octet_len,
-                           &ektTagPresent);
+                           &ekt_tag_contents);
     if (status != srtp_err_status_ok || status != srtp_err_no_ekt)
       return status;
 
@@ -4304,16 +4420,16 @@ srtp_process_unprotect_rtcp(void *srtcp_hdr,
     if (*pkt_octet_len < (int)(octets_in_rtcp_header + sizeof(srtcp_trailer_t)))
       return srtp_err_status_bad_param;
 
-    if (ektTagPresent) {
+    if (ekt_tag_contents.present) {
       key_len = srtp_cipher_get_key_length(stream->rtp_cipher);
-      if (memcmp(master_key_in_tag, stream->master_key, key_len)) {
-        status = srtp_stream_init_keys(stream, master_key_in_tag);
+      if (memcmp(ekt_tag_contents.master_key, stream->master_key, key_len)) {
+        status = srtp_stream_init_keys(stream, ekt_tag_contents.master_key);
         if (status != srtp_err_status_ok) {
           srtp_stream_init_keys(stream, stream->master_key);
           return status;
         }
         memcpy(master_key_in_stream, stream->master_key, key_len);
-        memcpy(stream->master_key, master_key_in_tag, key_len);
+        memcpy(stream->master_key, ekt_tag_contents.master_key, key_len);
         replaced_stream_key = 1;
       }
       else {

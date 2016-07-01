@@ -152,6 +152,17 @@ srtp_err_status_t srtp_rdbx_add_index(srtp_rdbx_t *rdbx, int delta);
 srtp_err_status_t srtp_rdbx_set_roc(srtp_rdbx_t *rdbx, uint32_t roc);
 
 /*
+ * srtp_rdbx_set_roc_seq(rdbx, roc, seq) initalizes the srtp_rdbx_t at the
+ * location rdbx to have the rollover counter value roc and packet sequence
+ * number seq.  If the new rollover counter value is less than the current
+ * rollover counter value, then the function returns
+ * srtp_err_status_replay_old, otherwise, srtp_err_status_ok is returned.
+ */
+srtp_err_status_t srtp_rdbx_set_roc_seq (srtp_rdbx_t *rdbx,
+                                         uint32_t roc,
+                                         uint16_t seq);
+
+/*
  * srtp_rdbx_get_roc(rdbx) returns the value of the rollover counter for
  * the srtp_rdbx_t pointed to by rdbx
  *
