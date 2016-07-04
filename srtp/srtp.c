@@ -1409,7 +1409,7 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
              srtp_packet_type_t packetType)
 {
     uint32_t *enc_start = NULL;     /* pointer to start of encrypted portion  */
-    unsigned int enc_octet_len = 0; /* number of octets in encrypted portion  */
+    int enc_octet_len = 0;          /* number of octets in encrypted portion  */
     srtp_cipher_t *cipher;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     srtp_err_status_t status;
@@ -1437,8 +1437,8 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
         if (!((uint8_t*)enc_start <= (uint8_t*)hdr + pkt_octet_len))
             return srtp_err_status_parse_err;
 
-        enc_octet_len = (unsigned int)(pkt_octet_len -
-                                       ((uint8_t*)enc_start - (uint8_t*)hdr));
+        enc_octet_len = (int)(pkt_octet_len -
+                             ((uint8_t*)enc_start - (uint8_t*)hdr));
 
         if (enc_octet_len < 0) return srtp_err_status_parse_err;
 
@@ -1468,7 +1468,7 @@ srtp_encrypt(srtp_stream_ctx_t *stream,
     if (enc_start) {
         status = srtp_cipher_encrypt(cipher,
                                      (uint8_t *)enc_start,
-                                     &enc_octet_len);
+                                     (unsigned int *)&enc_octet_len);
         if (status)
             return srtp_err_status_cipher_fail;
     }
