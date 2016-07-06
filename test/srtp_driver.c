@@ -407,6 +407,7 @@ main (int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
 #ifdef OPENSSL
         printf("testing srtp_protect and srtp_unprotect against "
                "packet with empty payload (GCM)\n");
@@ -450,6 +451,7 @@ main (int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
 #ifdef OPENSSL
         /*
          * test the function srtp_validate_prime()

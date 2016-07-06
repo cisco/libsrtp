@@ -217,8 +217,6 @@ srtp_err_status_t srtp_rdbx_dealloc (srtp_rdbx_t *rdbx)
  */
 srtp_err_status_t srtp_rdbx_set_roc (srtp_rdbx_t *rdbx, uint32_t roc)
 {
-    bitvector_set_to_zero(&rdbx->bitmask);
-
 #ifdef NO_64BIT_MATH
   #error not yet implemented
 #else
@@ -231,6 +229,8 @@ srtp_err_status_t srtp_rdbx_set_roc (srtp_rdbx_t *rdbx, uint32_t roc)
     rdbx->index &= 0xffff;                /* retain lowest 16 bits */
     rdbx->index |= ((uint64_t)roc) << 16; /* set ROC */
 #endif
+
+    bitvector_set_to_zero(&rdbx->bitmask);
 
     return srtp_err_status_ok;
 }
@@ -246,8 +246,6 @@ srtp_err_status_t srtp_rdbx_set_roc_seq (srtp_rdbx_t *rdbx,
                                          uint32_t roc,
                                          uint16_t seq)
 {
-    bitvector_set_to_zero(&rdbx->bitmask);
-
 #ifdef NO_64BIT_MATH
   #error not yet implemented
 #else
@@ -260,6 +258,8 @@ srtp_err_status_t srtp_rdbx_set_roc_seq (srtp_rdbx_t *rdbx,
     rdbx->index = seq;
     rdbx->index |= ((uint64_t)roc) << 16; /* set ROC */
 #endif
+
+    bitvector_set_to_zero(&rdbx->bitmask);
 
     return srtp_err_status_ok;
 }
