@@ -79,6 +79,9 @@ srtp_debug_module_t mod_srtp = {
 
 static srtp_err_status_t
 srtp_validate_rtp_header(void *rtp_hdr, int *pkt_octet_len) {
+  if (*pkt_octet_len < octets_in_rtp_header)
+    return srtp_err_status_bad_param;
+
   srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
 
   /* Check RTP header length */
