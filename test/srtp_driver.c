@@ -2334,7 +2334,7 @@ srtp_test_empty_payload_gcm()
 
     return srtp_err_status_ok;
 }
-#endif  // OPENSSL
+#endif  /* OPENSSL */
 
 srtp_err_status_t
 srtp_test_remove_stream ()

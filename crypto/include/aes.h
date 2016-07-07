@@ -49,6 +49,10 @@
 #include "datatypes.h"
 #include "err.h"
 
+/* Definitions */
+
+#define AES_BLOCK_SIZE 16
+
 /* aes internals */
 
 typedef struct {

@@ -47,11 +47,9 @@
 #define AES_WRAP_H
 
 #include "cipher.h"
-#include <openssl/evp.h>
-#include <openssl/aes.h>
 
 #ifdef OPENSSL_IS_BORINGSSL
-// BoringSSL doesn't support AES-192, cipher will be disabled
+/* BoringSSL doesn't support AES-192, cipher will be disabled */
 #define SRTP_NO_AES192
 #endif
 

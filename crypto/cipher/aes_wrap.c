@@ -50,6 +50,7 @@
 
 #ifdef OPENSSL
 #include <openssl/evp.h>
+#include <openssl/aes.h>
 #else
 #include "aes.h"
 #endif
