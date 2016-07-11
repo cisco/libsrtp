@@ -196,7 +196,7 @@ AC_ARG_ENABLE(syslog,
   [AS_HELP_STRING([--enable-syslog], [use syslog for error reporting])],
   [], enable_syslog=no)
 if test "$enable_syslog" = "yes"; then
-   AC_DEFINE(USE_SYSLOG, 1, [Define to use syslog logging.])
+   AC_DEFINE(ERR_REPORTING_SYSLOG, 1, [Define to use syslog logging.])
 fi
 AC_MSG_RESULT($enable_syslog)
 
