@@ -1208,8 +1208,9 @@ srtp_err_status_t srtp_dealloc(srtp_t s);
  * @brief identifies a particular SRTP profile 
  *
  * An srtp_profile_t enumeration is used to identify a particular SRTP
- * profile (that is, a set of algorithms and parameters).  These
- * profiles are defined in the DTLS-SRTP draft.
+ * profile (that is, a set of algorithms and parameters). These profiles
+ * are defined for DTLS-SRTP:
+ * https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml
  */
 
 typedef enum {
@@ -1220,6 +1221,8 @@ typedef enum {
   srtp_profile_aes256_cm_sha1_32  = 4,
   srtp_profile_null_sha1_80       = 5,
   srtp_profile_null_sha1_32       = 6,
+  srtp_profile_aead_aes_128_gcm   = 7,
+  srtp_profile_aead_aes_256_gcm   = 8,
 } srtp_profile_t;
 
 
