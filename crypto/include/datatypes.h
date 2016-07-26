@@ -61,6 +61,10 @@
 # include <winsock2.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /* if DATATYPES_USE_MACROS is defined, then little functions are macros */
 #define DATATYPES_USE_MACROS  
@@ -475,5 +479,9 @@ bitvector_left_shift(bitvector_t *x, int index);
 
 char *
 bitvector_bit_string(bitvector_t *x, char* buf, int len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _DATATYPES_H */
