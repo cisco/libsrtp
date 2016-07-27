@@ -81,6 +81,7 @@ main (int argc, char *argv[]) {
   int len;
   int expected_len;
   int do_list_mods = 0;
+  unsigned char *key_store[1];
 
   fprintf(stderr, "Using %s [0x%x]\n", srtp_get_version_string(), srtp_get_version());
 
@@ -268,7 +269,11 @@ main (int argc, char *argv[]) {
       return -1;
     } 
 
-    policy.key  = (uint8_t *) key;
+    key_store[0] = (uint8_t *) key;
+    policy.keys  = key_store;
+    policy.n_keys = 1;
+    policy.mki_len = 0;
+    policy.mkis = NULL;
     policy.ekt  = NULL;
     policy.next = NULL;
     policy.window_size = 128;

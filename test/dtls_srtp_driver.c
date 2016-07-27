@@ -134,6 +134,7 @@ test_dtls_srtp(void) {
   unsigned int key_len, salt_len;
   srtp_profile_t profile;
   srtp_err_status_t err;
+  unsigned char *key_store[1];
 
   memset(&policy, 0x0, sizeof(srtp_policy_t));
 
@@ -184,7 +185,11 @@ test_dtls_srtp(void) {
   memset(key, 0xff, key_len);
   memset(salt, 0xee, salt_len);
   srtp_append_salt_to_key(key, key_len, salt, salt_len);
-  policy.key  = key;
+  key_store[0] = key;
+  policy.keys  = key_store;
+  policy.n_keys = 1;
+  policy.mki_len = 0;
+  policy.mkis = NULL;
 
   /* initialize SRTP policy from profile  */
   err = srtp_crypto_policy_set_from_profile_for_rtp(&policy.rtp, profile);

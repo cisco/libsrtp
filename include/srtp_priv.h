@@ -71,10 +71,10 @@ srtp_stream_t srtp_get_stream(srtp_t srtp, uint32_t ssrc);
 
 
 /*
- * srtp_stream_init_keys(s, k) (re)initializes the srtp_stream_t s by
- * deriving all of the needed keys using the KDF and the key k.
+ * srtp_stream_init_keys(s, n, k) (re)initializes the srtp_stream_t s by
+ * deriving all of the needed keys using the KDF and the specified keys.
  */
-srtp_err_status_t srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
+srtp_err_status_t srtp_stream_init_keys(srtp_stream_t srtp, int n_keys, unsigned char ** const keys);
 
 /*
  * srtp_stream_init(s, p) initializes the srtp_stream_t s to 
@@ -94,7 +94,7 @@ typedef enum direction_t {
 } direction_t;
 
 /* 
- * an srtp_stream_t has its own SSRC, encryption key, authentication
+ * an srtp_stream_t has its own SSRC, MKI, encryption key, authentication
  * key, sequence number, and replay database
  * 
  * note that the keys might not actually be unique, in which case the
@@ -103,6 +103,8 @@ typedef enum direction_t {
 
 typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
+  int        mki_len;
+  unsigned char *mki;
   srtp_cipher_t  *rtp_cipher;
   srtp_cipher_t  *rtp_xtn_hdr_cipher;
   srtp_auth_t    *rtp_auth;

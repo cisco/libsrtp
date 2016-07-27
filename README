@@ -151,9 +151,9 @@ set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC
 Implementation Notes
 
   * The srtp_protect() function assumes that the buffer holding the
-    rtp packet has enough storage allocated that the authentication 
-    tag can be written to the end of that packet.  If this assumption
-    is not valid, memory corruption will ensue.  
+    rtp packet has enough storage allocated that the authentication
+    tag and optional MKI can be written to the end of that packet.  If
+    this assumption is not valid, memory corruption will ensue.
 
   * Automated tests for the crypto functions are provided through
     the cipher_type_self_test() and auth_type_self_test() functions.
@@ -181,4 +181,10 @@ Implementation Notes
   * The replay window is 128 bits in length, and is hard-coded to this
     value for now.  
 
+  * Although the library has support for MKI, and the API appears to
+    support setting up a stream with multiple keys, only a single key
+    can be set.  Any attempt to use more than one key will cause the
+    setup function to return an error code.  (The API needed to change
+    when basic MKI support was added.  It is expected that the API
+    will not have to change again to support multiple keys.)
 
