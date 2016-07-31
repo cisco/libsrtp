@@ -78,16 +78,6 @@ extern "C" {
 #define SRTP_MAX_MKI_LEN 128
 
 /*
- * SRTP_MAX_MKI_LEN is the maximum MKI length supported by libSRTP
- */
-#define SRTP_MAX_MKI_LEN 128
-
-/*
- * SRTP_MAX_MKI_LEN is the maximum MKI length supported by libSRTP
- */
-#define SRTP_MAX_MKI_LEN 128
-
-/*
  * SRTP_MAX_TAG_LEN is the maximum tag length supported by libSRTP
  */
 
