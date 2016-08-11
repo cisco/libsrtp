@@ -79,12 +79,16 @@ hash_test_case_add(hash_test_case_t **list_ptr,
   unsigned tmp_len;
 
   test_case = malloc(sizeof(hash_test_case_t));
-  if (test_case == NULL)
-    return srtp_err_status_alloc_fail;
-  
-  tmp_len = hex_string_to_octet_string((char *)test_case->data, hex_data, data_len*2);
-  if (tmp_len != data_len*2)
+  if (tmp_len != data_len*2) {
+    free(test_case);
     return srtp_err_status_parse_err;
+  }
+
+  tmp_len = hex_string_to_octet_string((char *)test_case->hash, hex_hash, hash_len*2);
+  if (tmp_len != hash_len*2) {
+    free(test_case);
+    return srtp_err_status_parse_err;
+  }
 
   tmp_len = hex_string_to_octet_string((char *)test_case->hash, hex_hash, hash_len*2);
   if (tmp_len != hash_len*2)
