@@ -339,8 +339,10 @@ v128_set_bit_to(v128_t *x, int i, int y);
 #endif /* DATATYPES_USE_MACROS */
 
 /*
- * octet_string_is_eq(a,b, len) returns 1 if the length len strings a
- * and b are not equal, returns 0 otherwise
+ * octet_string_is_eq(a, b, len) returns 1 if the length len strings a
+ * and b are not equal. It returns 0 otherwise. The running time of the
+ * comparison depends only on len, making this safe to use for (e.g.)
+ * verifying authentication tags.
  */
 
 int
