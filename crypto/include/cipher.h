@@ -53,6 +53,10 @@
 #include "crypto_types.h"       /* for values of cipher_type_id_t */
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * cipher_direction_t defines a particular cipher operation.
  *
@@ -209,5 +213,9 @@ srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_
 srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output); 
 srtp_err_status_t srtp_cipher_get_tag(srtp_cipher_t *c, uint8_t *buffer, uint32_t *tag_len);
 srtp_err_status_t srtp_cipher_set_aad(srtp_cipher_t *c, const uint8_t *aad, uint32_t aad_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CIPHER_H */

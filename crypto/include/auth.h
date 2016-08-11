@@ -51,6 +51,10 @@
 #include "err.h"                /* error codes    */
 #include "crypto_types.h"       /* for values of auth_type_id_t */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef const struct srtp_auth_type_t *auth_type_pointer;
 typedef struct srtp_auth_t      *auth_pointer_t;
 
@@ -148,5 +152,9 @@ srtp_err_status_t srtp_auth_type_self_test(const srtp_auth_type_t *at);
  */
 srtp_err_status_t srtp_auth_type_test(const srtp_auth_type_t *at, 
 	const srtp_auth_test_case_t *test_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AUTH_H */

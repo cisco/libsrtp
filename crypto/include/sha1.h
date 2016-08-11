@@ -55,6 +55,15 @@
 #ifdef OPENSSL
 #include <openssl/evp.h>
 #include <stdint.h>
+#else
+#include "datatypes.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef OPENSSL
 
 typedef EVP_MD_CTX srtp_sha1_ctx_t;
 
@@ -90,7 +99,6 @@ static inline void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
     EVP_DigestFinal(ctx, (unsigned char*)output, &len);
 }
 #else
-#include "datatypes.h"
 
 typedef struct {
     uint32_t H[5];            /* state vector                    */
@@ -133,5 +141,9 @@ void srtp_sha1_final(srtp_sha1_ctx_t * ctx, uint32_t output[5]);
 void srtp_sha1_core(const uint32_t M[16], uint32_t hash_value[5]);
 
 #endif /* else OPENSSL */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SHA1_H */

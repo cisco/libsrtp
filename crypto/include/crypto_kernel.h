@@ -52,6 +52,10 @@
 #include "crypto_types.h"
 #include "key.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * crypto_kernel_state_t defines the possible states:
  *
@@ -218,5 +222,9 @@ srtp_err_status_t srtp_crypto_kernel_alloc_auth(srtp_auth_type_id_t id, auth_poi
  * returns srtp_err_status_ok on success, srtp_err_status_fail otherwise
  */
 srtp_err_status_t srtp_crypto_kernel_set_debug_module(char *mod_name, int v);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CRYPTO_KERNEL */
