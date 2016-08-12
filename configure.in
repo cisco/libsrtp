@@ -78,15 +78,13 @@ if test "x$ac_cv_func_socket" = "xno"; then
   AC_MSG_CHECKING([for socket in -lwsock32])
   SAVELIBS="$LIBS"
   LIBS="$LIBS -lwsock32"
-  AC_TRY_LINK([
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
 #include <winsock2.h>
-],[
+]], [[
 socket(0, 0, 0);
-],
-    ac_cv_func_socket=yes
-    AC_MSG_RESULT(yes),
-    LIBS="$SAVELIBS"
-    AC_MSG_RESULT(no))
+]])],[ac_cv_func_socket=yes
+    AC_MSG_RESULT(yes)],[LIBS="$SAVELIBS"
+    AC_MSG_RESULT(no)])
 fi
 
 AC_MSG_CHECKING(whether to compile in debugging)
