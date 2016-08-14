@@ -5,8 +5,13 @@
  *
  * Example:
  * $ wget --no-check-certificate https://raw.githubusercontent.com/gteissier/srtp-decrypt/master/marseillaise-srtp.pcap
- * $ ./test/rtp_decoder -a -t 0 -e 128 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz \
+ * $ ./test/rtp_decoder -a -t 10 -e 128 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz \
  *    < ~/marseillaise-srtp.pcap | text2pcap -t "%M:%S." -u 10000,10000 - - > ./marseillaise-rtp.pcap
+ *
+ * There is also use different way of setting up key size and tag size
+ * based upon RFC 4568 crypto suite specification, i.e.:
+ *
+ * $ ./test/rtp_decoder -s AES_CM_128_HMAC_SHA1_80 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz ...
  *
  * Bernardo Torres <bernardo@torresautomacao.com.br>
  *
@@ -57,6 +62,22 @@
 #define MAX_KEY_LEN      96
 #define MAX_FILTER 256
 
+struct srtp_crypto_suite {
+  const char *can_name;
+  int key_size;
+  int tag_size;
+};
+
+static struct srtp_crypto_suite srtp_crypto_suites[] = {
+  {.can_name = "AES_CM_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4},
+#if 0
+  {.can_name = "F8_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4},
+#endif
+  {.can_name = "AES_CM_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4},
+  {.can_name = "AES_CM_128_HMAC_SHA1_80", .key_size = 128, .tag_size = 10},
+  {.can_name = NULL}
+};
+
 int
 main (int argc, char *argv[]) {
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -67,8 +88,9 @@ main (int argc, char *argv[]) {
 #endif 
   srtp_sec_serv_t sec_servs = sec_serv_none;
   int c;
-  int key_size = 128;
-  int tag_size = 8;
+  struct srtp_crypto_suite scs, *i_scsp;;
+  scs.key_size = 128;
+  scs.tag_size = 8;
   int gcm_on = 0;
   char *input_key = NULL;
   int b64_input = 0;
@@ -93,7 +115,7 @@ main (int argc, char *argv[]) {
 
   /* check args */
   while (1) {
-    c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:");
+    c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:");
     if (c == -1) {
       break;
     }
@@ -105,20 +127,16 @@ main (int argc, char *argv[]) {
       input_key = optarg_s;
       break;
     case 'e':
-      key_size = atoi(optarg_s);
-      if (key_size != 128 && key_size != 256) {
-        fprintf(stderr, "error: encryption key size must be 128 or 256 (%d)\n", key_size);
+      scs.key_size = atoi(optarg_s);
+      if (scs.key_size != 128 && scs.key_size != 256) {
+        fprintf(stderr, "error: encryption key size must be 128 or 256 (%d)\n", scs.key_size);
         exit(1);
       }
-      input_key = malloc(key_size);
+      input_key = malloc(scs.key_size);
       sec_servs |= sec_serv_conf;
       break;
     case 't':
-      tag_size = atoi(optarg_s);
-      if (tag_size != 8 && tag_size != 16) {
-        fprintf(stderr, "error: GCM tag size must be 8 or 16 (%d)\n", tag_size);
-        //exit(1);
-      }
+      scs.tag_size = atoi(optarg_s);
       break;
     case 'a':
       sec_servs |= sec_serv_auth;
@@ -145,9 +163,28 @@ main (int argc, char *argv[]) {
     case 'l':
       do_list_mods = 1;
       break;
+    case 's':
+      for (i_scsp = &srtp_crypto_suites[0]; i_scsp->can_name != NULL; i_scsp++) {
+        if (strcasecmp(i_scsp->can_name, optarg_s) == 0) {
+            break;
+        }
+      }
+      if (i_scsp->can_name == NULL) {
+        fprintf(stderr, "Unknown/unsupported crypto suite name %s\n", optarg_s);
+        exit(1);
+      }
+      scs = *i_scsp;
+      input_key = malloc(scs.key_size);
+      sec_servs |= sec_serv_conf | sec_serv_auth;
+      break;
     default:
       usage(argv[0]);
     }
+  }
+
+  if (gcm_on && scs.tag_size != 8 && scs.tag_size != 16) {
+    fprintf(stderr, "error: GCM tag size must be 8 or 16 (%d)\n", scs.tag_size);
+    //exit(1);
   }
 
   if (do_list_mods) {
@@ -197,7 +234,7 @@ main (int argc, char *argv[]) {
     case sec_serv_conf_and_auth:
       if (gcm_on) {
 #ifdef OPENSSL
-	switch (key_size) {
+	switch (scs.key_size) {
 	case 128:
 	  srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
 	  srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
@@ -212,7 +249,7 @@ main (int argc, char *argv[]) {
 	return 0;
 #endif
       } else {
-	switch (key_size) {
+	switch (scs.key_size) {
 	case 128:
           srtp_crypto_policy_set_rtp_default(&policy.rtp);
           srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
@@ -229,7 +266,7 @@ main (int argc, char *argv[]) {
 	  fprintf(stderr, "error: GCM mode must always be used with auth enabled\n");
 	  return -1;
       } else {
-	switch (key_size) {
+	switch (scs.key_size) {
 	case 128:
           srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
           srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
@@ -244,7 +281,7 @@ main (int argc, char *argv[]) {
     case sec_serv_auth:
       if (gcm_on) {
 #ifdef OPENSSL
-	switch (key_size) {
+	switch (scs.key_size) {
 	case 128:
 	  srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
 	  srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtcp);
@@ -275,12 +312,12 @@ main (int argc, char *argv[]) {
     policy.allow_repeat_tx = 0;
     policy.rtp.sec_serv = sec_servs;
     policy.rtcp.sec_serv = sec_servs; //sec_serv_none;  /* we don't do RTCP anyway */
-      fprintf(stderr, "setting tag len %d\n", tag_size);
-policy.rtp.auth_tag_len = tag_size;
+      fprintf(stderr, "setting tag len %d\n", scs.tag_size);
+    policy.rtp.auth_tag_len = scs.tag_size;
   
-    if (gcm_on && tag_size != 8) {
-      fprintf(stderr, "setted tag len %d\n", tag_size);
-	policy.rtp.auth_tag_len = tag_size;
+    if (gcm_on && scs.tag_size != 8) {
+      fprintf(stderr, "setted tag len %d\n", scs.tag_size);
+	policy.rtp.auth_tag_len = scs.tag_size;
     }
 
     /*
@@ -370,12 +407,14 @@ usage(char *string) {
 	 "where  -a use message authentication\n"
 	 "       -e <key size> use encryption (use 128 or 256 for key size)\n"
 	 "       -g Use AES-GCM mode (must be used with -e)\n"
-	 "       -t <tag size> Tag size to use in GCM mode (use 8 or 16)\n"
+	 "       -t <tag size> Tag size to use (in GCM mode use 8 or 16)\n"
 	 "       -k <key>  sets the srtp master key given in hexadecimal\n"
 	 "       -b <key>  sets the srtp master key given in base64\n"
 	 "       -l list debug modules\n"
 	 "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
-	 "       -d <debug> turn on debugging for module <debug>\n",
+	 "       -d <debug> turn on debugging for module <debug>\n"
+	 "       -s \"<srtp-crypto-suite>\" to set both key and tag size based"
+	 "          on RFC4568-style crypto suite specification\n",
 	 string, string);
   exit(1);
   
@@ -476,7 +515,7 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
   }
   timersub(&hdr->ts, &dcdr->start_tv, &delta);
   fprintf(stdout, "%02ld:%02ld.%06lu\n", delta.tv_sec/60, delta.tv_sec%60, delta.tv_usec);
-  hexdump(&dcdr->message, pktsize);
+  hexdump(&dcdr->message, octets_recvd);
 }
 
 void rtp_print_error(srtp_err_status_t status, char *message){
