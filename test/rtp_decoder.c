@@ -13,6 +13,12 @@
  *
  * $ ./test/rtp_decoder -s AES_CM_128_HMAC_SHA1_80 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz ...
  *
+ *
+ * Audio can be extracted using extractaudio utility from the RTPproxy
+ * package:
+ *
+ * $ extractaudio -A ./marseillaise-rtp.pcap ./marseillaise-out.wav
+ *
  * Bernardo Torres <bernardo@torresautomacao.com.br>
  *
  * Some structure and code from https://github.com/gteissier/srtp-decrypt
