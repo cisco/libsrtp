@@ -8,7 +8,7 @@
  * $ ./test/rtp_decoder -a -t 10 -e 128 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz \
  *    < ~/marseillaise-srtp.pcap | text2pcap -t "%M:%S." -u 10000,10000 - - > ./marseillaise-rtp.pcap
  *
- * There is also use different way of setting up key size and tag size
+ * There is also a different way of setting up key size and tag size
  * based upon RFC 4568 crypto suite specification, i.e.:
  *
  * $ ./test/rtp_decoder -s AES_CM_128_HMAC_SHA1_80 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz ...
