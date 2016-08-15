@@ -13,7 +13,6 @@
  *
  * $ ./test/rtp_decoder -s AES_CM_128_HMAC_SHA1_80 -b aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz ...
  *
- *
  * Audio can be extracted using extractaudio utility from the RTPproxy
  * package:
  *
