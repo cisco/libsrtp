@@ -157,7 +157,6 @@ typedef struct srtp_cipher_type_t {
     cipher_get_tag_func_t get_tag;
     const char                       *description;
     const srtp_cipher_test_case_t         *test_data;
-    srtp_debug_module_t             *debug;
     srtp_cipher_type_id_t id;
 } srtp_cipher_type_t;
 

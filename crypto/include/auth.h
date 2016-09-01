@@ -126,7 +126,6 @@ typedef struct srtp_auth_type_t {
     auth_start_func start;
     const char                *description;
     const srtp_auth_test_case_t    *test_data;
-    srtp_debug_module_t      *debug;
     srtp_auth_type_id_t id;
 } srtp_auth_type_t;
 

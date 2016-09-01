@@ -147,7 +147,6 @@ const srtp_cipher_type_t srtp_null_cipher = {
     (cipher_get_tag_func_t)0,
     (const char*)srtp_null_cipher_description,
     (const srtp_cipher_test_case_t*)&srtp_null_cipher_test_0,
-    (srtp_debug_module_t*)NULL,
     (srtp_cipher_type_id_t)SRTP_NULL_CIPHER
 };
 
