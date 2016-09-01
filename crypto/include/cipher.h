@@ -206,6 +206,15 @@ srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c, uint8_t *buffer, uint32_
 srtp_err_status_t srtp_cipher_get_tag(srtp_cipher_t *c, uint8_t *buffer, uint32_t *tag_len);
 srtp_err_status_t srtp_cipher_set_aad(srtp_cipher_t *c, const uint8_t *aad, uint32_t aad_len);
 
+/*
+ * srtp_crypto_kernel_replace_cipher_type(ct, id)
+ *
+ * replaces the crypto kernel's existing cipher for the cipher_type id
+ * with a new one passed in externally.  The new cipher must pass all the
+ * existing cipher_type's self tests as well as its own.
+ */
+srtp_err_status_t srtp_crypto_kernel_replace_cipher_type(const srtp_cipher_type_t *ct, srtp_cipher_type_id_t id);
+
 #ifdef __cplusplus
 }
 #endif

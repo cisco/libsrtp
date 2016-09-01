@@ -150,6 +150,15 @@ srtp_err_status_t srtp_auth_type_self_test(const srtp_auth_type_t *at);
 srtp_err_status_t srtp_auth_type_test(const srtp_auth_type_t *at, 
 	const srtp_auth_test_case_t *test_data);
 
+/*
+ * srtp_crypto_kernel_replace_auth_type(ct, id)
+ *
+ * replaces the crypto kernel's existing cipher for the auth_type id
+ * with a new one passed in externally.  The new auth type must pass all the
+ * existing auth_type's self tests as well as its own.
+ */
+srtp_err_status_t srtp_crypto_kernel_replace_auth_type(const srtp_auth_type_t *ct, srtp_auth_type_id_t id);
+
 #ifdef __cplusplus
 }
 #endif
