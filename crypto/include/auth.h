@@ -98,10 +98,10 @@ int srtp_auth_get_tag_length(const struct srtp_auth_t *a);
 int srtp_auth_get_prefix_length(const struct srtp_auth_t *a);
 
 /*
- * auth_test_case_t is a (list of) key/message/tag values that are
+ * srtp_auth_test_case_t is a (list of) key/message/tag values that are
  * known to be correct for a particular cipher.  this data can be used
  * to test an implementation in an on-the-fly self test of the
- * correcness of the implementation.  (see the auth_type_self_test()
+ * correcness of the implementation.  (see the srtp_auth_type_self_test()
  * function below)
  */
 typedef struct srtp_auth_test_case_t {
@@ -136,14 +136,14 @@ typedef struct srtp_auth_t {
 } srtp_auth_t;
 
 /*
- * auth_type_self_test() tests an auth_type against test cases
+ * srtp_auth_type_self_test() tests an auth_type against test cases
  * provided in an array of values of key/message/tag that is known to
  * be good
  */
 srtp_err_status_t srtp_auth_type_self_test(const srtp_auth_type_t *at);
 
 /*
- * auth_type_test() tests an auth_type against external test cases
+ * srtp_auth_type_test() tests an auth_type against external test cases
  * provided in an array of values of key/message/tag that is known to
  * be good
  */
