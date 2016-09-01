@@ -538,7 +538,6 @@ const srtp_cipher_type_t srtp_aes_gcm_128_openssl = {
     (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
     (const char*)srtp_aes_gcm_128_openssl_description,
     (const srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_0,
-    (srtp_debug_module_t*)&srtp_mod_aes_gcm,
     (srtp_cipher_type_id_t)SRTP_AES_128_GCM
 };
 
@@ -556,7 +555,6 @@ const srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
     (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
     (const char*)srtp_aes_gcm_256_openssl_description,
     (const srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_1,
-    (srtp_debug_module_t*)&srtp_mod_aes_gcm,
     (srtp_cipher_type_id_t)SRTP_AES_256_GCM
 };
 

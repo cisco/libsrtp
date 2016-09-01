@@ -258,7 +258,6 @@ const srtp_auth_type_t srtp_hmac  = {
     (auth_start_func)srtp_hmac_start,
     (const char*)srtp_hmac_description,
     (const srtp_auth_test_case_t*)&srtp_hmac_test_case_0,
-    (srtp_debug_module_t*)&srtp_mod_hmac,
     (srtp_auth_type_id_t)SRTP_HMAC_SHA1
 };
 

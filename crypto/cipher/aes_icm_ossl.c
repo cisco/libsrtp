@@ -487,7 +487,6 @@ const srtp_cipher_type_t srtp_aes_icm = {
     (cipher_get_tag_func_t)        0,
     (const char*)                        srtp_aes_icm_openssl_description,
     (const srtp_cipher_test_case_t*)          &srtp_aes_icm_test_case_0,
-    (srtp_debug_module_t*)              &srtp_mod_aes_icm,
     (srtp_cipher_type_id_t)        SRTP_AES_ICM
 };
 
@@ -507,7 +506,6 @@ const srtp_cipher_type_t srtp_aes_icm_192 = {
     (cipher_get_tag_func_t)        0,
     (const char*)                        srtp_aes_icm_192_openssl_description,
     (const srtp_cipher_test_case_t*)          &srtp_aes_icm_192_test_case_1,
-    (srtp_debug_module_t*)              &srtp_mod_aes_icm,
     (srtp_cipher_type_id_t)        SRTP_AES_192_ICM
 };
 #endif
@@ -527,7 +525,6 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     (cipher_get_tag_func_t)        0,
     (const char*)                        srtp_aes_icm_256_openssl_description,
     (const srtp_cipher_test_case_t*)          &srtp_aes_icm_256_test_case_2,
-    (srtp_debug_module_t*)              &srtp_mod_aes_icm,
     (srtp_cipher_type_id_t)        SRTP_AES_256_ICM
 };
 
