@@ -515,7 +515,7 @@ const srtp_auth_type_t * srtp_crypto_kernel_get_auth_type (srtp_auth_type_id_t i
     return NULL;
 }
 
-srtp_err_status_t srtp_crypto_kernel_alloc_auth (srtp_auth_type_id_t id, auth_pointer_t *ap, int key_len, int tag_len)
+srtp_err_status_t srtp_crypto_kernel_alloc_auth (srtp_auth_type_id_t id, srtp_auth_pointer_t *ap, int key_len, int tag_len)
 {
     const srtp_auth_type_t *at;
 

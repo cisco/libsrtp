@@ -177,7 +177,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_context_init (void* cv, const uint
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     const EVP_CIPHER *evp;
 
-    c->dir = direction_any;
+    c->dir = srtp_direction_any;
 
     debug_print(srtp_mod_aes_gcm, "key:  %s", srtp_octet_string_hex_string(key, c->key_size));
 
@@ -209,7 +209,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (void *cv, uint8_t *iv, srt
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
-    if (direction != direction_encrypt && direction != direction_decrypt) {
+    if (direction != srtp_direction_encrypt && direction != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
     c->dir = direction;
@@ -217,7 +217,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (void *cv, uint8_t *iv, srt
     debug_print(srtp_mod_aes_gcm, "setting iv: %s", v128_hex_string((v128_t*)iv));
 
     if (!EVP_CipherInit_ex(&c->ctx, NULL, NULL, NULL,
-                           NULL, (c->dir == direction_encrypt ? 1 : 0))) {
+                           NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
         return (srtp_err_status_init_fail);
     }
 
@@ -282,7 +282,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (void *cv, const uint8_t *
 static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
+    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
 
@@ -338,7 +338,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (void *cv, uint8_t *buf, u
 static srtp_err_status_t srtp_aes_gcm_openssl_decrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
+    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
 
