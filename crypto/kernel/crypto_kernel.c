@@ -382,7 +382,7 @@ srtp_err_status_t srtp_crypto_kernel_load_cipher_type (const srtp_cipher_type_t 
     return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, 0);
 }
 
-srtp_err_status_t srtp_crypto_kernel_replace_cipher_type (const srtp_cipher_type_t *new_ct, srtp_cipher_type_id_t id)
+srtp_err_status_t srtp_replace_cipher_type (const srtp_cipher_type_t *new_ct, srtp_cipher_type_id_t id)
 {
     return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, 1);
 }
@@ -452,7 +452,7 @@ srtp_err_status_t srtp_crypto_kernel_load_auth_type (const srtp_auth_type_t *new
     return srtp_crypto_kernel_do_load_auth_type(new_at, id, 0);
 }
 
-srtp_err_status_t srtp_crypto_kernel_replace_auth_type (const srtp_auth_type_t *new_at, srtp_auth_type_id_t id)
+srtp_err_status_t srtp_replace_auth_type (const srtp_auth_type_t *new_at, srtp_auth_type_id_t id)
 {
     return srtp_crypto_kernel_do_load_auth_type(new_at, id, 1);
 }
