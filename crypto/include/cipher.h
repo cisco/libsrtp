@@ -55,9 +55,9 @@ extern "C" {
 #endif
 
 /*
- * cipher_direction_t defines a particular cipher operation.
+ * srtp_cipher_direction_t defines a particular cipher operation.
  *
- * A cipher_direction_t is an enum that describes a particular cipher
+ * A srtp_cipher_direction_t is an enum that describes a particular cipher
  * operation, i.e. encryption or decryption.  For some ciphers, this
  * distinction does not matter, but for others, it is essential.
  */
@@ -68,8 +68,8 @@ typedef enum {
 } srtp_cipher_direction_t;
 
 /*
- * the cipher_pointer and cipher_type_pointer definitions are needed
- * as cipher_t and cipher_type_t are not yet defined
+ * the srtp_cipher_pointer_t definition is needed
+ * as srtp_cipher_t is not yet defined
  */
 typedef struct srtp_cipher_t      *srtp_cipher_pointer_t;
 
@@ -118,11 +118,11 @@ typedef srtp_err_status_t (*cipher_get_tag_func_t)
 
 
 /*
- * cipher_test_case_t is a (list of) key, salt, srtp_xtd_seq_num_t,
+ * srtp_cipher_test_case_t is a (list of) key, salt, srtp_xtd_seq_num_t,
  * plaintext, and ciphertext values that are known to be correct for a
  * particular cipher.  this data can be used to test an implementation
  * in an on-the-fly self test of the correcness of the implementation.
- * (see the cipher_type_self_test() function below)
+ * (see the srtp_cipher_type_self_test() function below)
  */
 typedef struct srtp_cipher_test_case_t {
     int key_length_octets;                          /* octets in key            */
@@ -138,7 +138,7 @@ typedef struct srtp_cipher_test_case_t {
     const struct srtp_cipher_test_case_t *next_test_case; /* pointer to next testcase */
 } srtp_cipher_test_case_t;
 
-/* cipher_type_t defines the 'metadata' for a particular cipher type */
+/* srtp_cipher_type_t defines the 'metadata' for a particular cipher type */
 typedef struct srtp_cipher_type_t {
     cipher_alloc_func_t alloc;
     cipher_dealloc_func_t dealloc;
@@ -154,7 +154,7 @@ typedef struct srtp_cipher_type_t {
 } srtp_cipher_type_t;
 
 /*
- * cipher_t defines an instantiation of a particular cipher, with fixed
+ * srtp_cipher_t defines an instantiation of a particular cipher, with fixed
  * key length, key and salt values
  */
 typedef struct srtp_cipher_t {
@@ -169,7 +169,7 @@ int srtp_cipher_get_key_length(const srtp_cipher_t *c);
 
 
 /*
- * cipher_type_self_test() tests a cipher against test cases provided in
+ * srtp_cipher_type_self_test() tests a cipher against test cases provided in
  * an array of values of key/srtp_xtd_seq_num_t/plaintext/ciphertext
  * that is known to be good
  */
@@ -177,7 +177,7 @@ srtp_err_status_t srtp_cipher_type_self_test(const srtp_cipher_type_t *ct);
 
 
 /*
- * cipher_type_test() tests a cipher against external test cases provided in
+ * srtp_cipher_type_test() tests a cipher against external test cases provided in
  * an array of values of key/srtp_xtd_seq_num_t/plaintext/ciphertext
  * that is known to be good
  */
@@ -185,7 +185,7 @@ srtp_err_status_t srtp_cipher_type_test(const srtp_cipher_type_t *ct, const srtp
 
 
 /*
- * cipher_bits_per_second(c, l, t) computes (and estimate of) the
+ * srtp_cipher_bits_per_second(c, l, t) computes (and estimate of) the
  * number of bits that a cipher implementation can encrypt in a second
  *
  * c is a cipher (which MUST be allocated and initialized already), l
