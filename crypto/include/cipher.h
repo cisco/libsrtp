@@ -91,10 +91,6 @@ typedef srtp_err_status_t (*cipher_init_func_t)
 /* a cipher_dealloc_func_t de-allocates a cipher_t */
 typedef srtp_err_status_t (*cipher_dealloc_func_t)(srtp_cipher_pointer_t cp);
 
-/* a cipher_set_segment_func_t sets the segment index of a cipher_t */
-typedef srtp_err_status_t (*cipher_set_segment_func_t)
-    (void *state, srtp_xtd_seq_num_t idx);
-
 /*
  * a cipher_set_aad_func_t processes the AAD data for AEAD ciphers
  */
