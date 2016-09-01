@@ -175,7 +175,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
 static srtp_err_status_t srtp_aes_gcm_openssl_context_init (void* cv, const uint8_t *key)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    c->dir = direction_any;
+    c->dir = srtp_direction_any;
 
     /* copy key to be used later when CiscoSSL crypto context is created */
     v128_copy_octet_string((v128_t*)&c->key, key);
@@ -204,7 +204,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (void *cv, uint8_t *iv, srt
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     const EVP_CIPHER *evp;
 
-    if (direction != direction_encrypt && direction != direction_decrypt) {
+    if (direction != srtp_direction_encrypt && direction != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
     c->dir = direction;
@@ -224,7 +224,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (void *cv, uint8_t *iv, srt
     }
 
     if (!EVP_CipherInit_ex(&c->ctx, evp, NULL, (const unsigned char*)&c->key.v8,
-                           NULL, (c->dir == direction_encrypt ? 1 : 0))) {
+                           NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
         return (srtp_err_status_init_fail);
     }
 
@@ -289,7 +289,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (void *cv, const uint8_t *
 static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
+    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
 
@@ -345,7 +345,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (void *cv, uint8_t *buf, u
 static srtp_err_status_t srtp_aes_gcm_openssl_decrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
+    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
 
