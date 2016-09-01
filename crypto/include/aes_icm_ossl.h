@@ -47,6 +47,7 @@
 #define AES_ICM_H
 
 #include "cipher.h"
+#include "datatypes.h"
 #include <openssl/evp.h>
 #include <openssl/aes.h>
 

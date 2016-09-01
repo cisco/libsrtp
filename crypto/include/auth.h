@@ -47,8 +47,6 @@
 #define AUTH_H
 
 #include "srtp.h"
-#include "datatypes.h"
-#include "err.h"                /* error codes    */
 #include "crypto_types.h"       /* for values of auth_type_id_t */
 
 #ifdef __cplusplus

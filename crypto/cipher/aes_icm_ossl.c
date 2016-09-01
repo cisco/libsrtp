@@ -55,8 +55,8 @@
 #include <openssl/evp.h>
 #include "aes_icm_ossl.h"
 #include "crypto_types.h"
+#include "err.h"                /* for srtp_debug */
 #include "alloc.h"
-#include "crypto_types.h"
 
 
 srtp_debug_module_t srtp_mod_aes_icm = {

@@ -49,6 +49,7 @@
 #endif
 
 #include "null_auth.h"
+#include "err.h"                /* for srtp_debug */
 #include "alloc.h"
 
 /* null_auth uses the auth debug module */
