@@ -50,6 +50,7 @@
 
 #include "cipher.h"
 #include "crypto_types.h"
+#include "err.h"                /* for srtp_debug */
 #include "alloc.h"              /* for crypto_alloc(), crypto_free()  */
 
 srtp_debug_module_t srtp_mod_cipher = {

@@ -48,6 +48,7 @@
 
 #include "auth.h"
 #include "alloc.h"
+#include "err.h"                /* for srtp_debug */
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 

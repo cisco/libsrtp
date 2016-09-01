@@ -47,9 +47,6 @@
 #define CIPHER_H
 
 #include "srtp.h"
-#include "datatypes.h"
-#include "rdbx.h"               /* for srtp_xtd_seq_num_t */
-#include "err.h"                /* for error codes  */
 #include "crypto_types.h"       /* for values of cipher_type_id_t */
 
 

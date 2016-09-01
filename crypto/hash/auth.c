@@ -48,6 +48,8 @@
 #endif
 
 #include "auth.h"
+#include "err.h"                /* for srtp_debug */
+#include "datatypes.h"          /* for octet_string */
 
 /* the debug module for authentiation */
 

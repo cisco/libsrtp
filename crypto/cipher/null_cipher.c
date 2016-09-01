@@ -50,6 +50,7 @@
 
 #include "datatypes.h"
 #include "null_cipher.h"
+#include "err.h"                /* for srtp_debug */
 #include "alloc.h"
 
 /* the null_cipher uses the cipher debug module  */
