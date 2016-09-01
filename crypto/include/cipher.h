@@ -110,7 +110,7 @@ typedef srtp_err_status_t (*srtp_cipher_set_iv_func_t)
     (void *state, uint8_t *iv, srtp_cipher_direction_t direction);
 
 /*
- * a cipher_get_tag_funct_t function is used to get the authentication
+ * a cipher_get_tag_func_t function is used to get the authentication
  * tag that was calculated by an AEAD cipher.
  */
 typedef srtp_err_status_t (*srtp_cipher_get_tag_func_t)
@@ -118,10 +118,10 @@ typedef srtp_err_status_t (*srtp_cipher_get_tag_func_t)
 
 
 /*
- * srtp_cipher_test_case_t is a (list of) key, salt, srtp_xtd_seq_num_t,
- * plaintext, and ciphertext values that are known to be correct for a
+ * srtp_cipher_test_case_t is a (list of) key, salt, plaintext, ciphertext,
+ * and aad values that are known to be correct for a
  * particular cipher.  this data can be used to test an implementation
- * in an on-the-fly self test of the correcness of the implementation.
+ * in an on-the-fly self test of the correctness of the implementation.
  * (see the srtp_cipher_type_self_test() function below)
  */
 typedef struct srtp_cipher_test_case_t {
@@ -185,7 +185,7 @@ srtp_err_status_t srtp_cipher_type_test(const srtp_cipher_type_t *ct, const srtp
 
 
 /*
- * srtp_cipher_bits_per_second(c, l, t) computes (and estimate of) the
+ * srtp_cipher_bits_per_second(c, l, t) computes (an estimate of) the
  * number of bits that a cipher implementation can encrypt in a second
  *
  * c is a cipher (which MUST be allocated and initialized already), l

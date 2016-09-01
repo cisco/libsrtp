@@ -101,7 +101,7 @@ int srtp_auth_get_prefix_length(const struct srtp_auth_t *a);
  * srtp_auth_test_case_t is a (list of) key/message/tag values that are
  * known to be correct for a particular cipher.  this data can be used
  * to test an implementation in an on-the-fly self test of the
- * correcness of the implementation.  (see the srtp_auth_type_self_test()
+ * correctness of the implementation.  (see the srtp_auth_type_self_test()
  * function below)
  */
 typedef struct srtp_auth_test_case_t {
