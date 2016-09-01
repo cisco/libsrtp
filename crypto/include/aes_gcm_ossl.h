@@ -52,7 +52,6 @@
 #include <openssl/aes.h>
 
 typedef struct {
-    v256_t key;
     int key_size;
     int tag_len;
     EVP_CIPHER_CTX ctx;

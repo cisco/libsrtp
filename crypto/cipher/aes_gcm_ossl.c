@@ -173,40 +173,11 @@ static srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_context_init (srtp_aes_gcm_ctx_t *c, const uint8_t *key)
 {
-    c->dir = direction_any;
-
-    /* copy key to be used later when CiscoSSL crypto context is created */
-    v128_copy_octet_string((v128_t*)&c->key, key);
-
-    if (c->key_size == SRTP_AES_256_KEYSIZE) {
-        debug_print(srtp_mod_aes_gcm, "Copying last 16 bytes of key: %s",
-                    v128_hex_string((v128_t*)(key + SRTP_AES_128_KEYSIZE)));
-        v128_copy_octet_string(((v128_t*)(&c->key.v8)) + 1,
-                               key + SRTP_AES_128_KEYSIZE);
-    }
-
-    debug_print(srtp_mod_aes_gcm, "key:  %s", v128_hex_string((v128_t*)&c->key));
-
-    EVP_CIPHER_CTX_cleanup(&c->ctx);
-
-    return (srtp_err_status_ok);
-}
-
-
-/*
- * aes_gcm_openssl_set_iv(c, iv) sets the counter value to the exor of iv with
- * the offset
- */
-static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uint8_t *iv, int direction)
-{
     const EVP_CIPHER *evp;
 
-    if (direction != direction_encrypt && direction != direction_decrypt) {
-        return (srtp_err_status_bad_param);
-    }
-    c->dir = direction;
+    c->dir = direction_any;
 
-    debug_print(srtp_mod_aes_gcm, "setting iv: %s", v128_hex_string((v128_t*)iv));
+    debug_print(srtp_mod_aes_gcm, "key:  %s", srtp_octet_string_hex_string(key, c->key_size));
 
     switch (c->key_size) {
     case SRTP_AES_256_KEYSIZE:
@@ -220,7 +191,28 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uin
         break;
     }
 
-    if (!EVP_CipherInit_ex(&c->ctx, evp, NULL, (const unsigned char*)&c->key.v8,
+    if (!EVP_CipherInit_ex(&c->ctx, evp, NULL, key, NULL, 0)) {
+        return (srtp_err_status_init_fail);
+    }
+
+    return (srtp_err_status_ok);
+}
+
+
+/*
+ * aes_gcm_openssl_set_iv(c, iv) sets the counter value to the exor of iv with
+ * the offset
+ */
+static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uint8_t *iv, int direction)
+{
+    if (direction != direction_encrypt && direction != direction_decrypt) {
+        return (srtp_err_status_bad_param);
+    }
+    c->dir = direction;
+
+    debug_print(srtp_mod_aes_gcm, "setting iv: %s", v128_hex_string((v128_t*)iv));
+
+    if (!EVP_CipherInit_ex(&c->ctx, NULL, NULL, NULL,
                            NULL, (c->dir == direction_encrypt ? 1 : 0))) {
         return (srtp_err_status_init_fail);
     }
