@@ -107,7 +107,7 @@ typedef srtp_err_status_t (*cipher_decrypt_func_t)
  * a cipher_set_iv_func_t function sets the current initialization vector
  */
 typedef srtp_err_status_t (*cipher_set_iv_func_t)
-    (srtp_cipher_pointer_t cp, uint8_t *iv, srtp_cipher_direction_t direction);
+    (void *state, uint8_t *iv, srtp_cipher_direction_t direction);
 
 /*
  * a cipher_get_tag_funct_t function is used to get the authentication
