@@ -52,6 +52,7 @@
 #include "aes_icm_ossl.h"
 #include "aes_gcm_ossl.h"
 #include "alloc.h"
+#include "err.h"                /* for srtp_debug */
 #include "crypto_types.h"
 
 
@@ -171,9 +172,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
  *
  * the key is the secret key
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_context_init (srtp_aes_gcm_ctx_t *c, const uint8_t *key)
+static srtp_err_status_t srtp_aes_gcm_openssl_context_init (void* cv, const uint8_t *key)
 {
-    c->dir = direction_any;
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
+    c->dir = srtp_direction_any;
 
     /* copy key to be used later when CiscoSSL crypto context is created */
     v128_copy_octet_string((v128_t*)&c->key, key);
@@ -197,11 +199,12 @@ static srtp_err_status_t srtp_aes_gcm_openssl_context_init (srtp_aes_gcm_ctx_t *
  * aes_gcm_openssl_set_iv(c, iv) sets the counter value to the exor of iv with
  * the offset
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uint8_t *iv, int direction)
+static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (void *cv, uint8_t *iv, srtp_cipher_direction_t direction)
 {
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     const EVP_CIPHER *evp;
 
-    if (direction != direction_encrypt && direction != direction_decrypt) {
+    if (direction != srtp_direction_encrypt && direction != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
     c->dir = direction;
@@ -221,7 +224,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uin
     }
 
     if (!EVP_CipherInit_ex(&c->ctx, evp, NULL, (const unsigned char*)&c->key.v8,
-                           NULL, (c->dir == direction_encrypt ? 1 : 0))) {
+                           NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
         return (srtp_err_status_init_fail);
     }
 
@@ -247,8 +250,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (srtp_aes_gcm_ctx_t *c, uin
  *	aad	Additional data to process for AEAD cipher suites
  *	aad_len	length of aad buffer
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (srtp_aes_gcm_ctx_t *c, const uint8_t *aad, uint32_t aad_len)
+static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (void *cv, const uint8_t *aad, uint32_t aad_len)
 {
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int rv;
 
     /*
@@ -282,9 +286,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (srtp_aes_gcm_ctx_t *c, co
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (srtp_aes_gcm_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
+static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
-    if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
+    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
 
@@ -307,8 +312,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (srtp_aes_gcm_ctx_t *c, un
  *	buf	data to encrypt
  *	len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (srtp_aes_gcm_ctx_t *c, uint8_t *buf, uint32_t *len)
+static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (void *cv, uint8_t *buf, uint32_t *len)
 {
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     /*
      * Calculate the tag
      */
@@ -336,9 +342,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (srtp_aes_gcm_ctx_t *c, ui
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_openssl_decrypt (srtp_aes_gcm_ctx_t *c, unsigned char *buf, unsigned int *enc_len)
+static srtp_err_status_t srtp_aes_gcm_openssl_decrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
-    if (c->dir != direction_encrypt && c->dir != direction_decrypt) {
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
+    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
         return (srtp_err_status_bad_param);
     }
 
@@ -528,35 +535,33 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_test_case_1 = {
  * This is the vector function table for this crypto engine.
  */
 const srtp_cipher_type_t srtp_aes_gcm_128_openssl = {
-    (cipher_alloc_func_t)srtp_aes_gcm_openssl_alloc,
-    (cipher_dealloc_func_t)srtp_aes_gcm_openssl_dealloc,
-    (cipher_init_func_t)srtp_aes_gcm_openssl_context_init,
-    (cipher_set_aad_func_t)srtp_aes_gcm_openssl_set_aad,
-    (cipher_encrypt_func_t)srtp_aes_gcm_openssl_encrypt,
-    (cipher_decrypt_func_t)srtp_aes_gcm_openssl_decrypt,
-    (cipher_set_iv_func_t)srtp_aes_gcm_openssl_set_iv,
-    (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
-    (const char*)srtp_aes_gcm_128_openssl_description,
-    (const srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_0,
-    (srtp_debug_module_t*)&srtp_mod_aes_gcm,
-    (srtp_cipher_type_id_t)SRTP_AES_128_GCM
+    srtp_aes_gcm_openssl_alloc,
+    srtp_aes_gcm_openssl_dealloc,
+    srtp_aes_gcm_openssl_context_init,
+    srtp_aes_gcm_openssl_set_aad,
+    srtp_aes_gcm_openssl_encrypt,
+    srtp_aes_gcm_openssl_decrypt,
+    srtp_aes_gcm_openssl_set_iv,
+    srtp_aes_gcm_openssl_get_tag,
+    srtp_aes_gcm_128_openssl_description,
+    &srtp_aes_gcm_test_case_0,
+    SRTP_AES_128_GCM
 };
 
 /*
  * This is the vector function table for this crypto engine.
  */
 const srtp_cipher_type_t srtp_aes_gcm_256_openssl = {
-    (cipher_alloc_func_t)srtp_aes_gcm_openssl_alloc,
-    (cipher_dealloc_func_t)srtp_aes_gcm_openssl_dealloc,
-    (cipher_init_func_t)srtp_aes_gcm_openssl_context_init,
-    (cipher_set_aad_func_t)srtp_aes_gcm_openssl_set_aad,
-    (cipher_encrypt_func_t)srtp_aes_gcm_openssl_encrypt,
-    (cipher_decrypt_func_t)srtp_aes_gcm_openssl_decrypt,
-    (cipher_set_iv_func_t)srtp_aes_gcm_openssl_set_iv,
-    (cipher_get_tag_func_t)srtp_aes_gcm_openssl_get_tag,
-    (const char*)srtp_aes_gcm_256_openssl_description,
-    (const srtp_cipher_test_case_t*)&srtp_aes_gcm_test_case_1,
-    (srtp_debug_module_t*)&srtp_mod_aes_gcm,
-    (srtp_cipher_type_id_t)SRTP_AES_256_GCM
+    srtp_aes_gcm_openssl_alloc,
+    srtp_aes_gcm_openssl_dealloc,
+    srtp_aes_gcm_openssl_context_init,
+    srtp_aes_gcm_openssl_set_aad,
+    srtp_aes_gcm_openssl_encrypt,
+    srtp_aes_gcm_openssl_decrypt,
+    srtp_aes_gcm_openssl_set_iv,
+    srtp_aes_gcm_openssl_get_tag,
+    srtp_aes_gcm_256_openssl_description,
+    &srtp_aes_gcm_test_case_1,
+    SRTP_AES_256_GCM
 };
 
