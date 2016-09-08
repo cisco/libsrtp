@@ -102,6 +102,10 @@ static srtp_err_status_t srtp_hmac_dealloc (srtp_auth_t *a)
 
     HMAC_CTX_cleanup(hmac_ctx);
 
+    /* zeroize entire state*/
+    octet_string_set_to_zero((uint8_t*)a,
+                             sizeof(HMAC_CTX) + sizeof(srtp_auth_t));
+
     /* free memory */
     srtp_crypto_free(a);
 
