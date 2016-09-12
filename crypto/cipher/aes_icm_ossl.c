@@ -214,6 +214,8 @@ static srtp_err_status_t srtp_aes_icm_openssl_dealloc (srtp_cipher_t *c)
  */
 static srtp_err_status_t srtp_aes_icm_openssl_context_init (srtp_aes_icm_ctx_t *c, const uint8_t *key)
 {
+    const EVP_CIPHER *evp;
+
     /*
      * set counter and initial values to 'offset' value, being careful not to
      * go past the end of the key buffer
@@ -227,51 +229,10 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init (srtp_aes_icm_ctx_t *
     c->offset.v8[SRTP_SALT_SIZE] = c->offset.v8[SRTP_SALT_SIZE + 1] = 0;
     c->counter.v8[SRTP_SALT_SIZE] = c->counter.v8[SRTP_SALT_SIZE + 1] = 0;
 
-    /* copy key to be used later when CiscoSSL crypto context is created */
-    v128_copy_octet_string((v128_t*)&c->key, key);
-
-    /* if the key is greater than 16 bytes, copy the second
-     * half.  Note, we treat AES-192 and AES-256 the same here
-     * for simplicity.  The storage location receiving the
-     * key is statically allocated to handle a full 32 byte key
-     * regardless of the cipher in use.
-     */
-    if (c->key_size == SRTP_AES_256_KEYSIZE || 
-#ifndef SRTP_NO_AES192
-	    c->key_size == SRTP_AES_192_KEYSIZE
-#endif
-	    ) {
-        debug_print(srtp_mod_aes_icm, "Copying last 16 bytes of key: %s",
-                    v128_hex_string((v128_t*)(key + SRTP_AES_128_KEYSIZE)));
-        v128_copy_octet_string(((v128_t*)(&c->key.v8)) + 1, key + SRTP_AES_128_KEYSIZE);
-    }
-
-    debug_print(srtp_mod_aes_icm, "key:  %s", v128_hex_string((v128_t*)&c->key));
+    debug_print(srtp_mod_aes_icm, "key:  %s", srtp_octet_string_hex_string(key, c->key_size));
     debug_print(srtp_mod_aes_icm, "offset: %s", v128_hex_string(&c->offset));
 
-    EVP_CIPHER_CTX_cleanup(&c->ctx);
-
-    return srtp_err_status_ok;
-}
-
-
-/*
- * aes_icm_set_iv(c, iv) sets the counter value to the exor of iv with
- * the offset
- */
-static srtp_err_status_t srtp_aes_icm_openssl_set_iv (srtp_aes_icm_ctx_t *c, uint8_t *iv, int dir)
-{
-    const EVP_CIPHER *evp;
-    v128_t nonce;
-
-    /* set nonce (for alignment) */
-    v128_copy_octet_string(&nonce, iv);
-
-    debug_print(srtp_mod_aes_icm, "setting iv: %s", v128_hex_string(&nonce));
-
-    v128_xor(&c->counter, &c->offset, &nonce);
-
-    debug_print(srtp_mod_aes_icm, "set_counter: %s", v128_hex_string(&c->counter));
+    EVP_CIPHER_CTX_init(&c->ctx);
 
     switch (c->key_size) {
     case SRTP_AES_256_KEYSIZE:
@@ -291,7 +252,35 @@ static srtp_err_status_t srtp_aes_icm_openssl_set_iv (srtp_aes_icm_ctx_t *c, uin
     }
 
     if (!EVP_EncryptInit_ex(&c->ctx, evp,
-                            NULL, c->key.v8, c->counter.v8)) {
+                            NULL, key, NULL)) {
+        return srtp_err_status_fail;
+    } else {
+        return srtp_err_status_ok;
+    }
+
+    return srtp_err_status_ok;
+}
+
+
+/*
+ * aes_icm_set_iv(c, iv) sets the counter value to the exor of iv with
+ * the offset
+ */
+static srtp_err_status_t srtp_aes_icm_openssl_set_iv (srtp_aes_icm_ctx_t *c, uint8_t *iv, int dir)
+{
+    v128_t nonce;
+
+    /* set nonce (for alignment) */
+    v128_copy_octet_string(&nonce, iv);
+
+    debug_print(srtp_mod_aes_icm, "setting iv: %s", v128_hex_string(&nonce));
+
+    v128_xor(&c->counter, &c->offset, &nonce);
+
+    debug_print(srtp_mod_aes_icm, "set_counter: %s", v128_hex_string(&c->counter));
+
+    if (!EVP_EncryptInit_ex(&c->ctx, NULL,
+                            NULL, NULL, c->counter.v8)) {
         return srtp_err_status_fail;
     } else {
         return srtp_err_status_ok;
