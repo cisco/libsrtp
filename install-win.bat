@@ -14,7 +14,7 @@
    exit /b 1
 )
 
-@for %%d in (include\srtp.h crypto\include\crypto.h Debug\srtp.lib Release\srtp.lib) do (
+@for %%d in (include\srtp.h Debug\srtp.lib Release\srtp.lib) do (
 	if not exist "%%d" (
 	   echo "%%d not found: are you in the right directory?"
 	   exit /b 1
@@ -22,10 +22,9 @@
 )
 
 mkdir %destdir%\include
-mkdir %destdir%\include\srtp
+mkdir %destdir%\include\srtp2
 mkdir %destdir%\lib
 
-copy include\*.h %destdir%\include\srtp
-copy crypto\include\*.h %destdir%\include\srtp
-copy Release\srtp.lib %destdir%\lib\srtp.lib
-copy Debug\srtp.lib %destdir%\lib\srtpd.lib
+copy include\srtp.h include\ekt.h %destdir%\include\srtp2
+copy Release\srtp2.lib %destdir%\lib\srtp2.lib
+copy Debug\srtp2.lib %destdir%\lib\srtp2d.lib
