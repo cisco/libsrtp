@@ -48,6 +48,7 @@
 
 #include "auth.h"
 #include "alloc.h"
+#include "err.h"                /* for srtp_debug */
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
@@ -112,24 +113,30 @@ static srtp_err_status_t srtp_hmac_dealloc (srtp_auth_t *a)
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_start (HMAC_CTX *state)
+static srtp_err_status_t srtp_hmac_start (void *statev)
 {
+    HMAC_CTX *state = (HMAC_CTX *)statev;
+
     if (HMAC_Init_ex(state, NULL, 0, NULL, NULL) == 0)
         return srtp_err_status_auth_fail;
 
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_init (HMAC_CTX *state, const uint8_t *key, int key_len)
+static srtp_err_status_t srtp_hmac_init (void *statev, const uint8_t *key, int key_len)
 {
+    HMAC_CTX *state = (HMAC_CTX *)statev;
+
     if (HMAC_Init_ex(state, key, key_len, EVP_sha1(), NULL) == 0)
         return srtp_err_status_auth_fail;
 
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_update (HMAC_CTX *state, const uint8_t *message, int msg_octets)
+static srtp_err_status_t srtp_hmac_update (void *statev, const uint8_t *message, int msg_octets)
 {
+    HMAC_CTX *state = (HMAC_CTX *)statev;
+
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
@@ -139,9 +146,10 @@ static srtp_err_status_t srtp_hmac_update (HMAC_CTX *state, const uint8_t *messa
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_compute (HMAC_CTX *state, const void *message,
+static srtp_err_status_t srtp_hmac_compute (void *statev, const uint8_t *message,
               int msg_octets, int tag_len, uint8_t *result)
 {
+    HMAC_CTX *state = (HMAC_CTX *)statev;
     uint8_t hash_value[SHA1_DIGEST_SIZE];
     int i;
     unsigned int len;
@@ -210,15 +218,14 @@ static const char srtp_hmac_description[] = "hmac sha-1 authentication function"
  */
 
 const srtp_auth_type_t srtp_hmac  = {
-    (auth_alloc_func)	srtp_hmac_alloc,
-    (auth_dealloc_func)	srtp_hmac_dealloc,
-    (auth_init_func)	srtp_hmac_init,
-    (auth_compute_func)	srtp_hmac_compute,
-    (auth_update_func)	srtp_hmac_update,
-    (auth_start_func)	srtp_hmac_start,
-    (const char*)		srtp_hmac_description,
-    (const srtp_auth_test_case_t*)	&srtp_hmac_test_case_0,
-    (srtp_debug_module_t*)	&srtp_mod_hmac,
-    (srtp_auth_type_id_t) SRTP_HMAC_SHA1
+    srtp_hmac_alloc,
+    srtp_hmac_dealloc,
+    srtp_hmac_init,
+    srtp_hmac_compute,
+    srtp_hmac_update,
+    srtp_hmac_start,
+    srtp_hmac_description,
+    &srtp_hmac_test_case_0,
+    SRTP_HMAC_SHA1
 };
 

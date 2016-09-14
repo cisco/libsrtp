@@ -48,6 +48,7 @@
 
 #include "cipher.h"
 #include "srtp.h"
+#include "datatypes.h"
 #include <openssl/evp.h>
 #include <openssl/aes.h>
 
