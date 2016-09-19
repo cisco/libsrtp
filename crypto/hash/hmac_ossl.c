@@ -65,8 +65,6 @@ srtp_debug_module_t srtp_mod_hmac = {
 static srtp_err_status_t srtp_hmac_alloc (srtp_auth_t **a, int key_len, int out_len)
 {
     extern const srtp_auth_type_t srtp_hmac;
-    uint8_t *pointer;
-    HMAC_CTX *new_hmac_ctx;
 
     debug_print(srtp_mod_hmac, "allocating auth func with key length %d", key_len);
     debug_print(srtp_mod_hmac, "                          tag length %d", out_len);
@@ -76,21 +74,43 @@ static srtp_err_status_t srtp_hmac_alloc (srtp_auth_t **a, int key_len, int out_
         return srtp_err_status_bad_param;
     }
 
-    /* allocate memory for auth and HMAC_CTX structures */
-    pointer = (uint8_t*)srtp_crypto_alloc(sizeof(HMAC_CTX) + sizeof(srtp_auth_t));
-    if (pointer == NULL) {
+/* OpenSSL 1.1.0 made HMAC_CTX an opaque structure, which must be allocated
+   using HMAC_CTX_new.  But this function doesn't exist in OpenSSL 1.0.x. */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+    {
+        /* allocate memory for auth and HMAC_CTX structures */
+        uint8_t* pointer;
+        HMAC_CTX *new_hmac_ctx;
+        pointer = (uint8_t*)srtp_crypto_alloc(sizeof(HMAC_CTX) + sizeof(srtp_auth_t));
+        if (pointer == NULL) {
+            return srtp_err_status_alloc_fail;
+        }
+        *a = (srtp_auth_t*)pointer;
+        (*a)->state = pointer + sizeof(srtp_auth_t);
+        new_hmac_ctx = (HMAC_CTX*)((*a)->state);
+
+        HMAC_CTX_init(new_hmac_ctx);
+    }
+
+#else
+    *a = (srtp_auth_t*)srtp_crypto_alloc(sizeof(srtp_auth_t));
+    if (*a == NULL) {
         return srtp_err_status_alloc_fail;
     }
 
+    (*a)->state = HMAC_CTX_new();
+    if ((*a)->state == NULL) {
+        srtp_crypto_free(*a);
+        *a = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+#endif
+
     /* set pointers */
-    *a = (srtp_auth_t*)pointer;
     (*a)->type = &srtp_hmac;
-    (*a)->state = pointer + sizeof(srtp_auth_t);
     (*a)->out_len = out_len;
     (*a)->key_len = key_len;
     (*a)->prefix_len = 0;
-    new_hmac_ctx = (HMAC_CTX*)((*a)->state);
-    HMAC_CTX_init(new_hmac_ctx);
 
     return srtp_err_status_ok;
 }
@@ -101,11 +121,19 @@ static srtp_err_status_t srtp_hmac_dealloc (srtp_auth_t *a)
 
     hmac_ctx = (HMAC_CTX*)a->state;
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     HMAC_CTX_cleanup(hmac_ctx);
 
     /* zeroize entire state*/
     octet_string_set_to_zero((uint8_t*)a,
                              sizeof(HMAC_CTX) + sizeof(srtp_auth_t));
+
+#else
+    HMAC_CTX_free(hmac_ctx);
+
+    /* zeroize entire state*/
+    octet_string_set_to_zero((uint8_t*)a, sizeof(srtp_auth_t));
+#endif
 
     /* free memory */
     srtp_crypto_free(a);

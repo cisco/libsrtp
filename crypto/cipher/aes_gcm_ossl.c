@@ -118,6 +118,14 @@ static srtp_err_status_t srtp_aes_gcm_openssl_alloc (srtp_cipher_t **c, int key_
     }
     memset(gcm, 0x0, sizeof(srtp_aes_gcm_ctx_t));
 
+    gcm->ctx = EVP_CIPHER_CTX_new();
+    if (gcm->ctx == NULL) {
+        srtp_crypto_free(gcm);
+        srtp_crypto_free(*c);
+        *c = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+
     /* set pointers */
     (*c)->state = gcm;
 
@@ -139,7 +147,6 @@ static srtp_err_status_t srtp_aes_gcm_openssl_alloc (srtp_cipher_t **c, int key_
 
     /* set key size        */
     (*c)->key_len = key_len;
-    EVP_CIPHER_CTX_init(&gcm->ctx);
 
     return (srtp_err_status_ok);
 }
@@ -154,7 +161,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
 
     ctx = (srtp_aes_gcm_ctx_t*)c->state;
     if (ctx) {
-        EVP_CIPHER_CTX_cleanup(&ctx->ctx);
+        EVP_CIPHER_CTX_free(ctx->ctx);
 	/* zeroize the key material */
 	octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_gcm_ctx_t));
 	srtp_crypto_free(ctx);
@@ -193,7 +200,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_context_init (void* cv, const uint
         break;
     }
 
-    if (!EVP_CipherInit_ex(&c->ctx, evp, NULL, key, NULL, 0)) {
+    if (!EVP_CipherInit_ex(c->ctx, evp, NULL, key, NULL, 0)) {
         return (srtp_err_status_init_fail);
     }
 
@@ -216,19 +223,19 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv (void *cv, uint8_t *iv, srt
 
     debug_print(srtp_mod_aes_gcm, "setting iv: %s", v128_hex_string((v128_t*)iv));
 
-    if (!EVP_CipherInit_ex(&c->ctx, NULL, NULL, NULL,
+    if (!EVP_CipherInit_ex(c->ctx, NULL, NULL, NULL,
                            NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
         return (srtp_err_status_init_fail);
     }
 
     /* set IV len  and the IV value, the followiong 3 calls are required */
-    if (!EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
         return (srtp_err_status_init_fail);
     }
-    if (!EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_IV_FIXED, -1, (void*)iv)) {
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IV_FIXED, -1, (void*)iv)) {
         return (srtp_err_status_init_fail);
     }
-    if (!EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_IV_GEN, 0, (void*)iv)) {
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_IV_GEN, 0, (void*)iv)) {
         return (srtp_err_status_init_fail);
     }
 
@@ -261,9 +268,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad (void *cv, const uint8_t *
      */
     unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
     memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
-    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, &dummy_tag);
+    EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, &dummy_tag);
 
-    rv = EVP_Cipher(&c->ctx, NULL, aad, aad_len);
+    rv = EVP_Cipher(c->ctx, NULL, aad, aad_len);
     if (rv != aad_len) {
         return (srtp_err_status_algo_fail);
     } else {
@@ -289,7 +296,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt (void *cv, unsigned char *
     /*
      * Encrypt the data
      */
-    EVP_Cipher(&c->ctx, buf, buf, *enc_len);
+    EVP_Cipher(c->ctx, buf, buf, *enc_len);
 
     return (srtp_err_status_ok);
 }
@@ -311,12 +318,12 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag (void *cv, uint8_t *buf, u
     /*
      * Calculate the tag
      */
-    EVP_Cipher(&c->ctx, NULL, NULL, 0);
+    EVP_Cipher(c->ctx, NULL, NULL, 0);
 
     /*
      * Retreive the tag
      */
-    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_GET_TAG, c->tag_len, buf);
+    EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_GET_TAG, c->tag_len, buf);
 
     /*
      * Increase encryption length by desired tag size
@@ -345,14 +352,14 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt (void *cv, unsigned char *
     /*
      * Set the tag before decrypting
      */
-    EVP_CIPHER_CTX_ctrl(&c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
+    EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
                         buf + (*enc_len - c->tag_len));
-    EVP_Cipher(&c->ctx, buf, buf, *enc_len - c->tag_len);
+    EVP_Cipher(c->ctx, buf, buf, *enc_len - c->tag_len);
 
     /*
      * Check the tag
      */
-    if (EVP_Cipher(&c->ctx, NULL, NULL, 0)) {
+    if (EVP_Cipher(c->ctx, NULL, NULL, 0)) {
         return (srtp_err_status_auth_fail);
     }
 
