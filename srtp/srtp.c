@@ -605,7 +605,12 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label
   
     /* set eigth octet of nonce to <label>, set the rest of it to zero */
     v128_set_to_zero(&nonce);
-    nonce.v8[7] = label;
+    
+    /* Added workaroud for "Potential bug in SRTCP Key Derivation - clarification required #150" */
+    if (label < 0x3)
+        nonce.v8[7] = label;
+    else
+        nonce.v8[9] = label;		
  
     status = srtp_cipher_set_iv(kdf->cipher, (uint8_t*)&nonce, srtp_direction_encrypt);
     if (status) return status;
