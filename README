@@ -181,8 +181,8 @@ Implementation Notes
   * The replay window is 128 bits in length, and is hard-coded to this
     value for now.  
 
-  * Although the library has support for MKI, and the API appears to
-    support setting up a stream with multiple keys, only a single key
+  * Although the library has limited support for MKI, and the API appears
+    to support setting up a stream with multiple keys, only a single key
     can be set.  Any attempt to use more than one key will cause the
     setup function to return an error code.  (The API needed to change
     when basic MKI support was added.  It is expected that the API

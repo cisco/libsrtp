@@ -174,7 +174,6 @@ main (int argc, char *argv[]) {
   int expected_len;
   int do_list_mods = 0;
   uint32_t ssrc = 0xdeadbeef; /* ssrc value hardcoded for now */
-  unsigned char *key_store[1];
 #ifdef RTPW_USE_WINSOCK2
   WORD wVersionRequested = MAKEWORD(2, 0);
   WSADATA wsaData;
@@ -440,11 +439,7 @@ main (int argc, char *argv[]) {
     } 
     policy.ssrc.type  = ssrc_specific;
     policy.ssrc.value = ssrc;
-    key_store[0] = (unsigned char*)key;
-    policy.keys  = key_store;
-    policy.n_keys = 1;
-    policy.mki_len = 0;
-    policy.mkis = NULL;
+    policy.key  = (uint8_t *) key;
     policy.ekt  = NULL;
     policy.next = NULL;
     policy.window_size = 128;
@@ -502,11 +497,7 @@ main (int argc, char *argv[]) {
      */
     srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtp);
     srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtcp);
-    key_store[0] = (unsigned char*)key;
-    policy.keys  = key_store;
-    policy.n_keys = 1;
-    policy.mki_len = 0;
-    policy.mkis = NULL;
+    policy.key                 = (uint8_t *)key;
     policy.ssrc.type           = ssrc_specific;
     policy.ssrc.value          = ssrc;
     policy.window_size         = 0;

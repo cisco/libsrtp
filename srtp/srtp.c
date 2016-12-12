@@ -741,7 +741,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, int n_keys, unsigned char ** cons
   if (stat) {
     return srtp_err_status_init_fail;
   }
-
+  
   /* generate encryption key  */
   stat = srtp_kdf_generate(&kdf, label_rtp_encryption, 
 			   tmp_key, rtp_base_key_len);
@@ -1037,7 +1037,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    /* DAM - no RTCP key limit at present */
 
    /* initialize keys */
-   err = srtp_stream_init_keys(srtp, p->n_keys, p->keys);
+   err = srtp_stream_init_keys(srtp, 1, &p->key);
    if (err) {
      srtp_rdbx_dealloc(&srtp->rtp_rdbx);
      return err;
@@ -1896,7 +1896,6 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     /* insert the MKI and increase the packet length */
     memcpy((uint8_t *)hdr + *pkt_octet_len, stream->mki, stream->mki_len);
     *pkt_octet_len += stream->mki_len;
-
   }
 
   if (auth_tag) {
@@ -2342,7 +2341,7 @@ srtp_dealloc(srtp_t session) {
       return status;
     stream = next;
   }
-
+  
   /* deallocate stream template, if there is one */
   if (session->stream_template != NULL) {
     status = srtp_stream_dealloc(session->stream_template, NULL);
@@ -2364,8 +2363,7 @@ srtp_add_stream(srtp_t session,
   srtp_stream_t tmp;
 
   /* sanity check arguments */
-  if ((session == NULL) || (policy == NULL) || (policy->keys == NULL)
-      || (policy->n_keys == 0) || (policy->keys[0] == NULL))
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
     return srtp_err_status_bad_param;
 
   /* allocate stream  */
@@ -2498,10 +2496,8 @@ srtp_update(srtp_t session, const srtp_policy_t *policy) {
   srtp_err_status_t stat;
 
   /* sanity check arguments */
-  if ((session == NULL) || (policy == NULL) || (policy->keys == NULL)
-      || (policy->n_keys == 0) || (policy->keys[0] == NULL))
-  {
-     return srtp_err_status_bad_param;
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL)) {
+    return srtp_err_status_bad_param;
   }
 
   while (policy != NULL) {
@@ -2656,11 +2652,8 @@ srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
   srtp_err_status_t status;
 
   /* sanity check arguments */
-  if ((session == NULL) || (policy == NULL) || (policy->keys == NULL)
-      || (policy->n_keys == 0) || (policy->keys[0] == NULL))
-  {
-     return srtp_err_status_bad_param;
-  }
+  if ((session == NULL) || (policy == NULL) || (policy->key == NULL))
+    return srtp_err_status_bad_param;
 
   switch (policy->ssrc.type) {
   case (ssrc_any_outbound):
@@ -3489,11 +3482,13 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
     return srtp_err_status_auth_fail;   
 
   /* insert the MKI */
-  if (stream->mki_len > 0)
+  if (stream->mki_len > 0) {
     memcpy((char*)(trailer + 1), stream->mki, stream->mki_len);
+    *pkt_octet_len += stream->mki_len;
+  }
 
   /* increase the packet length by the length of the auth tag and seq_num*/
-  *pkt_octet_len += (tag_len + stream->mki_len + sizeof(srtcp_trailer_t));
+  *pkt_octet_len += (tag_len + sizeof(srtcp_trailer_t));
     
   return srtp_err_status_ok;  
 }

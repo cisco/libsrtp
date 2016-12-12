@@ -407,11 +407,10 @@ typedef struct srtp_policy_t {
 			      */
   srtp_crypto_policy_t rtp;    /**< SRTP crypto policy.                  */
   srtp_crypto_policy_t rtcp;   /**< SRTCP crypto policy.                 */
+  unsigned char *key;          /**< Pointer to the SRTP master keys for
+                                *    this stream.                        */
   int      mki_len;            /**< The length of the MKI, or 0 if
                                 *   no MKI is used.                      */
-  int      n_keys;             /**< The number of keys.                  */
-  unsigned char **keys;        /**< Pointer to the SRTP master keys for
-                                *    this stream.                        */
   unsigned char **mkis;        /**< Pointer to the MKIs for this
                                 *   stream, or NULL if MKI isn't used.   */
   srtp_ekt_policy_t ekt;       /**< Pointer to the EKT policy structure
