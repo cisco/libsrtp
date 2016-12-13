@@ -73,6 +73,11 @@ extern "C" {
 #define SRTP_MAX_KEY_LEN      64
 
 /*
+ * SRTP_MAX_MKI_LEN is the maximum MKI length supported by libSRTP
+ */
+#define SRTP_MAX_MKI_LEN 128
+
+/*
  * SRTP_MAX_TAG_LEN is the maximum tag length supported by libSRTP
  */
 
@@ -86,7 +91,7 @@ extern "C" {
  *
  * @brief the maximum number of octets added by srtp_protect().
  */
-#define SRTP_MAX_TRAILER_LEN SRTP_MAX_TAG_LEN 
+#define SRTP_MAX_TRAILER_LEN (SRTP_MAX_MKI_LEN + SRTP_MAX_TAG_LEN)
 
 /*
  * SRTP_AEAD_SALT_LEN is the length of the SALT values used with 
@@ -267,7 +272,9 @@ typedef enum {
   srtp_err_status_parse_err    = 21, /**< error parsing data                      */
   srtp_err_status_encode_err   = 22, /**< error encoding data                     */
   srtp_err_status_semaphore_err = 23,/**< error while using semaphores            */
-  srtp_err_status_pfkey_err    = 24  /**< error while using pfkey                 */
+  srtp_err_status_pfkey_err    = 24, /**< error while using pfkey                 */
+  srtp_err_status_undef_mki    = 25, /**< undefined MKI found                     */
+  srtp_err_status_many_keys    = 26  /**< too many keys supplied                  */
 } srtp_err_status_t;
 
 typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
@@ -401,7 +408,11 @@ typedef struct srtp_policy_t {
   srtp_crypto_policy_t rtp;    /**< SRTP crypto policy.                  */
   srtp_crypto_policy_t rtcp;   /**< SRTCP crypto policy.                 */
   unsigned char *key;          /**< Pointer to the SRTP master key for
-				*    this stream.                        */
+                                *    this stream.                        */
+  int      mki_len;            /**< The length of the MKI, or 0 if
+                                *   no MKI is used.                      */
+  unsigned char **mkis;        /**< Pointer to the MKIs for this
+                                *   stream, or NULL if MKI isn't used.   */
   srtp_ekt_policy_t ekt;       /**< Pointer to the EKT policy structure
                                 *   for this stream (if any)             */ 
   unsigned long window_size;   /**< The window size to use for replay
@@ -484,10 +495,10 @@ srtp_err_status_t srtp_shutdown(void);
  * need not be consecutive, but they @b must be out of order by less
  * than 2^15 = 32,768 packets.
  *
- * @warning This function assumes that it can write the authentication
- * tag into the location in memory immediately following the RTP
- * packet, and assumes that the RTP packet is aligned on a 32-bit
- * boundary.
+ * @warning This function assumes that it can write the MKI (if MKI is
+ * used) and authentication tag into the location in memory
+ * immediately following the RTP packet, and assumes that the RTP
+ * packet is aligned on a 32-bit boundary.
  *
  * @warning This function assumes that it can write SRTP_MAX_TRAILER_LEN 
  * into the location in memory immediately following the RTP packet.   
@@ -1231,10 +1242,10 @@ srtp_append_salt_to_key(unsigned char *key, unsigned int bytes_in_key,
  * *len_ptr is the number of octets in that packet; otherwise, no
  * assumptions should be made about the value of either data elements.
  * 
- * @warning This function assumes that it can write the authentication
- * tag into the location in memory immediately following the RTCP
- * packet, and assumes that the RTCP packet is aligned on a 32-bit
- * boundary.
+ * @warning This function assumes that it can write the MKI (if MKI is
+ * used) and authentication tag and into the location in memory
+ * immediately following the RTCP packet, and assumes that the RTCP
+ * packet is aligned on a 32-bit boundary.
  *
  * @warning This function assumes that it can write SRTP_MAX_TRAILER_LEN+4 
  * into the location in memory immediately following the RTCP packet.   

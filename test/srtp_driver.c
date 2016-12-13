@@ -1285,7 +1285,8 @@ srtp_session_print_policy (srtp_t srtp)
                "# rtcp auth:     %s\r\n"
                "# rtcp services: %s\r\n"
                "# window size:   %lu\r\n"
-               "# tx rtx allowed:%s\r\n",
+               "# tx rtx allowed:%s\r\n"
+               "# mki in use:    %s\r\n",
                direction[stream->direction],
                stream->rtp_cipher->type->description,
                stream->rtp_auth->type->description,
@@ -1294,7 +1295,8 @@ srtp_session_print_policy (srtp_t srtp)
                stream->rtcp_auth->type->description,
                serv_descr[stream->rtcp_services],
                srtp_rdbx_get_window_size(&stream->rtp_rdbx),
-               stream->allow_repeat_tx ? "true" : "false");
+               stream->allow_repeat_tx ? "true" : "false",
+               stream->mki_len ? "true" : "false");
 
         printf("# Encrypted extension headers: ");
         if (stream->enc_xtn_hdr && stream->enc_xtn_hdr_count > 0) {
@@ -1326,7 +1328,8 @@ srtp_session_print_policy (srtp_t srtp)
                "# rtcp auth:     %s\r\n"
                "# rtcp services: %s\r\n"
                "# window size:   %lu\r\n"
-               "# tx rtx allowed:%s\r\n",
+               "# tx rtx allowed:%s\r\n"
+               "# mki in use:    %s\r\n",
                stream->ssrc,
                stream->rtp_cipher->type->description,
                stream->rtp_auth->type->description,
@@ -1335,7 +1338,8 @@ srtp_session_print_policy (srtp_t srtp)
                stream->rtcp_auth->type->description,
                serv_descr[stream->rtcp_services],
                srtp_rdbx_get_window_size(&stream->rtp_rdbx),
-               stream->allow_repeat_tx ? "true" : "false");
+               stream->allow_repeat_tx ? "true" : "false",
+               stream->mki_len ? "true" : "false");
 
         printf("# Encrypted extension headers: ");
         if (stream->enc_xtn_hdr && stream->enc_xtn_hdr_count > 0) {
@@ -2632,6 +2636,13 @@ unsigned char test_key[46] = {
     0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6
 };
 
+unsigned char test_mki_key[1] = {
+    0xe1
+};
+
+unsigned char *test_mki_ptr[1] = {
+  test_mki_key
+};
 
 const srtp_policy_t default_policy = {
     { ssrc_any_outbound, 0 },  /* SSRC                           */
@@ -2652,6 +2663,37 @@ const srtp_policy_t default_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     test_key,
+    0,         /* MKI length */
+    NULL,      /* vector of MKI values */
+    NULL,      /* indicates that EKT is not in use */
+    128,       /* replay window size */
+    0,         /* retransmission not allowed */
+    NULL,      /* no encrypted extension headers */
+    0,         /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t default_mki_policy = {
+    { ssrc_any_outbound, 0 },  /* SSRC                           */
+    {                          /* SRTP policy                    */
+        SRTP_AES_128_ICM,      /* cipher type                 */
+        30,                    /* cipher key length in octets */
+        SRTP_HMAC_SHA1,        /* authentication func type    */
+        16,                    /* auth key length in octets   */
+        10,                    /* auth tag length in octets   */
+        sec_serv_conf_and_auth /* security services flag      */
+    },
+    {                          /* SRTCP policy                   */
+        SRTP_AES_128_ICM,      /* cipher type                 */
+        30,                    /* cipher key length in octets */
+        SRTP_HMAC_SHA1,        /* authentication func type    */
+        16,                    /* auth key length in octets   */
+        10,                    /* auth tag length in octets   */
+        sec_serv_conf_and_auth /* security services flag      */
+    },
+    test_key,
+    1,                         /* MKI length */
+    test_mki_ptr,              /* vector of MKI values */
     NULL,      /* indicates that EKT is not in use */
     128,       /* replay window size */
     0,         /* retransmission not allowed */
@@ -2679,6 +2721,37 @@ const srtp_policy_t aes_only_policy = {
         sec_serv_conf       /* security services flag      */
     },
     test_key,
+    0,			/* MKI length */
+    NULL,      /* vector of MKI values */
+    NULL,      /* indicates that EKT is not in use */
+    128,       /* replay window size */
+    0,         /* retransmission not allowed */
+    NULL,      /* no encrypted extension headers */
+    0,         /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t aes_only_mki_policy = {
+    { ssrc_any_outbound, 0 }, /* SSRC                        */
+    {
+        SRTP_AES_128_ICM,          /* cipher type                 */
+        30,                   /* cipher key length in octets */
+        SRTP_NULL_AUTH,            /* authentication func type    */
+        0,                    /* auth key length in octets   */
+        0,                    /* auth tag length in octets   */
+        sec_serv_conf         /* security services flag      */
+    },
+    {
+        SRTP_AES_128_ICM,        /* cipher type                 */
+        30,                 /* cipher key length in octets */
+        SRTP_NULL_AUTH,          /* authentication func type    */
+        0,                  /* auth key length in octets   */
+        0,                  /* auth tag length in octets   */
+        sec_serv_conf       /* security services flag      */
+    },
+    test_key,
+    1,                      /* MKI length */
+    test_mki_ptr,	      	 /* vector of MKI values */
     NULL,      /* indicates that EKT is not in use */
     128,       /* replay window size */
     0,         /* retransmission not allowed */
@@ -2706,6 +2779,37 @@ const srtp_policy_t hmac_only_policy = {
         sec_serv_auth       /* security services flag      */
     },
     test_key,
+    0,			/* MKI length */
+    NULL,		/* vector of MKI values */
+    NULL,      /* indicates that EKT is not in use */
+    128,       /* replay window size */
+    0,         /* retransmission not allowed */
+    NULL,      /* no encrypted extension headers */
+    0,         /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t hmac_only_mki_policy = {
+    { ssrc_any_outbound, 0 }, /* SSRC                        */
+    {
+        SRTP_NULL_CIPHER,          /* cipher type                 */
+        0,                    /* cipher key length in octets */
+        SRTP_HMAC_SHA1,            /* authentication func type    */
+        20,                   /* auth key length in octets   */
+        4,                    /* auth tag length in octets   */
+        sec_serv_auth         /* security services flag      */
+    },
+    {
+        SRTP_NULL_CIPHER,        /* cipher type                 */
+        0,                  /* cipher key length in octets */
+        SRTP_HMAC_SHA1,          /* authentication func type    */
+        20,                 /* auth key length in octets   */
+        4,                  /* auth tag length in octets   */
+        sec_serv_auth       /* security services flag      */
+    },
+    test_key,
+    1,                      /* MKI length */
+    test_mki_ptr,           /* vector of MKI values */
     NULL,      /* indicates that EKT is not in use */
     128,       /* replay window size */
     0,         /* retransmission not allowed */
@@ -2734,6 +2838,37 @@ const srtp_policy_t aes128_gcm_8_policy = {
         sec_serv_conf_and_auth          /* security services flag      */
     },
     test_key,
+    0,			  /* MKI length */
+    NULL,        /* vector of MKI values */
+    NULL,        /* indicates that EKT is not in use */
+    128,         /* replay window size */
+    0,           /* retransmission not allowed */
+    NULL,        /* no encrypted extension headers */
+    0,           /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t aes128_gcm_8_mki_policy = {
+    { ssrc_any_outbound, 0 },           /* SSRC                           */
+    {                                   /* SRTP policy                    */
+        SRTP_AES_128_GCM,                    /* cipher type                 */
+        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    {                                   /* SRTCP policy                   */
+        SRTP_AES_128_GCM,                    /* cipher type                 */
+        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    test_key,
+    1,                /* MKI length */
+    test_mki_ptr,		 /* vector of MKI values */
     NULL,        /* indicates that EKT is not in use */
     128,         /* replay window size */
     0,           /* retransmission not allowed */
@@ -2761,6 +2896,37 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
         sec_serv_auth                   /* security services flag      */
     },
     test_key,
+    0,			  /* MKI length */
+    NULL,		  /* vector of MKI values */
+    NULL,        /* indicates that EKT is not in use */
+    128,         /* replay window size */
+    0,           /* retransmission not allowed */
+    NULL,        /* no encrypted extension headers */
+    0,           /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t aes128_gcm_8_cauth_mki_policy = {
+    { ssrc_any_outbound, 0 },           /* SSRC                           */
+    {                                   /* SRTP policy                    */
+        SRTP_AES_128_GCM,                    /* cipher type                 */
+        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    {                                   /* SRTCP policy                   */
+        SRTP_AES_128_GCM,                    /* cipher type                 */
+        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_auth                   /* security services flag      */
+    },
+    test_key,
+    1,			  /* MKI length */
+    test_mki_ptr,/* vector of MKI values */
     NULL,        /* indicates that EKT is not in use */
     128,         /* replay window size */
     0,           /* retransmission not allowed */
@@ -2788,6 +2954,37 @@ const srtp_policy_t aes256_gcm_8_policy = {
         sec_serv_conf_and_auth          /* security services flag      */
     },
     test_key,
+    0,			  /* MKI length */
+    NULL,		  /* vector of MKI values */
+    NULL,        /* indicates that EKT is not in use */
+    128,         /* replay window size */
+    0,           /* retransmission not allowed */
+    NULL,        /* no encrypted extension headers */
+    0,           /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t aes256_gcm_8_mki_policy = {
+    { ssrc_any_outbound, 0 },           /* SSRC                           */
+    {                                   /* SRTP policy                    */
+        SRTP_AES_256_GCM,                    /* cipher type                 */
+        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    {                                   /* SRTCP policy                   */
+        SRTP_AES_256_GCM,                    /* cipher type                 */
+        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    test_key,
+    1,			  /* MKI length */
+    test_mki_ptr,/* vector of MKI values */
     NULL,        /* indicates that EKT is not in use */
     128,         /* replay window size */
     0,           /* retransmission not allowed */
@@ -2815,6 +3012,37 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
         sec_serv_auth                   /* security services flag      */
     },
     test_key,
+    0,			  /* MKI length */
+    NULL,		  /* vector of MKI values */
+    NULL,        /* indicates that EKT is not in use */
+    128,         /* replay window size */
+    0,           /* retransmission not allowed */
+    NULL,        /* no encrypted extension headers */
+    0,           /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t aes256_gcm_8_cauth_mki_policy = {
+    { ssrc_any_outbound, 0 },           /* SSRC                           */
+    {                                   /* SRTP policy                    */
+        SRTP_AES_256_GCM,                    /* cipher type                 */
+        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    {                                   /* SRTCP policy                   */
+        SRTP_AES_256_GCM,                    /* cipher type                 */
+        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_NULL_AUTH,                      /* authentication func type    */
+        0,                              /* auth key length in octets   */
+        8,                              /* auth tag length in octets   */
+        sec_serv_auth                   /* security services flag      */
+    },
+    test_key,
+    1,			  /* MKI length */
+    test_mki_ptr,/* vector of MKI values */
     NULL,        /* indicates that EKT is not in use */
     128,         /* replay window size */
     0,           /* retransmission not allowed */
@@ -2843,6 +3071,37 @@ const srtp_policy_t null_policy = {
         sec_serv_none       /* security services flag      */
     },
     test_key,
+    0,			/* MKI length */
+    NULL,		/* vector of MKI values */
+    NULL,      /* indicates that EKT is not in use */
+    128,       /* replay window size */
+    0,         /* retransmission not allowed */
+    NULL,      /* no encrypted extension headers */
+    0,         /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t null_mki_policy = {
+    { ssrc_any_outbound, 0 }, /* SSRC                        */
+    {
+        SRTP_NULL_CIPHER,          /* cipher type                 */
+        0,                    /* cipher key length in octets */
+        SRTP_NULL_AUTH,            /* authentication func type    */
+        0,                    /* auth key length in octets   */
+        0,                    /* auth tag length in octets   */
+        sec_serv_none         /* security services flag      */
+    },
+    {
+        SRTP_NULL_CIPHER,        /* cipher type                 */
+        0,                  /* cipher key length in octets */
+        SRTP_NULL_AUTH,          /* authentication func type    */
+        0,                  /* auth key length in octets   */
+        0,                  /* auth tag length in octets   */
+        sec_serv_none       /* security services flag      */
+    },
+    test_key,
+    1,                      /* MKI length */
+    test_mki_ptr,           /* vector of MKI values */
     NULL,      /* indicates that EKT is not in use */
     128,       /* replay window size */
     0,         /* retransmission not allowed */
@@ -2880,6 +3139,37 @@ const srtp_policy_t aes_256_hmac_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     test_256_key,
+    0,			/* MKI length */
+    NULL,		/* vector of MKI values */
+    NULL,      /* indicates that EKT is not in use */
+    128,       /* replay window size */
+    0,         /* retransmission not allowed */
+    NULL,      /* no encrypted extension headers */
+    0,         /* list of encrypted extension headers is empty */
+    NULL
+};
+
+const srtp_policy_t aes_256_hmac_mki_policy = {
+    { ssrc_any_outbound, 0 },  /* SSRC                           */
+    {                          /* SRTP policy                    */
+        SRTP_AES_ICM,               /* cipher type                 */
+        46,                    /* cipher key length in octets */
+        SRTP_HMAC_SHA1,             /* authentication func type    */
+        20,                    /* auth key length in octets   */
+        10,                    /* auth tag length in octets   */
+        sec_serv_conf_and_auth /* security services flag      */
+    },
+    {                          /* SRTCP policy                   */
+        SRTP_AES_ICM,               /* cipher type                 */
+        46,                    /* cipher key length in octets */
+        SRTP_HMAC_SHA1,             /* authentication func type    */
+        20,                    /* auth key length in octets   */
+        10,                    /* auth tag length in octets   */
+        sec_serv_conf_and_auth /* security services flag      */
+    },
+    test_256_key,
+    1,                         /* MKI length */
+    test_mki_ptr,              /* vector of MKI values */
     NULL,      /* indicates that EKT is not in use */
     128,       /* replay window size */
     0,         /* retransmission not allowed */
@@ -2921,6 +3211,8 @@ const srtp_policy_t hmac_only_with_ekt_policy = {
         sec_serv_auth       /* security services flag      */
     },
     test_key,
+    0,                     /* MKI length */
+    NULL,                  /* vector of MKI values */
     &ekt_test_policy,      /* indicates that EKT is not in use */
     128,                   /* replay window size */
     0,                     /* retransmission not allowed */
@@ -2929,6 +3221,34 @@ const srtp_policy_t hmac_only_with_ekt_policy = {
     NULL
 };
 
+const srtp_policy_t hmac_only_with_ekt_mki_policy = {
+    { ssrc_any_outbound, 0 }, /* SSRC                        */
+    {
+        SRTP_NULL_CIPHER,          /* cipher type                 */
+        0,                    /* cipher key length in octets */
+        SRTP_HMAC_SHA1,            /* authentication func type    */
+        20,                   /* auth key length in octets   */
+        4,                    /* auth tag length in octets   */
+        sec_serv_auth         /* security services flag      */
+    },
+    {
+        SRTP_NULL_CIPHER,        /* cipher type                 */
+        0,                  /* cipher key length in octets */
+        SRTP_HMAC_SHA1,          /* authentication func type    */
+        20,                 /* auth key length in octets   */
+        4,                  /* auth tag length in octets   */
+        sec_serv_auth       /* security services flag      */
+    },
+    test_key,
+    1,                     /* MKI length */
+    test_mki_ptr,          /* vector of MKI values */
+    &ekt_test_policy,      /* indicates that EKT is not in use */
+    128,                   /* replay window size */
+    0,                     /* retransmission not allowed */
+    NULL,                  /* no encrypted extension headers */
+    0,                     /* list of encrypted extension headers is empty */
+    NULL
+};
 
 /*
  * an array of pointers to the policies listed above
@@ -2954,6 +3274,20 @@ policy_array[] = {
     &null_policy,
     &aes_256_hmac_policy,
     &hmac_only_with_ekt_policy,
+
+    // MKI variants
+    &hmac_only_mki_policy,
+    &aes_only_mki_policy,
+    &default_mki_policy,
+#ifdef OPENSSL
+    &aes128_gcm_8_mki_policy,
+    &aes128_gcm_8_cauth_mki_policy,
+    &aes256_gcm_8_mki_policy,
+    &aes256_gcm_8_cauth_mki_policy,
+#endif
+    &null_mki_policy,
+    &aes_256_hmac_mki_policy,
+    &hmac_only_with_ekt_mki_policy,
     NULL
 };
 
@@ -2976,6 +3310,8 @@ const srtp_policy_t wildcard_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     test_key,
+    0,                   /* MKI length */
+    NULL,                /* vector of MKI values */
     NULL,
     128,                 /* replay window size */
     0,                   /* retransmission not allowed */
