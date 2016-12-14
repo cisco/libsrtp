@@ -2539,7 +2539,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
   srtp_rdb_t old_rtcp_rdb;
   srtp_stream_t stream;
 
-  stream = srtp_get_stream(session, policy->ssrc.value);
+  stream = srtp_get_stream(session, htonl(policy->ssrc.value));
   if (stream == NULL) {
     return srtp_err_status_bad_param;
   }
@@ -2548,7 +2548,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
   old_index = stream->rtp_rdbx.index;
   old_rtcp_rdb = stream->rtcp_rdb;
 
-  status = srtp_remove_stream(session, policy->ssrc.value);
+  status = srtp_remove_stream(session, htonl(policy->ssrc.value));
   if (status) {
     return status;
   }
@@ -2558,7 +2558,7 @@ update_stream(srtp_t session, const srtp_policy_t *policy) {
     return status;
   }
 
-  stream = srtp_get_stream(session, policy->ssrc.value);
+  stream = srtp_get_stream(session, htonl(policy->ssrc.value));
   if (stream == NULL) {
     return srtp_err_status_fail;
   }
