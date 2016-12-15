@@ -267,8 +267,7 @@ main (int argc, char *argv[]) {
       fprintf(stderr, "error: unknown security service requested\n");
       return -1;
     } 
-
-    policy.key  = (uint8_t *) key;
+    srtp_update_policy_master_key(&policy, (uint8_t *)key);
     policy.ekt  = NULL;
     policy.next = NULL;
     policy.window_size = 128;

@@ -45,6 +45,7 @@
 #include <stdio.h>    /* for printf()          */
 #include "getopt_s.h" /* for local getopt()    */
 #include "srtp_priv.h"
+#include "util.h"
 
 srtp_err_status_t 
 test_dtls_srtp(void);
@@ -184,7 +185,7 @@ test_dtls_srtp(void) {
   memset(key, 0xff, key_len);
   memset(salt, 0xee, salt_len);
   srtp_append_salt_to_key(key, key_len, salt, salt_len);
-  policy.key  = key;
+  srtp_update_policy_master_key(&policy, key);
 
   /* initialize SRTP policy from profile  */
   err = srtp_crypto_policy_set_from_profile_for_rtp(&policy.rtp, profile);

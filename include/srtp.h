@@ -88,6 +88,14 @@ extern "C" {
  */
 #define SRTP_MAX_TRAILER_LEN SRTP_MAX_TAG_LEN 
 
+/**
+ * SRTP_MAX_NUM_MASTER_KEYS is the maximum number of Master keys for
+ * MKI supported by libSRTP.  Can look at making this dynamic in the
+ * future.
+ *  
+ */
+#define SRTP_MAX_NUM_MASTER_KEYS 4
+
 /*
  * SRTP_AEAD_SALT_LEN is the length of the SALT values used with 
  * GCM mode.  GCM mode requires an IV.  The SALT value is used
@@ -267,7 +275,8 @@ typedef enum {
   srtp_err_status_parse_err    = 21, /**< error parsing data                      */
   srtp_err_status_encode_err   = 22, /**< error encoding data                     */
   srtp_err_status_semaphore_err = 23,/**< error while using semaphores            */
-  srtp_err_status_pfkey_err    = 24  /**< error while using pfkey                 */
+  srtp_err_status_pfkey_err    = 24, /**< error while using pfkey                 */
+  srtp_err_status_bad_mki      = 25  /**< error MKI present in packet is invalid */
 } srtp_err_status_t;
 
 typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
@@ -364,6 +373,17 @@ typedef struct srtp_ekt_policy_ctx_t *srtp_ekt_policy_t;
  */
 typedef struct srtp_ekt_stream_ctx_t *srtp_ekt_stream_t;
 
+/**
+ * @brief srtp_master_key_t represents a master key.  There will
+ * be a Master Key Index and the Master Key associated with the
+ * Master Key Index.  Need to also keep track of the Master Key
+ * Index Size to correctly read it from a packet.
+ */
+typedef struct srtp_master_key_t {
+  unsigned char *key;
+  unsigned char *mki_id;
+  unsigned int mki_size;
+} srtp_master_key_t;
 
 /** 
  * @brief represents the policy for an SRTP session.  
@@ -400,8 +420,8 @@ typedef struct srtp_policy_t {
 			      */
   srtp_crypto_policy_t rtp;    /**< SRTP crypto policy.                  */
   srtp_crypto_policy_t rtcp;   /**< SRTCP crypto policy.                 */
-  unsigned char *key;          /**< Pointer to the SRTP master key for
-				*    this stream.                        */
+  srtp_master_key_t keys[SRTP_MAX_NUM_MASTER_KEYS];  /** Array of Master Key structures */
+  unsigned long num_master_keys;  /** Number of master keys            */
   srtp_ekt_policy_t ekt;       /**< Pointer to the EKT policy structure
                                 *   for this stream (if any)             */ 
   unsigned long window_size;   /**< The window size to use for replay
@@ -511,6 +531,57 @@ srtp_err_status_t srtp_shutdown(void);
  */
 
 srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
+
+/**
+ * @brief srtp_protect_mki() is the Secure RTP sender-side packet processing
+ * function that can utilize MKI.
+ * 
+ * The function call srtp_protect(ctx, rtp_hdr, len_ptr) applies SRTP
+ * protection to the RTP packet rtp_hdr (which has length *len_ptr) using
+ * the SRTP context ctx.  If srtp_err_status_ok is returned, then rtp_hdr
+ * points to the resulting SRTP packet and *len_ptr is the number of
+ * octets in that packet; otherwise, no assumptions should be made
+ * about the value of either data elements.
+ * 
+ * The sequence numbers of the RTP packets presented to this function
+ * need not be consecutive, but they @b must be out of order by less
+ * than 2^15 = 32,768 packets.
+ *
+ * @warning This function assumes that it can write the authentication
+ * tag into the location in memory immediately following the RTP
+ * packet, and assumes that the RTP packet is aligned on a 32-bit
+ * boundary.
+ *
+ * @warning This function assumes that it can write SRTP_MAX_TRAILER_LEN 
+ * into the location in memory immediately following the RTP packet.   
+ * Callers MUST ensure that this much writable memory is available in 
+ * the buffer that holds the RTP packet.
+ * 
+ * @param ctx is the SRTP context to use in processing the packet.
+ *
+ * @param rtp_hdr is a pointer to the RTP packet (before the call); after
+ * the function returns, it points to the srtp packet.
+ *
+ * @param len_ptr is a pointer to the length in octets of the complete
+ * RTP packet (header and body) before the function call, and of the
+ * complete SRTP packet after the call, if srtp_err_status_ok was returned.
+ * Otherwise, the value of the data to which it points is undefined.
+ *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If 
+ * set to false then will use the first set of session keys.  If set to true will
+ * use the session keys identified by the mki_index
+ *
+ * @param mki_index integer value specifying which set of session kesy should be
+ * used if use_mki is set to true.
+ *
+ * @return 
+ *    - srtp_err_status_ok            no problems
+ *    - srtp_err_status_replay_fail   rtp sequence number was non-increasing
+ *    - @e other                 failure in cryptographic mechanisms
+ */
+
+srtp_err_status_t  srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
+				    unsigned int use_mki, unsigned int mki_index);
 	     
 /**
  * @brief srtp_unprotect() is the Secure RTP receiver-side packet
@@ -555,6 +626,49 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
 
 srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
 
+/**
+ * @brief srtp_unprotect_mki() is the Secure RTP receiver-side packet
+ * processing function that checks for MKI.
+ *
+ * The function call srtp_unprotect(ctx, srtp_hdr, len_ptr) verifies
+ * the Secure RTP protection of the SRTP packet pointed to by srtp_hdr
+ * (which has length *len_ptr), using the SRTP context ctx.  If
+ * srtp_err_status_ok is returned, then srtp_hdr points to the resulting
+ * RTP packet and *len_ptr is the number of octets in that packet;
+ * otherwise, no assumptions should be made about the value of either
+ * data elements.  
+ * 
+ * The sequence numbers of the RTP packets presented to this function
+ * need not be consecutive, but they @b must be out of order by less
+ * than 2^15 = 32,768 packets.
+ * 
+ * @warning This function assumes that the SRTP packet is aligned on a
+ * 32-bit boundary.
+ *
+ * @param ctx is the SRTP session which applies to the particular packet.
+ *
+ * @param srtp_hdr is a pointer to the header of the SRTP packet
+ * (before the call).  after the function returns, it points to the
+ * rtp packet if srtp_err_status_ok was returned; otherwise, the value of
+ * the data to which it points is undefined.
+ *
+ * @param len_ptr is a pointer to the length in octets of the complete
+ * srtp packet (header and body) before the function call, and of the
+ * complete rtp packet after the call, if srtp_err_status_ok was returned.
+ * Otherwise, the value of the data to which it points is undefined.
+ *
+ * @return 
+ *    - srtp_err_status_ok          if the RTP packet is valid.
+ *    - srtp_err_status_auth_fail   if the SRTP packet failed the message 
+ *                             authentication check.
+ *    - srtp_err_status_replay_fail if the SRTP packet is a replay (e.g. packet has
+ *                             already been processed and accepted).
+ *    - srtp_err_status_bad_mki if the MKI in the packet is not a known MKI id
+ *    - [other]  if there has been an error in the cryptographic mechanisms.
+ *
+ */
+
+ srtp_err_status_t srtp_unprotect_mki(srtp_t ctx, void *srtp_hdr, int *len_ptr, unsigned int use_mki);
 
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
@@ -1261,6 +1375,55 @@ srtp_append_salt_to_key(unsigned char *key, unsigned int bytes_in_key,
 
 srtp_err_status_t srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len);
 
+
+/**
+ * @brief srtp_protect_rtcp_mki() is the Secure RTCP sender-side packet
+ * processing function that can utilize mki.
+ * 
+ * The function call srtp_protect_rtcp(ctx, rtp_hdr, len_ptr) applies
+ * SRTCP protection to the RTCP packet rtcp_hdr (which has length
+ * *len_ptr) using the SRTP session context ctx.  If srtp_err_status_ok is
+ * returned, then rtp_hdr points to the resulting SRTCP packet and
+ * *len_ptr is the number of octets in that packet; otherwise, no
+ * assumptions should be made about the value of either data elements.
+ * 
+ * @warning This function assumes that it can write the authentication
+ * tag into the location in memory immediately following the RTCP
+ * packet, and assumes that the RTCP packet is aligned on a 32-bit
+ * boundary.
+ *
+ * @warning This function assumes that it can write SRTP_MAX_TRAILER_LEN+4 
+ * into the location in memory immediately following the RTCP packet.   
+ * Callers MUST ensure that this much writable memory is available in 
+ * the buffer that holds the RTCP packet.
+ * 
+ * @param ctx is the SRTP context to use in processing the packet.
+ *
+ * @param rtcp_hdr is a pointer to the RTCP packet (before the call); after
+ * the function returns, it points to the srtp packet.
+ *
+ * @param pkt_octet_len is a pointer to the length in octets of the
+ * complete RTCP packet (header and body) before the function call,
+ * and of the complete SRTCP packet after the call, if srtp_err_status_ok
+ * was returned.  Otherwise, the value of the data to which it points
+ * is undefined.
+ *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If 
+ * set to false then will use the first set of session keys.  If set to true will
+ * use the session keys identified by the mki_index
+ *
+ * @param mki_index integer value specifying which set of session kesy should be
+ * used if use_mki is set to true.
+ *
+ * @return 
+ *    - srtp_err_status_ok            if there were no problems.
+ *    - [other]                  if there was a failure in 
+ *                               the cryptographic mechanisms.
+ */
+
+srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len,
+                                        unsigned int use_mki, unsigned int mki_index);
+
 /**
  * @brief srtp_unprotect_rtcp() is the Secure RTCP receiver-side packet
  * processing function.
@@ -1301,6 +1464,49 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_l
  */
 
 srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len);
+
+/**
+ * @brief srtp_unprotect_rtcp() is the Secure RTCP receiver-side packet
+ * processing function.
+ *
+ * The function call srtp_unprotect_rtcp(ctx, srtp_hdr, len_ptr)
+ * verifies the Secure RTCP protection of the SRTCP packet pointed to
+ * by srtcp_hdr (which has length *len_ptr), using the SRTP session
+ * context ctx.  If srtp_err_status_ok is returned, then srtcp_hdr points
+ * to the resulting RTCP packet and *len_ptr is the number of octets
+ * in that packet; otherwise, no assumptions should be made about the
+ * value of either data elements.
+ * 
+ * @warning This function assumes that the SRTCP packet is aligned on a
+ * 32-bit boundary.
+ *
+ * @param ctx is a pointer to the srtp_t which applies to the
+ * particular packet.
+ *
+ * @param srtcp_hdr is a pointer to the header of the SRTCP packet
+ * (before the call).  After the function returns, it points to the
+ * rtp packet if srtp_err_status_ok was returned; otherwise, the value of
+ * the data to which it points is undefined.
+ *
+ * @param pkt_octet_len is a pointer to the length in octets of the
+ * complete SRTCP packet (header and body) before the function call,
+ * and of the complete rtp packet after the call, if srtp_err_status_ok was
+ * returned.  Otherwise, the value of the data to which it points is
+ * undefined.
+ *
+ * @return 
+ *    - srtp_err_status_ok          if the RTCP packet is valid.
+ *    - srtp_err_status_auth_fail   if the SRTCP packet failed the message 
+ *                             authentication check.
+ *    - srtp_err_status_replay_fail if the SRTCP packet is a replay (e.g. has
+ *                             already been processed and accepted).
+ *    - srtp_err_status_bad_mki if the MKI in the packet is not a known MKI id
+ *    - [other]  if there has been an error in the cryptographic mechanisms.
+ *
+ */
+
+srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len, unsigned int use_mki);
+
 
 /**
  * @}
@@ -1483,6 +1689,18 @@ srtp_err_status_t srtp_set_debug_module(char *mod_name, int v);
  *
  */
 srtp_err_status_t srtp_list_debug_modules(void);
+
+/**
+ * @brief srtp_get_protect_data_added_length(policy, use_mki, mki_index, is_rtcp, length)
+ *
+ * Determines the length of the amount of data Lib SRTP will add to the 
+ * packet during the protect process. The length is returned in the length parameter
+ *
+ * returns err_status_ok on success, err_status_bad_mki if the MKI index is invalid
+ *
+ */
+srtp_err_status_t srtp_get_protect_data_added_length(const srtp_policy_t *policy, uint32_t use_mki,
+						     uint32_t mki_index, uint32_t is_rtcp, uint32_t *length);
 
 
 /**
