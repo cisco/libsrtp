@@ -178,6 +178,8 @@ srtp_stream_free(srtp_stream_ctx_t *str) {
     }
   }
 
+  srtp_crypto_free(str->session_keys);
+
   if (str->enc_xtn_hdr) {
     srtp_crypto_free(str->enc_xtn_hdr);
   }
@@ -212,7 +214,16 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   memset(str, 0, sizeof(srtp_stream_ctx_t));
   *str_ptr = str;
 
-  str->num_master_keys = p->num_master_keys;
+  /* To keep backwards API compatible if someone is using multiple master
+   * keys then key should be set to NULL
+   */
+  if (p->key != NULL) {
+      str->num_master_keys = 1;
+  } else {
+      str->num_master_keys = p->num_master_keys;
+  }
+
+  str->session_keys = (srtp_session_keys_t *)srtp_crypto_alloc(sizeof(srtp_session_keys_t) * str->num_master_keys);
 
   for (i = 0; i < str->num_master_keys; i++) {
     session_keys = &str->session_keys[i];
@@ -477,6 +488,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   *str_ptr = str;  
 
   str->num_master_keys = stream_template->num_master_keys;
+  str->session_keys = (srtp_session_keys_t *)srtp_crypto_alloc(sizeof(srtp_session_keys_t) * str->num_master_keys);
 
   for (i = 0; i < stream_template->num_master_keys; i++){
     session_keys = &str->session_keys[i];
@@ -490,15 +502,17 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     session_keys->rtcp_auth   = template_session_keys->rtcp_auth;
     session_keys->mki_size = template_session_keys->mki_size;
 
-    session_keys->mki_id = srtp_crypto_alloc(template_session_keys->mki_size);
+    if (template_session_keys->mki_size == 0) {
+      session_keys->mki_id = NULL;
+    } else {
+      session_keys->mki_id = srtp_crypto_alloc(template_session_keys->mki_size);
 
-    if (session_keys->mki_id == NULL) {
-      return srtp_err_status_init_fail;
+      if (session_keys->mki_id == NULL) {
+        return srtp_err_status_init_fail;
+      }
+      memset(session_keys->mki_id, 0x0, session_keys->mki_size);
+      memcpy(session_keys->mki_id, template_session_keys->mki_id, session_keys->mki_size);
     }
-
-    memset(session_keys->mki_id, 0x0, session_keys->mki_size);
-    memcpy(session_keys->mki_id, template_session_keys->mki_id, session_keys->mki_size);
-
     /* Copy the salt values */
     memcpy(session_keys->salt, template_session_keys->salt, SRTP_AEAD_SALT_LEN);
     memcpy(session_keys->c_salt, template_session_keys->c_salt, SRTP_AEAD_SALT_LEN);
@@ -540,7 +554,6 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
 
   /* defensive coding */
   str->next = NULL;
-
   return srtp_err_status_ok;
 }
 
@@ -739,12 +752,19 @@ srtp_validate_policy_master_keys(const srtp_policy_t *policy)
 {
     int i = 0;
 
-    if (policy->num_master_keys <= 0)
-        return 0;
-    
-    for (i = 0; i < policy->num_master_keys; i++) {
-        if (policy->keys[i].key == NULL)
+    if (policy->key == NULL) {
+        if (policy->num_master_keys <= 0)
             return 0;
+
+        if (policy->num_master_keys > SRTP_MAX_NUM_MASTER_KEYS)
+	    return 0;
+	
+        for (i = 0; i < policy->num_master_keys; i++) {
+            if (policy->keys[i]->key == NULL)
+                return 0;
+	    if (policy->keys[i]->mki_size > SRTP_MAX_MKI_LEN)
+		return 0;
+        }
     }
 
     return 1;
@@ -758,6 +778,7 @@ srtp_get_session_keys_with_mki_index(srtp_stream_ctx_t *stream, unsigned int use
             return &stream->session_keys[mki_index];
         }
     }
+
     return &stream->session_keys[0];
 }
 
@@ -779,18 +800,29 @@ srtp_inject_mki(uint8_t *mki_tag_location, srtp_session_keys_t* session_keys, un
 }
 
 srtp_err_status_t
-srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp, const srtp_master_key_t keys[SRTP_MAX_NUM_MASTER_KEYS],
+srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp,
+				 unsigned char *key,
+				 srtp_master_key_t **keys,
 				 const unsigned int max_master_keys) {
     int i = 0;
     srtp_err_status_t status = srtp_err_status_ok;
+    srtp_master_key_t single_master_key;
 
-    srtp->num_master_keys = max_master_keys;
+    if ( key != NULL ) {
+        srtp->num_master_keys = 1;
+        single_master_key.key = key;
+        single_master_key.mki_id = NULL;
+        single_master_key.mki_size = 0;
+        status = srtp_stream_init_keys(srtp, &single_master_key, 0);
+    } else {
+        srtp->num_master_keys = max_master_keys;
 
-    for (i = 0; i < srtp->num_master_keys && i < SRTP_MAX_NUM_MASTER_KEYS; i++) {
-        status = srtp_stream_init_keys(srtp, keys[i], i);
+        for (i = 0; i < srtp->num_master_keys && i < SRTP_MAX_NUM_MASTER_KEYS; i++) {
+            status = srtp_stream_init_keys(srtp, keys[i], i);
 
-        if (status) {
-            return status;
+            if (status) {
+                return status;
+            }
         }
     }
 
@@ -798,7 +830,7 @@ srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp, const srtp_master_key_
 }
 
 srtp_err_status_t
-srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const srtp_master_key_t master_key, const unsigned int current_mki_index) {
+srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key, const unsigned int current_mki_index) {
   srtp_err_status_t stat;
   srtp_kdf_t kdf;
   uint8_t tmp_key[MAX_SRTP_KEY_LEN];
@@ -806,24 +838,26 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const srtp_master_key_t master_ke
   int rtp_base_key_len, rtp_salt_len;
   int rtcp_base_key_len, rtcp_salt_len;
   srtp_session_keys_t *session_keys = NULL;
-  unsigned char *key = master_key.key;
+  unsigned char *key = master_key->key;
 
   /* If RTP or RTCP have a key length > AES-128, assume matching kdf. */
   /* TODO: kdf algorithm, master key length, and master salt length should
    * be part of srtp_policy_t. */
-
   session_keys = &srtp->session_keys[current_mki_index];
 
-  session_keys->mki_id = srtp_crypto_alloc(master_key.mki_size);
+  if ( master_key->mki_size != 0 ) {
+      session_keys->mki_id = srtp_crypto_alloc(master_key->mki_size);
 
-  if (session_keys->mki_id == NULL) {
-    return srtp_err_status_init_fail;
+      if (session_keys->mki_id == NULL) {
+        return srtp_err_status_init_fail;
+      }
+      memset(session_keys->mki_id, 0x0, master_key->mki_size);
+      memcpy(session_keys->mki_id, master_key->mki_id, master_key->mki_size);
+  } else {
+      session_keys->mki_id = NULL;
   }
 
-  memset(session_keys->mki_id, 0x0, master_key.mki_size);
-  memcpy(session_keys->mki_id, master_key.mki_id, master_key.mki_size);
-
-  session_keys->mki_size = master_key.mki_size;
+  session_keys->mki_size = master_key->mki_size;
 
   rtp_keylen = srtp_cipher_get_key_length(session_keys->rtp_cipher);
   rtcp_keylen = srtp_cipher_get_key_length(session_keys->rtcp_cipher);
@@ -1150,7 +1184,7 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    /* DAM - no RTCP key limit at present */
 
    /* initialize keys */
-   err = srtp_stream_init_all_master_keys(srtp, p->keys, p->num_master_keys);
+   err = srtp_stream_init_all_master_keys(srtp, p->key, p->keys, p->num_master_keys);
    if (err) {
      srtp_rdbx_dealloc(&srtp->rtp_rdbx);
      return err;
@@ -1427,12 +1461,14 @@ srtp_get_session_keys(srtp_stream_ctx_t *stream, uint8_t* hdr, const unsigned in
   base_mki_start_location -= tag_len;
 
   for (i = 0; i < stream->num_master_keys; i++) {
-      *mki_size = stream->session_keys[i].mki_size;
-      mki_start_location = base_mki_start_location - *mki_size;
+      if (stream->session_keys[i].mki_size != 0) {
+          *mki_size = stream->session_keys[i].mki_size;
+          mki_start_location = base_mki_start_location - *mki_size;
 
-      if ( mki_start_location >= *mki_size &&
-           memcmp(hdr + mki_start_location, stream->session_keys[i].mki_id, *mki_size) == 0 ) {
-         return &stream->session_keys[i];
+          if ( mki_start_location >= *mki_size &&
+              memcmp(hdr + mki_start_location, stream->session_keys[i].mki_id, *mki_size) == 0 ) {
+              return &stream->session_keys[i];
+	  }
       }
   }
 
@@ -1857,6 +1893,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
     * srtp_protect() and srtp_unprotect() will fail this test in one of
     * those functions.
     */
+
   if (stream->direction != dir_srtp_sender) {
      if (stream->direction == dir_unknown) {
        stream->direction = dir_srtp_sender;
@@ -4129,7 +4166,7 @@ srtp_get_protect_data_added_length(const srtp_policy_t *policy,
        if (mki_index > policy->num_master_keys)
            return srtp_err_status_bad_mki;
 
-       *length += policy->keys[mki_index].mki_size;
+       *length += policy->keys[mki_index]->mki_size;
     }
 
     if (is_rtcp) {

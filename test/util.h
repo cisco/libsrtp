@@ -44,16 +44,10 @@
 #ifndef _UTIL_H
 #define _UTIL_H
 
-#include "srtp.h"
-
 #define MAX_PRINT_STRING_LEN 1024
-
-#define TEST_MKI_ID_SIZE 4
-
 
 int hex_string_to_octet_string(char *raw, char *hex, int len);
 char * octet_string_hex_string(const void *s, int length);
 int base64_string_to_octet_string(char *raw, int *pad, char *base64, int len);
-void srtp_update_policy_master_key(srtp_policy_t *policy, uint8_t *key);
 
 #endif

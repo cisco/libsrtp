@@ -90,11 +90,16 @@ extern "C" {
 
 /**
  * SRTP_MAX_NUM_MASTER_KEYS is the maximum number of Master keys for
- * MKI supported by libSRTP.  Can look at making this dynamic in the
- * future.
+ * MKI supported by libSRTP.  
  *  
  */
-#define SRTP_MAX_NUM_MASTER_KEYS 4
+#define SRTP_MAX_NUM_MASTER_KEYS 16
+
+/**
+ * SRTP_MAX_MKI_LEN is the maximum size the MKI could be which is
+ * 128 bytes
+ */
+#define SRTP_MAX_MKI_LEN 128
 
 /*
  * SRTP_AEAD_SALT_LEN is the length of the SALT values used with 
@@ -420,7 +425,9 @@ typedef struct srtp_policy_t {
 			      */
   srtp_crypto_policy_t rtp;    /**< SRTP crypto policy.                  */
   srtp_crypto_policy_t rtcp;   /**< SRTCP crypto policy.                 */
-  srtp_master_key_t keys[SRTP_MAX_NUM_MASTER_KEYS];  /** Array of Master Key structures */
+  unsigned char *key;          /**< Pointer to the SRTP master key for
+                                *    this stream.                        */
+  srtp_master_key_t **keys;    /** Array of Master Key structures */
   unsigned long num_master_keys;  /** Number of master keys            */
   srtp_ekt_policy_t ekt;       /**< Pointer to the EKT policy structure
                                 *   for this stream (if any)             */ 

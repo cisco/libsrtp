@@ -78,14 +78,16 @@ srtp_stream_t srtp_get_stream(srtp_t srtp, uint32_t ssrc);
  * srtp_stream_init_keys(s, k) (re)initializes the srtp_stream_t s by
  * deriving all of the needed keys using the KDF and the key k.
  */
-srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const srtp_master_key_t master_key, const unsigned int current_mki_index);
+srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key, const unsigned int current_mki_index);
 
 
 /*
  * srtp_stream_init_all_master_keys(s, k, m) (re)initializes the srtp_stream_t s by
  * deriving all of the needed keys for all the master keys using the KDF and the keys from k.
  */
-srtp_err_status_t srtp_steam_init_all_master_keys(srtp_stream_ctx_t *srtp, const srtp_master_key_t keys[SRTP_MAX_NUM_MASTER_KEYS],
+srtp_err_status_t srtp_steam_init_all_master_keys(srtp_stream_ctx_t *srtp,
+						  unsigned char *key,
+						  srtp_master_key_t **keys,
                                                   const unsigned int max_master_keys);
 
 /*
@@ -133,7 +135,7 @@ typedef struct srtp_session_keys_t {
 
 typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
-  srtp_session_keys_t session_keys[SRTP_MAX_NUM_MASTER_KEYS];
+  srtp_session_keys_t *session_keys;
   unsigned int num_master_keys;
   srtp_rdbx_t     rtp_rdbx;
   srtp_sec_serv_t rtp_services;

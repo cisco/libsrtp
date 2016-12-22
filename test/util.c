@@ -182,19 +182,3 @@ int base64_string_to_octet_string (char *out, int *pad, char *in, int len)
     *pad = j;
     return i;
 }
-
-unsigned char test_mki_id[TEST_MKI_ID_SIZE] = {
-    0xe1, 0xf9, 0x7a, 0x0d
-};
-
-unsigned char test_mki_id_2[TEST_MKI_ID_SIZE] = {
-    0xf3, 0xa1, 0x46, 0x71
-};
-
-void srtp_update_policy_master_key(srtp_policy_t *policy, uint8_t *key) 
-{
-    policy->num_master_keys = 1;
-    policy->keys[0].key = key;
-    policy->keys[0].mki_id = test_mki_id;
-    policy->keys[0].mki_size = TEST_MKI_ID_SIZE;
-}
