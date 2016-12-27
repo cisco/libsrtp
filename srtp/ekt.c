@@ -53,7 +53,7 @@
 
 extern srtp_debug_module_t mod_srtp;
 
-inline int
+int
 srtp_get_ekt_cipher_key_length(srtp_ekt_cipher_t ekt_cipher)
 {
     int key_len;
