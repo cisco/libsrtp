@@ -673,9 +673,11 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   /* TODO: kdf algorithm, master key length, and master salt length should
    * be part of srtp_policy_t. */
   rtp_keylen = srtp_cipher_get_key_length(srtp->rtp_cipher);
-  rtcp_keylen = srtp_cipher_get_key_length(srtp->rtcp_cipher);
   rtp_base_key_len = base_key_length(srtp->rtp_cipher->type, rtp_keylen);
   rtp_salt_len = rtp_keylen - rtp_base_key_len;
+  rtcp_keylen = srtp_cipher_get_key_length(srtp->rtcp_cipher);
+  rtcp_base_key_len = base_key_length(srtp->rtcp_cipher->type, rtcp_keylen);
+  rtcp_salt_len = rtcp_keylen - rtcp_base_key_len;
 
   if (rtp_keylen > kdf_keylen) {
     kdf_keylen = 46;  /* AES-CTR mode is always used for KDF */
@@ -686,10 +688,14 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   }
 
   debug_print(mod_srtp, "srtp key len: %d", rtp_keylen);
-  debug_print(mod_srtp, "srtcp key len: %d", rtcp_keylen);
-  debug_print(mod_srtp, "base key len: %d", rtp_base_key_len);
-  debug_print(mod_srtp, "kdf key len: %d", kdf_keylen);
+  debug_print(mod_srtp, "rtp base key len: %d", rtp_base_key_len);
   debug_print(mod_srtp, "rtp salt len: %d", rtp_salt_len);
+
+  debug_print(mod_srtp, "srtcp key len: %d", rtcp_keylen);
+  debug_print(mod_srtp, "rtcp base key len: %d", rtcp_base_key_len);
+  debug_print(mod_srtp, "rtcp salt len: %d", rtcp_salt_len);
+
+  debug_print(mod_srtp, "kdf key len: %d", kdf_keylen);
 
   /* 
    * Make sure the key given to us is 'zero' appended.  GCM
@@ -697,7 +703,11 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
    * the legacy CTR mode KDF, which uses a 112 bit master SALT.
    */
   memset(tmp_key, 0x0, MAX_SRTP_KEY_LEN);
-  memcpy(tmp_key, key, (rtp_base_key_len + rtp_salt_len));
+  if (rtp_base_key_len >= rtcp_base_key_len) {
+    memcpy(tmp_key, key, (rtp_base_key_len + rtp_salt_len));
+  } else {
+    memcpy(tmp_key, key, (rtcp_base_key_len + rtcp_salt_len));
+  }
 
   /* initialize KDF state     */
 #if defined(OPENSSL) && defined(OPENSSL_KDF)
@@ -860,10 +870,6 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
    * ...now initialize SRTCP keys
    */
 
-  rtcp_base_key_len = base_key_length(srtp->rtcp_cipher->type, rtcp_keylen);
-  rtcp_salt_len = rtcp_keylen - rtcp_base_key_len;
-  debug_print(mod_srtp, "rtcp salt len: %d", rtcp_salt_len);
-  
   /* generate encryption key  */
   stat = srtp_kdf_generate(&kdf, label_rtcp_encryption, 
 			   tmp_key, rtcp_base_key_len);
