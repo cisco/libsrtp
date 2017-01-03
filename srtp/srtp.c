@@ -3416,7 +3416,7 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
 	 * of the draft.
 	 */
 	status = srtp_cipher_set_aad(session_keys->rtcp_cipher, (uint8_t*)hdr, 
-			            (*pkt_octet_len - tag_len - sizeof(srtcp_trailer_t)));
+ 				    (*pkt_octet_len - tag_len - sizeof(srtcp_trailer_t) - mki_size));
 	if (status) {
 	    return ( srtp_err_status_cipher_fail);
 	}
