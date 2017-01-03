@@ -2885,9 +2885,9 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
         8,                              /* auth tag length in octets   */
         sec_serv_auth                   /* security services flag      */
     },
-    test_key,
     NULL,
-    0,
+    (srtp_master_key_t **)test_keys,
+    2,           /* indicates the number of Master keys */
     NULL,        /* indicates that EKT is not in use */
     128,         /* replay window size */
     0,           /* retransmission not allowed */
