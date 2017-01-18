@@ -431,6 +431,8 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
       session_keys->mki_id = NULL;
     }
 
+    srtp_crypto_free(session_keys);
+
   }
 
   /* deallocate key usage limit, if it is not the same as that in template */
