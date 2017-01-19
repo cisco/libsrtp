@@ -4,7 +4,7 @@ AC_INIT([libsrtp2], [2.0.0-pre], [https://github.com/cisco/libsrtp/issues])
 dnl Must come before AC_PROG_CC
 if test -z "$CFLAGS"; then
    dnl Default value for CFLAGS if not specified.
-   CFLAGS="-Wall -O4 -fexpensive-optimizations -funroll-loops"
+   CFLAGS="-Wall -pedantic -O4 -fexpensive-optimizations -funroll-loops"
 fi
 
 dnl Checks for programs.
