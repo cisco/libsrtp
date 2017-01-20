@@ -177,14 +177,7 @@ AC_MSG_RESULT([$enable_console])
 
 AC_CONFIG_HEADER([crypto/include/config.h:config_in.h])
 
-if test "x$PKG_CONFIG" != "x"; then
-    HAVE_PKG_CONFIG=1
-    AC_CONFIG_FILES([libsrtp2.pc])
-else
-    HAVE_PKG_CONFIG=0
-fi
-AC_SUBST([HAVE_PKG_CONFIG])
-AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile])
+AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile libsrtp2.pc])
 AC_OUTPUT
 
 # This is needed when building outside the source dir.

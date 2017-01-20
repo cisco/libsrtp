@@ -15,7 +15,6 @@
 
 USE_OPENSSL = @USE_OPENSSL@
 HAVE_PCAP = @HAVE_PCAP@
-HAVE_PKG_CONFIG = @HAVE_PKG_CONFIG@
 
 .PHONY: all shared_library test
 
@@ -70,10 +69,8 @@ includedir = @includedir@
 libdir = @libdir@
 bindir = @bindir@
 
-ifeq (1, $(HAVE_PKG_CONFIG))
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libsrtp2.pc
-endif
 
 SHAREDLIBVERSION = 1
 ifeq (linux,$(findstring linux,@host@))
@@ -257,18 +254,14 @@ install:
 			ln -sfn libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
 		fi; \
 	fi
-	if [ "$(pkgconfig_DATA)" != "" ]; then \
-		$(INSTALL) -d $(DESTDIR)$(pkgconfigdir); \
-		cp $(top_builddir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/; \
-	fi
+	$(INSTALL) -d $(DESTDIR)$(pkgconfigdir)
+	cp $(top_builddir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/
 
 uninstall:
 	rm -f $(DESTDIR)$(includedir)/srtp2/*.h
 	rm -f $(DESTDIR)$(libdir)/libsrtp2.*
 	-rmdir $(DESTDIR)$(includedir)/srtp2
-	if [ "$(pkgconfig_DATA)" != "" ]; then \
-		rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA); \
-	fi
+	rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA)
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) TAGS \
