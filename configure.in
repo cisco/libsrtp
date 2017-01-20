@@ -21,14 +21,11 @@ AC_CANONICAL_HOST
 dnl check host_cpu type, set defines appropriately
 case $host_cpu in
   i*86 | x86_64 )
-    AC_DEFINE(CPU_CISC, 1,
-      [Define if building for a CISC machine (e.g. Intel).])
-    AC_DEFINE(HAVE_X86, 1,
-      [Define to use X86 inlined assembly code])
+    AC_DEFINE([CPU_CISC], [1], [Define if building for a CISC machine (e.g. Intel).])
+    AC_DEFINE([HAVE_X86], [1], [Define to use X86 inlined assembly code])
     ;;
   * )
-    AC_DEFINE(CPU_RISC, 1,
-      [Define if building for a RISC machine (assume slow byte access).])
+    AC_DEFINE([CPU_RISC], [1], [Define if building for a RISC machine (assume slow byte access).])
     ;;
 esac
 
@@ -36,34 +33,30 @@ dnl Check if we are on a Windows platform.
 case $host_os in
   *cygwin*|*mingw* )
     EXE=.exe
-    HOST_IS_WINDOWS=yes
     ;;
   * )
     EXE=""
     ;;
 esac
-AC_SUBST(EXE)   # define executable suffix; this is needed for `make clean'
+AC_SUBST([EXE])   # define executable suffix; this is needed for `make clean'
 
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CHECK_HEADERS(stdlib.h)
-AC_CHECK_HEADERS(unistd.h)
-AC_CHECK_HEADERS(byteswap.h)
-AC_CHECK_HEADERS(stdint.h)
-AC_CHECK_HEADERS(sys/uio.h)
-AC_CHECK_HEADERS(inttypes.h)
-AC_CHECK_HEADERS(sys/types.h)
-AC_CHECK_HEADERS(machine/types.h)
-AC_CHECK_HEADERS(sys/int_types.h)
+AC_CHECK_HEADERS(
+    [unistd.h byteswap.h stdint.h sys/uio.h inttypes.h sys/types.h machine/types.h sys/int_types.h],
+    [], [], [AC_INCLUDES_DEFAULT])
 
 dnl socket() and friends
-AC_CHECK_HEADERS(sys/socket.h netinet/in.h arpa/inet.h)
-AC_CHECK_HEADERS(windows.h, [AC_CHECK_HEADERS(winsock2.h)])
+AC_CHECK_HEADERS([sys/socket.h netinet/in.h arpa/inet.h], [], [], [AC_INCLUDES_DEFAULT])
+AC_CHECK_HEADERS(
+    [windows.h],
+    [AC_CHECK_HEADERS([winsock2.h], [], [], [AC_INCLUDES_DEFAULT])],
+    [], [AC_INCLUDES_DEFAULT])
 
-AC_CHECK_TYPES([int8_t,uint8_t,int16_t,uint16_t,int32_t,uint32_t,uint64_t])
-AC_CHECK_SIZEOF(unsigned long)
-AC_CHECK_SIZEOF(unsigned long long)
+AC_CHECK_TYPES([int8_t, uint8_t, int16_t, uint16_t, int32_t, uint32_t, uint64_t])
+AC_CHECK_SIZEOF([unsigned long])
+AC_CHECK_SIZEOF([unsigned long long])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -71,11 +64,11 @@ AC_C_INLINE
 AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS(socket inet_aton usleep sigaction)
+AC_CHECK_FUNCS([socket inet_aton usleep sigaction])
 
 dnl Find socket function if not found yet.
 if test "x$ac_cv_func_socket" = "xno"; then
-  AC_CHECK_LIB(socket, socket)
+  AC_CHECK_LIB([socket], [socket])
   AC_MSG_CHECKING([for socket in -lwsock32])
   SAVELIBS="$LIBS"
   LIBS="$LIBS -lwsock32"
@@ -84,44 +77,43 @@ if test "x$ac_cv_func_socket" = "xno"; then
 ]], [[
 socket(0, 0, 0);
 ]])],[ac_cv_func_socket=yes
-    AC_MSG_RESULT(yes)],[LIBS="$SAVELIBS"
-    AC_MSG_RESULT(no)])
+    AC_MSG_RESULT([yes])],[LIBS="$SAVELIBS"
+    AC_MSG_RESULT([no])])
 fi
 
-AC_MSG_CHECKING(whether to compile in debugging)
-AC_ARG_ENABLE(debug,
-  [AS_HELP_STRING([--disable-debug],
-    [do not compile in dynamic debugging system])],
-  [], enable_debug=yes)
+AC_MSG_CHECKING([whether to compile in debugging])
+AC_ARG_ENABLE([debug],
+  [AS_HELP_STRING([--disable-debug], [do not compile in dynamic debugging system])],
+  [], [enable_debug=yes])
 if test "$enable_debug" = "yes"; then
-   AC_DEFINE(ENABLE_DEBUGGING, 1,
-      [Define to compile in dynamic debugging system.])
+   AC_DEFINE([ENABLE_DEBUGGING], [1], [Define to compile in dynamic debugging system.])
 fi
-AC_MSG_RESULT($enable_debug)
+AC_MSG_RESULT([$enable_debug])
 
-AC_MSG_CHECKING(whether to use ISMAcryp code)
-AC_ARG_ENABLE(generic-aesicm,
-  [AS_HELP_STRING([--enable-generic-aesicm],
-    [compile in changes for ISMAcryp])],
-  [], enable_generic_aesicm=no)
+AC_MSG_CHECKING([whether to use ISMAcryp code])
+AC_ARG_ENABLE([generic-aesicm],
+  [AS_HELP_STRING([--enable-generic-aesicm], [compile in changes for ISMAcryp])],
+  [], [enable_generic_aesicm=no])
 if test "$enable_generic_aesicm" = "yes"; then
-   AC_DEFINE(GENERIC_AESICM, 1, [Define this to use ISMAcryp code.])
+   AC_DEFINE([GENERIC_AESICM], [1], [Define this to use ISMAcryp code.])
 fi
-AC_MSG_RESULT($enable_generic_aesicm)
+AC_MSG_RESULT([$enable_generic_aesicm])
 
 PKG_PROG_PKG_CONFIG
 
-AC_MSG_CHECKING(whether to leverage OpenSSL crypto)
-AC_ARG_ENABLE(openssl,
-  [AS_HELP_STRING([--enable-openssl],
-    [compile in OpenSSL crypto engine])],
-  [], enable_openssl=no)
-AC_MSG_RESULT($enable_openssl)
+AC_MSG_CHECKING([whether to leverage OpenSSL crypto])
+AC_ARG_ENABLE([openssl],
+  [AS_HELP_STRING([--enable-openssl], [compile in OpenSSL crypto engine])],
+  [], [enable_openssl=no])
+AC_MSG_RESULT([$enable_openssl])
 if test "$enable_openssl" = "yes"; then
-   AC_MSG_CHECKING(for user specified OpenSSL directory)
-   AC_ARG_WITH(openssl-dir,
+   AC_MSG_CHECKING([for user specified OpenSSL directory])
+   AC_ARG_WITH([openssl-dir],
       [AS_HELP_STRING([--with-openssl-dir], [Location of OpenSSL installation])],
-      [openssl_dir="$withval"], openssl_dir="")
+      [openssl_dir="$withval"
+       AC_MSG_RESULT([openssl_dir])],
+      [openssl_dir=""
+       AC_MSG_RESULT([no])])
 
    LDFLAGS="$LDFLAGS -L$openssl_dir/lib $($PKG_CONFIG --libs openssl)";
    CFLAGS="$CFLAGS -I$openssl_dir/include $($PKG_CONFIG --cflags openssl)";
@@ -136,58 +128,54 @@ if test "$enable_openssl" = "yes"; then
              [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
    AC_CHECK_LIB([crypto], [EVP_aes_128_gcm], [],
              [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
-   AC_DEFINE(OPENSSL, 1, [Define this to use OpenSSL crypto.])
+   AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
-   USE_OPENSSL=1
-   AC_SUBST(USE_OPENSSL)
+   AC_SUBST([USE_OPENSSL], [1])
 
-   AC_MSG_CHECKING(whether to leverage OpenSSL KDF algorithm)
-   AC_ARG_ENABLE(openssl-kdf,
+   AC_MSG_CHECKING([whether to leverage OpenSSL KDF algorithm])
+   AC_ARG_ENABLE([openssl-kdf],
       [AS_HELP_STRING([--enable-openssl-kdf], [Use OpenSSL KDF algorithm])],
-      [], enable_openssl_kdf=no)
-   AC_MSG_RESULT($enable_openssl_kdf)
+      [], [enable_openssl_kdf=no])
+   AC_MSG_RESULT([$enable_openssl_kdf])
    if test "$enable_openssl_kdf" = "yes"; then
       AC_CHECK_LIB([crypto], [kdf_srtp], [],
              [AC_MSG_FAILURE([can't find openssl KDF lib])])
-      AC_DEFINE(OPENSSL_KDF, 1, [Define this to use OpenSSL KDF for SRTP.])
+      AC_DEFINE([OPENSSL_KDF], [1], [Define this to use OpenSSL KDF for SRTP.])
    fi
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
 fi
-AC_SUBST(AES_ICM_OBJS)
-AC_SUBST(HMAC_OBJS)
+AC_SUBST([AES_ICM_OBJS])
+AC_SUBST([HMAC_OBJS])
 
 dnl Checking for PCAP
-AC_CHECK_LIB([pcap],[pcap_create],
-    [PCAP=1
-     LIBS="-lpcap $LIBS"
-     HAVE_PCAP=1
-     AC_DEFINE(HAVE_PCAP, 1, [Define to 1 if you have the `pcap' library (-lpcap)])
-     AC_SUBST(HAVE_PCAP)
-])
+AC_CHECK_LIB([pcap], [pcap_create],
+  [LIBS="-lpcap $LIBS"
+   AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `pcap' library (-lpcap)])
+   AC_SUBST([HAVE_PCAP], [1])])
 
-AC_MSG_CHECKING(whether to use stdout for error reporting)
-AC_ARG_ENABLE(stdout,
+AC_MSG_CHECKING([whether to use stdout for error reporting])
+AC_ARG_ENABLE([stdout],
   [AS_HELP_STRING([--enable-stdout], [use stdout for debug/error reporting])],
-  [], enable_stdout=no)
+  [], [enable_stdout=no])
 if test "$enable_stdout" = "yes"; then
-   AC_DEFINE(ERR_REPORTING_STDOUT, 1, [Define to use logging to stdout.])
+   AC_DEFINE([ERR_REPORTING_STDOUT], [1], [Define to use logging to stdout.])
 fi
-AC_MSG_RESULT($enable_stdout)
+AC_MSG_RESULT([$enable_stdout])
 
-AC_MSG_CHECKING(whether to use /dev/console for error reporting)
-AC_ARG_ENABLE(console,
+AC_MSG_CHECKING([whether to use /dev/console for error reporting])
+AC_ARG_ENABLE([console],
   [AS_HELP_STRING([--enable-console], [use /dev/console for error reporting])],
-  [], enable_console=no)
+  [], [enable_console=no])
 if test "$enable_console" = "yes"; then
-   AC_DEFINE(USE_ERR_REPORTING_FILE, 1, [Write errors to this file])
-   AC_DEFINE(ERR_REPORTING_FILE, "/dev/console", [Report errors to this file.])
+   AC_DEFINE([USE_ERR_REPORTING_FILE], [1], [Write errors to this file])
+   AC_DEFINE([ERR_REPORTING_FILE], ["/dev/console"], [Report errors to this file.])
 fi
-AC_MSG_RESULT($enable_console)
+AC_MSG_RESULT([$enable_console])
 
-AC_CONFIG_HEADER(crypto/include/config.h:config_in.h)
+AC_CONFIG_HEADER([crypto/include/config.h:config_in.h])
 
 if test "x$PKG_CONFIG" != "x"; then
     HAVE_PKG_CONFIG=1
@@ -195,17 +183,17 @@ if test "x$PKG_CONFIG" != "x"; then
 else
     HAVE_PKG_CONFIG=0
 fi
-AC_SUBST(HAVE_PKG_CONFIG)
+AC_SUBST([HAVE_PKG_CONFIG])
 AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile])
 AC_OUTPUT
 
 # This is needed when building outside the source dir.
-AS_MKDIR_P(crypto/cipher)
-AS_MKDIR_P(crypto/hash)
-AS_MKDIR_P(crypto/kernel)
-AS_MKDIR_P(crypto/math)
-AS_MKDIR_P(crypto/replay)
-AS_MKDIR_P(crypto/test)
-AS_MKDIR_P(doc)
-AS_MKDIR_P(srtp)
-AS_MKDIR_P(test)
+AS_MKDIR_P([crypto/cipher])
+AS_MKDIR_P([crypto/hash])
+AS_MKDIR_P([crypto/kernel])
+AS_MKDIR_P([crypto/math])
+AS_MKDIR_P([crypto/replay])
+AS_MKDIR_P([crypto/test])
+AS_MKDIR_P([doc])
+AS_MKDIR_P([srtp])
+AS_MKDIR_P([test])
