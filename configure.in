@@ -99,7 +99,7 @@ if test "$enable_generic_aesicm" = "yes"; then
 fi
 AC_MSG_RESULT([$enable_generic_aesicm])
 
-PKG_PROG_PKG_CONFIG
+PKG_PROG_PKG_CONFIG([0.29])
 
 AC_MSG_CHECKING([whether to leverage OpenSSL crypto])
 AC_ARG_ENABLE([openssl],
@@ -110,24 +110,43 @@ if test "$enable_openssl" = "yes"; then
    AC_MSG_CHECKING([for user specified OpenSSL directory])
    AC_ARG_WITH([openssl-dir],
       [AS_HELP_STRING([--with-openssl-dir], [Location of OpenSSL installation])],
-      [openssl_dir="$withval"
-       AC_MSG_RESULT([openssl_dir])],
-      [openssl_dir=""
-       AC_MSG_RESULT([no])])
+      [if test "x$PKG_CONFIG" != "x" && test -f $with_openssl_dir/lib/pkgconfig/libcrypto.pc; then
+         if test "x$PKG_CONFIG_PATH" = "x"; then
+           export PKG_CONFIG_PATH="$with_openssl_dir/lib/pkgconfig"
+         else
+           export PKG_CONFIG_PATH="$with_openssl_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
+         fi
+         AC_MSG_RESULT([$with_openssl_dir])
+       elif test -d $with_openssl_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_openssl_dir/include"
+         if test "x$LDFLAGS" = "x"; then
+           LDFLAGS="-L$with_openssl_dir/lib"
+         else
+           LDFLAGS="$LDFLAGS -L$with_openssl_dir/lib"
+         fi
+         AC_MSG_RESULT([$with_openssl_dir])
+       else
+         AC_MSG_RESULT([invalid])
+         AC_MSG_FAILURE([Invalid OpenSSL location: $with_openssl_dir])
+       fi],
+      [AC_MSG_RESULT([no])])
 
-   LDFLAGS="$LDFLAGS -L$openssl_dir/lib $($PKG_CONFIG --libs openssl)";
-   CFLAGS="$CFLAGS -I$openssl_dir/include $($PKG_CONFIG --cflags openssl)";
+   if test "x$PKG_CONFIG" != "x"; then
+     PKG_CHECK_MODULES_STATIC([crypto], [libcrypto > 1.0.1],
+       [CFLAGS="$CFLAGS $crypto_CFLAGS"
+        LIBS="$crypto_LIBS $LIBS"])
+   else
+     AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([can't find libdl])])
+     AC_CHECK_LIB([z], [inflate], [], [AC_MSG_WARN([can't find libz])])
+   fi
 
-   AC_CHECK_LIB([dl], [dlopen], [],
-             [AC_MSG_WARN([can't find libdl])])
-   AC_CHECK_LIB([z], [inflate], [],
-             [AC_MSG_WARN([can't find libz])])
-   AC_CHECK_LIB([crypto], [EVP_EncryptInit], [],
-             [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
-   AC_CHECK_LIB([crypto], [EVP_aes_128_ctr], [],
-             [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
-   AC_CHECK_LIB([crypto], [EVP_aes_128_gcm], [],
-             [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
+   AC_SEARCH_LIBS([EVP_EncryptInit], [crypto],
+     [], [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
+   AC_SEARCH_LIBS([EVP_aes_128_ctr], [crypto],
+     [], [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
+   AC_SEARCH_LIBS([EVP_aes_128_gcm], [crypto],
+     [], [AC_MSG_FAILURE([can't find openssl >1.0.1 crypto lib])])
+
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
@@ -139,9 +158,9 @@ if test "$enable_openssl" = "yes"; then
       [], [enable_openssl_kdf=no])
    AC_MSG_RESULT([$enable_openssl_kdf])
    if test "$enable_openssl_kdf" = "yes"; then
-      AC_CHECK_LIB([crypto], [kdf_srtp], [],
-             [AC_MSG_FAILURE([can't find openssl KDF lib])])
-      AC_DEFINE([OPENSSL_KDF], [1], [Define this to use OpenSSL KDF for SRTP.])
+     AC_SEARCH_LIBS([kdf_srtp], [crypto],
+       [], [AC_MSG_FAILURE([can't find openssl KDF lib])])
+     AC_DEFINE([OPENSSL_KDF], [1], [Define this to use OpenSSL KDF for SRTP.])
    fi
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
