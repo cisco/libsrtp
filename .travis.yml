@@ -1,5 +1,6 @@
 sudo: false
 language: c
+osx_image: xcode8.2
 compiler:
   - clang
   - gcc
@@ -8,5 +9,6 @@ os:
   - osx
 script:
   - ./configure && make && make runtest
-  - make clean
-  - ./configure --enable-openssl && make && make runtest
+  - if [ $TRAVIS_OS_NAME != osx ]; then make clean;
+      ./configure --enable-openssl && make && make runtest;
+    fi
