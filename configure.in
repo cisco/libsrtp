@@ -36,6 +36,11 @@ case $host_os in
     ;;
   * )
     EXE=""
+    if test "x$CPPFLAGS" = "x"; then
+      CPPFLAGS="-fPIC"
+    else
+      CPPFLAGS="-fPIC $CPPFLAGS"
+    fi
     ;;
 esac
 AC_SUBST([EXE])   # define executable suffix; this is needed for `make clean'
