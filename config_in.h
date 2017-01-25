@@ -21,6 +21,9 @@
 /* Define to use logging to stdout. */
 #undef ERR_REPORTING_STDOUT
 
+/* Define to use syslog logging. */
+#undef ERR_REPORTING_SYSLOG
+
 /* Define this to use ISMAcryp code. */
 #undef GENERIC_AESICM
 
@@ -173,9 +176,6 @@
 
 /* Write errors to this file */
 #undef USE_ERR_REPORTING_FILE
-
-/* Define to use syslog logging. */
-#undef USE_SYSLOG
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

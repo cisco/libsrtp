@@ -101,13 +101,13 @@ err_report(int priority, const char *format, ...) {
 
   if (priority <= err_level) {
 
-    va_start(args, format);
     if (err_file != NULL) {
+      va_start(args, format);
       vfprintf(err_file, format, args);
-	  /*      fprintf(err_file, "\n"); */
+      va_end(args);
     }
 #ifdef ERR_REPORTING_SYSLOG
-    if (1) { /* FIXME: Make this a runtime option. */
+    {
       int syslogpri;
 
       switch (priority) {
@@ -139,9 +139,11 @@ err_report(int priority, const char *format, ...) {
 	break;
       }
 
-      vsyslog(syslogpri, format, args);
+      va_start(args, format);
+      vsyslog(LOG_MAKEPRI(LOG_SYSLOG, syslogpri), format, args);
+      va_end(args);
+    }
 #endif
-    va_end(args);
   }
 }
 #endif /* SRTP_KERNEL_LINUX */	

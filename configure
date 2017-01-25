@@ -5897,7 +5897,7 @@ fi
 
 if test "$enable_syslog" = "yes"; then
 
-$as_echo "#define USE_SYSLOG 1" >>confdefs.h
+$as_echo "#define ERR_REPORTING_SYSLOG 1" >>confdefs.h
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_syslog" >&5
