@@ -63,6 +63,9 @@ extern "C" {
 #define SRTP_VER_STRING	    PACKAGE_STRING
 #define SRTP_VERSION        PACKAGE_VERSION
 
+typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
+typedef srtp_stream_ctx_t *srtp_stream_t;
+
 /*
  * the following declarations are libSRTP internal functions 
  */
@@ -152,7 +155,7 @@ typedef struct srtp_ctx_t_ {
    if(srtp_event_handler) {                         \
       srtp_event_data_t data;                       \
       data.session = srtp;                          \
-      data.stream  = strm;                          \
+      data.ssrc    = ntohl(strm->ssrc);             \
       data.event   = evnt;                          \
       srtp_event_handler(&data);                    \
 }   

@@ -270,7 +270,7 @@ typedef enum {
   srtp_err_status_pfkey_err    = 24  /**< error while using pfkey                 */
 } srtp_err_status_t;
 
-typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
+
 typedef struct srtp_ctx_t_ srtp_ctx_t;
 
 /* 
@@ -434,22 +434,6 @@ typedef struct srtp_policy_t {
  */
 
 typedef srtp_ctx_t *srtp_t;
-
-
-/**
- * @brief An srtp_stream_t points to an SRTP stream structure.
- *
- * The typedef srtp_stream_t is a pointer to a structure that
- * represents an SRTP stream.  This datatype is intentionally
- * opaque in order to separate the interface from the implementation. 
- * 
- * An SRTP stream consists of all of the traffic sent to an SRTP
- * session by a single participant.  A session can be viewed as
- * a set of streams.  
- *
- */
-typedef srtp_stream_ctx_t *srtp_stream_t;
-
 
 
 /**
@@ -1424,7 +1408,7 @@ typedef enum {
 
 typedef struct srtp_event_data_t {
   srtp_t        session;  /**< The session in which the event happend. */
-  srtp_stream_t stream;   /**< The stream in which the event happend.  */
+  uintptr_t     ssrc;     /**< The ssrc in host order of the stream in which the event happend */
   srtp_event_t  event;    /**< An enum indicating the type of event.   */
 } srtp_event_data_t;
 
