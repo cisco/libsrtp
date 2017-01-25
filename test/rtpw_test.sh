@@ -37,7 +37,16 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-RTPW=./rtpw
+case $(uname -s) in
+    *CYGWIN*|*MINGW*)
+        EXE=".exe"
+        ;;
+    *)
+        EXE=""
+        ;;
+esac
+
+RTPW=./rtpw$EXE
 DEST_PORT=9999
 DURATION=3
 
@@ -96,8 +105,8 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
-wait $receiver_pid
-wait $sender_pid
+wait $receiver_pid 2>/dev/null
+wait $sender_pid 2>/dev/null
 
 
 key=033490ba9e82994fc21013395739038992b2edc5034f61a72345ca598d7bfd0189aa6dc2ecab32fd9af74df6dfc6
@@ -145,8 +154,8 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
-wait $receiver_pid
-wait $sender_pid
+wait $receiver_pid 2>/dev/null
+wait $sender_pid 2>/dev/null
 
 echo $0 ": done (test passed)"
 
