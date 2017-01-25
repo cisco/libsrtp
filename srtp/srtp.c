@@ -2094,6 +2094,55 @@ crypto_policy_set_null_cipher_hmac_sha1_80(crypto_policy_t *p) {
   
 }
 
+/* AES-192 requires --enable-openssl, see crypto/cipher/aes.c:aes_expand_encryption_key */
+/* furthermore, OpenSSL forks like BoringSSL do not support AES-192 either */
+#if defined(OPENSSL) && !defined(SRTP_NO_AES192)
+void
+crypto_policy_set_aes_cm_192_hmac_sha1_80(crypto_policy_t *p) {
+
+  /*
+   * corresponds to RFC 6188
+   */
+
+  p->cipher_type     = AES_ICM;
+  p->cipher_key_len  = 38;
+  p->auth_type       = HMAC_SHA1;
+  p->auth_key_len    = 20;
+  p->auth_tag_len    = 10;
+  p->sec_serv        = sec_serv_conf_and_auth;
+}
+
+void
+crypto_policy_set_aes_cm_192_hmac_sha1_32(crypto_policy_t *p) {
+
+  /*
+   * corresponds to RFC 6188
+   *
+   * note that this crypto policy is intended for SRTP, but not SRTCP
+   */
+
+  p->cipher_type     = AES_ICM;
+  p->cipher_key_len  = 38;
+  p->auth_type       = HMAC_SHA1;
+  p->auth_key_len    = 20;
+  p->auth_tag_len    = 4;
+  p->sec_serv        = sec_serv_conf_and_auth;
+}
+
+void
+crypto_policy_set_aes_cm_192_null_auth (crypto_policy_t *p)
+{
+  /*
+   * AES-192 with no authentication.
+   */
+  p->cipher_type     = AES_ICM;
+  p->cipher_key_len  = 38;
+  p->auth_type       = NULL_AUTH;
+  p->auth_key_len    = 0;
+  p->auth_tag_len    = 0;
+  p->sec_serv        = sec_serv_conf;
+}
+#endif
 
 void
 crypto_policy_set_aes_cm_256_hmac_sha1_80(crypto_policy_t *p) {
