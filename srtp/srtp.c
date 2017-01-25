@@ -539,12 +539,15 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, const void *key) {
   debug_print(mod_srtp, "rtp salt len: %d", rtp_salt_len);
 
   /* 
-   * Make sure the key given to us is 'zero' appended.  GCM
+   * Make sure the key given to us is 'zero' prepended. GCM
    * mode uses a shorter master SALT (96 bits), but still relies on 
    * the legacy CTR mode KDF, which uses a 112 bit master SALT.
    */
   memset(tmp_key, 0x0, MAX_SRTP_KEY_LEN);
-  memcpy(tmp_key, key, (rtp_base_key_len + rtp_salt_len));
+  memcpy(tmp_key, key, rtp_base_key_len);
+  memcpy(tmp_key + rtp_base_key_len + 14 - rtp_salt_len,
+         key + rtp_base_key_len,
+         rtp_salt_len);
 
   /* initialize KDF state     */
   stat = srtp_kdf_init(&kdf, AES_ICM, (const uint8_t *)tmp_key, kdf_keylen);
