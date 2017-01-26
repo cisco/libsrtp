@@ -441,7 +441,7 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
   srtp_err_status_t status;
   dcdr->frame_nr++;
 
-  if (dcdr->start_tv.tv_sec == 0 && dcdr->start_tv.tv_sec == 0) {
+  if (dcdr->start_tv.tv_sec == 0) {
     dcdr->start_tv = hdr->ts;
   }
 
