@@ -163,7 +163,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_dealloc (srtp_cipher_t *c)
     if (ctx) {
         EVP_CIPHER_CTX_free(ctx->ctx);
 	/* zeroize the key material */
-	octet_string_set_to_zero((uint8_t*)ctx, sizeof(srtp_aes_gcm_ctx_t));
+    octet_string_set_to_zero(ctx, sizeof(srtp_aes_gcm_ctx_t));
 	srtp_crypto_free(ctx);
     }
 
