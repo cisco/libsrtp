@@ -2,9 +2,10 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT([libsrtp2], [2.1.0-pre], [https://github.com/cisco/libsrtp/issues])
 
 dnl Must come before AC_PROG_CC
+EMPTY_CFLAGS="no"
 if test "x$CFLAGS" = "x"; then
    dnl Default value for CFLAGS if not specified.
-   CFLAGS="-Wall -pedantic -O4 -fexpensive-optimizations -funroll-loops"
+   EMPTY_CFLAGS="yes"
 fi
 
 dnl Checks for programs.
@@ -12,6 +13,7 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_RANLIB
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_PROG_SED
 
 dnl Check the byte order
 AC_C_BIGENDIAN
@@ -36,15 +38,102 @@ case $host_os in
     ;;
   * )
     EXE=""
-    if test "x$CPPFLAGS" = "x"; then
-      CPPFLAGS="-fPIC"
-    else
-      CPPFLAGS="-fPIC $CPPFLAGS"
-    fi
     ;;
 esac
 AC_SUBST([EXE])   # define executable suffix; this is needed for `make clean'
 
+dnl Checks for supported compiler flags.
+supported_cflags=""
+if test "$EMPTY_CFLAGS" = "no"; then
+  supported_cflags="$CFLAGS"
+fi
+
+dnl For accurate detection, we need warnings as errors.
+dnl I.e. Clang will issue a warning about unsupported flags.
+dnl For the compilation to fail, those warnings needs to be upgraded to errors.
+dnl This will be removed again once the tests are complete (see below).
+WERROR=""
+for w in -Werror -errwarn; do
+  if test "x$WERROR" = "x"; then
+    AC_MSG_CHECKING([whether the compiler supports $w])
+    save_cflags="$CFLAGS"
+    AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$w"], [CFLAGS="$CFLAGS $w"])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+      [WERROR="$w"
+       AC_MSG_RESULT([yes])],
+      [CFLAGS="$save_cflags"
+       AC_MSG_RESULT([no])])
+  fi
+done
+
+dnl Note that -fPIC is also added to LDFLAGS.
+AC_MSG_CHECKING([whether the compiler supports -fPIC])
+save_cflags="$CFLAGS"
+AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="-fPIC"], [CFLAGS="$CFLAGS -fPIC"])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+  [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="-fPIC"], [supported_cflags="$supported_cflags -fPIC"])
+   AS_IF([test "x$LDFLAGS" = "x"], [LDFLAGS="-fPIC"], [LDFLAGS="$LDFLAGS -fPIC"])
+   AC_MSG_RESULT([yes])],
+  [CFLAGS="$save_cflags"
+   AC_MSG_RESULT([no])])
+
+if test "$EMPTY_CFLAGS" = "yes"; then
+  for f in -Wall -pedantic; do
+    AC_MSG_CHECKING([whether the compiler supports $f])
+    save_cflags="$CFLAGS"
+    AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+      [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
+       AC_MSG_RESULT([yes])],
+      [CFLAGS="$save_cflags"
+       AC_MSG_RESULT([no])])
+  done
+
+  OOPT=""
+  for f in -O4 -O3; do
+    if test "x$OOPT" = "x"; then
+      AC_MSG_CHECKING([whether the compiler supports $f])
+      save_cflags="$CFLAGS"
+      AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
+      AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+        [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
+         OOPT="$f"
+         AC_MSG_RESULT([yes])],
+        [CFLAGS="$save_cflags"
+         AC_MSG_RESULT([no])])
+    fi
+  done
+
+  for f in -fexpensive-optimizations -funroll-loops; do
+    AC_MSG_CHECKING([whether the compiler supports $f])
+    save_cflags="$CFLAGS"
+    AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+      [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
+       AC_MSG_RESULT([yes])],
+      [CFLAGS="$save_cflags"
+       AC_MSG_RESULT([no])])
+  done
+fi
+
+dnl When turning off warnigns, we're expecting unrecognized command line option errors if they're not
+dnl supported. However, the -Wno-<warning> form isn't consulted unless a warning is triggered.
+dnl At least that's the case for GCC. So to check which warnings we can turn off, we dnl need to check
+dnl if they can be turned on, thereby forcing GCC to take the argument into account right away.
+for f in -Wno-language-extension-token; do
+  AC_MSG_CHECKING([whether the compiler supports $f])
+  save_cflags="$CFLAGS"
+  testf=$(echo "$f" | $SED 's|-Wno-\(.*\)|-W\1|g')
+  AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$testf"], [CFLAGS="$CFLAGS $testf"])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+    [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
+     AC_MSG_RESULT([yes])],
+    [CFLAGS="$save_cflags"
+     AC_MSG_RESULT([no])])
+done
+
+dnl Remowing -Werror again
+CFLAGS="$supported_cflags"
 
 dnl Checks for header files.
 AC_HEADER_STDC
