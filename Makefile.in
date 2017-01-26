@@ -78,7 +78,7 @@ SHAREDLIB_DIR = $(libdir)
 SHAREDLIB_LDFLAGS = -shared -Wl,-soname,$@
 SHAREDLIBSUFFIXNOVER = so
 SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER).$(SHAREDLIBVERSION)
-else ifeq (mingw,$(findstring mingw,@host@))
+else ifneq (,$(or $(findstring cygwin,@host@), $(findstring mingw,@host@)))
 SHAREDLIB_DIR = $(bindir)
 SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp2.dll.a
 SHAREDLIBVERSION =
