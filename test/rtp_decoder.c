@@ -468,8 +468,6 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
       exit(1);
     }
  }
-  if(dcdr->srtp_ctx != NULL){
-  }
   status = srtp_unprotect(dcdr->srtp_ctx, &dcdr->message, &octets_recvd);
   if (status){
     return;
