@@ -118,9 +118,17 @@ srtp_err_status_t srtp_rdb_add_index (srtp_rdb_t *rdb, uint32_t p_index)
         delta -= rdb_bits_in_bitmask - 1;
 
         /* shift the window forward by delta bits*/
-        v128_left_shift(&rdb->bitmask, delta);
-        v128_set_bit(&rdb->bitmask, rdb_bits_in_bitmask - 1);
-        rdb->window_start += delta;
+        if (delta >= rdb_bits_in_bitmask) {
+            v128_set_to_zero(&rdb->bitmask);
+            rdb->window_start = (int)(index - rdb_bits_in_bitmask + 1);
+            delta = (int)(index - rdb->window_start);
+            v128_set_bit(&rdb->bitmask, rdb_bits_in_bitmask-delta);
+        } else {
+            /* shift the window forward by delta bits*/
+            v128_left_shift(&rdb->bitmask, delta);
+            v128_set_bit(&rdb->bitmask, rdb_bits_in_bitmask-delta);
+            rdb->window_start += delta;
+        }
 
     }
 
