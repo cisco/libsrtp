@@ -62,7 +62,8 @@
 #ifndef EKT_H
 #define EKT_H
 
-#include "srtp_priv.h"
+// left in commented out as reminder to not include private headers
+//#include "srtp_priv.h"
 
 #ifdef __cplusplus
 extern "C" {
