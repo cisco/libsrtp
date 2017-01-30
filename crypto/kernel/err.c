@@ -48,26 +48,15 @@
 
 #include "err.h"
 
-
-/*  srtp_err_level reflects the level of errors that are reported  */
-
-srtp_err_reporting_level_t srtp_err_level = srtp_err_level_none;
-
 /* srtp_err_file is the FILE to which errors are reported */
 
 static FILE *srtp_err_file = NULL;
 
-srtp_err_status_t srtp_err_reporting_init (const char *ident)
+srtp_err_status_t srtp_err_reporting_init ()
 {
-
-    /*
-     * Believe it or not, openlog doesn't return an error on failure.
-     * But then, neither does the syslog() call...
-     */
-
 #ifdef ERR_REPORTING_STDOUT
     srtp_err_file = stdout;
-#elif defined(USE_ERR_REPORTING_FILE)
+#elif defined(ERR_REPORTING_FILE)
     /* open file for error reporting */
     srtp_err_file = fopen(ERR_REPORTING_FILE, "w");
     if (srtp_err_file == NULL) {
@@ -78,22 +67,12 @@ srtp_err_status_t srtp_err_reporting_init (const char *ident)
     return srtp_err_status_ok;
 }
 
-void srtp_err_report (int priority, const char *format, ...)
+void srtp_err_report (srtp_err_reporting_level_t level, const char *format, ...)
 {
     va_list args;
-
-    if (priority <= srtp_err_level) {
-
-        va_start(args, format);
-        if (srtp_err_file != NULL) {
-            vfprintf(srtp_err_file, format, args);
-            /*      fprintf(srtp_err_file, "\n"); */
-        }
-        va_end(args);
+    va_start(args, format);
+    if (srtp_err_file != NULL) {
+        vfprintf(srtp_err_file, format, args);
     }
-}
-
-void srtp_err_reporting_set_level (srtp_err_reporting_level_t lvl)
-{
-    srtp_err_level = lvl;
+    va_end(args);
 }
