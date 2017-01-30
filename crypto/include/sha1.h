@@ -65,8 +65,6 @@ extern "C" {
 
 #ifdef OPENSSL
 
-typedef EVP_MD_CTX srtp_sha1_ctx_t;
-
 /*
  * srtp_sha1_init(&ctx) initializes the SHA1 context ctx
  *
@@ -80,6 +78,12 @@ typedef EVP_MD_CTX srtp_sha1_ctx_t;
  * of these functions return void.
  *
  */
+
+/* OpenSSL 1.1.0 made EVP_MD_CTX an opaque structure, which must be allocated
+   using EVP_MD_CTX_new. But this function doesn't exist in OpenSSL 1.0.x. */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
+typedef EVP_MD_CTX srtp_sha1_ctx_t;
 
 static inline void srtp_sha1_init (srtp_sha1_ctx_t *ctx)
 {
@@ -97,7 +101,33 @@ static inline void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
     unsigned int len = 0;
 
     EVP_DigestFinal(ctx, (unsigned char*)output, &len);
+    EVP_MD_CTX_cleanup(ctx);
 }
+
+#else
+
+typedef EVP_MD_CTX* srtp_sha1_ctx_t;
+
+static inline void srtp_sha1_init (srtp_sha1_ctx_t *ctx)
+{
+    *ctx = EVP_MD_CTX_new();
+    EVP_DigestInit(*ctx, EVP_sha1());
+}
+
+static inline void srtp_sha1_update (srtp_sha1_ctx_t *ctx, const uint8_t *M, int octets_in_msg)
+{
+    EVP_DigestUpdate(*ctx, M, octets_in_msg);
+}
+
+static inline void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
+{
+    unsigned int len = 0;
+
+    EVP_DigestFinal(*ctx, (unsigned char*)output, &len);
+    EVP_MD_CTX_free(*ctx);
+}
+#endif
+
 #else
 
 typedef struct {
