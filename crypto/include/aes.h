@@ -43,8 +43,8 @@
  *
  */
 
-#ifndef _AES_H
-#define _AES_H
+#ifndef AES_H
+#define AES_H
 
 #include "datatypes.h"
 #include "err.h"

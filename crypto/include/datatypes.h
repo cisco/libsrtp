@@ -44,8 +44,8 @@
  */
 
 
-#ifndef _DATATYPES_H
-#define _DATATYPES_H
+#ifndef DATATYPES_H
+#define DATATYPES_H
 
 #include "integers.h"           /* definitions of uint32_t, et cetera   */
 #include "alloc.h"
