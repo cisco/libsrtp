@@ -224,6 +224,7 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }
 
   str->session_keys = (srtp_session_keys_t *)srtp_crypto_alloc(sizeof(srtp_session_keys_t) * str->num_master_keys);
+  memset(str->session_keys, 0, sizeof(srtp_session_keys_t) * str->num_master_keys);
 
   for (i = 0; i < str->num_master_keys; i++) {
     session_keys = &str->session_keys[i];
@@ -431,9 +432,15 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
       session_keys->mki_id = NULL;
     }
 
-    srtp_crypto_free(session_keys);
-
   }
+
+  if (stream_template
+      && stream->session_keys == stream_template->session_keys) {
+      /* do nothing */
+  } else {
+    srtp_crypto_free(stream->session_keys);
+  }
+
 
   /* deallocate key usage limit, if it is not the same as that in template */
   if (stream_template
@@ -2204,7 +2211,7 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len, unsigned
 #endif
 
   /*
-   * Determine if MKI is being used and what the MKI index is
+   * Determine if MKI is being used and what session keys should be used
    */
   if (use_mki) {
       session_keys = srtp_get_session_keys(stream, (uint8_t *)hdr, (const unsigned int*)pkt_octet_len, &mki_size);
@@ -3787,7 +3794,7 @@ srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len, unsigne
   }
 
   /*
-   * Determine if MKI is being used and what the MKI index is
+   * Determine if MKI is being used and what session keys should be used
    */
   if (use_mki) {
       session_keys = srtp_get_session_keys(stream, (uint8_t *)hdr, (const unsigned int*)pkt_octet_len, &mki_size);
@@ -3856,9 +3863,9 @@ srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len, unsigne
   auth_start = (uint32_t *)hdr;
 
   /*
-   * The location of the auth tag in the packet needs to know MKI ID 
+   * The location of the auth tag in the packet needs to know MKI 
    * could be present.  The data needed to calculate the Auth tag
-   * must not include the MKI ID
+   * must not include the MKI
    */
   auth_len = *pkt_octet_len - tag_len - mki_size;
   auth_tag = (uint8_t *)hdr + auth_len + mki_size;
