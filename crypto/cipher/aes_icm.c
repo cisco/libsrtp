@@ -165,9 +165,9 @@ static srtp_err_status_t srtp_aes_icm_dealloc (srtp_cipher_t *c)
 
     ctx = (srtp_aes_icm_ctx_t *)c->state;
     if (ctx) {
-	/* zeroize the key material */
-    octet_string_set_to_zero(ctx, sizeof(srtp_aes_icm_ctx_t));
-	srtp_crypto_free(ctx);
+        /* zeroize the key material */
+        octet_string_set_to_zero(ctx, sizeof(srtp_aes_icm_ctx_t));
+        srtp_crypto_free(ctx);
     }
 
     /* free the cipher context */
