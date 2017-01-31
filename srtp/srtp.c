@@ -176,15 +176,16 @@ srtp_stream_free(srtp_stream_ctx_t *str) {
     if (session_keys->mki_id) {
       srtp_crypto_free(session_keys->mki_id);
     }
+
+    if (session_keys->limit) {
+      srtp_crypto_free(session_keys->limit);
+    }
   }
 
   srtp_crypto_free(str->session_keys);
 
   if (str->enc_xtn_hdr) {
     srtp_crypto_free(str->enc_xtn_hdr);
-  }
-  if (str->limit) {
-    srtp_crypto_free(str->limit);
   }
 
   srtp_crypto_free(str);
@@ -274,13 +275,12 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
    
     session_keys->mki_id = NULL;
 
-  }
-
-  /* allocate key limit structure */
-  str->limit = (srtp_key_limit_ctx_t*) srtp_crypto_alloc(sizeof(srtp_key_limit_ctx_t));
-  if (str->limit == NULL) {
-      srtp_stream_free(str);
-      return srtp_err_status_alloc_fail;
+    /* allocate key limit structure */
+    session_keys->limit = (srtp_key_limit_ctx_t*) srtp_crypto_alloc(sizeof(srtp_key_limit_ctx_t));
+    if (session_keys->limit == NULL) {
+        srtp_stream_free(str);
+        return srtp_err_status_alloc_fail;
+    }
   }
 
   /* allocate ekt data associated with stream */
@@ -432,6 +432,14 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
       session_keys->mki_id = NULL;
     }
 
+    /* deallocate key usage limit, if it is not the same as that in template */
+    if (template_session_keys
+        && session_keys->limit == template_session_keys->limit) {
+        /* do nothing */
+    } else {
+      srtp_crypto_free(session_keys->limit);
+    }
+
   }
 
   if (stream_template
@@ -439,15 +447,6 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
       /* do nothing */
   } else {
     srtp_crypto_free(stream->session_keys);
-  }
-
-
-  /* deallocate key usage limit, if it is not the same as that in template */
-  if (stream_template
-      && stream->limit == stream_template->limit) {
-      /* do nothing */
-  } else {
-    srtp_crypto_free(stream->limit);
   }
 
   status = srtp_rdbx_dealloc(&stream->rtp_rdbx);
@@ -525,15 +524,16 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     /* Copy the salt values */
     memcpy(session_keys->salt, template_session_keys->salt, SRTP_AEAD_SALT_LEN);
     memcpy(session_keys->c_salt, template_session_keys->c_salt, SRTP_AEAD_SALT_LEN);
+
+    /* set key limit to point to that of the template */
+    status = srtp_key_limit_clone(template_session_keys->limit, &session_keys->limit);
+    if (status) { 
+      srtp_crypto_free(*str_ptr);
+      *str_ptr = NULL;
+      return status;
+    }
   }
 
-  /* set key limit to point to that of the template */
-  status = srtp_key_limit_clone(stream_template->limit, &str->limit);
-  if (status) { 
-    srtp_crypto_free(*str_ptr);
-    *str_ptr = NULL;
-    return status;
-  }
 
   /* initialize replay databases */
   status = srtp_rdbx_init(&str->rtp_rdbx,
@@ -854,6 +854,18 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key, co
    * be part of srtp_policy_t. */
   session_keys = &srtp->session_keys[current_mki_index];
 
+   /* initialize key limit to maximum value */
+#ifdef NO_64BIT_MATH
+{
+   uint64_t temp;
+   temp = make64(UINT_MAX,UINT_MAX);
+   srtp_key_limit_set(session_keys->limit, temp);
+}
+#else
+   srtp_key_limit_set(session_keys->limit, 0xffffffffffffLL);
+#endif
+
+
   if ( master_key->mki_size != 0 ) {
       session_keys->mki_id = srtp_crypto_alloc(master_key->mki_size);
 
@@ -1153,17 +1165,6 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    else
      err = srtp_rdbx_init(&srtp->rtp_rdbx, 128);
    if (err) return err;
-
-   /* initialize key limit to maximum value */
-#ifdef NO_64BIT_MATH
-{
-   uint64_t temp;
-   temp = make64(UINT_MAX,UINT_MAX);
-   srtp_key_limit_set(srtp->limit, temp);
-}
-#else
-   srtp_key_limit_set(srtp->limit, 0xffffffffffffLL);
-#endif
 
    /* set the SSRC value */
    srtp->ssrc = htonl(p->ssrc.value);
@@ -1515,7 +1516,7 @@ srtp_protect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream,
      * didn't just hit either the soft limit or the hard limit, and call
      * the event handler if we hit either.
      */
-    switch (srtp_key_limit_update(stream->limit)) {
+    switch (srtp_key_limit_update(session_keys->limit)) {
     case srtp_key_event_normal:
         break;
     case srtp_key_event_hard_limit:
@@ -1726,7 +1727,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
      * didn't just hit either the soft limit or the hard limit, and call
      * the event handler if we hit either.
      */
-    switch (srtp_key_limit_update(stream->limit)) {
+    switch (srtp_key_limit_update(session_keys->limit)) {
     case srtp_key_event_normal:
         break;
     case srtp_key_event_soft_limit:
@@ -1927,7 +1928,7 @@ srtp_unprotect_aead (srtp_ctx_t *ctx, srtp_stream_ctx_t *stream, int delta,
    * didn't just hit either the soft limit or the hard limit, and call
    * the event handler if we hit either.
    */
-  switch(srtp_key_limit_update(stream->limit)) {
+  switch(srtp_key_limit_update(session_keys->limit)) {
   case srtp_key_event_normal:
     break;
   case srtp_key_event_soft_limit: 
@@ -2366,7 +2367,7 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len, unsigned
    * didn't just hit either the soft limit or the hard limit, and call
    * the event handler if we hit either.
    */
-  switch(srtp_key_limit_update(stream->limit)) {
+  switch(srtp_key_limit_update(session_keys->limit)) {
   case srtp_key_event_normal:
     break;
   case srtp_key_event_soft_limit: 
