@@ -93,7 +93,7 @@ main (int argc, char *argv[]) {
 #endif
   srtp_sec_serv_t sec_servs = sec_serv_none;
   int c;
-  struct srtp_crypto_suite scs, *i_scsp;;
+  struct srtp_crypto_suite scs, *i_scsp;
   scs.key_size = 128;
   scs.tag_size = 8;
   int gcm_on = 0;
@@ -418,7 +418,7 @@ usage(char *string) {
 	 "       -l list debug modules\n"
 	 "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
 	 "       -d <debug> turn on debugging for module <debug>\n"
-	 "       -s \"<srtp-crypto-suite>\" to set both key and tag size based"
+	 "       -s \"<srtp-crypto-suite>\" to set both key and tag size based\n"
 	 "          on RFC4568-style crypto suite specification\n",
 	 string, string);
   exit(1);
