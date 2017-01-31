@@ -78,4 +78,4 @@ void srtp_aes_decrypt(v128_t *plaintext, const srtp_aes_expanded_key_t *exp_key)
 }
 #endif
 
-#endif /* _AES_H */
+#endif /* AES_H */

@@ -486,4 +486,4 @@ bitvector_bit_string(bitvector_t *x, char* buf, int len);
 }
 #endif
 
-#endif /* _DATATYPES_H */
+#endif /* DATATYPES_H */
