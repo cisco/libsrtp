@@ -66,7 +66,7 @@ echo $0 ": receiver PID = $receiver_pid"
 sleep 1 
 
 # verify that the background job is running
-ps | grep -q $receiver_pid
+ps -e | grep -q $receiver_pid
 retval=$?
 echo $retval
 if [ $retval != 0 ]; then
@@ -83,7 +83,7 @@ sender_pid=$!
 echo $0 ": sender PID = $sender_pid"
 
 # verify that the background job is running
-ps | grep -q $sender_pid
+ps -e | grep -q $sender_pid
 retval=$?
 echo $retval
 if [ $retval != 0 ]; then
@@ -115,7 +115,7 @@ echo $0 ": receiver PID = $receiver_pid"
 sleep 1 
 
 # verify that the background job is running
-ps | grep -q $receiver_pid
+ps -e | grep -q $receiver_pid
 retval=$?
 echo $retval
 if [ $retval != 0 ]; then
@@ -132,7 +132,7 @@ sender_pid=$!
 echo $0 ": sender PID = $sender_pid"
 
 # verify that the background job is running
-ps | grep -q $sender_pid
+ps -e | grep -q $sender_pid
 retval=$?
 echo $retval
 if [ $retval != 0 ]; then

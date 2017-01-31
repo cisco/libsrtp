@@ -64,7 +64,7 @@ main (int argc, char *argv[]) {
   pcap_t *pcap_handle;
 #if BEW
   struct sockaddr_in local;
-#endif 
+#endif
   srtp_sec_serv_t sec_servs = sec_serv_none;
   int c;
   int key_size = 128;
@@ -158,11 +158,11 @@ main (int argc, char *argv[]) {
     }
     return 0;
   }
-   
+
   if ((sec_servs && !input_key) || (!sec_servs && input_key)) {
-    /* 
+    /*
      * a key must be provided if and only if security services have
-     * been requested 
+     * been requested
      */
 	  if(input_key == NULL){
 		  fprintf(stderr, "key not provided\n");
@@ -173,7 +173,7 @@ main (int argc, char *argv[]) {
     fprintf(stderr, "provided\n");
     usage(argv[0]);
   }
-   
+
 
 
   /* report security services selected on the command line */
@@ -185,11 +185,11 @@ main (int argc, char *argv[]) {
   if (sec_servs == sec_serv_none)
     fprintf(stderr, "none");
   fprintf(stderr, "\n");
-  
-  /* set up the srtp policy and master key */    
+
+  /* set up the srtp policy and master key */
   if (sec_servs) {
-    /* 
-     * create policy structure, using the default mechanisms but 
+    /*
+     * create policy structure, using the default mechanisms but
      * with only the security services requested on the command line,
      * using the right SSRC value
      */
@@ -232,11 +232,11 @@ main (int argc, char *argv[]) {
 	switch (key_size) {
 	case 128:
           srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
-          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 	  break;
 	case 256:
           srtp_crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
-          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);      
+          srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 	  break;
 	}
       }
@@ -266,7 +266,7 @@ main (int argc, char *argv[]) {
     default:
       fprintf(stderr, "error: unknown security service requested\n");
       return -1;
-    } 
+    }
 
     policy.key  = (uint8_t *) key;
     policy.ekt  = NULL;
@@ -275,12 +275,12 @@ main (int argc, char *argv[]) {
     policy.allow_repeat_tx = 0;
     policy.rtp.sec_serv = sec_servs;
     policy.rtcp.sec_serv = sec_servs; //sec_serv_none;  /* we don't do RTCP anyway */
-      fprintf(stderr, "setting tag len %d\n", tag_size);
-policy.rtp.auth_tag_len = tag_size;
-  
+    fprintf(stderr, "setting tag len %d\n", tag_size);
+    policy.rtp.auth_tag_len = tag_size;
+
     if (gcm_on && tag_size != 8) {
       fprintf(stderr, "setted tag len %d\n", tag_size);
-	policy.rtp.auth_tag_len = tag_size;
+      policy.rtp.auth_tag_len = tag_size;
     }
 
     /*
@@ -300,26 +300,26 @@ policy.rtp.auth_tag_len = tag_size;
     }
     /* check that hex string is the right length */
     if (len < expected_len) {
-      fprintf(stderr, 
+      fprintf(stderr,
 	      "error: too few digits in key/salt "
 	      "(should be %d digits, found %d)\n",
 	      expected_len, len);
-      exit(1);    
-    } 
+      exit(1);
+    }
     if (strlen(input_key) > policy.rtp.cipher_key_len*2) {
-      fprintf(stderr, 
+      fprintf(stderr,
 	      "error: too many digits in key/salt "
 	      "(should be %d hexadecimal digits, found %u)\n",
 	      policy.rtp.cipher_key_len*2, (unsigned)strlen(input_key));
-      exit(1);    
+      exit(1);
     }
-    
+
     fprintf(stderr, "set master key/salt to %s/", octet_string_hex_string(key, 16));
     fprintf(stderr, "%s\n", octet_string_hex_string(key+16, 14));
-  
+
   } else {
       fprintf(stderr, "error: neither encryption or authentication were selected");
-      exit(1);    
+      exit(1);
   }
 
 	pcap_handle = pcap_open_offline("-", errbuf);
@@ -329,12 +329,12 @@ policy.rtp.auth_tag_len = tag_size;
 	    exit(1);
 	}
 	assert(pcap_handle != NULL);
-	if ((pcap_compile(pcap_handle, &fp, filter_exp, 1, pcap_net)) == -1){
+	if ((pcap_compile(pcap_handle, &fp, filter_exp, 1, pcap_net)) == -1) {
 	    fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp,
 	        pcap_geterr(pcap_handle));
 	    return (2);
 	}
-	if (pcap_setfilter(pcap_handle, &fp) == -1){
+	if (pcap_setfilter(pcap_handle, &fp) == -1) {
 	  fprintf(stderr, "couldn't install filter %s: %s\n", filter_exp,
 	      pcap_geterr(pcap_handle));
 	  return (2);
@@ -378,7 +378,7 @@ usage(char *string) {
 	 "       -d <debug> turn on debugging for module <debug>\n",
 	 string, string);
   exit(1);
-  
+
 }
 
 rtp_decoder_t
@@ -403,18 +403,18 @@ rtp_decoder_deinit_srtp(rtp_decoder_t decoder) {
 }
 
 int
-rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy){
+rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy) {
 	dcdr->rtp_offset = DEFAULT_RTP_OFFSET;
 	dcdr->srtp_ctx = NULL;
 	dcdr->start_tv.tv_usec = 0;
 	dcdr->start_tv.tv_sec = 0;
 	dcdr->frame_nr = -1;
-    dcdr->policy = policy;
+  dcdr->policy = policy;
 	dcdr->policy.ssrc.type  = ssrc_specific;
 	return 0;
 }
 
-/* 
+/*
  * decodes key as base64
  */
 
@@ -433,7 +433,7 @@ void hexdump(const void *ptr, size_t size) {
 
 void
 rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
-	const u_char *bytes){
+	const u_char *bytes) {
   rtp_decoder_t dcdr = (rtp_decoder_t)arg;
   int pktsize;
   struct timeval delta;
@@ -441,7 +441,7 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
   srtp_err_status_t status;
   dcdr->frame_nr++;
 
-  if (dcdr->start_tv.tv_sec == 0 && dcdr->start_tv.tv_sec == 0) {
+  if (dcdr->start_tv.tv_sec == 0) {
     dcdr->start_tv = hdr->ts;
   }
 
@@ -460,26 +460,24 @@ rtp_decoder_handle_pkt(u_char *arg, const struct pcap_pkthdr *hdr,
 
   /* verify rtp header */
   if (dcdr->message.header.version != 2) {
-    return; //return -1;
+    return;
   }
-  if(dcdr->srtp_ctx == NULL){
+  if(dcdr->srtp_ctx == NULL) {
     status = rtp_decoder_init_srtp(dcdr, dcdr->message.header.ssrc);
     if (status) {
       exit(1);
     }
- }
-  if(dcdr->srtp_ctx != NULL){
   }
   status = srtp_unprotect(dcdr->srtp_ctx, &dcdr->message, &octets_recvd);
-  if (status){
+  if (status) {
     return;
   }
   timersub(&hdr->ts, &dcdr->start_tv, &delta);
-  fprintf(stdout, "%02ld:%02ld.%06lu\n", delta.tv_sec/60, delta.tv_sec%60, delta.tv_usec);
+  fprintf(stdout, "%02ld:%02ld.%06ld\n", delta.tv_sec/60, delta.tv_sec%60, (long)delta.tv_usec);
   hexdump(&dcdr->message, pktsize);
 }
 
-void rtp_print_error(srtp_err_status_t status, char *message){
+void rtp_print_error(srtp_err_status_t status, char *message) {
     fprintf(stderr,
             "error: %s %d%s\n", message, status,
             status == srtp_err_status_replay_fail ? " (replay check failed)" :

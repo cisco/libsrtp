@@ -50,6 +50,10 @@
 #include "datatypes.h"
 #include "err.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* #define ROC_TEST */
 
 #ifndef ROC_TEST
@@ -109,7 +113,7 @@ srtp_err_status_t srtp_rdbx_dealloc(srtp_rdbx_t *rdbx);
  * index to which s corresponds, and returns the difference between
  * *guess and the locally stored synch info
  */
-int srtp_rdbx_estimate_index(const srtp_rdbx_t *rdbx, srtp_xtd_seq_num_t *guess, srtp_sequence_number_t s);
+int32_t srtp_rdbx_estimate_index(const srtp_rdbx_t *rdbx, srtp_xtd_seq_num_t *guess, srtp_sequence_number_t s);
 
 /*
  * srtp_rdbx_check(rdbx, delta);
@@ -179,16 +183,11 @@ void srtp_index_advance(srtp_xtd_seq_num_t *pi, srtp_sequence_number_t s);
  * guess of the packet index to which s corresponds, and returns the
  * difference between *guess and *local
  */
-int srtp_index_guess(const srtp_xtd_seq_num_t *local, srtp_xtd_seq_num_t *guess, srtp_sequence_number_t s);
+int32_t srtp_index_guess(const srtp_xtd_seq_num_t *local, srtp_xtd_seq_num_t *guess, srtp_sequence_number_t s);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* RDBX_H */
-
-
-
-
-
-
-
-
-

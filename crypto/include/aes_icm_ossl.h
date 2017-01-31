@@ -47,30 +47,23 @@
 #define AES_ICM_H
 
 #include "cipher.h"
+#include "datatypes.h"
 #include <openssl/evp.h>
 #include <openssl/aes.h>
-
-#ifdef OPENSSL_IS_BORINGSSL
-// BoringSSL doesn't support AES-192, cipher will be disabled
-#define SRTP_NO_AES192
-#endif
 
 #define     SRTP_SALT_SIZE               14
 #define     SRTP_AES_128_KEYSIZE         AES_BLOCK_SIZE
 #define     SRTP_AES_256_KEYSIZE         AES_BLOCK_SIZE * 2
 #define     SRTP_AES_128_KEYSIZE_WSALT   SRTP_AES_128_KEYSIZE + SRTP_SALT_SIZE
 #define     SRTP_AES_256_KEYSIZE_WSALT   SRTP_AES_256_KEYSIZE + SRTP_SALT_SIZE
-#ifndef SRTP_NO_AES192
 #define     SRTP_AES_192_KEYSIZE         AES_BLOCK_SIZE + AES_BLOCK_SIZE / 2
 #define     SRTP_AES_192_KEYSIZE_WSALT   SRTP_AES_192_KEYSIZE + SRTP_SALT_SIZE
-#endif
 
 typedef struct {
     v128_t counter;                /* holds the counter value          */
     v128_t offset;                 /* initial offset value             */
-    v256_t key;
     int key_size;
-    EVP_CIPHER_CTX ctx;
+    EVP_CIPHER_CTX* ctx;
 } srtp_aes_icm_ctx_t;
 
 #endif /* AES_ICM_H */
