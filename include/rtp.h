@@ -51,8 +51,8 @@
  */
 
 
-#ifndef RTP_H
-#define RTP_H
+#ifndef SRTP_RTP_H
+#define SRTP_RTP_H
 
 #ifdef HAVE_NETINET_IN_H
 # include <netinet/in.h>
@@ -167,4 +167,4 @@ rtp_receiver_dealloc(rtp_receiver_t rtp_ctx);
 }
 #endif
 
-#endif /* RTP_H */
+#endif /* SRTP_RTP_H */

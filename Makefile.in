@@ -239,7 +239,6 @@ install:
 	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp2
 	$(INSTALL) -d $(DESTDIR)$(libdir)
 	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2
-	cp $(srcdir)/include/ekt.h $(DESTDIR)$(includedir)/srtp2
 	cp $(srcdir)/include/rtp.h $(DESTDIR)$(includedir)/srtp2
 	cp $(srcdir)/crypto/include/cipher.h $(DESTDIR)$(includedir)/srtp2
 	cp $(srcdir)/crypto/include/auth.h $(DESTDIR)$(includedir)/srtp2
