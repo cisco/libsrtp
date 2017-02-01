@@ -59,8 +59,8 @@
  *
  */
 
-#ifndef EKT_H
-#define EKT_H
+#ifndef SRTP_EKT_H
+#define SRTP_EKT_H
 
 #include "srtp_priv.h"
 
@@ -170,4 +170,4 @@ srtp_err_status_t srtcp_auth_tag_generation_postprocess(void);
 }
 #endif
 
-#endif /* EKT_H */
+#endif /* SRTP_EKT_H */
