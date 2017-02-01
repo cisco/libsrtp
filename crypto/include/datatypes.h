@@ -352,9 +352,20 @@ v128_set_bit_to(v128_t *x, int i, int y);
 int
 octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 
+/*
+ * A portable way to zero out memory as recommended by
+ * https://cryptocoding.net/index.php/Coding_rules#Clean_memory_of_secret_data
+ * This is used to zero memory when OPENSSL_cleanse() is not available.
+ */
 void
-octet_string_set_to_zero(uint8_t *s, int len);
+srtp_cleanse(void *s, size_t len);
 
+/*
+ * Functions as a wrapper that delegates to either srtp_cleanse() or
+ * OPENSSL_cleanse() if available to zero memory.
+ */
+void
+octet_string_set_to_zero(void *s, size_t len);
 
 #if defined(HAVE_CONFIG_H) 
 
