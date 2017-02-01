@@ -304,6 +304,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* compare the resulting ciphertext with that in the test case */
         if (len != test_case->ciphertext_length_octets) {
+            srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
         status = srtp_err_status_ok;
@@ -388,6 +389,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* compare the resulting plaintext with that in the test case */
         if (len != test_case->plaintext_length_octets) {
+            srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
         status = srtp_err_status_ok;
@@ -445,6 +447,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         debug_print(srtp_mod_cipher, "random plaintext length %d\n", length);
         status = srtp_cipher_rand(buffer, length);
         if (status) {
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -458,16 +461,19 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* choose a key at random */
         if (test_case->key_length_octets > MAX_KEY_LEN) {
+            srtp_cipher_dealloc(c);
             return srtp_err_status_cant_check;
         }
         status = srtp_cipher_rand(key, test_case->key_length_octets);
         if (status) {
+            srtp_cipher_dealloc(c);
             return status;
         }
 
         /* chose a random initialization vector */
         status = srtp_cipher_rand(iv, MAX_KEY_LEN);
         if (status) {
+            srtp_cipher_dealloc(c);
             return status;
         }
 
@@ -558,6 +564,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* compare the resulting plaintext with the original one */
         if (length != plaintext_len) {
+            srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
         status = srtp_err_status_ok;
