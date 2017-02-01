@@ -620,10 +620,14 @@ uint64_t srtp_cipher_bits_per_second (srtp_cipher_t *c, int octets_in_buffer, in
     v128_set_to_zero(&nonce);
     timer = clock();
     for (i = 0; i < num_trials; i++, nonce.v32[3] = i) {
-        if (srtp_cipher_set_iv(c, (uint8_t*)&nonce, srtp_direction_encrypt) != srtp_err_status_ok)
+        if (srtp_cipher_set_iv(c, (uint8_t*)&nonce, srtp_direction_encrypt) != srtp_err_status_ok) {
+            srtp_crypto_free(enc_buf);
             return 0;
-        if (srtp_cipher_encrypt(c, enc_buf, &len) != srtp_err_status_ok)
+        }
+        if (srtp_cipher_encrypt(c, enc_buf, &len) != srtp_err_status_ok) {
+            srtp_crypto_free(enc_buf);
             return 0;
+        }
     }
     timer = clock() - timer;
 
