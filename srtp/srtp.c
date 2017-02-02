@@ -646,7 +646,6 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label
 
     /* The NULL cipher will not have an EVP */
     if (!kdf->evp) return srtp_err_status_ok;
-
     octet_string_set_to_zero(key, length);
 
     /*
@@ -1137,7 +1136,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key, co
 
   /* clear memory then return */
   stat = srtp_kdf_clear(&kdf);
-  octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);  
+  octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
   if (stat)
     return srtp_err_status_init_fail;
 

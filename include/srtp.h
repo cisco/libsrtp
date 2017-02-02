@@ -43,8 +43,8 @@
  */
 
 
-#ifndef SRTP_H
-#define SRTP_H
+#ifndef SRTP_SRTP_H
+#define SRTP_SRTP_H
 
 #include <stdint.h>
 
@@ -1723,4 +1723,4 @@ srtp_err_status_t srtp_get_protect_data_added_length(const srtp_policy_t *policy
 }
 #endif
 
-#endif /* SRTP_H */
+#endif /* SRTP_SRTP_H */

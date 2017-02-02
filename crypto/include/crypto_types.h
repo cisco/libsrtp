@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef CRYPTO_TYPES_H
-#define CRYPTO_TYPES_H
+#ifndef SRTP_CRYPTO_TYPES_H
+#define SRTP_CRYPTO_TYPES_H
 
 /*
  * The null cipher performs no encryption.
@@ -113,4 +113,4 @@
  */
 #define SRTP_HMAC_SHA1          3          
 
-#endif  /* CRYPTO_TYPES_H */
+#endif  /* SRTP_CRYPTO_TYPES_H */

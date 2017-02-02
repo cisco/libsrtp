@@ -94,6 +94,9 @@ typedef unsigned short int	uint16_t;
 #ifndef HAVE_UINT32_T
 typedef unsigned int		uint32_t;
 #endif
+#ifndef HAVE_INT32_T
+typedef int int32_t;
+#endif
 
 
 #if defined(NO_64BIT_MATH) && defined(HAVE_CONFIG_H)
