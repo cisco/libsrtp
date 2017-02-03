@@ -1,7 +1,4 @@
-/**
-
-Introduction to libSRTP   {#mainpage}
-=======================
+# Introduction to libSRTP {#intro}
 
 This document describes libSRTP, the Open Source Secure RTP library
 from Cisco Systems, Inc.  RTP is the Real-time Transport Protocol, an
@@ -12,7 +9,7 @@ to the RTP header and payload.  SRTP is an IETF Proposed Standard,
 defined in RFC 3711, and was developed in the IETF Audio/Video
 Transport (AVT) Working Group.  This library supports all of the
 mandatory features of SRTP, but not all of the optional features. See
-the @ref Features section for more detailed information.
+the [Supported Features](#features) section for more detailed information.
 
 This document is organized as follows.  The first chapter provides
 background material on SRTP and overview of libSRTP.  The following
@@ -27,50 +24,46 @@ its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
-@section LICENSE License and Disclaimer
+## License and Disclaimer {#license}
 
 libSRTP is distributed under the following license, which is included
 in the source code distribution.  It is reproduced in the manual in
 case you got the library from another source.
 
-@verbatim
-
-Copyright (c) 2001-2005 Cisco Systems, Inc.  All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-- Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-- Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in
-  the documentation and/or other materials provided with the distribution.
-- Neither the name of the Cisco Systems, Inc. nor the names of its
-  contributors may be used to endorse or promote products derived
-  from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-OF THE POSSIBILITY OF SUCH DAMAGE.
-
-@endverbatim
+> Copyright (c) 2001-2005 Cisco Systems, Inc.  All rights reserved.
+>
+> Redistribution and use in source and binary forms, with or without
+> modification, are permitted provided that the following conditions
+> are met:
+>
+> - Redistributions of source code must retain the above copyright
+>   notice, this list of conditions and the following disclaimer.
+> - Redistributions in binary form must reproduce the above copyright
+>   notice, this list of conditions and the following disclaimer in
+>   the documentation and/or other materials provided with the distribution.
+> - Neither the name of the Cisco Systems, Inc. nor the names of its
+>   contributors may be used to endorse or promote products derived
+>   from this software without specific prior written permission.
+>
+> THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+> "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+> LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+> FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+> COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+> INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+> (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+> SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+> HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+> STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+> ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+> OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --------------------------------------------------------------------------------
 
-@section Features Supported Features
+## Supported Features {#features}
 
 This library supports all of the mandatory-to-implement features of
-SRTP (as defined by the most recent Internet Draft).  Some of these
+SRTP (as defined by the most recent Internet Draft). Some of these
 features can be selected (or de-selected) at run time by setting an
 appropriate policy; this is done using the structure srtp_policy_t.
 Some other behaviors of the protocol can be adapted by defining an
@@ -85,7 +78,7 @@ was removed from the SRTP Internet Draft during the summer of 2002.
 Some options that are described in the SRTP specification are not
 supported.  This includes
 
-- ~the Master Key Index (MKI)~,
+- the Master Key Index (MKI),
 - key derivation rates other than zero,
 - the cipher F8,
 - anti-replay lists with sizes other than 128,
@@ -96,12 +89,11 @@ and that the result may be that the security level it provides is
 inadequate.  If you are implementing a feature using this library, you
 will want to read the Security Considerations section of the Internet
 Draft.  In addition, it is important that you read and understand the
-terms outlined in the @ref LICENSE section.
+terms outlined in the [License and Disclaimer](#license) section.
 
 --------------------------------------------------------------------------------
 
-@section Installing Installing and Building libSRTP
-
+## Installing and Building libSRTP {#install}
 
 To install libSRTP, download the latest release of the distribution
 from `srtp.sourceforge.net`.  The format of the names of the
@@ -115,18 +107,16 @@ extract the source files; the directory into which the source files
 will go is named `srtp`.
 
 libSRTP uses the GNU `autoconf` and `make`
-utilities
-TODO: \footnote{BSD make will not work; if both versions of make
-are on your platform, you can invoke GNU make as `gmake`.}.  In
-the `srtp} directory, run the configure script and then make:
+utilities (BSD make will not work; if both versions of make are on your platform,
+you can invoke GNU make as `gmake`.). In the `libsrtp` directory, run the configure script and then
+make:
 
-~~~
-  ./configure [ options ]
-  make
+~~~.txt
+./configure [ options ]
+make
 ~~~
 
 The configure script accepts the following options:
-
 
 Option                    | Description
 ---------                 | -------
@@ -142,7 +132,7 @@ Option                    | Description
 By default, dynamic debugging is enabled and stdout is used for
 debugging.  You can use the configure options to have the debugging
 output sent to syslog or the system console.  Alternatively, you can
-define ERR\_REPORTING\_FILE in `include/conf.h` to be any other
+define `ERR_REPORTING_FILE` in `include/conf.h` to be any other
 file that can be opened by libSRTP, and debug messages will be sent to
 it.
 
@@ -153,62 +143,52 @@ OpenBSD (sparc-unknown-openbsd2.7).
 
 --------------------------------------------------------------------------------
 
-@section Applications Applications
+## Applications {#applications}
 
 Several test drivers and a simple and portable srtp application are
 included in the `test/` subdirectory.
 
-\begin{center}
-\begin{tabular}{ll}
-\hline
-Test driver    	& Function tested	\\
-\hline
-kernel\_driver   & crypto kernel (ciphers, auth funcs, rng) \\
-srtp\_driver	& srtp in-memory tests (does not use the network) \\
-rdbx\_driver	& rdbx (extended replay database) \\
-roc\_driver	& extended sequence number functions \\
-replay\_driver	& replay database  \\
-cipher\_driver	& ciphers  \\
-auth\_driver	& hash functions \\
-\hline
-\end{tabular}
-\end{center}
+Test driver     | Function tested
+---------       | -------
+kernel_driver   | crypto kernel (ciphers, auth funcs, rng)
+srtp_driver	    | srtp in-memory tests (does not use the network)
+rdbx_driver	    | rdbx (extended replay database)
+roc_driver	    | extended sequence number functions
+replay_driver	  | replay database
+cipher_driver	  | ciphers
+auth_driver	    | hash functions
 
 The app rtpw is a simple rtp application which reads words from
-/usr/dict/words and then sends them out one at a time using [s]rtp.
+`/usr/dict/words` and then sends them out one at a time using [s]rtp.
 Manual srtp keying uses the -k option; automated key management
 using gdoi will be added later.
 
 The usage for rtpw is
 
-@verbatim
-
+~~~.txt
 rtpw [[-d <debug>]* [-k <key> [-a][-e]] [-s | -r] dest\_ip dest\_port] | [-l]}
-
-@endverbatim
+~~~
 
 Either the -s (sender) or -r (receiver) option must be chosen.  The
-values dest\_ip, dest\_port are the IP address and UDP port to which
+values `dest_ip`, `dest_port` are the IP address and UDP port to which
 the dictionary will be sent, respectively.  The options are:
 
 Option        | Description
 ---------     | -------
   -s          | (S)RTP sender - causes app to send words
   -r          | (S)RTP receive - causes app to receive words
-  -k <key>    | use SRTP master key <key>, where the key is a hexadecimal value
-              | (without the leading "0x")
-  -e          | encrypt/decrypt (for data confidentiality) (requires use of -k option as well
+  -k <key>    | use SRTP master key <key>, where the key is a hexadecimal (without the leading "0x")
+  -e          | encrypt/decrypt (for data confidentiality) (requires use of -k option as well)
   -a          | message authentication (requires use of -k option as well)
   -l          | list the available debug modules
   -d <debug>  | turn on debugging for module <debug>
 
 In order to get a random 30-byte value for use as a key/salt pair, you
-can use the `rand\_gen} utility in the `test/}
-subdirectory.
+can use the `rand_gen` utility in the `test/` subdirectory.
 
 An example of an SRTP session using two rtpw programs follows:
 
-~~~
+~~~.txt
 [sh1] set k=`test/rand_gen -n 30~~~] echo $k
 c1eec3717da76195bb878578790af71c4ee9f859e197a414a78d5abc7451
 [sh1]$ test/rtpw -s -k $k -ea 0.0.0.0 9999
@@ -238,7 +218,7 @@ set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC
 
 --------------------------------------------------------------------------------
 
-@section Review Secure RTP Background
+## Secure RTP Background {#background}
 
 In this section we review SRTP and introduce some terms that are used
 in libSRTP.  An RTP session is defined by a pair of destination
@@ -276,7 +256,7 @@ in which a key is used for both inbound and outbound data.
 
 --------------------------------------------------------------------------------
 
-@section Overview libSRTP Overview
+### libSRTP Overview {#overview}
 
 libSRTP provides functions for protecting RTP and RTCP.  RTP packets
 can be encrypted and authenticated (using the srtp_protect()
@@ -329,7 +309,7 @@ for RTP and RTCP protection, respectively.
 
 --------------------------------------------------------------------------------
 
-@section Example Example Code
+## Example Code {#examples}
 
 This section provides a simple example of how to use libSRTP.  The
 example code lacks error checking, but is functional.  Here we assume
@@ -340,7 +320,7 @@ into the buffer and returns the number of octets written to that
 buffer.  The latter sends the RTP packet in the buffer, given the
 length as its second argument.
 
-@verbatim
+~~~.c
    srtp_t session;
    srtp_policy_t policy;
    uint8_t key[30];
@@ -370,21 +350,21 @@ length as its second argument.
       srtp_protect(session, rtp_buffer, &len);
       send_srtp_packet(rtp_buffer, len);
    }
-@endverbatim
+~~~
 
 --------------------------------------------------------------------------------
 
-@section ISMAcryp ISMA Encryption Support
+## ISMA Encryption Support
 
 The Internet Streaming Media Alliance (ISMA) specifies a way
 to pre-encrypt a media file prior to streaming.  This method
 is an alternative to SRTP encryption, which is potentially
 useful when a particular media file will be streamed
 multiple times.  The specification is available online
-at  http://www.isma.tv/specreq.nsf/SpecRequest.
+at http://www.isma.tv/specreq.nsf/SpecRequest.
 
 libSRTP provides the encryption and decryption functions needed for ISMAcryp
-in the library @t libaesicm.a, which is included in the default
+in the library `libaesicm.a`, which is included in the default
 Makefile target.  This library is used by the MPEG4IP project; see
 http://mpeg4ip.sourceforge.net/.
 
@@ -392,6 +372,3 @@ Note that ISMAcryp does not provide authentication for
 RTP nor RTCP, nor confidentiality for RTCP.
 ISMAcryp RECOMMENDS the use of SRTP message authentication for ISMAcryp
 streams while using ISMAcryp encryption to protect the media itself.
-
-
- */
