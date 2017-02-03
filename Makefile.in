@@ -230,8 +230,7 @@ tags:
 	etags */*.[ch] */*/*.[ch] 
 
 
-# documentation - the target libsrtpdoc builds a PDF file documenting
-# libsrtp2
+# documentation - the target libsrtp2doc builds html documentation
 
 libsrtp2doc:
 	$(MAKE) -C doc
