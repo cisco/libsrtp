@@ -772,10 +772,12 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = intro.txt \
+                         ../include/rtp.h \
                          ../include/srtp.h \
+                         ../crypto/include/auth.h \
+                         ../crypto/include/cipher.h \
                          ../crypto/include/crypto_types.h \
                          ../crypto/include/err.h \
-                         ../crypto/include/crypto.h \
                          crypto_kernel.txt
 
 # This tag can be used to specify the character encoding of the source files
