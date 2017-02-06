@@ -1,84 +1,36 @@
 # Introduction to libSRTP {#intro}
 
-## INTRO
-
-This document describes libSRTP, the Open Source Secure RTP library
-from Cisco Systems, Inc.  RTP is the Real-time Transport Protocol, an
-IETF standard for the transport of real-time data such as telephony,
-audio, and video, defined by RFC 3550.  Secure RTP (SRTP) is an RTP
-profile for providing confidentiality to RTP data and authentication
-to the RTP header and payload.  SRTP is an IETF Proposed Standard,
-defined in RFC 3711, and was developed in the IETF Audio/Video
-Transport (AVT) Working Group.  This library supports all of the
-mandatory features of SRTP, but not all of the optional features. See
-the [Supported Features](#features) section for more detailed information.
-
-This document is organized as follows.  The first chapter provides
-background material on SRTP and overview of libSRTP.  The following
-chapters provide a detailed reference to the libSRTP API and related
-functions.  The reference material is created automatically (using the
-doxygen utility) from comments embedded in some of the C header
-files. The documentation is organized into modules in order to improve
-its clarity.  These modules do not directly correspond to files. An
-underlying cryptographic kernel provides much of the basic
-functionality of libSRTP, but is mostly undocumented because it does
-its work behind the scenes.
-
-## README
-
 This package provides an implementation of the Secure Real-time
 Transport Protocol (SRTP), the Universal Security Transform (UST), and
-a supporting cryptographic kernel.  These mechanisms are documented in
-the Internet Drafts in the doc/ subdirectory.  The SRTP API is
-documented in include/srtp.h, and the library is in libsrtp.a (after
-compilation).  An overview and reference manual is available in
-doc/libsrtp.pdf.  The PDF documentation is more up to date than this
-file.
+a supporting cryptographic kernel. The SRTP API is documented in include/srtp.h,
+and the library is in libsrtp2.a (after compilation).
+
+This document describes libSRTP, the Open Source Secure RTP library
+from Cisco Systems, Inc. RTP is the Real-time Transport Protocol, an
+IETF standard for the transport of real-time data such as telephony,
+audio, and video, defined by [RFC 3550](https://www.ietf.org/rfc/rfc3550.txt).
+Secure RTP (SRTP) is an RTP profile for providing confidentiality to RTP data
+and authentication to the RTP header and payload. SRTP is an IETF Standard,
+defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt), and was developed
+in the IETF Audio/Video Transport (AVT) Working Group. This library supports
+all of the mandatory features of SRTP, but not all of the optional features. See
+the [Supported Features](#features) section for more detailed information.
+
+This document is also used to generate the documentation files in the /doc
+folder where a more detailed reference to the libSRTP API and related functions
+can be created (requires installing doxygen.). The reference material is created
+automatically from comments embedded in some of the C header files. The
+documentation is organized into modules in order to improve its clarity. These
+modules do not directly correspond to files. An underlying cryptographic kernel
+provides much of the basic functionality of libSRTP but is mostly undocumented
+because it does its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
-## Implementation Notes
-
-### README
-
-  * The srtp_protect() function assumes that the buffer holding the
-    rtp packet has enough storage allocated that the authentication
-    tag can be written to the end of that packet.  If this assumption
-    is not valid, memory corruption will ensue.  
-
-  * Automated tests for the crypto functions are provided through
-    the cipher_type_self_test() and auth_type_self_test() functions.
-    These functions should be used to test each port of this code
-    to a new platform.
-
-  * Replay protection is contained in the crypto engine, and
-    tests for it are provided.
-
-  * This implementation provides calls to initialize, protect, and
-    unprotect RTP packets, and makes as few as possible assumptions
-    about how these functions will be called.  For example, the
-    caller is not expected to provide packets in order (though if
-    they're called more than 65k out of sequence, synchronization
-    will be lost).
-
-  * The sequence number in the rtp packet is used as the low 16 bits
-    of the sender's local packet index. Note that RTP will start its
-    sequence number in a random place, and the SRTP layer just jumps
-    forward to that number at its first invocation.  An earlier
-    version of this library used initial sequence numbers that are
-    less than 32,768; this trick is no longer required as the
-    rdbx_estimate_index(...) function has been made smarter.
-
-  * The replay window is 128 bits in length, and is hard-coded to this
-    value for now.  
-
-
---------------------------------------------------------------------------------
-
-## License and Disclaimer {#license}
+# License and Disclaimer {#license}
 
 libSRTP is distributed under the following license, which is included
-in the source code distribution.  It is reproduced in the manual in
+in the source code distribution. It is reproduced in the manual in
 case you got the library from another source.
 
 > Copyright (c) 2001-2005 Cisco Systems, Inc.  All rights reserved.
@@ -111,23 +63,57 @@ case you got the library from another source.
 
 --------------------------------------------------------------------------------
 
+# Implementation Notes
+
+  * The `srtp_protect()` function assumes that the buffer holding the
+    rtp packet has enough storage allocated that the authentication
+    tag can be written to the end of that packet. If this assumption
+    is not valid, memory corruption will ensue.
+
+  * Automated tests for the crypto functions are provided through
+    the `cipher_type_self_test()` and `auth_type_self_test()` functions.
+    These functions should be used to test each port of this code
+    to a new platform.
+
+  * Replay protection is contained in the crypto engine, and
+    tests for it are provided.
+
+  * This implementation provides calls to initialize, protect, and
+    unprotect RTP packets, and makes as few as possible assumptions
+    about how these functions will be called. For example, the
+    caller is not expected to provide packets in order (though if
+    they're called more than 65k out of sequence, synchronization
+    will be lost).
+
+  * The sequence number in the rtp packet is used as the low 16 bits
+    of the sender's local packet index. Note that RTP will start its
+    sequence number in a random place, and the SRTP layer just jumps
+    forward to that number at its first invocation. An earlier
+    version of this library used initial sequence numbers that are
+    less than 32,768; this trick is no longer required as the
+    `rdbx_estimate_index(...)` function has been made smarter.
+
+  * The replay window is 128 bits in length, and is hard-coded to this
+    value for now.
+
+--------------------------------------------------------------------------------
+
 ## Supported Features {#features}
 
 This library supports all of the mandatory-to-implement features of
 SRTP (as defined by the most recent Internet Draft). Some of these
 features can be selected (or de-selected) at run time by setting an
-appropriate policy; this is done using the structure srtp_policy_t.
+appropriate policy; this is done using the structure `srtp_policy_t`.
 Some other behaviors of the protocol can be adapted by defining an
-approriate event handler for the exceptional events; see the @ref
-SRTPevents section.
+approriate event handler for the exceptional events; see the SRTPevents
+section in the generated documentation.
 
 Some options that are not included in the specification are supported.
 Most notably, the TMMH authentication function is included, though it
 was removed from the SRTP Internet Draft during the summer of 2002.
 
-
 Some options that are described in the SRTP specification are not
-supported.  This includes
+supported. This includes
 
 - the Master Key Index (MKI),
 - key derivation rates other than zero,
@@ -137,31 +123,115 @@ supported.  This includes
 
 The user should be aware that it is possible to misuse this libary,
 and that the result may be that the security level it provides is
-inadequate.  If you are implementing a feature using this library, you
+inadequate. If you are implementing a feature using this library, you
 will want to read the Security Considerations section of the Internet
-Draft.  In addition, it is important that you read and understand the
+Draft. In addition, it is important that you read and understand the
 terms outlined in the [License and Disclaimer](#license) section.
 
 --------------------------------------------------------------------------------
 
-## Installing and Building libSRTP {#install}
+## Secure RTP Background {#background}
 
-### INTRO
+In this section we review SRTP and introduce some terms that are used
+in libSRTP. An RTP session is defined by a pair of destination
+transport addresses, that is, a network address plus a pair of UDP
+ports for RTP and RTCP. RTCP, the RTP control protocol, is used to
+coordinate between the participants in an RTP session, e.g. to provide
+feedback from receivers to senders. An *SRTP session* is
+similarly defined; it is just an RTP session for which the SRTP
+profile is being used. An SRTP session consists of the traffic sent
+to the SRTP or SRTCP destination transport addresses. Each
+participant in a session is identified by a synchronization source
+(SSRC) identifier. Some participants may not send any SRTP traffic;
+they are called receivers, even though they send out SRTCP traffic,
+such as receiver reports.
+
+RTP allows multiple sources to send RTP and RTCP traffic during the
+same session. The synchronization source identifier (SSRC) is used to
+distinguish these sources. In libSRTP, we call the SRTP and SRTCP
+traffic from a particular source a *stream*. Each stream has its own
+SSRC, sequence number, rollover counter, and other data. A particular
+choice of options, cryptographic mechanisms, and keys is called a
+*policy*. Each stream within a session can have a distinct policy
+applied to it. A session policy is a collection of stream policies.
+
+A single policy can be used for all of the streams in a given session,
+though the case in which a single *key* is shared across multiple
+streams requires care. When key sharing is used, the SSRC values that
+identify the streams **must** be distinct. This requirement can be
+enforced by using the convention that each SRTP and SRTCP key is used
+for encryption by only a single sender. In other words, the key is
+shared only across streams that originate from a particular device (of
+course, other SRTP participants will need to use the key for
+decryption). libSRTP supports this enforcement by detecting the case
+in which a key is used for both inbound and outbound data.
+
+--------------------------------------------------------------------------------
+
+## libSRTP Overview {#overview}
+
+libSRTP provides functions for protecting RTP and RTCP.  RTP packets
+can be encrypted and authenticated (`using the srtp_protect()`
+function), turning them into SRTP packets. Similarly, SRTP packets
+can be decrypted and have their authentication verified (using the
+srtp_unprotect() function), turning them into RTP packets. Similar
+functions apply security to RTCP packets.
+
+The typedef `srtp_stream_t` points to a structure holding all of the
+state associated with an SRTP stream, including the keys and
+parameters for cipher and message authentication functions and the
+anti-replay data. A particular `srtp_stream_t` holds the information
+needed to protect a particular RTP and RTCP stream. This datatype
+is intentionally opaque in order to better seperate the libSRTP
+API from its implementation.
+
+Within an SRTP session, there can be multiple streams, each
+originating from a particular sender. Each source uses a distinct
+stream context to protect the RTP and RTCP stream that it is
+originating. The typedef `srtp_t` points to a structure holding all of
+the state associated with an SRTP session. There can be multiple
+stream contexts associated with a single `srtp_t`. A stream context
+cannot exist indepent from an `srtp_t`, though of course an `srtp_t` can
+be created that contains only a single stream context. A device
+participating in an SRTP session must have a stream context for each
+source in that session, so that it can process the data that it
+receives from each sender.
+
+In libSRTP, a session is created using the function `srtp_create()`.
+The policy to be implemented in the session is passed into this
+function as an `srtp_policy_t` structure. A single one of these
+structures describes the policy of a single stream. These structures
+can also be linked together to form an entire session policy. A linked
+list of `srtp_policy_t` structures is equivalent to a session policy.
+In such a policy, we refer to a single srtp_policy_t as an *element*.
+
+An `srtp_policy_t` strucutre contains two `crypto_policy_t` structures
+that describe the cryptograhic policies for RTP and RTCP, as well as
+the SRTP master key and the SSRC value. The SSRC describes what to
+protect (e.g. which stream), and the `crypto_policy_t` structures
+describe how to protect it. The key is contained in a policy element
+because it simplifies the interface to the library. In many cases, it
+is desirable to use the same cryptographic policies across all of the
+streams in a session, but to use a distinct key for each stream. A
+`crypto_policy_t` structure can be initialized by using either the
+`crypto_policy_set_rtp_default()` or `crypto_policy_set_rtcp_default()`
+functions, which set a crypto policy structure to the default policies
+for RTP and RTCP protection, respectively.
+
+--------------------------------------------------------------------------------
+
+# Installing and Building libSRTP {#install}
 
 To install libSRTP, download the latest release of the distribution
-from `srtp.sourceforge.net`.  The format of the names of the
-distributions are `srtp-A.B.C.tgz`, where `A` is the
-version number, `B` is the major release number, `C` is
-the minor release number, and `tgz` is the file
-extension\footnote{The extension `.tgz` is identical to
-`tar.gz`, and indicates a compressed tar file.`  You probably
-want to get the most recent release.  Unpack the distribution and
+from [github](https://github.com/cisco/libsrtp/releases). You probably
+want to get the most recent release. Unpack the distribution and
 extract the source files; the directory into which the source files
-will go is named `srtp`.
+will go is named `libsrtp-A-B-C` where `A` is the version number, `B` is the
+major release number and `C` is the minor release number.
 
-libSRTP uses the GNU `autoconf` and `make`
-utilities (BSD make will not work; if both versions of make are on your platform,
-you can invoke GNU make as `gmake`.). In the `libsrtp` directory, run the configure script and then
+libSRTP uses the GNU `autoconf` and `make` utilities (BSD make will not work; if
+both versions of make are on your platform, you can invoke GNU make as
+`gmake`.). In the `libsrtp` directory, run the configure script and then
 make:
 
 ~~~.txt
@@ -179,12 +249,14 @@ Option                    | Description
 \-\-enable-syslog         | use syslog for error reporting.
 \-\-disable-stdout        | diables stdout for error reporting.
 \-\-enable-console        | use `/dev/console` for error reporting
+\-\-enable-openssl        | use OpenSSL crypto primitives
+\-\-with-openssl-dir      | Specify location of OpenSSL installation
+\-\-enable-openssl-kdf use| OpenSSL SRTP KDF algorithm
 \-\-gdoi                  | use GDOI key management (disabled at present)
 
-
 By default, dynamic debugging is enabled and stdout is used for
-debugging.  You can use the configure options to have the debugging
-output sent to syslog or the system console.  Alternatively, you can
+debugging. You can use the configure options to have the debugging
+output sent to syslog or the system console. Alternatively, you can
 define `ERR_REPORTING_FILE` in `include/conf.h` to be any other
 file that can be opened by libSRTP, and debug messages will be sent to
 it.
@@ -194,39 +266,9 @@ This package has been tested on the following platforms: Mac OS X
 (sparc-sun-solaris2.6), RedHat Linux 7.1 and 9 (i686-pc-linux), and
 OpenBSD (sparc-unknown-openbsd2.7).
 
-### README
-
-./configure [ options ]       # GNU autoconf script
-make                          # or gmake if needed; use GNU make
-
-The configure script accepts the following options:
-
-   --help              provides a usage summary
-   --disable-debug     compile without the runtime debugging system
-   --enable-syslog     use syslog for error reporting
-   --disable-stdout    use stdout for error reporting
-   --enable-console    use /dev/console for error reporting
-   --enable-openssl    use OpenSSL crypto primitives
-   --with-openssl-dir  Specify location of OpenSSL installation
-   --enable-openssl-kdf use OpenSSL SRTP KDF algorithm
-   --gdoi              use GDOI key management (disabled at present)
-
-By default, debugging is enabled and stdout is used for debugging.
-You can use the above configure options to have the debugging output
-sent to syslog or the system console.  Alternatively, you can define
-ERR_REPORTING_FILE in include/conf.h to be any other file that can be
-opened by libSRTP, and debug messages will be sent to it.  
-
-This package has been tested on Mac OS X (powerpc-apple-darwin1.4),
-Cygwin (i686-pc-cygwin), and Sparc (sparc-sun-solaris2.6).  Previous
-versions have been tested on Linux and OpenBSD on both x86 and sparc
-platforms.
-
 --------------------------------------------------------------------------------
 
-## Applications {#applications}
-
-### INTRO
+# Applications {#applications}
 
 Several test drivers and a simple and portable srtp application are
 included in the `test/` subdirectory.
@@ -241,133 +283,47 @@ replay_driver	  | replay database
 cipher_driver	  | ciphers
 auth_driver	    | hash functions
 
-The app rtpw is a simple rtp application which reads words from
+The app `rtpw` is a simple rtp application which reads words from
 `/usr/dict/words` and then sends them out one at a time using [s]rtp.
 Manual srtp keying uses the -k option; automated key management
 using gdoi will be added later.
 
-The usage for rtpw is
-
+usage:
 ~~~.txt
-rtpw [[-d <debug>]* [-k <key> [-a][-e]] [-s | -r] dest\_ip dest\_port] | [-l]}
+rtpw [[-d <debug>]* [-k|b <key> [-a][-e <key size>][-g]] [-s | -r] dest_ip dest_port] | [-l]
 ~~~
 
 Either the -s (sender) or -r (receiver) option must be chosen.  The
 values `dest_ip`, `dest_port` are the IP address and UDP port to which
-the dictionary will be sent, respectively.  The options are:
+the dictionary will be sent, respectively.
 
-Option        | Description
----------     | -------
-  -s          | (S)RTP sender - causes app to send words
-  -r          | (S)RTP receive - causes app to receive words
-  -k <key>    | use SRTP master key <key>, where the key is a hexadecimal (without the leading "0x")
-  -e          | encrypt/decrypt (for data confidentiality) (requires use of -k option as well)
-  -a          | message authentication (requires use of -k option as well)
-  -l          | list the available debug modules
-  -d <debug>  | turn on debugging for module <debug>
+The options are:
 
-In order to get a random 30-byte value for use as a key/salt pair, you
-can use the `rand_gen` utility in the `test/` subdirectory.
+Option         | Description
+---------      | -------
+  -s           | (S)RTP sender - causes app to send words
+  -r           | (S)RTP receive - causes app to receive words
+  -k <key>     | use SRTP master key <key>, where the key is a hexadecimal (without the leading "0x")
+  -b <key>     | same as -k but with base64 encoded key
+  -e <keysize> | encrypt/decrypt (for data confidentiality) (requires use of -k option as well) (use 128, 192, or 256 for keysize)
+  -g           | use AES-GCM mode (must be used with -e)
+  -a           | message authentication (requires use of -k option as well)
+  -l           | list the available debug modules
+  -d <debug>   | turn on debugging for module <debug>
+
+In order to get random 30-byte values for use as key/salt pairs , you
+can use the following bash function to format the output of
+`/dev/random` (where that device is available).
+
+~~~.txt
+function randhex() {
+   cat /dev/random | od --read-bytes=32 --width=32 -x | awk '{ print $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 }'
+}
+~~~
 
 An example of an SRTP session using two rtpw programs follows:
 
 ~~~.txt
-[sh1] set k=`test/rand_gen -n 30~~~] echo $k
-c1eec3717da76195bb878578790af71c4ee9f859e197a414a78d5abc7451
-[sh1]$ test/rtpw -s -k $k -ea 0.0.0.0 9999
-Security services: confidentiality message authentication
-set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC7451
-setting SSRC to 2078917053
-sending word: A
-sending word: a
-sending word: aa
-sending word: aal
-sending word: aalii
-sending word: aam
-sending word: Aani
-sending word: aardvark
-...
-
-[sh2] set k=c1eec3717da76195bb878578790af71c4ee9f859e197a414a78d5abc7451
-[sh2]$ test/rtpw -r -k $k -ea 0.0.0.0 9999
-security services: confidentiality message authentication
-set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC7451
-19 octets received from SSRC 2078917053 word: A
-19 octets received from SSRC 2078917053 word: a
-20 octets received from SSRC 2078917053 word: aa
-21 octets received from SSRC 2078917053 word: aal
-...
-~~~
-
-### README
-
-Applications
-
-  Several test drivers and a simple and portable srtp application
-  are included in the test/ subdirectory.
-
-  test driver	function tested
-  -------------------------------------------------------------
-  kernel_driver crypto kernel (ciphers, auth funcs, rng)
-  srtp_driver	srtp in-memory tests (does not use the network)
-  rdbx_driver	rdbx (extended replay database)
-  roc_driver	extended sequence number functions
-  replay_driver	replay database (n.b. not used in libsrtp)
-  cipher_driver	ciphers
-  auth_driver	hash functions
-
-  The app rtpw is a simple rtp application which reads words from
-  /usr/dict/words and then sends them out one at a time using [s]rtp.
-  Manual srtp keying uses the -k option; automated key management
-  using gdoi will be added later.
-
-usage: rtpw [-d <debug>]* [-k|b <key> [-a][-e <key size>][-g]] [-s | -r] dest_ip dest_port
-or     rtpw -l
-
-  Either the -s (sender) or -r (receiver) option must be chosen.
-
-  The values dest_ip, dest_port are the ip address and udp port to
-  which the dictionary will be sent, respectively.  
-
-  options:
-
-  -s		(s)rtp sender - causes app to send words
-
-  -r		(s)rtp receive - causes app to receive words
-
-  -k <key>      use srtp master key <key>, where the
-		key is a hexadecimal value (without the
-                leading "0x")
-
-  -b <key>      same as -k but with base64 encoded key
-
-  -e <keysize>  encrypt/decrypt (for data confidentiality)
-                (requires use of -k option as well)
-                (use 128, 192, or 256 for keysize)
-
-  -g            use AES-GCM mode (must be used with -e)
-
-  -a            message authentication
-                (requires use of -k option as well)
-
-  -l            list debug modules
-
-  -d <debug>    turn on debugging for module <debug>
-  -i            specify input/output file
-                (instead of using dictionary file)
-
-
-In order to get random 30-byte values for use as key/salt pairs , you
-can use the following bash function to format the output of
-/dev/random (where that device is available).
-
-function randhex() {
-   cat /dev/random | od --read-bytes=32 --width=32 -x | awk '{ print $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 }'
-}
-
-
-An example of an SRTP session using two rtpw programs follows:
-
 set k=c1eec3717da76195bb878578790af71c4ee9f859e197a414a78d5abc7451
 
 [sh1]$ test/rtpw -s -k $k -e 128 -a 0.0.0.0 9999
@@ -388,146 +344,56 @@ set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC
 20 octets received from SSRC 2078917053 word: aa
 21 octets received from SSRC 2078917053 word: aal
 ...
-
---------------------------------------------------------------------------------
-
-## Secure RTP Background {#background}
-
-In this section we review SRTP and introduce some terms that are used
-in libSRTP.  An RTP session is defined by a pair of destination
-transport addresses, that is, a network address plus a pair of UDP
-ports for RTP and RTCP.  RTCP, the RTP control protocol, is used to
-coordinate between the participants in an RTP session, e.g. to provide
-feedback from receivers to senders.  An @e SRTP @e session is
-similarly defined; it is just an RTP session for which the SRTP
-profile is being used.  An SRTP session consists of the traffic sent
-to the SRTP or SRTCP destination transport addresses.  Each
-participant in a session is identified by a synchronization source
-(SSRC) identifier.  Some participants may not send any SRTP traffic;
-they are called receivers, even though they send out SRTCP traffic,
-such as receiver reports.
-
-RTP allows multiple sources to send RTP and RTCP traffic during the
-same session.  The synchronization source identifier (SSRC) is used to
-distinguish these sources.  In libSRTP, we call the SRTP and SRTCP
-traffic from a particular source a @e stream.  Each stream has its own
-SSRC, sequence number, rollover counter, and other data.  A particular
-choice of options, cryptographic mechanisms, and keys is called a @e
-policy.  Each stream within a session can have a distinct policy
-applied to it.  A session policy is a collection of stream policies.
-
-A single policy can be used for all of the streams in a given session,
-though the case in which a single @e key is shared across multiple
-streams requires care.  When key sharing is used, the SSRC values that
-identify the streams @b must be distinct.  This requirement can be
-enforced by using the convention that each SRTP and SRTCP key is used
-for encryption by only a single sender.  In other words, the key is
-shared only across streams that originate from a particular device (of
-course, other SRTP participants will need to use the key for
-decryption).  libSRTP supports this enforcement by detecting the case
-in which a key is used for both inbound and outbound data.
-
---------------------------------------------------------------------------------
-
-### libSRTP Overview {#overview}
-
-libSRTP provides functions for protecting RTP and RTCP.  RTP packets
-can be encrypted and authenticated (using the srtp_protect()
-function), turning them into SRTP packets.  Similarly, SRTP packets
-can be decrypted and have their authentication verified (using the
-srtp_unprotect() function), turning them into RTP packets.  Similar
-functions apply security to RTCP packets.
-
-The typedef srtp_stream_t points to a structure holding all of the
-state associated with an SRTP stream, including the keys and
-parameters for cipher and message authentication functions and the
-anti-replay data.  A particular srtp_stream_t holds the information
-needed to protect a particular RTP and RTCP stream.  This datatype
-is intentionally opaque in order to better seperate the libSRTP
-API from its implementation.
-
-Within an SRTP session, there can be multiple streams, each
-originating from a particular sender.  Each source uses a distinct
-stream context to protect the RTP and RTCP stream that it is
-originating.  The typedef srtp_t points to a structure holding all of
-the state associated with an SRTP session.  There can be multiple
-stream contexts associated with a single srtp_t.  A stream context
-cannot exist indepent from an srtp_t, though of course an srtp_t can
-be created that contains only a single stream context.  A device
-participating in an SRTP session must have a stream context for each
-source in that session, so that it can process the data that it
-receives from each sender.
-
-
-In libSRTP, a session is created using the function srtp_create().
-The policy to be implemented in the session is passed into this
-function as an srtp_policy_t structure.  A single one of these
-structures describes the policy of a single stream.  These structures
-can also be linked together to form an entire session policy.  A linked
-list of srtp_policy_t structures is equivalent to a session policy.
-In such a policy, we refer to a single srtp_policy_t as an @e element.
-
-An srtp_policy_t strucutre contains two crypto_policy_t structures
-that describe the cryptograhic policies for RTP and RTCP, as well as
-the SRTP master key and the SSRC value.  The SSRC describes what to
-protect (e.g. which stream), and the crypto_policy_t structures
-describe how to protect it.  The key is contained in a policy element
-because it simplifies the interface to the library.  In many cases, it
-is desirable to use the same cryptographic policies across all of the
-streams in a session, but to use a distinct key for each stream.  A
-crypto_policy_t structure can be initialized by using either the
-crypto_policy_set_rtp_default() or crypto_policy_set_rtcp_default()
-functions, which set a crypto policy structure to the default policies
-for RTP and RTCP protection, respectively.
+~~~
 
 --------------------------------------------------------------------------------
 
 ## Example Code {#examples}
 
-This section provides a simple example of how to use libSRTP.  The
-example code lacks error checking, but is functional.  Here we assume
+This section provides a simple example of how to use libSRTP. The
+example code lacks error checking, but is functional. Here we assume
 that the value ssrc is already set to describe the SSRC of the stream
-that we are sending, and that the functions get_rtp_packet() and
-send_srtp_packet() are available to us.  The former puts an RTP packet
+that we are sending, and that the functions `get_rtp_packet()` and
+`send_srtp_packet()` are available to us. The former puts an RTP packet
 into the buffer and returns the number of octets written to that
-buffer.  The latter sends the RTP packet in the buffer, given the
+buffer. The latter sends the RTP packet in the buffer, given the
 length as its second argument.
 
 ~~~.c
-   srtp_t session;
-   srtp_policy_t policy;
-   uint8_t key[30];
+srtp_t session;
+srtp_policy_t policy;
+uint8_t key[30];
 
-   // initialize libSRTP
-   srtp_init();
+// initialize libSRTP
+srtp_init();
 
-   // set policy to describe a policy for an SRTP stream
-   crypto_policy_set_rtp_default(&policy.rtp);
-   crypto_policy_set_rtcp_default(&policy.rtcp);
-   policy.ssrc = ssrc;
-   policy.key  = key;
-   policy.next = NULL;
+// set policy to describe a policy for an SRTP stream
+crypto_policy_set_rtp_default(&policy.rtp);
+crypto_policy_set_rtcp_default(&policy.rtcp);
+policy.ssrc = ssrc;
+policy.key  = key;
+policy.next = NULL;
 
-   // set key to random value
-   crypto_get_random(key, 30);
+// set key to random value
+crypto_get_random(key, 30);
 
-   // allocate and initialize the SRTP session
-   srtp_create(&session, &policy);
+// allocate and initialize the SRTP session
+srtp_create(&session, &policy);
 
-   // main loop: get rtp packets, send srtp packets
-   while (1) {
-      char rtp_buffer[2048];
-      unsigned len;
+// main loop: get rtp packets, send srtp packets
+while (1) {
+  char rtp_buffer[2048];
+  unsigned len;
 
-      len = get_rtp_packet(rtp_buffer);
-      srtp_protect(session, rtp_buffer, &len);
-      send_srtp_packet(rtp_buffer, len);
-   }
+  len = get_rtp_packet(rtp_buffer);
+  srtp_protect(session, rtp_buffer, &len);
+  send_srtp_packet(rtp_buffer, len);
+}
 ~~~
 
 --------------------------------------------------------------------------------
 
-## ISMA Encryption Support
+# ISMA Encryption Support
 
 The Internet Streaming Media Alliance (ISMA) specifies a way
 to pre-encrypt a media file prior to streaming.  This method
