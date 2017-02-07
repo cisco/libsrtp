@@ -434,3 +434,24 @@ This reference material, when applicable, in this documenation was generated
 using the doxygen utility for automatic documentation of source code.
 
 Copyright 2001-2005 by David A. McGrew, Cisco Systems, Inc.
+
+--------------------------------------------------------------------------------
+
+# References {#references}
+
+SRTP and ICM References
+September, 2005
+
+Secure RTP is defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt).
+The counter mode definition is in Section 4.1.1.
+
+SHA-1 is defined in FIPS-180-1, available online at the NIST website.
+
+HMAC is defined in [RFC2104](https://www.ietf.org/rfc/rfc2104.txt)
+and HMAC-SHA1 test vectors are available
+in [RFC2202](https://www.ietf.org/rfc/rfc2202.txt).
+
+ICM is defined by draft-irtf-cfrg-icm-00.txt, and its application in
+ISMAcryp (the Internet Streaming Media Alliance 1.0 Encryption and
+Authentication) is defined in that specification.  It is available
+from http://www.isma.tv/.
