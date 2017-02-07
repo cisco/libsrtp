@@ -411,3 +411,26 @@ Note that ISMAcryp does not provide authentication for
 RTP nor RTCP, nor confidentiality for RTCP.
 ISMAcryp RECOMMENDS the use of SRTP message authentication for ISMAcryp
 streams while using ISMAcryp encryption to protect the media itself.
+
+--------------------------------------------------------------------------------
+
+# Credits {#credits}
+
+The original implementation and documentation of libSRTP was written
+by David McGrew of Cisco Systems, Inc. in order to promote the use,
+understanding, and interoperability of Secure RTP. Michael Jerris
+contributed support for building under MSVC. Andris Pavenis
+contributed many important fixes. Brian West contributed changes to
+enable dynamic linking. Yves Shumann reported documentation bugs.
+Randell Jesup contributed a working SRTCP implementation and other
+fixes. Alex Vanzella and Will Clark contributed changes so that the
+AES ICM implementation can be used for ISMA media encryption. Steve
+Underwood contributed x86_64 portability changes. We also give
+thanks to Fredrik Thulin, Brian Weis, Mark Baugher, Jeff Chan, Bill
+Simon, Douglas Smith, Bill May, Richard Preistley, Joe Tardo and
+others for contributions, comments, and corrections.
+
+This reference material, when applicable, in this documenation was generated
+using the doxygen utility for automatic documentation of source code.
+
+Copyright 2001-2005 by David A. McGrew, Cisco Systems, Inc.
