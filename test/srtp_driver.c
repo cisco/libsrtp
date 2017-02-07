@@ -1,4 +1,5 @@
 
+
 /*
  * srtp_driver.c
  *
@@ -100,6 +101,12 @@ srtp_test_remove_stream(void);
 
 srtp_err_status_t
 srtp_test_update(void);
+
+srtp_err_status_t
+srtp_test_protect_trailer_length(void);
+
+srtp_err_status_t
+srtp_test_protect_rtcp_trailer_length(void);
 
 double
 srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
@@ -475,6 +482,26 @@ main (int argc, char *argv[])
          */
         printf("testing srtp_update()...");
         if (srtp_test_update() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        /*
+         * test the functions srtp_get_protect_trailer_length
+         * and srtp_get_protect_rtcp_trailer_length
+         */
+        printf("testing srtp_get_protect_trailer_length()...");
+        if (srtp_test_protect_trailer_length() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_get_protect_rtcp_trailer_length()...");
+        if (srtp_test_protect_rtcp_trailer_length() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -2719,6 +2746,192 @@ srtp_test_update() {
 
   return srtp_err_status_ok;
 }
+
+srtp_err_status_t
+srtp_test_setup_protect_trailer_streams(srtp_t *srtp_send, srtp_t *srtp_send_mki,
+                                        srtp_t *srtp_send_aes_gcm, srtp_t *srtp_send_aes_gcm_mki) {
+
+  srtp_err_status_t status;
+  srtp_policy_t policy;
+  srtp_policy_t policy_mki;
+#ifdef OPENSSL
+  srtp_policy_t policy_aes_gcm;
+  srtp_policy_t policy_aes_gcm_mki;
+#endif // OPENSSL
+
+  memset(&policy, 0, sizeof(policy));
+  srtp_crypto_policy_set_rtp_default(&policy.rtp);
+  srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+  policy.ekt = NULL;
+  policy.window_size = 128;
+  policy.allow_repeat_tx = 0;
+  policy.next = NULL;
+  policy.ssrc.type  = ssrc_any_outbound;
+  policy.key = test_key;
+
+  memset(&policy_mki, 0, sizeof(policy_mki));
+  srtp_crypto_policy_set_rtp_default(&policy_mki.rtp);
+  srtp_crypto_policy_set_rtcp_default(&policy_mki.rtcp);
+  policy_mki.ekt = NULL;
+  policy_mki.window_size = 128;
+  policy_mki.allow_repeat_tx = 0;
+  policy_mki.next = NULL;
+  policy_mki.ssrc.type  = ssrc_any_outbound;
+  policy_mki.key = NULL;
+  policy_mki.keys = test_keys;
+  policy_mki.num_master_keys = 2;
+
+#ifdef OPENSSL
+  memset(&policy_aes_gcm, 0, sizeof(policy_aes_gcm));
+  srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm.rtp);
+  srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm.rtcp);
+  policy_aes_gcm.ekt = NULL;
+  policy_aes_gcm.window_size = 128;
+  policy_aes_gcm.allow_repeat_tx = 0;
+  policy_aes_gcm.next = NULL;
+  policy_aes_gcm.ssrc.type  = ssrc_any_outbound;
+  policy_aes_gcm.key = test_key;
+
+  memset(&policy_aes_gcm_mki, 0, sizeof(policy_aes_gcm_mki));
+  srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm_mki.rtp);
+  srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm_mki.rtcp);
+  policy_aes_gcm_mki.ekt = NULL;
+  policy_aes_gcm_mki.window_size = 128;
+  policy_aes_gcm_mki.allow_repeat_tx = 0;
+  policy_aes_gcm_mki.next = NULL;
+  policy_aes_gcm_mki.ssrc.type  = ssrc_any_outbound;
+  policy_aes_gcm_mki.key = NULL;
+  policy_aes_gcm_mki.keys = test_keys;
+  policy_aes_gcm_mki.num_master_keys = 2;
+
+#endif
+
+  /* create a send ctx with defualt profile and test_key */
+  status = srtp_create(srtp_send, &policy);
+  if (status)
+    return status;
+
+  status = srtp_create(srtp_send_mki, &policy_mki);
+  if (status)
+    return status;
+
+#ifdef OPENSSL
+  status = srtp_create(srtp_send_aes_gcm, &policy_aes_gcm);
+  if (status)
+    return status;
+
+  status = srtp_create(srtp_send_aes_gcm_mki, &policy_aes_gcm_mki);
+  if (status)
+    return status;
+#endif //OPENSSL
+
+  return srtp_err_status_ok;
+}
+
+srtp_err_status_t
+srtp_test_protect_trailer_length() {
+
+  srtp_t srtp_send;
+  srtp_t srtp_send_mki;
+  srtp_t srtp_send_aes_gcm;
+  srtp_t srtp_send_aes_gcm_mki;
+  uint32_t length = 0;
+  srtp_err_status_t status;
+
+  srtp_test_setup_protect_trailer_streams(&srtp_send, &srtp_send_mki,
+					  &srtp_send_aes_gcm, &srtp_send_aes_gcm_mki);
+
+  status = srtp_get_protect_trailer_length(srtp_send, 0, 0, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 10 bytes */
+  if (length != 10)
+    return srtp_err_status_fail;
+
+  status = srtp_get_protect_trailer_length(srtp_send_mki, 1, 1, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 10 bytes + MKI length: 4 bytes*/
+  if (length != 14)
+    return srtp_err_status_fail;
+
+#ifdef OPENSSL
+  status = srtp_get_protect_trailer_length(srtp_send_aes_gcm, 0, 0, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 16 bytes */
+  if (length != 16)
+    return srtp_err_status_fail;
+
+
+  status = srtp_get_protect_trailer_length(srtp_send_aes_gcm_mki, 1, 1, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 16 bytes + MKI length: 4 bytes*/
+  if (length != 20)
+    return srtp_err_status_fail;
+
+#endif //OPENSSL
+
+  return srtp_err_status_ok;
+}
+
+srtp_err_status_t
+srtp_test_protect_rtcp_trailer_length() {
+
+  srtp_t srtp_send;
+  srtp_t srtp_send_mki;
+  srtp_t srtp_send_aes_gcm;
+  srtp_t srtp_send_aes_gcm_mki;
+  uint32_t length = 0;
+  srtp_err_status_t status;
+
+  srtp_test_setup_protect_trailer_streams(&srtp_send, &srtp_send_mki,
+					  &srtp_send_aes_gcm, &srtp_send_aes_gcm_mki);
+
+  status = srtp_get_protect_rtcp_trailer_length(srtp_send, 0, 0, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 10 bytes + SRTCP Trailer 4 bytes*/
+  if (length != 14)
+    return srtp_err_status_fail;
+
+  status = srtp_get_protect_rtcp_trailer_length(srtp_send_mki, 1, 1, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 10 bytes + SRTCP Trailer 4 bytes + MKI 4 bytes*/
+  if (length != 18)
+    return srtp_err_status_fail;
+
+#ifdef OPENSSL
+  status = srtp_get_protect_rtcp_trailer_length(srtp_send_aes_gcm, 0, 0, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 16 bytes + SRTCP Trailer 4 bytes*/
+  if (length != 20)
+    return srtp_err_status_fail;
+
+
+  status = srtp_get_protect_rtcp_trailer_length(srtp_send_aes_gcm_mki, 1, 1, &length);
+  if (status)
+    return status;
+
+  /*  TAG Length: 16 bytes + SRTCP Trailer 4 bytes + MKI 4 bytes*/
+  if (length != 24)
+    return srtp_err_status_fail;
+
+#endif //OPENSSL
+
+  return srtp_err_status_ok;
+}
+
 
 /*
  * srtp policy definitions - these definitions are used above

@@ -79,14 +79,21 @@ extern "C" {
 #define SRTP_MAX_TAG_LEN 16 
 
 /**
+ * SRTP_MAX_MKI_LEN is the maximum size the MKI could be which is
+ * 128 bytes
+ */
+#define SRTP_MAX_MKI_LEN 128
+
+
+/**
  * SRTP_MAX_TRAILER_LEN is the maximum length of the SRTP trailer
  * (authentication tag and MKI) supported by libSRTP.  This value is
- * the maximum number of octets that will be added to an RTP packet by
+ * the maixmum number of octets that will be added to an RTP packet by
  * srtp_protect().
  *
  * @brief the maximum number of octets added by srtp_protect().
  */
-#define SRTP_MAX_TRAILER_LEN SRTP_MAX_TAG_LEN 
+#define SRTP_MAX_TRAILER_LEN SRTP_MAX_TAG_LEN + SRTP_MAX_MKI_LEN
 
 /**
  * SRTP_MAX_NUM_MASTER_KEYS is the maximum number of Master keys for
@@ -94,12 +101,6 @@ extern "C" {
  *  
  */
 #define SRTP_MAX_NUM_MASTER_KEYS 16
-
-/**
- * SRTP_MAX_MKI_LEN is the maximum size the MKI could be which is
- * 128 bytes
- */
-#define SRTP_MAX_MKI_LEN 128
 
 /*
  * SRTP_AEAD_SALT_LEN is the length of the SALT values used with 
@@ -1698,7 +1699,7 @@ srtp_err_status_t srtp_set_debug_module(char *mod_name, int v);
 srtp_err_status_t srtp_list_debug_modules(void);
 
 /**
- * @brief srtp_get_protect_data_added_length(policy, use_mki, mki_index, is_rtcp, length)
+ * @brief srtp_get_protect_trailer_length(session, use_mki, mki_index, length)
  *
  * Determines the length of the amount of data Lib SRTP will add to the 
  * packet during the protect process. The length is returned in the length parameter
@@ -1706,8 +1707,20 @@ srtp_err_status_t srtp_list_debug_modules(void);
  * returns err_status_ok on success, err_status_bad_mki if the MKI index is invalid
  *
  */
-srtp_err_status_t srtp_get_protect_data_added_length(const srtp_policy_t *policy, uint32_t use_mki,
-						     uint32_t mki_index, uint32_t is_rtcp, uint32_t *length);
+srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session, uint32_t use_mki,
+                                                  uint32_t mki_index, uint32_t *length);
+
+/**
+ * @brief srtp_get_protect_rtcp_trailer_length(session, use_mki, mki_index, length)
+ *
+ * Determines the length of the amount of data Lib SRTP will add to the 
+ * packet during the protect process. The length is returned in the length parameter
+ *
+ * returns err_status_ok on success, err_status_bad_mki if the MKI index is invalid
+ *
+ */
+srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session, uint32_t use_mki,
+                                                       uint32_t mki_index, uint32_t *length);
 
 
 /**
