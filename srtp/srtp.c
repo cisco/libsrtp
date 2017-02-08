@@ -225,6 +225,12 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
   }
 
   str->session_keys = (srtp_session_keys_t *)srtp_crypto_alloc(sizeof(srtp_session_keys_t) * str->num_master_keys);
+
+  if (str->session_keys == NULL) {
+      srtp_stream_free(str);
+      return srtp_err_status_alloc_fail;
+  }
+
   memset(str->session_keys, 0, sizeof(srtp_session_keys_t) * str->num_master_keys);
 
   for (i = 0; i < str->num_master_keys; i++) {
@@ -423,11 +429,11 @@ srtp_stream_dealloc(srtp_stream_ctx_t *stream, srtp_stream_ctx_t *stream_templat
     /*
      * zeroize the salt value
      */
-    memset(session_keys->salt, 0, SRTP_AEAD_SALT_LEN);
-    memset(session_keys->c_salt, 0, SRTP_AEAD_SALT_LEN);
+    octet_string_set_to_zero(session_keys->salt, SRTP_AEAD_SALT_LEN);
+    octet_string_set_to_zero(session_keys->c_salt, SRTP_AEAD_SALT_LEN);
 
     if (session_keys->mki_id) {
-      memset(session_keys->mki_id, 0, session_keys->mki_size);
+      octet_string_set_to_zero(session_keys->mki_id, session_keys->mki_size);
       srtp_crypto_free(session_keys->mki_id);
       session_keys->mki_id = NULL;
     }
@@ -497,6 +503,12 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
 
   str->num_master_keys = stream_template->num_master_keys;
   str->session_keys = (srtp_session_keys_t *)srtp_crypto_alloc(sizeof(srtp_session_keys_t) * str->num_master_keys);
+
+  if (str->session_keys == NULL) {
+    srtp_crypto_free(*str_ptr);
+    *str_ptr = NULL;
+    return srtp_err_status_alloc_fail;
+  }
 
   for (i = 0; i < stream_template->num_master_keys; i++){
     session_keys = &str->session_keys[i];
@@ -1465,6 +1477,11 @@ srtp_get_session_keys(srtp_stream_ctx_t *stream, uint8_t* hdr, const unsigned in
       tag_len = 0;
   } else {
       tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
+  }
+
+  if (tag_len > base_mki_start_location) {
+     *mki_size = 0;
+     return NULL;
   }
 
   base_mki_start_location -= tag_len;
