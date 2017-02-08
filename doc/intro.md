@@ -1,4 +1,5 @@
-# Introduction to libSRTP {#intro}
+<a name="introduction-to-libsrtp"></a>
+# Introduction to libSRTP
 
 This package provides an implementation of the Secure Real-time
 Transport Protocol (SRTP), the Universal Security Transform (UST), and
@@ -14,9 +15,9 @@ and authentication to the RTP header and payload. SRTP is an IETF Standard,
 defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt), and was developed
 in the IETF Audio/Video Transport (AVT) Working Group. This library supports
 all of the mandatory features of SRTP, but not all of the optional features. See
-the [Supported Features](#features) section for more detailed information.
+the [Supported Features](#license) section for more detailed information.
 
-This document is also used to generate the documentation files in the /doc
+This document is also used to generate the documentation files in the /doc/
 folder where a more detailed reference to the libSRTP API and related functions
 can be created (requires installing doxygen.). The reference material is created
 automatically from comments embedded in some of the C header files. The
@@ -27,7 +28,27 @@ because it does its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
-# License and Disclaimer {#license}
+<a name="contents"></a>
+## Contents
+
+- [Introduction to libSRTP](#introduction-to-libsrtp)
+   - [Contents](#contents)
+- [License and Disclaimer](#license-and-disclaimer)
+- [Implementation Notes](#implementation-notes)
+  - [Supported Features](#supported-features)
+  - [Secure RTP Background](#secure-rtp-background)
+  - [libSRTP Overview](#libsrtp-overview)
+- [Installing and Building libSRTP](#installing-and-building-libsrtp)
+- [Applications](#applications)
+  - [Example Code](#example-code)
+- [ISMA Encryption Support](#isma-encryption-support)
+- [Credits](#credits)
+- [References](#references)
+
+--------------------------------------------------------------------------------
+
+<a name="license-and-disclaimer"></a>
+# License and Disclaimer
 
 libSRTP is distributed under the following license, which is included
 in the source code distribution. It is reproduced in the manual in
@@ -63,6 +84,7 @@ case you got the library from another source.
 
 --------------------------------------------------------------------------------
 
+<a name="implementation-notes"></a>
 # Implementation Notes
 
   * The `srtp_protect()` function assumes that the buffer holding the
@@ -98,7 +120,8 @@ case you got the library from another source.
 
 --------------------------------------------------------------------------------
 
-## Supported Features {#features}
+<a name="supported-features"></a>
+## Supported Features
 
 This library supports all of the mandatory-to-implement features of
 SRTP (as defined by the most recent Internet Draft). Some of these
@@ -126,11 +149,12 @@ and that the result may be that the security level it provides is
 inadequate. If you are implementing a feature using this library, you
 will want to read the Security Considerations section of the Internet
 Draft. In addition, it is important that you read and understand the
-terms outlined in the [License and Disclaimer](#license) section.
+terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
 
 --------------------------------------------------------------------------------
 
-## Secure RTP Background {#background}
+<a name="secure-rtp-background"></a>
+## Secure RTP Background
 
 In this section we review SRTP and introduce some terms that are used
 in libSRTP. An RTP session is defined by a pair of destination
@@ -168,7 +192,8 @@ in which a key is used for both inbound and outbound data.
 
 --------------------------------------------------------------------------------
 
-## libSRTP Overview {#overview}
+<a name="libsrtp-overview"></a>
+## libSRTP Overview
 
 libSRTP provides functions for protecting RTP and RTCP.  RTP packets
 can be encrypted and authenticated (`using the srtp_protect()`
@@ -220,7 +245,8 @@ for RTP and RTCP protection, respectively.
 
 --------------------------------------------------------------------------------
 
-# Installing and Building libSRTP {#install}
+<a name="installing-and-building-libsrtp"></a>
+# Installing and Building libSRTP
 
 To install libSRTP, download the latest release of the distribution
 from [github](https://github.com/cisco/libsrtp/releases). You probably
@@ -268,7 +294,8 @@ OpenBSD (sparc-unknown-openbsd2.7).
 
 --------------------------------------------------------------------------------
 
-# Applications {#applications}
+<a name="applications"></a>
+# Applications
 
 Several test drivers and a simple and portable srtp application are
 included in the `test/` subdirectory.
@@ -348,7 +375,8 @@ set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC
 
 --------------------------------------------------------------------------------
 
-## Example Code {#examples}
+<a name="example-code"></a>
+## Example Code
 
 This section provides a simple example of how to use libSRTP. The
 example code lacks error checking, but is functional. Here we assume
@@ -393,6 +421,7 @@ while (1) {
 
 --------------------------------------------------------------------------------
 
+<a name="isma-encryption-support"></a>
 # ISMA Encryption Support
 
 The Internet Streaming Media Alliance (ISMA) specifies a way
@@ -414,7 +443,8 @@ streams while using ISMAcryp encryption to protect the media itself.
 
 --------------------------------------------------------------------------------
 
-# Credits {#credits}
+<a name="credits"></a>
+# Credits
 
 The original implementation and documentation of libSRTP was written
 by David McGrew of Cisco Systems, Inc. in order to promote the use,
@@ -437,7 +467,8 @@ Copyright 2001-2005 by David A. McGrew, Cisco Systems, Inc.
 
 --------------------------------------------------------------------------------
 
-# References {#references}
+<a name="references"></a>
+# References
 
 SRTP and ICM References
 September, 2005
