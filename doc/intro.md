@@ -34,10 +34,10 @@ because it does its work behind the scenes.
 - [Introduction to libSRTP](#introduction-to-libsrtp)
    - [Contents](#contents)
 - [License and Disclaimer](#license-and-disclaimer)
-- [Implementation Notes](#implementation-notes)
-  - [Supported Features](#supported-features)
+- [libSRTP Overview](#libsrtp-overview)
   - [Secure RTP Background](#secure-rtp-background)
-  - [libSRTP Overview](#libsrtp-overview)
+  - [Supported Features](#supported-features)
+  - [Implementation Notes](#implementation-notes)
 - [Installing and Building libSRTP](#installing-and-building-libsrtp)
 - [Applications](#applications)
   - [Example Code](#example-code)
@@ -84,116 +84,8 @@ case you got the library from another source.
 
 --------------------------------------------------------------------------------
 
-<a name="implementation-notes"></a>
-# Implementation Notes
-
-  * The `srtp_protect()` function assumes that the buffer holding the
-    rtp packet has enough storage allocated that the authentication
-    tag can be written to the end of that packet. If this assumption
-    is not valid, memory corruption will ensue.
-
-  * Automated tests for the crypto functions are provided through
-    the `cipher_type_self_test()` and `auth_type_self_test()` functions.
-    These functions should be used to test each port of this code
-    to a new platform.
-
-  * Replay protection is contained in the crypto engine, and
-    tests for it are provided.
-
-  * This implementation provides calls to initialize, protect, and
-    unprotect RTP packets, and makes as few as possible assumptions
-    about how these functions will be called. For example, the
-    caller is not expected to provide packets in order (though if
-    they're called more than 65k out of sequence, synchronization
-    will be lost).
-
-  * The sequence number in the rtp packet is used as the low 16 bits
-    of the sender's local packet index. Note that RTP will start its
-    sequence number in a random place, and the SRTP layer just jumps
-    forward to that number at its first invocation. An earlier
-    version of this library used initial sequence numbers that are
-    less than 32,768; this trick is no longer required as the
-    `rdbx_estimate_index(...)` function has been made smarter.
-
-  * The replay window is 128 bits in length, and is hard-coded to this
-    value for now.
-
---------------------------------------------------------------------------------
-
-<a name="supported-features"></a>
-## Supported Features
-
-This library supports all of the mandatory-to-implement features of
-SRTP (as defined by the most recent Internet Draft). Some of these
-features can be selected (or de-selected) at run time by setting an
-appropriate policy; this is done using the structure `srtp_policy_t`.
-Some other behaviors of the protocol can be adapted by defining an
-approriate event handler for the exceptional events; see the SRTPevents
-section in the generated documentation.
-
-Some options that are not included in the specification are supported.
-Most notably, the TMMH authentication function is included, though it
-was removed from the SRTP Internet Draft during the summer of 2002.
-
-Some options that are described in the SRTP specification are not
-supported. This includes
-
-- the Master Key Index (MKI),
-- key derivation rates other than zero,
-- the cipher F8,
-- anti-replay lists with sizes other than 128,
-- the use of the packet index to select between master keys.
-
-The user should be aware that it is possible to misuse this libary,
-and that the result may be that the security level it provides is
-inadequate. If you are implementing a feature using this library, you
-will want to read the Security Considerations section of the Internet
-Draft. In addition, it is important that you read and understand the
-terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
-
---------------------------------------------------------------------------------
-
-<a name="secure-rtp-background"></a>
-## Secure RTP Background
-
-In this section we review SRTP and introduce some terms that are used
-in libSRTP. An RTP session is defined by a pair of destination
-transport addresses, that is, a network address plus a pair of UDP
-ports for RTP and RTCP. RTCP, the RTP control protocol, is used to
-coordinate between the participants in an RTP session, e.g. to provide
-feedback from receivers to senders. An *SRTP session* is
-similarly defined; it is just an RTP session for which the SRTP
-profile is being used. An SRTP session consists of the traffic sent
-to the SRTP or SRTCP destination transport addresses. Each
-participant in a session is identified by a synchronization source
-(SSRC) identifier. Some participants may not send any SRTP traffic;
-they are called receivers, even though they send out SRTCP traffic,
-such as receiver reports.
-
-RTP allows multiple sources to send RTP and RTCP traffic during the
-same session. The synchronization source identifier (SSRC) is used to
-distinguish these sources. In libSRTP, we call the SRTP and SRTCP
-traffic from a particular source a *stream*. Each stream has its own
-SSRC, sequence number, rollover counter, and other data. A particular
-choice of options, cryptographic mechanisms, and keys is called a
-*policy*. Each stream within a session can have a distinct policy
-applied to it. A session policy is a collection of stream policies.
-
-A single policy can be used for all of the streams in a given session,
-though the case in which a single *key* is shared across multiple
-streams requires care. When key sharing is used, the SSRC values that
-identify the streams **must** be distinct. This requirement can be
-enforced by using the convention that each SRTP and SRTCP key is used
-for encryption by only a single sender. In other words, the key is
-shared only across streams that originate from a particular device (of
-course, other SRTP participants will need to use the key for
-decryption). libSRTP supports this enforcement by detecting the case
-in which a key is used for both inbound and outbound data.
-
---------------------------------------------------------------------------------
-
 <a name="libsrtp-overview"></a>
-## libSRTP Overview
+# libSRTP Overview
 
 libSRTP provides functions for protecting RTP and RTCP.  RTP packets
 can be encrypted and authenticated (`using the srtp_protect()`
@@ -242,6 +134,114 @@ streams in a session, but to use a distinct key for each stream. A
 `crypto_policy_set_rtp_default()` or `crypto_policy_set_rtcp_default()`
 functions, which set a crypto policy structure to the default policies
 for RTP and RTCP protection, respectively.
+
+--------------------------------------------------------------------------------
+
+<a name="secure-rtp-background"></a>
+## Secure RTP Background
+
+In this section we review SRTP and introduce some terms that are used
+in libSRTP. An RTP session is defined by a pair of destination
+transport addresses, that is, a network address plus a pair of UDP
+ports for RTP and RTCP. RTCP, the RTP control protocol, is used to
+coordinate between the participants in an RTP session, e.g. to provide
+feedback from receivers to senders. An *SRTP session* is
+similarly defined; it is just an RTP session for which the SRTP
+profile is being used. An SRTP session consists of the traffic sent
+to the SRTP or SRTCP destination transport addresses. Each
+participant in a session is identified by a synchronization source
+(SSRC) identifier. Some participants may not send any SRTP traffic;
+they are called receivers, even though they send out SRTCP traffic,
+such as receiver reports.
+
+RTP allows multiple sources to send RTP and RTCP traffic during the
+same session. The synchronization source identifier (SSRC) is used to
+distinguish these sources. In libSRTP, we call the SRTP and SRTCP
+traffic from a particular source a *stream*. Each stream has its own
+SSRC, sequence number, rollover counter, and other data. A particular
+choice of options, cryptographic mechanisms, and keys is called a
+*policy*. Each stream within a session can have a distinct policy
+applied to it. A session policy is a collection of stream policies.
+
+A single policy can be used for all of the streams in a given session,
+though the case in which a single *key* is shared across multiple
+streams requires care. When key sharing is used, the SSRC values that
+identify the streams **must** be distinct. This requirement can be
+enforced by using the convention that each SRTP and SRTCP key is used
+for encryption by only a single sender. In other words, the key is
+shared only across streams that originate from a particular device (of
+course, other SRTP participants will need to use the key for
+decryption). libSRTP supports this enforcement by detecting the case
+in which a key is used for both inbound and outbound data.
+
+--------------------------------------------------------------------------------
+
+<a name="supported-features"></a>
+## Supported Features
+
+This library supports all of the mandatory-to-implement features of
+SRTP (as defined by the most recent Internet Draft). Some of these
+features can be selected (or de-selected) at run time by setting an
+appropriate policy; this is done using the structure `srtp_policy_t`.
+Some other behaviors of the protocol can be adapted by defining an
+approriate event handler for the exceptional events; see the SRTPevents
+section in the generated documentation.
+
+Some options that are not included in the specification are supported.
+Most notably, the TMMH authentication function is included, though it
+was removed from the SRTP Internet Draft during the summer of 2002.
+
+Some options that are described in the SRTP specification are not
+supported. This includes
+
+- the Master Key Index (MKI),
+- key derivation rates other than zero,
+- the cipher F8,
+- anti-replay lists with sizes other than 128,
+- the use of the packet index to select between master keys.
+
+The user should be aware that it is possible to misuse this libary,
+and that the result may be that the security level it provides is
+inadequate. If you are implementing a feature using this library, you
+will want to read the Security Considerations section of the Internet
+Draft. In addition, it is important that you read and understand the
+terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
+
+--------------------------------------------------------------------------------
+
+<a name="implementation-notes"></a>
+## Implementation Notes
+
+  * The `srtp_protect()` function assumes that the buffer holding the
+    rtp packet has enough storage allocated that the authentication
+    tag can be written to the end of that packet. If this assumption
+    is not valid, memory corruption will ensue.
+
+  * Automated tests for the crypto functions are provided through
+    the `cipher_type_self_test()` and `auth_type_self_test()` functions.
+    These functions should be used to test each port of this code
+    to a new platform.
+
+  * Replay protection is contained in the crypto engine, and
+    tests for it are provided.
+
+  * This implementation provides calls to initialize, protect, and
+    unprotect RTP packets, and makes as few as possible assumptions
+    about how these functions will be called. For example, the
+    caller is not expected to provide packets in order (though if
+    they're called more than 65k out of sequence, synchronization
+    will be lost).
+
+  * The sequence number in the rtp packet is used as the low 16 bits
+    of the sender's local packet index. Note that RTP will start its
+    sequence number in a random place, and the SRTP layer just jumps
+    forward to that number at its first invocation. An earlier
+    version of this library used initial sequence numbers that are
+    less than 32,768; this trick is no longer required as the
+    `rdbx_estimate_index(...)` function has been made smarter.
+
+  * The replay window is 128 bits in length, and is hard-coded to this
+    value for now.
 
 --------------------------------------------------------------------------------
 
