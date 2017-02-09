@@ -2388,6 +2388,9 @@ srtp_remove_stream(srtp_t session, uint32_t ssrc) {
   /* sanity check arguments */
   if (session == NULL)
     return srtp_err_status_bad_param;
+
+  /* will be compared against values in network order in the stream list */
+  ssrc = htonl(ssrc);
   
   /* find stream in list; complain if not found */
   last_stream = stream = session->stream_list;
