@@ -117,11 +117,6 @@ v128_add(v128_t *z, v128_t *x, v128_t *y);
 int
 octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 
-void
-octet_string_set_to_zero(uint8_t *s, int len);
-
-
-
 /* 
  * the matrix A[] is stored in column format, i.e., A[i] is the ith
  * column of the matrix
@@ -232,10 +227,6 @@ v128_set_bit_to(v128_t *x, int i, int y);
 
 int
 octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
-
-void
-octet_string_set_to_zero(uint8_t *s, int len);
-
 
 #ifdef __cplusplus
 }

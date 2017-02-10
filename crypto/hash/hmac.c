@@ -98,8 +98,7 @@ static srtp_err_status_t srtp_hmac_alloc (srtp_auth_t **a, int key_len, int out_
 static srtp_err_status_t srtp_hmac_dealloc (srtp_auth_t *a)
 {
     /* zeroize entire state*/
-    octet_string_set_to_zero((uint8_t*)a,
-                             sizeof(srtp_hmac_ctx_t) + sizeof(srtp_auth_t));
+    octet_string_set_to_zero(a, sizeof(srtp_hmac_ctx_t) + sizeof(srtp_auth_t));
 
     /* free memory */
     srtp_crypto_free(a);

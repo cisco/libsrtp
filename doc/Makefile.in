@@ -20,7 +20,7 @@ version = $(shell cat $(top_srcdir)/VERSION)
 
 
 .PHONY: libsrtpdoc cryptodoc clean
-libsrtpdoc: 
+libsrtpdoc:
 	@if test ! -e Doxyfile; then \
 		echo "*** Sorry, can't build doc outside source dir"; exit 1; \
 	fi
@@ -39,6 +39,6 @@ cryptodoc: clean
 
 clean:
 	rm -rf latex/ header.tex
-	for a in * ; do			                \
-              if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
-        done;
+	for a in * ; do							\
+			  if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
+		done;
