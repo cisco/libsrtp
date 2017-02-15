@@ -24,7 +24,8 @@ libsrtpdoc:
 	doxygen
 
 clean:
+
 	rm -rf html/ xml/
-	for a in * ; do			                \
-              if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
-        done;
+	for a in * ; do							\
+			  if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
+		done;
