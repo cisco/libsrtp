@@ -15,7 +15,7 @@ and authentication to the RTP header and payload. SRTP is an IETF Standard,
 defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt), and was developed
 in the IETF Audio/Video Transport (AVT) Working Group. This library supports
 all of the mandatory features of SRTP, but not all of the optional features. See
-the [Supported Features](#license) section for more detailed information.
+the [Supported Features](#supported-features) section for more detailed information.
 
 This document is also used to generate the documentation files in the /doc/
 folder where a more detailed reference to the libSRTP API and related functions
