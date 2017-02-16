@@ -41,7 +41,6 @@ because it does its work behind the scenes.
 - [Installing and Building libSRTP](#installing-and-building-libsrtp)
 - [Applications](#applications)
   - [Example Code](#example-code)
-- [ISMA Encryption Support](#isma-encryption-support)
 - [Credits](#credits)
 - [References](#references)
 
@@ -418,28 +417,6 @@ while (1) {
   send_srtp_packet(rtp_buffer, len);
 }
 ~~~
-
---------------------------------------------------------------------------------
-
-<a name="isma-encryption-support"></a>
-# ISMA Encryption Support
-
-The Internet Streaming Media Alliance (ISMA) specifies a way
-to pre-encrypt a media file prior to streaming.  This method
-is an alternative to SRTP encryption, which is potentially
-useful when a particular media file will be streamed
-multiple times.  The specification is available online
-at http://www.isma.tv/specreq.nsf/SpecRequest.
-
-libSRTP provides the encryption and decryption functions needed for ISMAcryp
-in the library `libaesicm.a`, which is included in the default
-Makefile target.  This library is used by the MPEG4IP project; see
-http://mpeg4ip.sourceforge.net/.
-
-Note that ISMAcryp does not provide authentication for
-RTP nor RTCP, nor confidentiality for RTCP.
-ISMAcryp RECOMMENDS the use of SRTP message authentication for ISMAcryp
-streams while using ISMAcryp encryption to protect the media itself.
 
 --------------------------------------------------------------------------------
 
