@@ -28,11 +28,23 @@ because it does its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
+<a name="contact"></a>
+# Contact Us
+
+- [libsrtp@lists.packetizer.com](mailto:libsrtp@lists.packetizer.com) general mailing list for news / announcements / discussions. This is an open list, see
+[https://lists.packetizer.com/mailman/listinfo/libsrtp](https://lists.packetizer.com/mailman/listinfo/libsrtp) for singing up.
+
+- [libsrtp-security@lists.packetizer.com](mailto:libsrtp-security@lists.packetizer.com) for disclosing security issues to the libsrtp maintenance team. This is a closed list but anyone can send to it.
+
+
+--------------------------------------------------------------------------------
+
 <a name="contents"></a>
 ## Contents
 
 - [Introduction to libSRTP](#introduction-to-libsrtp)
-   - [Contents](#contents)
+  - [Contact Us](#contact)
+  - [Contents](#contents)
 - [License and Disclaimer](#license-and-disclaimer)
 - [libSRTP Overview](#libsrtp-overview)
   - [Secure RTP Background](#secure-rtp-background)
