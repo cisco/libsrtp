@@ -87,10 +87,10 @@ case you got the library from another source.
 # libSRTP Overview
 
 libSRTP provides functions for protecting RTP and RTCP.  RTP packets
-can be encrypted and authenticated (`using the srtp_protect()`
+can be encrypted and authenticated (using the `srtp_protect()`
 function), turning them into SRTP packets. Similarly, SRTP packets
 can be decrypted and have their authentication verified (using the
-srtp_unprotect() function), turning them into RTP packets. Similar
+`srtp_unprotect()` function), turning them into RTP packets. Similar
 functions apply security to RTCP packets.
 
 The typedef `srtp_stream_t` points to a structure holding all of the
@@ -119,7 +119,7 @@ function as an `srtp_policy_t` structure. A single one of these
 structures describes the policy of a single stream. These structures
 can also be linked together to form an entire session policy. A linked
 list of `srtp_policy_t` structures is equivalent to a session policy.
-In such a policy, we refer to a single srtp_policy_t as an *element*.
+In such a policy, we refer to a single `srtp_policy_t` as an *element*.
 
 An `srtp_policy_t` strucutre contains two `crypto_policy_t` structures
 that describe the cryptograhic policies for RTP and RTCP, as well as
@@ -248,8 +248,8 @@ terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
 # Installing and Building libSRTP
 
 To install libSRTP, download the latest release of the distribution
-from [github](https://github.com/cisco/libsrtp/releases). You probably
-want to get the most recent release. Unpack the distribution and
+from [https://github.com/cisco/libsrtp/releases](https://github.com/cisco/libsrtp/releases).
+You probably want to get the most recent release. Unpack the distribution and
 extract the source files; the directory into which the source files
 will go is named `libsrtp-A-B-C` where `A` is the version number, `B` is the
 major release number and `C` is the minor release number.
