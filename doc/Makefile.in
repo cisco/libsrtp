@@ -18,14 +18,15 @@ version = $(shell cat $(top_srcdir)/VERSION)
 
 .PHONY: libsrtpdoc clean
 libsrtpdoc:
-	@if test ! -e Doxyfile; then \
+	@if test ! -e Doxyfile.in; then \
 		echo "*** Sorry, can't build doc outside source dir"; exit 1; \
 	fi
+	sed 's/LIBSRTPVERSIONNUMBER/$(version)/' Doxyfile.in > Doxyfile
 	doxygen
 
 clean:
 
-	rm -rf html/ xml/
+	rm -rf html/ xml/ Doxyfile
 	for a in * ; do							\
 			  if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
 		done;
