@@ -18,9 +18,6 @@
 /* Define to use logging to stdout. */
 #undef ERR_REPORTING_STDOUT
 
-/* Define this to use ISMAcryp code. */
-#undef GENERIC_AESICM
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
