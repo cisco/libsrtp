@@ -1408,7 +1408,7 @@ typedef enum {
 
 typedef struct srtp_event_data_t {
   srtp_t        session;  /**< The session in which the event happend. */
-  uintptr_t     ssrc;     /**< The ssrc in host order of the stream in which the event happend */
+  uint32_t      ssrc;     /**< The ssrc in host order of the stream in which the event happend */
   srtp_event_t  event;    /**< An enum indicating the type of event.   */
 } srtp_event_data_t;
 
