@@ -282,7 +282,6 @@ Option                    | Description
 ---------                 | -------
 \-\-help                  | provides a usage summary
 \-\-disable-debug         | compiles libSRTP without the runtime dynamic debugging system
-\-\-enable-generic-aesicm | in changes for ismacryp
 \-\-enable-syslog         | use syslog for error reporting.
 \-\-disable-stdout        | diables stdout for error reporting.
 \-\-enable-console        | use `/dev/console` for error reporting
@@ -444,9 +443,7 @@ contributed support for building under MSVC. Andris Pavenis
 contributed many important fixes. Brian West contributed changes to
 enable dynamic linking. Yves Shumann reported documentation bugs.
 Randell Jesup contributed a working SRTCP implementation and other
-fixes. Alex Vanzella and Will Clark contributed changes so that the
-AES ICM implementation can be used for ISMA media encryption. Steve
-Underwood contributed x86_64 portability changes. We also give
+fixes. Steve Underwood contributed x86_64 portability changes. We also give
 thanks to Fredrik Thulin, Brian Weis, Mark Baugher, Jeff Chan, Bill
 Simon, Douglas Smith, Bill May, Richard Preistley, Joe Tardo and
 others for contributions, comments, and corrections.
@@ -472,8 +469,3 @@ SHA-1 is defined in FIPS-180-1, available online at the NIST website.
 HMAC is defined in [RFC2104](https://www.ietf.org/rfc/rfc2104.txt)
 and HMAC-SHA1 test vectors are available
 in [RFC2202](https://www.ietf.org/rfc/rfc2202.txt).
-
-ICM is defined by draft-irtf-cfrg-icm-00.txt, and its application in
-ISMAcryp (the Internet Streaming Media Alliance 1.0 Encryption and
-Authentication) is defined in that specification.  It is available
-from http://www.isma.tv/.
