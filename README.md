@@ -281,22 +281,17 @@ The configure script accepts the following options:
 Option                    | Description
 ---------                 | -------
 \-\-help                  | provides a usage summary
-\-\-disable-debug         | compiles libSRTP without the runtime dynamic debugging system
+\-\-enable-debug-logging  | enable debug logging in all modules
 \-\-enable-generic-aesicm | in changes for ismacryp
-\-\-enable-syslog         | use syslog for error reporting.
-\-\-disable-stdout        | diables stdout for error reporting.
-\-\-enable-console        | use `/dev/console` for error reporting
+\-\-enable-log-stdout     | redirecting logging to stdout
+\-\-with-log-file <file>  | use file for logging
 \-\-enable-openssl        | use OpenSSL crypto primitives
 \-\-with-openssl-dir      | Specify location of OpenSSL installation
 \-\-enable-openssl-kdf use| OpenSSL SRTP KDF algorithm
 \-\-gdoi                  | use GDOI key management (disabled at present)
 
-By default, dynamic debugging is enabled and stdout is used for
-debugging. You can use the configure options to have the debugging
-output sent to syslog or the system console. Alternatively, you can
-define `ERR_REPORTING_FILE` in `include/conf.h` to be any other
-file that can be opened by libSRTP, and debug messages will be sent to
-it.
+By default there is no log output, loggin can be enabled to be output to stdout
+or a given file using the configure options.
 
 This package has been tested on the following platforms: Mac OS X
 (powerpc-apple-darwin1.4), Cygwin (i686-pc-cygwin), Solaris
