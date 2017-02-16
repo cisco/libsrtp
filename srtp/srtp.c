@@ -634,8 +634,6 @@ static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf) {
 
 /* Get the base key length corresponding to a given combined key+salt
  * length for the given cipher.
- * Assumption is that for AES-ICM a key length < 30 is Ismacryp using
- * AES-128 and short salts; everything else uses a salt length of 14.
  * TODO: key and salt lengths should be separate fields in the policy.  */
 static inline int base_key_length(const srtp_cipher_type_t *cipher, int key_length)
 {
