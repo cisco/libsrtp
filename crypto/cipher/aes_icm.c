@@ -92,7 +92,7 @@ srtp_debug_module_t srtp_mod_aes_icm = {
  *
  */
 
-static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len)
+static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
     extern const srtp_cipher_type_t srtp_aes_icm;
     srtp_aes_icm_ctx_t *icm;
