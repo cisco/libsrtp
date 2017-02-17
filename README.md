@@ -15,7 +15,7 @@ and authentication to the RTP header and payload. SRTP is an IETF Standard,
 defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt), and was developed
 in the IETF Audio/Video Transport (AVT) Working Group. This library supports
 all of the mandatory features of SRTP, but not all of the optional features. See
-the [Supported Features](#license) section for more detailed information.
+the [Supported Features](#supported-features) section for more detailed information.
 
 This document is also used to generate the documentation files in the /doc/
 folder where a more detailed reference to the libSRTP API and related functions
@@ -282,7 +282,6 @@ Option                    | Description
 ---------                 | -------
 \-\-help                  | provides a usage summary
 \-\-enable-debug-logging  | enable debug logging in all modules
-\-\-enable-generic-aesicm | in changes for ismacryp
 \-\-enable-log-stdout     | redirecting logging to stdout
 \-\-with-log-file <file>  | use file for logging
 \-\-enable-openssl        | use OpenSSL crypto primitives
@@ -439,9 +438,7 @@ contributed support for building under MSVC. Andris Pavenis
 contributed many important fixes. Brian West contributed changes to
 enable dynamic linking. Yves Shumann reported documentation bugs.
 Randell Jesup contributed a working SRTCP implementation and other
-fixes. Alex Vanzella and Will Clark contributed changes so that the
-AES ICM implementation can be used for ISMA media encryption. Steve
-Underwood contributed x86_64 portability changes. We also give
+fixes. Steve Underwood contributed x86_64 portability changes. We also give
 thanks to Fredrik Thulin, Brian Weis, Mark Baugher, Jeff Chan, Bill
 Simon, Douglas Smith, Bill May, Richard Preistley, Joe Tardo and
 others for contributions, comments, and corrections.
@@ -467,8 +464,3 @@ SHA-1 is defined in FIPS-180-1, available online at the NIST website.
 HMAC is defined in [RFC2104](https://www.ietf.org/rfc/rfc2104.txt)
 and HMAC-SHA1 test vectors are available
 in [RFC2202](https://www.ietf.org/rfc/rfc2202.txt).
-
-ICM is defined by draft-irtf-cfrg-icm-00.txt, and its application in
-ISMAcryp (the Internet Streaming Media Alliance 1.0 Encryption and
-Authentication) is defined in that specification.  It is available
-from http://www.isma.tv/.

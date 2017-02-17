@@ -184,15 +184,6 @@ if test "$enable_debug_logging" = "yes"; then
 fi
 AC_MSG_RESULT([$enable_debug_logging])
 
-AC_MSG_CHECKING([whether to use ISMAcryp code])
-AC_ARG_ENABLE([generic-aesicm],
-  [AS_HELP_STRING([--enable-generic-aesicm], [compile in changes for ISMAcryp])],
-  [], [enable_generic_aesicm=no])
-if test "$enable_generic_aesicm" = "yes"; then
-   AC_DEFINE([GENERIC_AESICM], [1], [Define this to use ISMAcryp code.])
-fi
-AC_MSG_RESULT([$enable_generic_aesicm])
-
 PKG_PROG_PKG_CONFIG
 AS_IF([test "x$PKG_CONFIG" != "x"], [PKG_CONFIG="$PKG_CONFIG --static"])
 

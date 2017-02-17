@@ -92,7 +92,7 @@ srtp_debug_module_t srtp_mod_aes_icm = {
  *
  */
 
-static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key_len, int forIsmacryp)
+static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
     extern const srtp_cipher_type_t srtp_aes_icm;
     srtp_aes_icm_ctx_t *icm;
@@ -101,15 +101,12 @@ static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key
                 "allocating cipher with key length %d", key_len);
 
     /*
-     * Ismacryp, for example, uses 16 byte key + 8 byte
-     * salt  so this function is called with key_len = 24.
      * The check for key_len = 30/38/46 does not apply. Our usage
      * of aes functions with key_len = values other than 30
      * has not broken anything. Don't know what would be the
      * effect of skipping this check for srtp in general.
      */
-    if (!(forIsmacryp && key_len > 16 && key_len < 30) &&
-        key_len != 30 && key_len != 38 && key_len != 46) {
+    if (key_len != 30 && key_len != 38 && key_len != 46) {
         return srtp_err_status_bad_param;
     }
 
@@ -150,11 +147,6 @@ static srtp_err_status_t srtp_aes_icm_alloc_ismacryp (srtp_cipher_t **c, int key
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int forIsmacryp)
-{
-    return srtp_aes_icm_alloc_ismacryp(c, key_len, 0);
-}
-
 static srtp_err_status_t srtp_aes_icm_dealloc (srtp_cipher_t *c)
 {
     srtp_aes_icm_ctx_t *ctx;
@@ -193,9 +185,7 @@ static srtp_err_status_t srtp_aes_icm_context_init (void *cv, const uint8_t *key
     srtp_err_status_t status;
     int base_key_len, copy_len;
 
-    if (c->key_size > 16 && c->key_size < 30) { /* Ismacryp */
-        base_key_len = 16;
-    } else if (c->key_size == 30 || c->key_size == 38 || c->key_size == 46) {
+    if (c->key_size == 30 || c->key_size == 38 || c->key_size == 46) {
         base_key_len = c->key_size - 14;
     } else{
         return srtp_err_status_bad_param;
@@ -271,7 +261,7 @@ static srtp_err_status_t srtp_aes_icm_set_iv (void *cv, uint8_t *iv, srtp_cipher
  *
  * this is an internal, hopefully inlined function
  */
-static void srtp_aes_icm_advance_ismacryp (srtp_aes_icm_ctx_t *c, uint8_t forIsmacryp)
+static void srtp_aes_icm_advance (srtp_aes_icm_ctx_t *c)
 {
     /* fill buffer with new keystream */
     v128_copy(&c->keystream_buffer, &c->counter);
@@ -284,17 +274,8 @@ static void srtp_aes_icm_advance_ismacryp (srtp_aes_icm_ctx_t *c, uint8_t forIsm
                 v128_hex_string(&c->keystream_buffer));
 
     /* clock counter forward */
-
-    if (forIsmacryp) {
-        uint32_t temp;
-        //alex's clock counter forward
-        temp = ntohl(c->counter.v32[3]);
-	++temp;
-        c->counter.v32[3] = htonl(temp);
-    } else {
-        if (!++(c->counter.v8[15])) {
-            ++(c->counter.v8[14]);
-        }
+    if (!++(c->counter.v8[15])) {
+        ++(c->counter.v8[14]);
     }
 }
 
@@ -311,16 +292,16 @@ static void srtp_aes_icm_advance_ismacryp (srtp_aes_icm_ctx_t *c, uint8_t forIsm
  *  - fill buffer then add in remaining (< 16) bytes of keystream
  */
 
-static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (srtp_aes_icm_ctx_t *c,
-                                                 unsigned char *buf, unsigned int *enc_len,
-                                                 int forIsmacryp)
+static srtp_err_status_t srtp_aes_icm_encrypt (void *cv,
+                                               unsigned char *buf, unsigned int *enc_len)
 {
+    srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t*)cv;
     unsigned int bytes_to_encr = *enc_len;
     unsigned int i;
     uint32_t *b;
 
-    /* check that there's enough segment left but not for ismacryp*/
-    if (!forIsmacryp && (bytes_to_encr + htons(c->counter.v16[7])) > 0xffff) {
+    /* check that there's enough segment left*/
+    if ((bytes_to_encr + htons(c->counter.v16[7])) > 0xffff) {
         return srtp_err_status_terminus;
     }
 
@@ -355,7 +336,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (srtp_aes_icm_ctx_t *c,
     for (i = 0; i < (bytes_to_encr / sizeof(v128_t)); i++) {
 
         /* fill buffer with new keystream */
-        srtp_aes_icm_advance_ismacryp(c, forIsmacryp);
+        srtp_aes_icm_advance(c);
 
         /*
          * add keystream into the data buffer (this would be a lot faster
@@ -403,7 +384,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (srtp_aes_icm_ctx_t *c,
     if ((bytes_to_encr & 0xf) != 0) {
 
         /* fill buffer with new keystream */
-        srtp_aes_icm_advance_ismacryp(c, forIsmacryp);
+        srtp_aes_icm_advance(c);
 
         for (i = 0; i < (bytes_to_encr & 0xf); i++) {
             *buf++ ^= c->keystream_buffer.v8[i];
@@ -419,12 +400,6 @@ static srtp_err_status_t srtp_aes_icm_encrypt_ismacryp (srtp_aes_icm_ctx_t *c,
     }
 
     return srtp_err_status_ok;
-}
-
-static srtp_err_status_t srtp_aes_icm_encrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
-{
-    srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
-    return srtp_aes_icm_encrypt_ismacryp(c, buf, enc_len, 0);
 }
 
 static const char srtp_aes_icm_description[] = "aes integer counter mode";
