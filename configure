@@ -700,7 +700,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug
-enable_generic_aesicm
 enable_openssl
 with_openssl_dir
 enable_openssl_kdf
@@ -1335,7 +1334,6 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-debug         do not compile in dynamic debugging system
-  --enable-generic-aesicm compile in changes for ISMAcryp
   --enable-openssl        compile in OpenSSL crypto engine
   --enable-openssl-kdf    Use OpenSSL KDF algorithm
   --enable-stdout         use stdout for debug/error reporting
@@ -5578,23 +5576,6 @@ $as_echo "#define ENABLE_DEBUGGING 1" >>confdefs.h
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_debug" >&5
 $as_echo "$enable_debug" >&6; }
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use ISMAcryp code" >&5
-$as_echo_n "checking whether to use ISMAcryp code... " >&6; }
-# Check whether --enable-generic-aesicm was given.
-if test "${enable_generic_aesicm+set}" = set; then :
-  enableval=$enable_generic_aesicm;
-else
-  enable_generic_aesicm=no
-fi
-
-if test "$enable_generic_aesicm" = "yes"; then
-
-$as_echo "#define GENERIC_AESICM 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_generic_aesicm" >&5
-$as_echo "$enable_generic_aesicm" >&6; }
 
 
 
