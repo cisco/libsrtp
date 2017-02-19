@@ -699,12 +699,12 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-enable_debug
+enable_debug_logging
 enable_openssl
 with_openssl_dir
 enable_openssl_kdf
-enable_stdout
-enable_console
+enable_log_stdout
+with_log_file
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1333,16 +1333,16 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
-  --disable-debug         do not compile in dynamic debugging system
+  --enable-debug-logging  Enable debug logging in all modules
   --enable-openssl        compile in OpenSSL crypto engine
   --enable-openssl-kdf    Use OpenSSL KDF algorithm
-  --enable-stdout         use stdout for debug/error reporting
-  --enable-console        use /dev/console for error reporting
+  --enable-log-stdout     redirecting logging to stdout
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-openssl-dir      Location of OpenSSL installation
+  --with-log-file         Use file for logging
 
 Some influential environment variables:
   CC          C compiler command
@@ -5560,22 +5560,22 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to compile in debugging" >&5
-$as_echo_n "checking whether to compile in debugging... " >&6; }
-# Check whether --enable-debug was given.
-if test "${enable_debug+set}" = set; then :
-  enableval=$enable_debug;
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable debug logging in all modules" >&5
+$as_echo_n "checking whether to enable debug logging in all modules... " >&6; }
+# Check whether --enable-debug-logging was given.
+if test "${enable_debug_logging+set}" = set; then :
+  enableval=$enable_debug_logging;
 else
-  enable_debug=yes
+  enable_debug_logging=no
 fi
 
-if test "$enable_debug" = "yes"; then
+if test "$enable_debug_logging" = "yes"; then
 
-$as_echo "#define ENABLE_DEBUGGING 1" >>confdefs.h
+$as_echo "#define ENABLE_DEBUG_LOGGING 1" >>confdefs.h
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_debug" >&5
-$as_echo "$enable_debug" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_debug_logging" >&5
+$as_echo "$enable_debug_logging" >&6; }
 
 
 
@@ -6263,42 +6263,64 @@ $as_echo "#define HAVE_PCAP 1" >>confdefs.h
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use stdout for error reporting" >&5
-$as_echo_n "checking whether to use stdout for error reporting... " >&6; }
-# Check whether --enable-stdout was given.
-if test "${enable_stdout+set}" = set; then :
-  enableval=$enable_stdout;
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to redirect logging to stdout" >&5
+$as_echo_n "checking whether to redirect logging to stdout... " >&6; }
+# Check whether --enable-log-stdout was given.
+if test "${enable_log_stdout+set}" = set; then :
+  enableval=$enable_log_stdout;
 else
-  enable_stdout=no
+  enable_log_stdout=no
 fi
 
-if test "$enable_stdout" = "yes"; then
+if test "$enable_log_stdout" = "yes"; then
 
 $as_echo "#define ERR_REPORTING_STDOUT 1" >>confdefs.h
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stdout" >&5
-$as_echo "$enable_stdout" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_log_stdout" >&5
+$as_echo "$enable_log_stdout" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use /dev/console for error reporting" >&5
-$as_echo_n "checking whether to use /dev/console for error reporting... " >&6; }
-# Check whether --enable-console was given.
-if test "${enable_console+set}" = set; then :
-  enableval=$enable_console;
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking wheather to use a file for logging" >&5
+$as_echo_n "checking wheather to use a file for logging... " >&6; }
+
+# Check whether --with-log-file was given.
+if test "${with_log_file+set}" = set; then :
+  withval=$with_log_file; case x$with_log_file in #(
+  x) :
+    valid_with_log_file="no" ;; #(
+  xyes) :
+    valid_with_log_file="no" ;; #(
+  *) :
+    valid_with_error_file="yes" ;;
+esac
+   if test "$valid_with_log_file" = "no"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
+$as_echo "invalid" >&6; }
+      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Invalid value for --with-log-file: \"$with_log_file\"
+See \`config.log' for more details" "$LINENO" 5; }
 else
-  enable_console=no
+
+cat >>confdefs.h <<_ACEOF
+#define ERR_REPORTING_FILE "$with_log_file"
+_ACEOF
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: using log file: \"$with_log_file\"" >&5
+$as_echo "using log file: \"$with_log_file\"" >&6; }
+fi
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
 fi
 
-if test "$enable_console" = "yes"; then
 
-$as_echo "#define USE_ERR_REPORTING_FILE 1" >>confdefs.h
-
-
-$as_echo "#define ERR_REPORTING_FILE \"/dev/console\"" >>confdefs.h
-
+if test "$enable_log_stdout" = "yes" && test "x$with_log_file" != "x"; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Can only use one of --enable-log-stdout and --with-log-file; they are mutually exclusive
+See \`config.log' for more details" "$LINENO" 5; }
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_console" >&5
-$as_echo "$enable_console" >&6; }
 
 ac_config_headers="$ac_config_headers crypto/include/config.h:config_in.h"
 
