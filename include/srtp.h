@@ -588,9 +588,10 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
  *    - @e other                 failure in cryptographic mechanisms
  */
 
-srtp_err_status_t  srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
-				    unsigned int use_mki, unsigned int mki_index);
-	     
+srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr,
+                                   int *pkt_octet_len, unsigned int use_mki,
+                                   unsigned int mki_index);
+
 /**
  * @brief srtp_unprotect() is the Secure RTP receiver-side packet
  * processing function.
@@ -676,7 +677,8 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
  *
  */
 
- srtp_err_status_t srtp_unprotect_mki(srtp_t ctx, void *srtp_hdr, int *len_ptr, unsigned int use_mki);
+srtp_err_status_t srtp_unprotect_mki(srtp_t ctx, void *srtp_hdr, int *len_ptr,
+                                     unsigned int use_mki);
 
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
@@ -1513,8 +1515,9 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octe
  *
  */
 
-srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len, unsigned int use_mki);
-
+srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr,
+                                          int *pkt_octet_len,
+                                          unsigned int use_mki);
 
 /**
  * @}
