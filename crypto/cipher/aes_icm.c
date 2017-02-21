@@ -106,7 +106,7 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
      * has not broken anything. Don't know what would be the
      * effect of skipping this check for srtp in general.
      */
-    if (key_len != 30 && key_len != 38 && key_len != 46) {
+    if (key_len != 30 && key_len != 46) {
         return srtp_err_status_bad_param;
     }
 
@@ -131,9 +131,6 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
     switch (key_len) {
     case 46:
         (*c)->algorithm = SRTP_AES_256_ICM;
-        break;
-    case 38:
-        (*c)->algorithm = SRTP_AES_192_ICM;
         break;
     default:
         (*c)->algorithm = SRTP_AES_128_ICM;
