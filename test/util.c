@@ -182,4 +182,3 @@ int base64_string_to_octet_string (char *out, int *pad, char *in, int len)
     *pad = j;
     return i;
 }
-

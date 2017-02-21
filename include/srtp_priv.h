@@ -81,7 +81,18 @@ srtp_stream_t srtp_get_stream(srtp_t srtp, uint32_t ssrc);
  * srtp_stream_init_keys(s, k) (re)initializes the srtp_stream_t s by
  * deriving all of the needed keys using the KDF and the key k.
  */
-srtp_err_status_t srtp_stream_init_keys(srtp_stream_t srtp, const void *key);
+srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
+                                        srtp_master_key_t *master_key,
+                                        const unsigned int current_mki_index);
+
+/*
+ * srtp_stream_init_all_master_keys(s, k, m) (re)initializes the srtp_stream_t s by
+ * deriving all of the needed keys for all the master keys using the KDF and the keys from k.
+ */
+srtp_err_status_t srtp_steam_init_all_master_keys(srtp_stream_ctx_t *srtp,
+                                                  unsigned char *key,
+                                                  srtp_master_key_t **keys,
+                                                  const unsigned int max_master_keys);
 
 /*
  * srtp_stream_init(s, p) initializes the srtp_stream_t s to 
@@ -100,6 +111,25 @@ typedef enum direction_t {
   dir_srtp_receiver = 2
 } direction_t;
 
+/*
+ * srtp_session_keys_t will contain the encryption, hmac, salt keys
+ * for both SRTP and SRTCP.  The session keys will also contain the
+ * MKI ID which is used to identify the session keys.
+ */
+typedef struct srtp_session_keys_t {
+  srtp_cipher_t *rtp_cipher;
+  srtp_cipher_t *rtp_xtn_hdr_cipher;
+  srtp_auth_t   *rtp_auth;
+  srtp_cipher_t *rtcp_cipher;
+  srtp_auth_t   *rtcp_auth;
+  uint8_t        salt[SRTP_AEAD_SALT_LEN];
+  uint8_t        c_salt[SRTP_AEAD_SALT_LEN];
+  uint8_t       *mki_id;
+  unsigned int   mki_size;
+  srtp_key_limit_ctx_t *limit;
+} srtp_session_keys_t;
+
+
 /* 
  * an srtp_stream_t has its own SSRC, encryption key, authentication
  * key, sequence number, and replay database
@@ -110,21 +140,15 @@ typedef enum direction_t {
 
 typedef struct srtp_stream_ctx_t_ {
   uint32_t   ssrc;
-  srtp_cipher_t  *rtp_cipher;
-  srtp_cipher_t  *rtp_xtn_hdr_cipher;
-  srtp_auth_t    *rtp_auth;
+  srtp_session_keys_t *session_keys;
+  unsigned int num_master_keys;
   srtp_rdbx_t     rtp_rdbx;
   srtp_sec_serv_t rtp_services;
-  srtp_cipher_t  *rtcp_cipher;
-  srtp_auth_t    *rtcp_auth;
   srtp_rdb_t      rtcp_rdb;
   srtp_sec_serv_t rtcp_services;
-  srtp_key_limit_ctx_t *limit;
   direction_t direction;
   int        allow_repeat_tx;
   srtp_ekt_stream_t ekt; 
-  uint8_t    salt[SRTP_AEAD_SALT_LEN];   /* used with GCM mode for SRTP */
-  uint8_t    c_salt[SRTP_AEAD_SALT_LEN]; /* used with GCM mode for SRTCP */
   int       *enc_xtn_hdr;
   int        enc_xtn_hdr_count;
   struct srtp_stream_ctx_t_ *next;   /* linked list of streams */

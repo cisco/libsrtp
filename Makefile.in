@@ -186,7 +186,7 @@ test/srtp_driver$(EXE): test/srtp_driver.c test/util.c test/getopt_s.c
 test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
-test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c
+test/dtls_srtp_driver$(EXE): test/dtls_srtp_driver.c test/getopt_s.c test/util.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c
