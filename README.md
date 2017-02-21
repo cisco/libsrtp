@@ -289,7 +289,7 @@ Option                    | Description
 \-\-enable-openssl-kdf use| OpenSSL SRTP KDF algorithm
 \-\-gdoi                  | use GDOI key management (disabled at present)
 
-By default there is no log output, loggin can be enabled to be output to stdout
+By default there is no log output, logging can be enabled to be output to stdout
 or a given file using the configure options.
 
 This package has been tested on the following platforms: Mac OS X
