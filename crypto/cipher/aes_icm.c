@@ -57,6 +57,8 @@ srtp_debug_module_t srtp_mod_aes_icm = {
     0,               /* debugging is off by default */
     "aes icm"        /* printable module name       */
 };
+extern const srtp_cipher_type_t srtp_aes_icm_128;
+extern const srtp_cipher_type_t srtp_aes_icm_256;
 
 /*
  * integer counter mode works as follows:
@@ -94,7 +96,6 @@ srtp_debug_module_t srtp_mod_aes_icm = {
 
 static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
-    extern const srtp_cipher_type_t srtp_aes_icm;
     srtp_aes_icm_ctx_t *icm;
 
     debug_print(srtp_mod_aes_icm,
@@ -126,14 +127,15 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
 
     /* set pointers */
     (*c)->state = icm;
-    (*c)->type = &srtp_aes_icm;
 
     switch (key_len) {
     case 46:
         (*c)->algorithm = SRTP_AES_256_ICM;
+        (*c)->type = &srtp_aes_icm_256;
         break;
     default:
         (*c)->algorithm = SRTP_AES_128_ICM;
+        (*c)->type = &srtp_aes_icm_128;
         break;
     }
 
@@ -399,7 +401,8 @@ static srtp_err_status_t srtp_aes_icm_encrypt (void *cv,
     return srtp_err_status_ok;
 }
 
-static const char srtp_aes_icm_description[] = "aes integer counter mode";
+static const char srtp_aes_icm_128_description[] = "AES-128 integer counter mode";
+static const char srtp_aes_icm_256_description[] = "AES-256 integer counter mode";
 
 static const uint8_t srtp_aes_icm_test_case_0_key[30] = {
     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
@@ -480,7 +483,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_test_case_1 = {
     0,
     NULL,
     0,
-    &srtp_aes_icm_test_case_0                 /* pointer to next testcase */
+    NULL,                 /* pointer to next testcase */
 };
 
 
@@ -489,7 +492,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_test_case_1 = {
  * note: the encrypt function is identical to the decrypt function
  */
 
-const srtp_cipher_type_t srtp_aes_icm = {
+const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_alloc,
     srtp_aes_icm_dealloc,
     srtp_aes_icm_context_init,
@@ -498,8 +501,21 @@ const srtp_cipher_type_t srtp_aes_icm = {
     srtp_aes_icm_encrypt,
     srtp_aes_icm_set_iv,
     0,                          /* get_tag */
-    srtp_aes_icm_description,
-    &srtp_aes_icm_test_case_1,
-    SRTP_AES_ICM
+    srtp_aes_icm_128_description,
+    &srtp_aes_icm_test_case_0,
+    SRTP_AES_128_ICM
 };
 
+const srtp_cipher_type_t srtp_aes_icm_256 = {
+    srtp_aes_icm_alloc,
+    srtp_aes_icm_dealloc,
+    srtp_aes_icm_context_init,
+    0,                          /* set_aad */
+    srtp_aes_icm_encrypt,
+    srtp_aes_icm_encrypt,
+    srtp_aes_icm_set_iv,
+    0,                          /* get_tag */
+    srtp_aes_icm_256_description,
+    &srtp_aes_icm_test_case_1,
+    SRTP_AES_256_ICM
+};

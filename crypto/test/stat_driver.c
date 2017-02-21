@@ -75,7 +75,8 @@ main (int argc, char *argv[]) {
   uint8_t buffer[2532];
   unsigned int buf_len = 2500;
   int i, j;
-  extern srtp_cipher_type_t srtp_aes_icm;
+  extern srtp_cipher_type_t srtp_aes_icm_128;
+  extern srtp_cipher_type_t srtp_aes_icm_256;
 #ifdef OPENSSL
   extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
   extern srtp_cipher_type_t srtp_aes_gcm_256_openssl;
@@ -116,7 +117,7 @@ main (int argc, char *argv[]) {
   /* set buffer to cipher output */
   for (i=0; i < 2500; i++)
     buffer[i] = 0;
-  err_check(srtp_cipher_type_alloc(&srtp_aes_icm, &c, 30, 0));
+  err_check(srtp_cipher_type_alloc(&srtp_aes_icm_128, &c, 30, 0));
   err_check(srtp_cipher_init(c, key));
   err_check(srtp_cipher_set_iv(c, (uint8_t*)&nonce, srtp_direction_encrypt));
   err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
@@ -150,7 +151,7 @@ main (int argc, char *argv[]) {
   /* set buffer to cipher output */
   for (i=0; i < 2500; i++)
     buffer[i] = 0;
-  err_check(srtp_cipher_type_alloc(&srtp_aes_icm, &c, 46, 0));
+  err_check(srtp_cipher_type_alloc(&srtp_aes_icm_256, &c, 46, 0));
   err_check(srtp_cipher_init(c, key));
   err_check(srtp_cipher_set_iv(c, (uint8_t*)&nonce, srtp_direction_encrypt));
   err_check(srtp_cipher_encrypt(c, buffer, &buf_len));

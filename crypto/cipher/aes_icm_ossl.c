@@ -63,7 +63,7 @@ srtp_debug_module_t srtp_mod_aes_icm = {
     0,               /* debugging is off by default */
     "aes icm ossl"   /* printable module name       */
 };
-extern const srtp_cipher_type_t srtp_aes_icm;
+extern const srtp_cipher_type_t srtp_aes_icm_128;
 extern const srtp_cipher_type_t srtp_aes_icm_192;
 extern const srtp_cipher_type_t srtp_aes_icm_256;
 
@@ -153,7 +153,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc (srtp_cipher_t **c, int key_
     switch (key_len) {
     case SRTP_AES_128_KEYSIZE_WSALT:
         (*c)->algorithm = SRTP_AES_128_ICM;
-        (*c)->type = &srtp_aes_icm;
+        (*c)->type = &srtp_aes_icm_128;
         icm->key_size = SRTP_AES_128_KEYSIZE;
         break;
     case SRTP_AES_192_KEYSIZE_WSALT:
@@ -316,7 +316,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_encrypt (void *cv, unsigned char *
 /*
  * Name of this crypto engine
  */
-static const char srtp_aes_icm_openssl_description[] = "AES-128 counter mode using openssl";
+static const char srtp_aes_icm_128_openssl_description[] = "AES-128 counter mode using openssl";
 static const char srtp_aes_icm_192_openssl_description[] = "AES-192 counter mode using openssl";
 static const char srtp_aes_icm_256_openssl_description[] = "AES-256 counter mode using openssl";
 
@@ -460,7 +460,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_256_test_case_2 = {
  * This is the function table for this crypto engine.
  * note: the encrypt function is identical to the decrypt function
  */
-const srtp_cipher_type_t srtp_aes_icm = {
+const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_openssl_alloc,
     srtp_aes_icm_openssl_dealloc,
     srtp_aes_icm_openssl_context_init,
@@ -469,7 +469,7 @@ const srtp_cipher_type_t srtp_aes_icm = {
     srtp_aes_icm_openssl_encrypt,
     srtp_aes_icm_openssl_set_iv,
     0,                           /* get_tag */
-    srtp_aes_icm_openssl_description,
+    srtp_aes_icm_128_openssl_description,
     &srtp_aes_icm_test_case_0,
     SRTP_AES_ICM
 };
