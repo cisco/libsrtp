@@ -2039,7 +2039,8 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
    /* 
     * if we're using rindael counter mode, set nonce and seq 
     */
-   if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM ||
+   if (session_keys->rtp_cipher->type->id == SRTP_AES_128_ICM ||
+       session_keys->rtp_cipher->type->id == SRTP_AES_192_ICM ||
        session_keys->rtp_cipher->type->id == SRTP_AES_256_ICM) {
      v128_t iv;
 
@@ -2276,9 +2277,9 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
    * set the cipher's IV properly, depending on whatever cipher we
    * happen to be using
    */
-  if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM ||
+  if (session_keys->rtp_cipher->type->id == SRTP_AES_128_ICM ||
+      session_keys->rtp_cipher->type->id == SRTP_AES_192_ICM ||
       session_keys->rtp_cipher->type->id == SRTP_AES_256_ICM) {
-
     /* aes counter mode */
     iv.v32[0] = 0;
     iv.v32[1] = hdr->ssrc;  /* still in network order */
@@ -3706,7 +3707,9 @@ srtp_protect_rtcp_mki(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len,
   /* 
    * if we're using rindael counter mode, set nonce and seq 
    */
-  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM) {
+  if (session_keys->rtcp_cipher->type->id == SRTP_AES_128_ICM ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_192_ICM ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_256_ICM) {
     v128_t iv;
     
     iv.v32[0] = 0;
@@ -3963,7 +3966,9 @@ srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len,
   /* 
    * if we're using aes counter mode, set nonce and seq 
    */
-  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM) {
+  if (session_keys->rtcp_cipher->type->id == SRTP_AES_128_ICM ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_192_ICM ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_256_ICM) {
     v128_t iv;
 
     iv.v32[0] = 0;
