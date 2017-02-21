@@ -3082,6 +3082,53 @@ srtp_crypto_policy_set_aes_cm_256_null_auth (srtp_crypto_policy_t *p)
 }
 
 #ifdef OPENSSL
+void
+srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-avt-big-aes-03.txt
+   */
+
+  p->cipher_type     = SRTP_AES_ICM;
+  p->cipher_key_len  = 38;
+  p->auth_type       = SRTP_HMAC_SHA1;
+  p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
+  p->auth_tag_len    = 10;                /* default 80 bits per RFC 3711 */
+  p->sec_serv        = sec_serv_conf_and_auth;
+}
+
+
+void
+srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p) {
+
+  /*
+   * corresponds to draft-ietf-avt-big-aes-03.txt
+   *
+   * note that this crypto policy is intended for SRTP, but not SRTCP
+   */
+
+  p->cipher_type     = SRTP_AES_ICM;
+  p->cipher_key_len  = 38;
+  p->auth_type       = SRTP_HMAC_SHA1;
+  p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
+  p->auth_tag_len    = 4;                 /* default 80 bits per RFC 3711 */
+  p->sec_serv        = sec_serv_conf_and_auth;
+}
+
+/*
+ * AES-192 with no authentication.
+ */
+void
+srtp_crypto_policy_set_aes_cm_192_null_auth (srtp_crypto_policy_t *p)
+{
+    p->cipher_type     = SRTP_AES_ICM;
+    p->cipher_key_len  = 38;
+    p->auth_type       = SRTP_NULL_AUTH;
+    p->auth_key_len    = 0;
+    p->auth_tag_len    = 0;
+    p->sec_serv        = sec_serv_conf;
+}
+
 /*
  * AES-128 GCM mode with 8 octet auth tag. 
  */
