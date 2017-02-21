@@ -471,7 +471,7 @@ const srtp_cipher_type_t srtp_aes_icm_128 = {
     0,                           /* get_tag */
     srtp_aes_icm_128_openssl_description,
     &srtp_aes_icm_test_case_0,
-    SRTP_AES_ICM
+    SRTP_AES_128_ICM
 };
 
 /*

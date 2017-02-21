@@ -55,29 +55,29 @@
 #define SRTP_NULL_CIPHER        0            
 
 /* 
- * AES Integer Counter Mode (AES ICM)             
+ * AES-128 Integer Counter Mode (AES ICM)
  *
- * AES ICM is the variant of counter mode that is used by Secure RTP.  
- * This cipher uses a 16-, 24-, or 32-octet key concatenated with a
+ * AES-128 ICM is the variant of counter mode that is used by
+ * Secure RTP.  This cipher uses a 16-octet key concatenated with a
  * 14-octet offset (or salt) value.
  */
-#define SRTP_AES_ICM            1            
+#define SRTP_AES_128_ICM        1
 
 /* 
- * AES-128 Integer Counter Mode (AES ICM)             
- * AES-128 ICM is a deprecated alternate name for AES ICM.
- */
-#define SRTP_AES_128_ICM        SRTP_AES_ICM
-
-/* 
- * AES-192 Integer Counter Mode (AES ICM)             
- * AES-192 ICM is a deprecated alternate name for AES ICM.
+ * AES-192 Integer Counter Mode (AES ICM)
+ *
+ * AES-128 ICM is the variant of counter mode that is used by
+ * Secure RTP.  This cipher uses a 24-octet key concatenated with a
+ * 14-octet offset (or salt) value.
  */
 #define SRTP_AES_192_ICM        4 
 
 /* 
- * AES-256 Integer Counter Mode (AES ICM)             
- * AES-256 ICM is a deprecated alternate name for AES ICM.
+ * AES-256 Integer Counter Mode (AES ICM)
+ *
+ * AES-128 ICM is the variant of counter mode that is used by
+ * Secure RTP.  This cipher uses a 32-octet key concatenated with a
+ * 14-octet offset (or salt) value.
  */
 #define SRTP_AES_256_ICM        5 
 

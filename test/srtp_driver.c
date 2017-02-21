@@ -3236,7 +3236,7 @@ srtp_master_key_t *test_256_keys[2] = {
 const srtp_policy_t aes_256_hmac_policy = {
     { ssrc_any_outbound, 0 },  /* SSRC                           */
     {                          /* SRTP policy                    */
-        SRTP_AES_ICM,               /* cipher type                 */
+        SRTP_AES_256_ICM,               /* cipher type                 */
         46,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         20,                    /* auth key length in octets   */
@@ -3244,7 +3244,7 @@ const srtp_policy_t aes_256_hmac_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     {                          /* SRTCP policy                   */
-        SRTP_AES_ICM,               /* cipher type                 */
+        SRTP_AES_256_ICM,               /* cipher type                 */
         46,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         20,                    /* auth key length in octets   */
