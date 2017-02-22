@@ -4131,12 +4131,14 @@ srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
   case srtp_profile_aes256_cm_sha1_32:
     srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(policy);
     break;
+#if defined(OPENSSL)
   case srtp_profile_aead_aes_128_gcm:
     srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
     break;
   case srtp_profile_aead_aes_256_gcm:
     srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
     break;
+#endif
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
   default:
@@ -4171,12 +4173,14 @@ srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy,
      * this is not compliant with RFC 3711 */
     srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
     break;
+#if defined(OPENSSL)
   case srtp_profile_aead_aes_128_gcm:
     srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
     break;
   case srtp_profile_aead_aes_256_gcm:
     srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
     break;
+#endif
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
   default:
