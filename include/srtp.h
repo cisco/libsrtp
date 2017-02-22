@@ -288,11 +288,6 @@ typedef enum {
 
 typedef struct srtp_ctx_t_ srtp_ctx_t;
 
-/* 
- * nota bene: since libSRTP doesn't support the use of the MKI, the
- * SRTP_MAX_TRAILER_LEN value is just the maximum tag length
- */
-
 /**
  * @brief srtp_sec_serv_t describes a set of security services. 
  *
