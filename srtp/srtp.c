@@ -4131,6 +4131,12 @@ srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
   case srtp_profile_aes256_cm_sha1_32:
     srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(policy);
     break;
+  case srtp_profile_aead_aes_128_gcm:
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
+    break;
+  case srtp_profile_aead_aes_256_gcm:
+    srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
+    break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
   default:
@@ -4165,6 +4171,12 @@ srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy,
      * this is not compliant with RFC 3711 */
     srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
     break;
+  case srtp_profile_aead_aes_128_gcm:
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
+    break;
+  case srtp_profile_aead_aes_256_gcm:
+    srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
+    break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
   default:
@@ -4183,18 +4195,16 @@ srtp_profile_get_master_key_length(srtp_profile_t profile) {
 
   switch(profile) {
   case srtp_profile_aes128_cm_sha1_80:
-    return 16;
-    break;
   case srtp_profile_aes128_cm_sha1_32:
+  case srtp_profile_aead_aes_128_gcm:
     return 16;
     break;
   case srtp_profile_null_sha1_80:
     return 16;
     break;
   case srtp_profile_aes256_cm_sha1_80:
-    return 32;
-    break;
   case srtp_profile_aes256_cm_sha1_32:
+  case srtp_profile_aead_aes_256_gcm:
     return 32;
     break;
     /* the following profiles are not (yet) supported */
@@ -4209,19 +4219,15 @@ srtp_profile_get_master_salt_length(srtp_profile_t profile) {
 
   switch(profile) {
   case srtp_profile_aes128_cm_sha1_80:
-    return 14;
-    break;
   case srtp_profile_aes128_cm_sha1_32:
-    return 14;
-    break;
   case srtp_profile_null_sha1_80:
-    return 14;
-    break;
   case srtp_profile_aes256_cm_sha1_80:
-    return 14;
-    break;
   case srtp_profile_aes256_cm_sha1_32:
     return 14;
+    break;
+  case srtp_profile_aead_aes_128_gcm:
+  case srtp_profile_aead_aes_256_gcm:
+    return 12;
     break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
