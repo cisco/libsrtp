@@ -3205,7 +3205,7 @@ static void srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys, v128_t *i
     /*  The SRTCP index (seq_num) spans bits 0 through 30 inclusive.
      *  Bit 31 must be cleared to zero.
      */
-    in.v32[2] = htonl((seq_num & 0x7FFFFFFF));
+    in.v32[2] = htonl(seq_num & 0x7FFFFFFF);
 
     debug_print(mod_srtp, "Pre-salted RTCP IV = %s\n", v128_hex_string(&in));
 
