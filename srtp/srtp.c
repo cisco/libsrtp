@@ -4125,12 +4125,6 @@ srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
   case srtp_profile_null_sha1_80:
     srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
     break;
-  case srtp_profile_aes256_cm_sha1_80:
-    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
-    break;
-  case srtp_profile_aes256_cm_sha1_32:
-    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(policy);
-    break;
 #if defined(OPENSSL)
   case srtp_profile_aead_aes_128_gcm:
     srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
@@ -4164,14 +4158,6 @@ srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy,
     break;
   case srtp_profile_null_sha1_80:
     srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
-    break;
-  case srtp_profile_aes256_cm_sha1_80:
-    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
-    break;
-  case srtp_profile_aes256_cm_sha1_32:
-    /* We do not honor the 32-bit auth tag request since
-     * this is not compliant with RFC 3711 */
-    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(policy);
     break;
 #if defined(OPENSSL)
   case srtp_profile_aead_aes_128_gcm:
@@ -4207,12 +4193,6 @@ srtp_profile_get_master_key_length(srtp_profile_t profile) {
   case srtp_profile_null_sha1_80:
     return 16;
     break;
-  case srtp_profile_aes256_cm_sha1_80:
-    return 32;
-    break;
-  case srtp_profile_aes256_cm_sha1_32:
-    return 32;
-    break;
   case srtp_profile_aead_aes_128_gcm:
     return 16;
     break;
@@ -4237,12 +4217,6 @@ srtp_profile_get_master_salt_length(srtp_profile_t profile) {
     return 14;
     break;
   case srtp_profile_null_sha1_80:
-    return 14;
-    break;
-  case srtp_profile_aes256_cm_sha1_80:
-    return 14;
-    break;
-  case srtp_profile_aes256_cm_sha1_32:
     return 14;
     break;
   case srtp_profile_aead_aes_128_gcm:

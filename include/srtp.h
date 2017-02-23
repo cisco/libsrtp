@@ -1217,8 +1217,6 @@ typedef enum {
   srtp_profile_reserved           = 0,
   srtp_profile_aes128_cm_sha1_80  = 1,
   srtp_profile_aes128_cm_sha1_32  = 2,
-  srtp_profile_aes256_cm_sha1_80  = 3,
-  srtp_profile_aes256_cm_sha1_32  = 4,
   srtp_profile_null_sha1_80       = 5,
   srtp_profile_null_sha1_32       = 6,
   srtp_profile_aead_aes_128_gcm   = 7,
