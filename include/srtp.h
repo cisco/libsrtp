@@ -108,9 +108,9 @@ extern "C" {
  * as part of the IV formation logic applied to each RTP packet.
  */
 #define SRTP_AEAD_SALT_LEN	12
-#define SRTP_AES_128_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
-#define SRTP_AES_192_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
-#define SRTP_AES_256_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
+#define SRTP_AES_GCM_128_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
+#define SRTP_AES_GCM_192_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
+#define SRTP_AES_GCM_256_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
 
 /*
  * an srtp_hdr_t represents the srtp header

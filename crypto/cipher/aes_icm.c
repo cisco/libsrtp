@@ -130,11 +130,11 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
 
     switch (key_len) {
     case 46:
-        (*c)->algorithm = SRTP_AES_256_ICM;
+        (*c)->algorithm = SRTP_AES_ICM_256;
         (*c)->type = &srtp_aes_icm_256;
         break;
     default:
-        (*c)->algorithm = SRTP_AES_128_ICM;
+        (*c)->algorithm = SRTP_AES_ICM_128;
         (*c)->type = &srtp_aes_icm_128;
         break;
     }
@@ -503,7 +503,7 @@ const srtp_cipher_type_t srtp_aes_icm_128 = {
     0,                          /* get_tag */
     srtp_aes_icm_128_description,
     &srtp_aes_icm_128_test_case_0,
-    SRTP_AES_128_ICM
+    SRTP_AES_ICM_128
 };
 
 const srtp_cipher_type_t srtp_aes_icm_256 = {
@@ -517,5 +517,5 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     0,                          /* get_tag */
     srtp_aes_icm_256_description,
     &srtp_aes_icm_256_test_case_0,
-    SRTP_AES_256_ICM
+    SRTP_AES_ICM_256
 };

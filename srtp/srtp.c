@@ -311,12 +311,12 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 
     /* For GCM ciphers, the corresponding ICM cipher is used for header extensions encryption. */
     switch (p->rtp.cipher_type) {
-    case SRTP_AES_128_GCM:
-      enc_xtn_hdr_cipher_type = SRTP_AES_128_ICM;
+    case SRTP_AES_GCM_128:
+      enc_xtn_hdr_cipher_type = SRTP_AES_ICM_128;
       enc_xtn_hdr_cipher_key_len = 30;
       break;
-    case SRTP_AES_256_GCM:
-      enc_xtn_hdr_cipher_type = SRTP_AES_256_ICM;
+    case SRTP_AES_GCM_256:
+      enc_xtn_hdr_cipher_type = SRTP_AES_ICM_256;
       enc_xtn_hdr_cipher_key_len = 46;
       break;
     default:
@@ -698,13 +698,13 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t *key, int 
     srtp_cipher_type_id_t cipher_id;
     switch (key_len) {
     case 46:
-        cipher_id = SRTP_AES_256_ICM;
+        cipher_id = SRTP_AES_ICM_256;
         break;
     case 38:
-        cipher_id = SRTP_AES_192_ICM;
+        cipher_id = SRTP_AES_ICM_192;
         break;
     case 30:
-        cipher_id = SRTP_AES_128_ICM;
+        cipher_id = SRTP_AES_ICM_128;
         break;
     default:
         return srtp_err_status_bad_param;
@@ -764,17 +764,17 @@ static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf) {
 static inline int base_key_length(const srtp_cipher_type_t *cipher, int key_length)
 {
   switch (cipher->id) {
-  case SRTP_AES_128_ICM:
-  case SRTP_AES_192_ICM:
-  case SRTP_AES_256_ICM:
+  case SRTP_AES_ICM_128:
+  case SRTP_AES_ICM_192:
+  case SRTP_AES_ICM_256:
     /* The legacy modes are derived from
      * the configured key length on the policy */
     return key_length - 14;
     break;
-  case SRTP_AES_128_GCM:
+  case SRTP_AES_GCM_128:
     return 16;
     break;
-  case SRTP_AES_256_GCM:
+  case SRTP_AES_GCM_256:
     return 32;
     break;
   default:
@@ -1497,8 +1497,8 @@ srtp_get_session_keys(srtp_stream_ctx_t *stream, uint8_t* hdr,
   unsigned int i = 0;
 
   // Determine the authentication tag size
-  if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_128_GCM ||
-      stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_256_GCM) {
+  if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
+      stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
       tag_len = 0;
   } else {
       tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
@@ -1964,8 +1964,8 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
     * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
     * the request to our AEAD handler.
     */
-  if (session_keys->rtp_cipher->algorithm == SRTP_AES_128_GCM ||
-      session_keys->rtp_cipher->algorithm == SRTP_AES_256_GCM) {
+  if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
+      session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
       return srtp_protect_aead(ctx, stream, rtp_hdr,
                                (unsigned int*)pkt_octet_len, session_keys,
                                use_mki);
@@ -2055,9 +2055,9 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
    /* 
     * if we're using rindael counter mode, set nonce and seq 
     */
-   if (session_keys->rtp_cipher->type->id == SRTP_AES_128_ICM ||
-       session_keys->rtp_cipher->type->id == SRTP_AES_192_ICM ||
-       session_keys->rtp_cipher->type->id == SRTP_AES_256_ICM) {
+   if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM_128 ||
+       session_keys->rtp_cipher->type->id == SRTP_AES_ICM_192 ||
+       session_keys->rtp_cipher->type->id == SRTP_AES_ICM_256) {
      v128_t iv;
 
      iv.v32[0] = 0;
@@ -2279,8 +2279,8 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
    * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
    * the request to our AEAD handler.
    */
-  if (session_keys->rtp_cipher->algorithm == SRTP_AES_128_GCM ||
-      session_keys->rtp_cipher->algorithm == SRTP_AES_256_GCM) {
+  if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
+      session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
       return srtp_unprotect_aead(ctx, stream, delta, est, srtp_hdr,
                                  (unsigned int*)pkt_octet_len, session_keys,
                                  mki_size);
@@ -2293,9 +2293,9 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
    * set the cipher's IV properly, depending on whatever cipher we
    * happen to be using
    */
-  if (session_keys->rtp_cipher->type->id == SRTP_AES_128_ICM ||
-      session_keys->rtp_cipher->type->id == SRTP_AES_192_ICM ||
-      session_keys->rtp_cipher->type->id == SRTP_AES_256_ICM) {
+  if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM_128 ||
+      session_keys->rtp_cipher->type->id == SRTP_AES_ICM_192 ||
+      session_keys->rtp_cipher->type->id == SRTP_AES_ICM_256) {
     /* aes counter mode */
     iv.v32[0] = 0;
     iv.v32[1] = hdr->ssrc;  /* still in network order */
@@ -2958,7 +2958,7 @@ srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
 void
 srtp_crypto_policy_set_rtp_default(srtp_crypto_policy_t *p) {
 
-  p->cipher_type     = SRTP_AES_128_ICM;
+  p->cipher_type     = SRTP_AES_ICM_128;
   p->cipher_key_len  = 30;                /* default 128 bits per RFC 3711 */
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
@@ -2970,7 +2970,7 @@ srtp_crypto_policy_set_rtp_default(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_rtcp_default(srtp_crypto_policy_t *p) {
 
-  p->cipher_type     = SRTP_AES_128_ICM;
+  p->cipher_type     = SRTP_AES_ICM_128;
   p->cipher_key_len  = 30;                 /* default 128 bits per RFC 3711 */
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                 /* default 160 bits per RFC 3711 */
@@ -2988,7 +2988,7 @@ srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(srtp_crypto_policy_t *p) {
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
 
-  p->cipher_type     = SRTP_AES_128_ICM;
+  p->cipher_type     = SRTP_AES_ICM_128;
   p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* 160 bit key               */
@@ -3007,7 +3007,7 @@ srtp_crypto_policy_set_aes_cm_128_null_auth(srtp_crypto_policy_t *p) {
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
 
-  p->cipher_type     = SRTP_AES_128_ICM;
+  p->cipher_type     = SRTP_AES_ICM_128;
   p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
   p->auth_type       = SRTP_NULL_AUTH;             
   p->auth_key_len    = 0; 
@@ -3057,7 +3057,7 @@ srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(srtp_crypto_policy_t *p) {
    * corresponds to draft-ietf-avt-big-aes-03.txt
    */
 
-  p->cipher_type     = SRTP_AES_256_ICM;
+  p->cipher_type     = SRTP_AES_ICM_256;
   p->cipher_key_len  = 46;
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
@@ -3075,7 +3075,7 @@ srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(srtp_crypto_policy_t *p) {
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
 
-  p->cipher_type     = SRTP_AES_256_ICM;
+  p->cipher_type     = SRTP_AES_ICM_256;
   p->cipher_key_len  = 46;
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
@@ -3089,7 +3089,7 @@ srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_cm_256_null_auth (srtp_crypto_policy_t *p)
 {
-    p->cipher_type     = SRTP_AES_256_ICM;
+    p->cipher_type     = SRTP_AES_ICM_256;
     p->cipher_key_len  = 46;
     p->auth_type       = SRTP_NULL_AUTH;
     p->auth_key_len    = 0;
@@ -3105,7 +3105,7 @@ srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p) {
    * corresponds to draft-ietf-avt-big-aes-03.txt
    */
 
-  p->cipher_type     = SRTP_AES_192_ICM;
+  p->cipher_type     = SRTP_AES_ICM_192;
   p->cipher_key_len  = 38;
   p->auth_type       = SRTP_HMAC_SHA1;
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
@@ -3123,7 +3123,7 @@ srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p) {
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
 
-  p->cipher_type     = SRTP_AES_192_ICM;
+  p->cipher_type     = SRTP_AES_ICM_192;
   p->cipher_key_len  = 38;
   p->auth_type       = SRTP_HMAC_SHA1;
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
@@ -3137,7 +3137,7 @@ srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_cm_192_null_auth (srtp_crypto_policy_t *p)
 {
-    p->cipher_type     = SRTP_AES_192_ICM;
+    p->cipher_type     = SRTP_AES_ICM_192;
     p->cipher_key_len  = 38;
     p->auth_type       = SRTP_NULL_AUTH;
     p->auth_key_len    = 0;
@@ -3150,8 +3150,8 @@ srtp_crypto_policy_set_aes_cm_192_null_auth (srtp_crypto_policy_t *p)
  */
 void
 srtp_crypto_policy_set_aes_gcm_128_8_auth(srtp_crypto_policy_t *p) {
-  p->cipher_type     = SRTP_AES_128_GCM;           
-  p->cipher_key_len  = SRTP_AES_128_GCM_KEYSIZE_WSALT; 
+  p->cipher_type     = SRTP_AES_GCM_128;
+  p->cipher_key_len  = SRTP_AES_GCM_128_KEYSIZE_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */            
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3163,8 +3163,8 @@ srtp_crypto_policy_set_aes_gcm_128_8_auth(srtp_crypto_policy_t *p) {
  */
 void
 srtp_crypto_policy_set_aes_gcm_256_8_auth(srtp_crypto_policy_t *p) {
-  p->cipher_type     = SRTP_AES_256_GCM;           
-  p->cipher_key_len  = SRTP_AES_256_GCM_KEYSIZE_WSALT; 
+  p->cipher_type     = SRTP_AES_GCM_256;
+  p->cipher_key_len  = SRTP_AES_GCM_256_KEYSIZE_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3176,8 +3176,8 @@ srtp_crypto_policy_set_aes_gcm_256_8_auth(srtp_crypto_policy_t *p) {
  */
 void
 srtp_crypto_policy_set_aes_gcm_128_8_only_auth(srtp_crypto_policy_t *p) {
-  p->cipher_type     = SRTP_AES_128_GCM;           
-  p->cipher_key_len  = SRTP_AES_128_GCM_KEYSIZE_WSALT; 
+  p->cipher_type     = SRTP_AES_GCM_128;
+  p->cipher_key_len  = SRTP_AES_GCM_128_KEYSIZE_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3189,8 +3189,8 @@ srtp_crypto_policy_set_aes_gcm_128_8_only_auth(srtp_crypto_policy_t *p) {
  */
 void
 srtp_crypto_policy_set_aes_gcm_256_8_only_auth(srtp_crypto_policy_t *p) {
-  p->cipher_type     = SRTP_AES_256_GCM;           
-  p->cipher_key_len  = SRTP_AES_256_GCM_KEYSIZE_WSALT; 
+  p->cipher_type     = SRTP_AES_GCM_256;
+  p->cipher_key_len  = SRTP_AES_GCM_256_KEYSIZE_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3202,8 +3202,8 @@ srtp_crypto_policy_set_aes_gcm_256_8_only_auth(srtp_crypto_policy_t *p) {
  */
 void
 srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p) {
-  p->cipher_type     = SRTP_AES_128_GCM;           
-  p->cipher_key_len  = SRTP_AES_128_GCM_KEYSIZE_WSALT; 
+  p->cipher_type     = SRTP_AES_GCM_128;
+  p->cipher_key_len  = SRTP_AES_GCM_128_KEYSIZE_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */            
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 16;   /* 16 octet tag length */
@@ -3215,8 +3215,8 @@ srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p) {
  */
 void
 srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p) {
-  p->cipher_type     = SRTP_AES_256_GCM;           
-  p->cipher_key_len  = SRTP_AES_256_GCM_KEYSIZE_WSALT; 
+  p->cipher_type     = SRTP_AES_GCM_256;
+  p->cipher_key_len  = SRTP_AES_GCM_256_KEYSIZE_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 16;   /* 16 octet tag length */
@@ -3708,8 +3708,8 @@ srtp_protect_rtcp_mki(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len,
    * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
    * the request to our AEAD handler.
    */
-  if (session_keys->rtp_cipher->algorithm == SRTP_AES_128_GCM ||
-      session_keys->rtp_cipher->algorithm == SRTP_AES_256_GCM) {
+  if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
+      session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
       return srtp_protect_rtcp_aead(ctx, stream, rtcp_hdr,
                                     (unsigned int*)pkt_octet_len, session_keys,
                                     use_mki);
@@ -3770,9 +3770,9 @@ srtp_protect_rtcp_mki(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len,
   /* 
    * if we're using rindael counter mode, set nonce and seq 
    */
-  if (session_keys->rtcp_cipher->type->id == SRTP_AES_128_ICM ||
-      session_keys->rtcp_cipher->type->id == SRTP_AES_192_ICM ||
-      session_keys->rtcp_cipher->type->id == SRTP_AES_256_ICM) {
+  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_128 ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_192 ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_256) {
     v128_t iv;
     
     iv.v32[0] = 0;
@@ -3949,8 +3949,8 @@ srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len,
    * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
    * the request to our AEAD handler.
    */
-  if (session_keys->rtp_cipher->algorithm == SRTP_AES_128_GCM ||
-      session_keys->rtp_cipher->algorithm == SRTP_AES_256_GCM) {
+  if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
+      session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
       return srtp_unprotect_rtcp_aead(ctx, stream, srtcp_hdr,
                                       (unsigned int*)pkt_octet_len, session_keys,
                                       mki_size);
@@ -4029,9 +4029,9 @@ srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len,
   /* 
    * if we're using aes counter mode, set nonce and seq 
    */
-  if (session_keys->rtcp_cipher->type->id == SRTP_AES_128_ICM ||
-      session_keys->rtcp_cipher->type->id == SRTP_AES_192_ICM ||
-      session_keys->rtcp_cipher->type->id == SRTP_AES_256_ICM) {
+  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_128 ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_192 ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_256) {
     v128_t iv;
 
     iv.v32[0] = 0;
