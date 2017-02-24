@@ -1681,6 +1681,46 @@ srtp_err_status_t srtp_set_debug_module(char *mod_name, int v);
 srtp_err_status_t srtp_list_debug_modules(void);
 
 /**
+ * @brief srtp_log_level_t defines log levels.
+ *
+ * The enumeration srtp_log_level_t defines log levels reported
+ * in the srtp_log_handler_func_t.
+ *
+ */
+typedef enum {
+    srtp_log_level_error,   /**< log level is reporting an error message  */
+    srtp_log_level_warning, /**< log level is reporting a warning message */
+    srtp_log_level_info,    /**< log level is reporting an info message   */
+    srtp_log_level_debug    /**< log level is reporting a debug message   */
+} srtp_log_level_t;
+
+/**
+ * @brief srtp_log_handler_func_t is the function prototype for
+ * the log handler.
+ *
+ * The typedef srtp_event_handler_func_t is the prototype for the
+ * event handler function.  It has as srtp_log_level_t and log
+ * message as arguments.
+ * There can only be a single, global handler for all log messages in
+ * libSRTP.
+ */
+typedef void (srtp_log_handler_func_t)(srtp_log_level_t level, const char * msg);
+
+/**
+ * @brief sets the log handler to the function supplied by the caller.
+ *
+ * The function call srtp_install_log_handler(func) sets the log
+ * handler function to the value func.  The value NULL is acceptable
+ * as an argument; in this case, log messages will be ignored.
+ * This function can be called before srtp_init() inorder to capture
+ * any logging during start up.
+ *
+ * @param func is a pointer to a fuction of type srtp_log_handler_func_t.
+ *             This function will be used by libSRTP to output log messages.
+ */
+srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func);
+
+/**
  * @brief srtp_get_protect_trailer_length(session, use_mki, mki_index, length)
  *
  * Determines the length of the amount of data Lib SRTP will add to the 

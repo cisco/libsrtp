@@ -67,12 +67,32 @@ srtp_err_status_t srtp_err_reporting_init ()
     return srtp_err_status_ok;
 }
 
+static srtp_err_report_handler_func_t * srtp_err_report_handler = NULL;
+
+srtp_err_status_t srtp_install_err_report_handler(srtp_err_report_handler_func_t func)
+{
+    srtp_err_report_handler = func;
+}
+
 void srtp_err_report (srtp_err_reporting_level_t level, const char *format, ...)
 {
     va_list args;
-    va_start(args, format);
     if (srtp_err_file != NULL) {
+        va_start(args, format);
         vfprintf(srtp_err_file, format, args);
+        va_end(args);
     }
-    va_end(args);
+    if (srtp_err_report_handler != NULL) {
+        va_start(args, format);
+        char msg[512];
+        if (vsnprintf(msg, sizeof(msg), format, args) > 0) {
+            /* strip trailing \n, callback should not have one */
+            size_t l = strlen(msg);
+            if (l && msg[l-1] == '\n') {
+                msg[l-1] = '\0';
+            }
+            srtp_err_report_handler(level, msg);
+        }
+        va_end(args);
+    }
 }

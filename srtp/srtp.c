@@ -4322,3 +4322,44 @@ srtp_err_status_t srtp_list_debug_modules(void)
     return srtp_crypto_kernel_list_debug_modules();
 }
 
+/*
+ * srtp_log_handler is a global variable holding a pointer to the
+ * log handler function; this function is called for any log
+ * output.
+ */
+
+static srtp_log_handler_func_t *srtp_log_handler = NULL;
+
+void srtp_err_handler(srtp_err_reporting_level_t level, const char * msg)
+{
+    if (srtp_log_handler) {
+        srtp_log_level_t log_level;
+        switch(level) {
+            case srtp_err_level_error: log_level = srtp_log_level_error; break;
+            case srtp_err_level_warning: log_level = srtp_log_level_warning; break;
+            case srtp_err_level_info: log_level = srtp_log_level_info; break;
+            case srtp_err_level_debug: log_level = srtp_log_level_debug; break;
+        }
+
+        srtp_log_handler(log_level, msg);
+    }
+}
+
+srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func)
+{
+
+    /*
+     * note that we accept NULL arguments intentionally - calling this
+     * function with a NULL arguments removes a log handler that's
+     * been previously installed
+     */
+
+    if (srtp_log_handler) {
+        srtp_install_err_report_handler(NULL);
+    }
+    srtp_log_handler = func;
+    if (srtp_log_handler) {
+        srtp_install_err_report_handler(srtp_err_handler);
+    }
+    return srtp_err_status_ok;
+}

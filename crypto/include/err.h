@@ -82,6 +82,10 @@ typedef enum {
 
 srtp_err_status_t srtp_err_reporting_init();
 
+typedef void (srtp_err_report_handler_func_t)(srtp_err_reporting_level_t level, const char * msg);
+
+srtp_err_status_t srtp_install_err_report_handler(srtp_err_report_handler_func_t func);
+
 /*
  * srtp_err_report reports a 'printf' formatted error
  * string, followed by a an arg list.  The level argument
