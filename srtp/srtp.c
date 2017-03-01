@@ -4333,7 +4333,7 @@ static srtp_log_handler_func_t *srtp_log_handler = NULL;
 void srtp_err_handler(srtp_err_reporting_level_t level, const char * msg)
 {
     if (srtp_log_handler) {
-        srtp_log_level_t log_level;
+        srtp_log_level_t log_level = srtp_log_level_error;
         switch(level) {
             case srtp_err_level_error: log_level = srtp_log_level_error; break;
             case srtp_err_level_warning: log_level = srtp_log_level_warning; break;

@@ -47,6 +47,7 @@
 #endif
 
 #include "err.h"
+#include <string.h>
 
 /* srtp_err_file is the FILE to which errors are reported */
 
@@ -72,6 +73,7 @@ static srtp_err_report_handler_func_t * srtp_err_report_handler = NULL;
 srtp_err_status_t srtp_install_err_report_handler(srtp_err_report_handler_func_t func)
 {
     srtp_err_report_handler = func;
+    return srtp_err_status_ok;
 }
 
 void srtp_err_report (srtp_err_reporting_level_t level, const char *format, ...)
