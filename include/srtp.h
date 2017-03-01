@@ -1699,12 +1699,12 @@ typedef enum {
  * the log handler.
  *
  * The typedef srtp_event_handler_func_t is the prototype for the
- * event handler function.  It has as srtp_log_level_t and log
- * message as arguments.
+ * event handler function.  It has as srtp_log_level_t, log
+ * message and data as arguments.
  * There can only be a single, global handler for all log messages in
  * libSRTP.
  */
-typedef void (srtp_log_handler_func_t)(srtp_log_level_t level, const char * msg);
+typedef void (srtp_log_handler_func_t)(srtp_log_level_t level, const char * msg, void *data);
 
 /**
  * @brief sets the log handler to the function supplied by the caller.
@@ -1717,8 +1717,9 @@ typedef void (srtp_log_handler_func_t)(srtp_log_level_t level, const char * msg)
  *
  * @param func is a pointer to a fuction of type srtp_log_handler_func_t.
  *             This function will be used by libSRTP to output log messages.
+ * @param data is a user pointer that will be returned as the data argument in func.
  */
-srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func);
+srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func, void *data);
 
 /**
  * @brief srtp_get_protect_trailer_length(session, use_mki, mki_index, length)

@@ -177,7 +177,7 @@ usage (char *prog_name)
 }
 
 void
-log_handler (srtp_log_level_t level, const char * msg)
+log_handler (srtp_log_level_t level, const char * msg, void * data)
 {
     char level_char = '?';
     switch(level) {
@@ -294,7 +294,7 @@ main (int argc, char *argv[])
     }
 
     if (do_log_stdout) {
-        status = srtp_install_log_handler(log_handler);
+        status = srtp_install_log_handler(log_handler, NULL);
         if (status) {
             printf("error: install log handler failed\n");
             exit(1);

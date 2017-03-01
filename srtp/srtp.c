@@ -4329,6 +4329,7 @@ srtp_err_status_t srtp_list_debug_modules(void)
  */
 
 static srtp_log_handler_func_t *srtp_log_handler = NULL;
+static void * srtp_log_handler_data = NULL;
 
 void srtp_err_handler(srtp_err_reporting_level_t level, const char * msg)
 {
@@ -4341,11 +4342,11 @@ void srtp_err_handler(srtp_err_reporting_level_t level, const char * msg)
             case srtp_err_level_debug: log_level = srtp_log_level_debug; break;
         }
 
-        srtp_log_handler(log_level, msg);
+        srtp_log_handler(log_level, msg, srtp_log_handler_data);
     }
 }
 
-srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func)
+srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func, void * data)
 {
 
     /*
@@ -4358,6 +4359,7 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func)
         srtp_install_err_report_handler(NULL);
     }
     srtp_log_handler = func;
+    srtp_log_handler_data = data;
     if (srtp_log_handler) {
         srtp_install_err_report_handler(srtp_err_handler);
     }
