@@ -1,5 +1,5 @@
 /*
- * math.h
+ * crypto_math.h
  *
  * crypto math operations and data types
  *
@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef MATH_H
-#define MATH_H
+#ifndef SRTP_CRYPTO_MATH_H
+#define SRTP_CRYPTO_MATH_H
 
 #include "datatypes.h"
 
@@ -188,7 +188,7 @@ octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 }
 #endif
 
-#endif /* MATH_H */
+#endif /* SRTP_CRYPTO_MATH_H */
 
 
 
