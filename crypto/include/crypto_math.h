@@ -124,58 +124,6 @@ octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 uint8_t 
 A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b);
 
-#ifdef DATATYPES_USE_MACROS  /* little functions are really macros */
-
-#define v128_set_to_zero(z)       _v128_set_to_zero(z)
-#define v128_copy(z, x)           _v128_copy(z, x)
-#define v128_xor(z, x, y)         _v128_xor(z, x, y)
-#define v128_and(z, x, y)         _v128_and(z, x, y)
-#define v128_or(z, x, y)          _v128_or(z, x, y)
-#define v128_complement(x)        _v128_complement(x) 
-#define v128_is_eq(x, y)          _v128_is_eq(x, y)
-#define v128_xor_eq(x, y)         _v128_xor_eq(x, y)
-#define v128_get_bit(x, i)        _v128_get_bit(x, i)
-#define v128_set_bit(x, i)        _v128_set_bit(x, i)
-#define v128_clear_bit(x, i)      _v128_clear_bit(x, i)
-#define v128_set_bit_to(x, i, y)  _v128_set_bit_to(x, i, y)
-
-#else
-
-void
-v128_set_to_zero(v128_t *x);
-
-int
-v128_is_eq(const v128_t *x, const v128_t *y);
-
-void
-v128_copy(v128_t *x, const v128_t *y);
-
-void
-v128_xor(v128_t *z, v128_t *x, v128_t *y);
-
-void
-v128_and(v128_t *z, v128_t *x, v128_t *y);
-
-void
-v128_or(v128_t *z, v128_t *x, v128_t *y); 
-
-void
-v128_complement(v128_t *x);
-
-int
-v128_get_bit(const v128_t *x, int i);
-
-void
-v128_set_bit(v128_t *x, int i) ;     
-
-void
-v128_clear_bit(v128_t *x, int i);    
-
-void
-v128_set_bit_to(v128_t *x, int i, int y);
-
-#endif /* DATATYPES_USE_MACROS */
-
 /*
  * octet_string_is_eq(a,b, len) returns 1 if the length len strings a
  * and b are not equal, returns 0 otherwise
