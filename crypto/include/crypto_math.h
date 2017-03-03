@@ -124,14 +124,6 @@ octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 uint8_t 
 A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b);
 
-/*
- * octet_string_is_eq(a,b, len) returns 1 if the length len strings a
- * and b are not equal, returns 0 otherwise
- */
-
-int
-octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
-
 #ifdef __cplusplus
 }
 #endif
