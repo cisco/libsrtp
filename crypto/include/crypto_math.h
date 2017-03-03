@@ -124,50 +124,6 @@ octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
 uint8_t 
 A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b);
 
-
-#if 0
-#if WORDS_BIGENDIAN
-
-#define _v128_add(z, x, y) {                    \
-  uint64_t tmp;					\
-    						\
-  tmp = x->v32[3] + y->v32[3];                  \
-  z->v32[3] = (uint32_t) tmp;			\
-  						\
-  tmp =  x->v32[2] + y->v32[2] + (tmp >> 32);	\
-  z->v32[2] = (uint32_t) tmp;                   \
-						\
-  tmp =  x->v32[1] + y->v32[1] + (tmp >> 32);	\
-  z->v32[1] = (uint32_t) tmp;			\
-                                                \
-  tmp =  x->v32[0] + y->v32[0] + (tmp >> 32);	\
-  z->v32[0] = (uint32_t) tmp;			\
-}
-
-#else /* assume little endian architecture */
-
-#define _v128_add(z, x, y) {                    \
-  uint64_t tmp;					\
-						\
-  tmp = htonl(x->v32[3]) + htonl(y->v32[3]);	\
-  z->v32[3] = ntohl((uint32_t) tmp);		\
-  						\
-  tmp =  htonl(x->v32[2]) + htonl(y->v32[2])	\
-       + htonl(tmp >> 32);			\
-  z->v32[2] = ntohl((uint32_t) tmp);		\
-                                                \
-  tmp =  htonl(x->v32[1]) + htonl(y->v32[1])	\
-       + htonl(tmp >> 32);			\
-  z->v32[1] = ntohl((uint32_t) tmp);		\
-  						\
-  tmp =  htonl(x->v32[0]) + htonl(y->v32[0])	\
-       + htonl(tmp >> 32);			\
-  z->v32[0] = ntohl((uint32_t) tmp);		\
-}
-						
-#endif /* WORDS_BIGENDIAN */                      
-#endif
-
 #ifdef DATATYPES_USE_MACROS  /* little functions are really macros */
 
 #define v128_set_to_zero(z)       _v128_set_to_zero(z)
