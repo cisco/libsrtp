@@ -96,12 +96,6 @@ hex_string_to_v32(char *s);
 v64_t
 hex_string_to_v64(char *s);
 
-/* the matrix A[] is stored in column format, i.e., A[i] is
-   the ith column of the matrix */
-
-uint8_t 
-A_times_x_plus_b(uint8_t A[8], uint8_t x, uint8_t b);
-
 void
 v16_copy_octet_string(v16_t *x, const uint8_t s[2]);
 
