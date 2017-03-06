@@ -16,15 +16,15 @@
  *Forward declaration of all tests
  */
 
-void srtp_calc_aead_iv_srtcp_zero_happy_case();
+void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output();
 // void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param();
 
 /*
  * NULL terminated array of tests.
  */
 
-TEST_LIST = {{"srtp_calc_aead_iv_srtcp_zero_happy_case()",
-              srtp_calc_aead_iv_srtcp_zero_happy_case},
+TEST_LIST = {{"srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
+              srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output},
              /* {"srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()",
               srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param}, */
              {NULL} /* End of tests */};
@@ -33,7 +33,7 @@ TEST_LIST = {{"srtp_calc_aead_iv_srtcp_zero_happy_case()",
  * Implementation
  */
 
-void srtp_calc_aead_iv_srtcp_zero_happy_case()
+void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
 {
     // Preconditions
     srtp_session_keys_t session_keys;
