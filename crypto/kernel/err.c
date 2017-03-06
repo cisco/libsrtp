@@ -94,6 +94,11 @@ void srtp_err_report (srtp_err_reporting_level_t level, const char *format, ...)
                 msg[l-1] = '\0';
             }
             srtp_err_report_handler(level, msg);
+            /*
+             * NOTE, need to be carefull, there is a potential that octet_string_set_to_zero() could
+             * call srtp_err_report() in the future, leading to recursion
+             */
+            octet_string_set_to_zero(msg, sizeof(msg));
         }
         va_end(args);
     }
