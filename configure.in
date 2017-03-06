@@ -78,7 +78,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
    AC_MSG_RESULT([no])])
 
 if test "$EMPTY_CFLAGS" = "yes"; then
-  for f in -Wall; do
+  for f in -Wall -pedantic; do
     AC_MSG_CHECKING([whether the compiler supports $f])
     save_cflags="$CFLAGS"
     AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
