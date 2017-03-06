@@ -2037,7 +2037,7 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
 #endif
 
    /* 
-    * if we're using rindael counter mode, set nonce and seq 
+    * if we're using rijndael counter mode, set nonce and seq
     */
    if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM ||
        session_keys->rtp_cipher->type->id == SRTP_AES_256_ICM) {
@@ -3704,9 +3704,10 @@ srtp_protect_rtcp_mki(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len,
   debug_print(mod_srtp, "srtcp index: %x", seq_num);
 
   /* 
-   * if we're using rindael counter mode, set nonce and seq 
+   * if we're using rijndael counter mode, set nonce and seq
    */
-  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM) {
+  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_256_ICM) {
     v128_t iv;
     
     iv.v32[0] = 0;
@@ -3963,7 +3964,8 @@ srtp_unprotect_rtcp_mki(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len,
   /* 
    * if we're using aes counter mode, set nonce and seq 
    */
-  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM) {
+  if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM ||
+      session_keys->rtcp_cipher->type->id == SRTP_AES_256_ICM) {
     v128_t iv;
 
     iv.v32[0] = 0;
