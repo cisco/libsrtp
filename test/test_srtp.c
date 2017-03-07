@@ -1,5 +1,5 @@
 /*
- * Tests specific.
+ * Test specific.
  */
 #include "cutest.h"
 
@@ -9,11 +9,11 @@
 #include "../srtp/srtp.c" // Get access to static functions
 
 /*
- * Standard library
+ * Standard library.
  */
 
 /*
- *Forward declaration of all tests
+ * Forward declarations for all tests.
  */
 
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output();
@@ -30,7 +30,7 @@ TEST_LIST = {{"srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
              {NULL} /* End of tests */};
 
 /*
- * Implementation
+ * Implementation.
  */
 
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
