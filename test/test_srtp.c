@@ -49,7 +49,7 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
     memset(&session_keys, 0, sizeof(srtp_session_keys_t));
     memset(&init_vector, 0, sizeof(v128_t));
     memset(&header, 0, sizeof(srtcp_hdr_t));
-    sequence_num = 0x0;
+    sequence_num = 0x0UL;
 
     // When
     srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num, &header);
@@ -74,7 +74,7 @@ void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
     memset(&session_keys, 0, sizeof(srtp_session_keys_t));
     memset(&init_vector, 0, sizeof(v128_t));
     memset(&header, 0, sizeof(srtcp_hdr_t));
-    sequence_num = 0x7FFFFFFF + 0x1;
+    sequence_num = 0x7FFFFFFFUL + 0x1UL;
 
     // When
     srtp_err_status_t status = srtp_calc_aead_iv_srtcp(
