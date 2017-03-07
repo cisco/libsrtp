@@ -47,6 +47,7 @@
 #endif
 
 #include "err.h"
+#include "datatypes.h"
 #include <string.h>
 
 /* srtp_err_file is the FILE to which errors are reported */
