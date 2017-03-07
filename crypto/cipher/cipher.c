@@ -261,7 +261,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
             debug_print(srtp_mod_cipher, "IV:    %s",
                         srtp_octet_string_hex_string(test_case->idx, 12));
 
@@ -286,7 +286,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
             /*
              * Get the GCM tag
              */
@@ -361,7 +361,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
             /*
              * Set the AAD
              */
@@ -491,7 +491,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
             /*
              * Set the AAD
              */
@@ -512,7 +512,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-        if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
             /*
              * Get the GCM tag
              */
@@ -540,7 +540,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-        if (c->algorithm == SRTP_AES_128_GCM || c->algorithm == SRTP_AES_256_GCM) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
             /*
              * Set the AAD
              */
