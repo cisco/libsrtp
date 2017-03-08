@@ -57,6 +57,8 @@ srtp_debug_module_t srtp_mod_aes_icm = {
     0,               /* debugging is off by default */
     "aes icm"        /* printable module name       */
 };
+extern const srtp_cipher_type_t srtp_aes_icm_128;
+extern const srtp_cipher_type_t srtp_aes_icm_256;
 
 /*
  * integer counter mode works as follows:
@@ -94,7 +96,6 @@ srtp_debug_module_t srtp_mod_aes_icm = {
 
 static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int tlen)
 {
-    extern const srtp_cipher_type_t srtp_aes_icm;
     srtp_aes_icm_ctx_t *icm;
 
     debug_print(srtp_mod_aes_icm,
@@ -106,7 +107,7 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
      * has not broken anything. Don't know what would be the
      * effect of skipping this check for srtp in general.
      */
-    if (key_len != 30 && key_len != 38 && key_len != 46) {
+    if (key_len != 30 && key_len != 46) {
         return srtp_err_status_bad_param;
     }
 
@@ -126,17 +127,15 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
 
     /* set pointers */
     (*c)->state = icm;
-    (*c)->type = &srtp_aes_icm;
 
     switch (key_len) {
     case 46:
-        (*c)->algorithm = SRTP_AES_256_ICM;
-        break;
-    case 38:
-        (*c)->algorithm = SRTP_AES_192_ICM;
+        (*c)->algorithm = SRTP_AES_ICM_256;
+        (*c)->type = &srtp_aes_icm_256;
         break;
     default:
-        (*c)->algorithm = SRTP_AES_128_ICM;
+        (*c)->algorithm = SRTP_AES_ICM_128;
+        (*c)->type = &srtp_aes_icm_128;
         break;
     }
 
@@ -402,49 +401,50 @@ static srtp_err_status_t srtp_aes_icm_encrypt (void *cv,
     return srtp_err_status_ok;
 }
 
-static const char srtp_aes_icm_description[] = "aes integer counter mode";
+static const char srtp_aes_icm_128_description[] = "AES-128 integer counter mode";
+static const char srtp_aes_icm_256_description[] = "AES-256 integer counter mode";
 
-static const uint8_t srtp_aes_icm_test_case_0_key[30] = {
+static const uint8_t srtp_aes_icm_128_test_case_0_key[30] = {
     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
     0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static uint8_t srtp_aes_icm_test_case_0_nonce[16] = {
+static uint8_t srtp_aes_icm_128_test_case_0_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8_t srtp_aes_icm_test_case_0_plaintext[32] =  {
+static const uint8_t srtp_aes_icm_128_test_case_0_plaintext[32] =  {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-static const uint8_t srtp_aes_icm_test_case_0_ciphertext[32] = {
+static const uint8_t srtp_aes_icm_128_test_case_0_ciphertext[32] = {
     0xe0, 0x3e, 0xad, 0x09, 0x35, 0xc9, 0x5e, 0x80,
     0xe1, 0x66, 0xb1, 0x6d, 0xd9, 0x2b, 0x4e, 0xb4,
     0xd2, 0x35, 0x13, 0x16, 0x2b, 0x02, 0xd0, 0xf7,
     0x2a, 0x43, 0xa2, 0xfe, 0x4a, 0x5f, 0x97, 0xab
 };
 
-static const srtp_cipher_test_case_t srtp_aes_icm_test_case_0 = {
+static const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0 = {
     30,                                  /* octets in key            */
-    srtp_aes_icm_test_case_0_key,        /* key                      */
-    srtp_aes_icm_test_case_0_nonce,      /* packet index             */
+    srtp_aes_icm_128_test_case_0_key,        /* key                      */
+    srtp_aes_icm_128_test_case_0_nonce,      /* packet index             */
     32,                                  /* octets in plaintext      */
-    srtp_aes_icm_test_case_0_plaintext,  /* plaintext                */
+    srtp_aes_icm_128_test_case_0_plaintext,  /* plaintext                */
     32,                                  /* octets in ciphertext     */
-    srtp_aes_icm_test_case_0_ciphertext, /* ciphertext               */
+    srtp_aes_icm_128_test_case_0_ciphertext, /* ciphertext               */
     0,
     NULL,
     0,
     NULL                                 /* pointer to next testcase */
 };
 
-static const uint8_t srtp_aes_icm_test_case_1_key[46] = {
+static const uint8_t srtp_aes_icm_256_test_case_0_key[46] = {
     0x57, 0xf8, 0x2f, 0xe3, 0x61, 0x3f, 0xd1, 0x70,
     0xa8, 0x5e, 0xc9, 0x3c, 0x40, 0xb1, 0xf0, 0x92,
     0x2e, 0xc4, 0xcb, 0x0d, 0xc0, 0x25, 0xb5, 0x82,
@@ -453,37 +453,37 @@ static const uint8_t srtp_aes_icm_test_case_1_key[46] = {
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd
 };
 
-static uint8_t srtp_aes_icm_test_case_1_nonce[16] = {
+static uint8_t srtp_aes_icm_256_test_case_0_nonce[16] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8_t srtp_aes_icm_test_case_1_plaintext[32] =  {
+static const uint8_t srtp_aes_icm_256_test_case_0_plaintext[32] =  {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-static const uint8_t srtp_aes_icm_test_case_1_ciphertext[32] = {
+static const uint8_t srtp_aes_icm_256_test_case_0_ciphertext[32] = {
     0x92, 0xbd, 0xd2, 0x8a, 0x93, 0xc3, 0xf5, 0x25,
     0x11, 0xc6, 0x77, 0xd0, 0x8b, 0x55, 0x15, 0xa4,
     0x9d, 0xa7, 0x1b, 0x23, 0x78, 0xa8, 0x54, 0xf6,
     0x70, 0x50, 0x75, 0x6d, 0xed, 0x16, 0x5b, 0xac
 };
 
-static const srtp_cipher_test_case_t srtp_aes_icm_test_case_1 = {
+static const srtp_cipher_test_case_t srtp_aes_icm_256_test_case_0 = {
     46,                                  /* octets in key            */
-    srtp_aes_icm_test_case_1_key,        /* key                      */
-    srtp_aes_icm_test_case_1_nonce,      /* packet index             */
+    srtp_aes_icm_256_test_case_0_key,        /* key                      */
+    srtp_aes_icm_256_test_case_0_nonce,      /* packet index             */
     32,                                  /* octets in plaintext      */
-    srtp_aes_icm_test_case_1_plaintext,  /* plaintext                */
+    srtp_aes_icm_256_test_case_0_plaintext,  /* plaintext                */
     32,                                  /* octets in ciphertext     */
-    srtp_aes_icm_test_case_1_ciphertext, /* ciphertext               */
+    srtp_aes_icm_256_test_case_0_ciphertext, /* ciphertext               */
     0,
     NULL,
     0,
-    &srtp_aes_icm_test_case_0                 /* pointer to next testcase */
+    NULL,                 /* pointer to next testcase */
 };
 
 
@@ -492,7 +492,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_test_case_1 = {
  * note: the encrypt function is identical to the decrypt function
  */
 
-const srtp_cipher_type_t srtp_aes_icm = {
+const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_alloc,
     srtp_aes_icm_dealloc,
     srtp_aes_icm_context_init,
@@ -501,8 +501,21 @@ const srtp_cipher_type_t srtp_aes_icm = {
     srtp_aes_icm_encrypt,
     srtp_aes_icm_set_iv,
     0,                          /* get_tag */
-    srtp_aes_icm_description,
-    &srtp_aes_icm_test_case_1,
-    SRTP_AES_ICM
+    srtp_aes_icm_128_description,
+    &srtp_aes_icm_128_test_case_0,
+    SRTP_AES_ICM_128
 };
 
+const srtp_cipher_type_t srtp_aes_icm_256 = {
+    srtp_aes_icm_alloc,
+    srtp_aes_icm_dealloc,
+    srtp_aes_icm_context_init,
+    0,                          /* set_aad */
+    srtp_aes_icm_encrypt,
+    srtp_aes_icm_encrypt,
+    srtp_aes_icm_set_iv,
+    0,                          /* get_tag */
+    srtp_aes_icm_256_description,
+    &srtp_aes_icm_256_test_case_0,
+    SRTP_AES_ICM_256
+};
