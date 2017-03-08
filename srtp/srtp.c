@@ -676,8 +676,8 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf, srtp_prf_label label
 }
 
 static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf) {
-    memset(kdf->master_key, 0x0, MAX_SRTP_AESKEY_LEN);
-    memset(kdf->master_salt, 0x0, MAX_SRTP_SALT_LEN);
+    octet_string_set_to_zero(kdf->master_key, MAX_SRTP_AESKEY_LEN);
+    octet_string_set_to_zero(kdf->master_salt, MAX_SRTP_SALT_LEN);
     kdf->evp = NULL;
 
     return srtp_err_status_ok;  
@@ -944,6 +944,8 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key,
   stat = srtp_kdf_init(&kdf, (const uint8_t *)tmp_key, kdf_keylen);
 #endif
   if (stat) {
+    /* zeroize temp buffer */
+    octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
     return srtp_err_status_init_fail;
   }
   
@@ -1016,6 +1018,8 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key,
 #endif
       octet_string_set_to_zero(tmp_xtn_hdr_key, MAX_SRTP_KEY_LEN);
       if (stat) {
+        /* zeroize temp buffer */
+        octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
         return srtp_err_status_init_fail;
       }
     } else {
@@ -1069,6 +1073,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key,
       /* release memory for custom header extension encryption kdf */
       stat = srtp_kdf_clear(xtn_hdr_kdf);
       if (stat) {
+        /* zeroize temp buffer */
         octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
         return srtp_err_status_init_fail;
       }
