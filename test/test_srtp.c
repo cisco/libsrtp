@@ -62,7 +62,7 @@
  */
 
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output();
-// void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param();
+void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param();
 
 /*
  * NULL terminated array of tests.
@@ -70,8 +70,8 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output();
 
 TEST_LIST = {{"srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
               srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output},
-             /* {"srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()",
-              srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param}, */
+             {"srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()",
+              srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param},
              {NULL} /* End of tests */};
 
 /*
@@ -105,7 +105,6 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
     TEST_CHECK(memcmp(&zero_vector, &init_vector, sizeof(v128_t)) == 0);
 }
 
-/*
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
 {
     // Preconditions
@@ -115,7 +114,7 @@ void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
     uint32_t sequence_num;
 
     // Postconditions
-    srtp_err_status_t status
+    srtp_err_status_t status;
 
     // Given
     memset(&session_keys, 0, sizeof(srtp_session_keys_t));
@@ -124,10 +123,9 @@ void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
     sequence_num = 0x7FFFFFFFUL + 0x1UL;
 
     // When
-    srtp_err_status_t status = srtp_calc_aead_iv_srtcp(
-        &session_keys, &init_vector, sequence_num, &header);
+    status = srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num,
+                                     &header);
 
     // Then
     TEST_CHECK(status == srtp_err_status_bad_param);
 }
-*/
