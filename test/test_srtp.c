@@ -87,6 +87,7 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
     uint32_t sequence_num;
 
     // Postconditions
+    srtp_err_status_t status;
     const v128_t zero_vector;
     memset((v128_t *)&zero_vector, 0, sizeof(v128_t));
 
@@ -97,9 +98,10 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
     sequence_num = 0x0UL;
 
     // When
-    srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num, &header);
+    status = srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num, &header);
 
     // Then
+    TEST_CHECK(status == srtp_err_status_ok);
     TEST_CHECK(memcmp(&zero_vector, &init_vector, sizeof(v128_t)) == 0);
 }
 
