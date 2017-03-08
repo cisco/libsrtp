@@ -3258,9 +3258,13 @@ srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p) {
  *         seq_num       - The SEQ value to use for the IV calculation.
  *         *hdr          - The RTP header, used to get the SSRC value
  *
+ * Returns: srtp_err_status_ok if no error or srtp_err_status_bad_param
+ *          if seq_num is invalid
+ *
  */
-static void srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys, v128_t *iv, 
-                                    uint32_t seq_num, srtcp_hdr_t *hdr)
+static srtp_err_status_t
+srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys, v128_t *iv,
+                        uint32_t seq_num, srtcp_hdr_t *hdr)
 {
     v128_t	in;
     v128_t	salt;
@@ -3271,6 +3275,9 @@ static void srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys, v128_t *i
     in.v16[0] = 0;
     memcpy(&in.v16[1], &hdr->ssrc, 4); /* still in network order! */
     in.v16[3] = 0;
+    if (seq_num & 0x80000000UL) { /* the most significant bit should be zero */
+        return srtp_err_status_bad_param;
+    }
     in.v32[2] = 0x7FFFFFFF & htonl(seq_num); /* bit 32 is suppose to be zero */
 
     debug_print(mod_srtp, "Pre-salted RTCP IV = %s\n", v128_hex_string(&in));
@@ -3285,6 +3292,8 @@ static void srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys, v128_t *i
      * Finally, apply the SALT to the input
      */
     v128_xor(iv, &in, &salt);
+
+    return srtp_err_status_ok;
 }
 
 /*
@@ -3357,9 +3366,12 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     debug_print(mod_srtp, "srtcp index: %x", seq_num);
 
     /*
-     * Calculating the IV and pass it down to the cipher 
+     * Calculate and set the IV
      */
-    srtp_calc_aead_iv_srtcp(session_keys, &iv, seq_num, hdr);
+    status = srtp_calc_aead_iv_srtcp(session_keys, &iv, seq_num, hdr);
+    if (status) {
+        return srtp_err_status_cipher_fail;
+    }
     status = srtp_cipher_set_iv(session_keys->rtcp_cipher,
                                 (uint8_t*)&iv, srtp_direction_encrypt);
     if (status) {
@@ -3519,7 +3531,10 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     /*
      * Calculate and set the IV
      */
-    srtp_calc_aead_iv_srtcp(session_keys, &iv, seq_num, hdr);
+    status = srtp_calc_aead_iv_srtcp(session_keys, &iv, seq_num, hdr);
+    if (status) {
+        return srtp_err_status_cipher_fail;
+    }
     status = srtp_cipher_set_iv(session_keys->rtcp_cipher,
                                 (uint8_t*)&iv, srtp_direction_decrypt);
     if (status) {
