@@ -50,7 +50,6 @@
 #include <stdlib.h>   /* for malloc(), free()  */
 #include <stdio.h>    /* for print(), fflush() */
 #include "getopt_s.h" /* for local getopt()    */
-#include "util.h"
 
 #include "srtp_priv.h"
 #include "util.h"
@@ -165,14 +164,28 @@ srtp_master_key_t *test_keys[2] = {
 void
 usage (char *prog_name)
 {
-    printf("usage: %s [ -t ][ -c ][ -v ][-d <debug_module> ]* [ -l ]\n"
+    printf("usage: %s [ -t ][ -c ][ -v ][ -o ][-d <debug_module> ]* [ -l ]\n"
            "  -t         run timing test\n"
            "  -r         run rejection timing test\n"
            "  -c         run codec timing test\n"
            "  -v         run validation tests\n"
+           "  -o         output logging to stdout\n"
            "  -d <mod>   turn on debugging module <mod>\n"
            "  -l         list debugging modules\n", prog_name);
     exit(1);
+}
+
+void
+log_handler (srtp_log_level_t level, const char * msg, void * data)
+{
+    char level_char = '?';
+    switch(level) {
+        case srtp_log_level_error: level_char = 'e'; break;
+        case srtp_log_level_warning: level_char = 'w'; break;
+        case srtp_log_level_info: level_char = 'i'; break;
+        case srtp_log_level_debug: level_char = 'd'; break;
+    }
+    printf("SRTP-LOG [%c]: %s\n", level_char, msg);
 }
 
 /*
@@ -208,6 +221,7 @@ main (int argc, char *argv[])
     unsigned do_codec_timing   = 0;
     unsigned do_validation     = 0;
     unsigned do_list_mods      = 0;
+    unsigned do_log_stdout     = 0;
     srtp_err_status_t status;
 
     /*
@@ -238,7 +252,7 @@ main (int argc, char *argv[])
 
     /* process input arguments */
     while (1) {
-        q = getopt_s(argc, argv, "trcvld:");
+        q = getopt_s(argc, argv, "trcvold:");
         if (q == -1) {
             break;
         }
@@ -255,11 +269,14 @@ main (int argc, char *argv[])
         case 'v':
             do_validation = 1;
             break;
+        case 'o':
+            do_log_stdout = 1;
+            break;
         case 'l':
             do_list_mods = 1;
             break;
         case 'd':
-            status = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
+            status = srtp_set_debug_module(optarg_s, 1);
             if (status) {
                 printf("error: set debug module (%s) failed\n", optarg_s);
                 exit(1);
@@ -275,8 +292,16 @@ main (int argc, char *argv[])
         usage(argv[0]);
     }
 
+    if (do_log_stdout) {
+        status = srtp_install_log_handler(log_handler, NULL);
+        if (status) {
+            printf("error: install log handler failed\n");
+            exit(1);
+        }
+    }
+
     if (do_list_mods) {
-        status = srtp_crypto_kernel_list_debug_modules();
+        status = srtp_list_debug_modules();
         if (status) {
             printf("error: list of debug modules failed\n");
             exit(1);
@@ -2966,7 +2991,7 @@ unsigned char test_mki_id_2[TEST_MKI_ID_SIZE] = {
 const srtp_policy_t default_policy = {
     { ssrc_any_outbound, 0 },  /* SSRC                           */
     {                          /* SRTP policy                    */
-        SRTP_AES_128_ICM,           /* cipher type                 */
+        SRTP_AES_ICM_128,           /* cipher type                 */
         30,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         16,                    /* auth key length in octets   */
@@ -2974,7 +2999,7 @@ const srtp_policy_t default_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     {                          /* SRTCP policy                   */
-        SRTP_AES_128_ICM,           /* cipher type                 */
+        SRTP_AES_ICM_128,           /* cipher type                 */
         30,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         16,                    /* auth key length in octets   */
@@ -2995,7 +3020,7 @@ const srtp_policy_t default_policy = {
 const srtp_policy_t aes_only_policy = {
     { ssrc_any_outbound, 0 }, /* SSRC                        */
     {
-        SRTP_AES_128_ICM,          /* cipher type                 */
+        SRTP_AES_ICM_128,          /* cipher type                 */
         30,                   /* cipher key length in octets */
         SRTP_NULL_AUTH,            /* authentication func type    */
         0,                    /* auth key length in octets   */
@@ -3003,7 +3028,7 @@ const srtp_policy_t aes_only_policy = {
         sec_serv_conf         /* security services flag      */
     },
     {
-        SRTP_AES_128_ICM,        /* cipher type                 */
+        SRTP_AES_ICM_128,        /* cipher type                 */
         30,                 /* cipher key length in octets */
         SRTP_NULL_AUTH,          /* authentication func type    */
         0,                  /* auth key length in octets   */
@@ -3054,16 +3079,16 @@ const srtp_policy_t hmac_only_policy = {
 const srtp_policy_t aes128_gcm_8_policy = {
     { ssrc_any_outbound, 0 },           /* SSRC                           */
     {                                   /* SRTP policy                    */
-        SRTP_AES_128_GCM,                    /* cipher type                 */
-        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_128,                    /* cipher type                 */
+        SRTP_AES_GCM_128_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
         sec_serv_conf_and_auth          /* security services flag      */
     },
     {                                   /* SRTCP policy                   */
-        SRTP_AES_128_GCM,                    /* cipher type                 */
-        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_128,                    /* cipher type                 */
+        SRTP_AES_GCM_128_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
@@ -3083,16 +3108,16 @@ const srtp_policy_t aes128_gcm_8_policy = {
 const srtp_policy_t aes128_gcm_8_cauth_policy = {
     { ssrc_any_outbound, 0 },           /* SSRC                           */
     {                                   /* SRTP policy                    */
-        SRTP_AES_128_GCM,                    /* cipher type                 */
-        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_128,                    /* cipher type                 */
+        SRTP_AES_GCM_128_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
         sec_serv_conf_and_auth          /* security services flag      */
     },
     {                                   /* SRTCP policy                   */
-        SRTP_AES_128_GCM,                    /* cipher type                 */
-        SRTP_AES_128_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_128,                    /* cipher type                 */
+        SRTP_AES_GCM_128_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
@@ -3112,16 +3137,16 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
 const srtp_policy_t aes256_gcm_8_policy = {
     { ssrc_any_outbound, 0 },           /* SSRC                           */
     {                                   /* SRTP policy                    */
-        SRTP_AES_256_GCM,                    /* cipher type                 */
-        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_256,                    /* cipher type                 */
+        SRTP_AES_GCM_256_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
         sec_serv_conf_and_auth          /* security services flag      */
     },
     {                                   /* SRTCP policy                   */
-        SRTP_AES_256_GCM,                    /* cipher type                 */
-        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_256,                    /* cipher type                 */
+        SRTP_AES_GCM_256_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
@@ -3141,16 +3166,16 @@ const srtp_policy_t aes256_gcm_8_policy = {
 const srtp_policy_t aes256_gcm_8_cauth_policy = {
     { ssrc_any_outbound, 0 },           /* SSRC                           */
     {                                   /* SRTP policy                    */
-        SRTP_AES_256_GCM,                    /* cipher type                 */
-        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_256,                    /* cipher type                 */
+        SRTP_AES_GCM_256_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
         sec_serv_conf_and_auth          /* security services flag      */
     },
     {                                   /* SRTCP policy                   */
-        SRTP_AES_256_GCM,                    /* cipher type                 */
-        SRTP_AES_256_GCM_KEYSIZE_WSALT, /* cipher key length in octets */
+        SRTP_AES_GCM_256,                    /* cipher type                 */
+        SRTP_AES_GCM_256_KEYSIZE_WSALT, /* cipher key length in octets */
         SRTP_NULL_AUTH,                      /* authentication func type    */
         0,                              /* auth key length in octets   */
         8,                              /* auth tag length in octets   */
@@ -3236,7 +3261,7 @@ srtp_master_key_t *test_256_keys[2] = {
 const srtp_policy_t aes_256_hmac_policy = {
     { ssrc_any_outbound, 0 },  /* SSRC                           */
     {                          /* SRTP policy                    */
-        SRTP_AES_ICM,               /* cipher type                 */
+        SRTP_AES_ICM_256,               /* cipher type                 */
         46,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         20,                    /* auth key length in octets   */
@@ -3244,7 +3269,7 @@ const srtp_policy_t aes_256_hmac_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     {                          /* SRTCP policy                   */
-        SRTP_AES_ICM,               /* cipher type                 */
+        SRTP_AES_ICM_256,               /* cipher type                 */
         46,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         20,                    /* auth key length in octets   */
@@ -3336,7 +3361,7 @@ policy_array[] = {
 const srtp_policy_t wildcard_policy = {
     { ssrc_any_outbound, 0 },  /* SSRC                        */
     {                          /* SRTP policy                    */
-        SRTP_AES_128_ICM,           /* cipher type                 */
+        SRTP_AES_ICM_128,           /* cipher type                 */
         30,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         16,                    /* auth key length in octets   */
@@ -3344,7 +3369,7 @@ const srtp_policy_t wildcard_policy = {
         sec_serv_conf_and_auth /* security services flag      */
     },
     {                          /* SRTCP policy                   */
-        SRTP_AES_128_ICM,           /* cipher type                 */
+        SRTP_AES_ICM_128,           /* cipher type                 */
         30,                    /* cipher key length in octets */
         SRTP_HMAC_SHA1,             /* authentication func type    */
         16,                    /* auth key length in octets   */

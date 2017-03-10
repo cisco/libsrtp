@@ -108,9 +108,9 @@ extern "C" {
  * as part of the IV formation logic applied to each RTP packet.
  */
 #define SRTP_AEAD_SALT_LEN	12
-#define SRTP_AES_128_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
-#define SRTP_AES_192_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
-#define SRTP_AES_256_GCM_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
+#define SRTP_AES_GCM_128_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
+#define SRTP_AES_GCM_192_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
+#define SRTP_AES_GCM_256_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
 
 /*
  * an srtp_hdr_t represents the srtp header
@@ -1041,6 +1041,95 @@ void srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(srtp_crypto_policy_t *p);
  */
 void srtp_crypto_policy_set_aes_cm_256_null_auth(srtp_crypto_policy_t *p);
 
+
+/**
+ * @brief srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80() sets a crypto
+ * policy structure to a encryption and authentication policy using AES-192
+ * for RTP protection.
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(&p)
+ * sets the crypto_policy_t at location p to use policy
+ * AES_CM_192_HMAC_SHA1_80 as defined in
+ * draft-ietf-avt-srtp-big-aes-03.txt.  This policy uses AES-192
+ * Counter Mode encryption and HMAC-SHA1 authentication, with an 80 bit
+ * authentication tag.
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the crypto_policy_t datatype.
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p);
+
+
+/**
+ * @brief srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32() sets a crypto
+ * policy structure to a short-authentication tag policy using AES-192
+ * encryption.
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(&p)
+ * sets the crypto_policy_t at location p to use policy
+ * AES_CM_192_HMAC_SHA1_32 as defined in
+ * draft-ietf-avt-srtp-big-aes-03.txt.  This policy uses AES-192
+ * Counter Mode encryption and HMAC-SHA1 authentication, with an
+ * authentication tag that is only 32 bits long.  This length is
+ * considered adequate only for protecting audio and video media that
+ * use a stateless playback function.  See Section 7.5 of RFC 3711
+ * (http://www.ietf.org/rfc/rfc3711.txt).
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the crypto_policy_t datatype.
+ *
+ * @warning This crypto policy is intended for use in SRTP, but not in
+ * SRTCP.  It is recommended that a policy that uses longer
+ * authentication tags be used for SRTCP.  See Section 7.5 of RFC 3711
+ * (http://www.ietf.org/rfc/rfc3711.txt).
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p);
+
+
+/**
+ * @brief srtp_crypto_policy_set_aes_cm_192_null_auth() sets a crypto
+ * policy structure to an encryption-only policy
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_cm_192_null_auth(&p) sets
+ * the crypto_policy_t at location p to use the SRTP default cipher
+ * (AES-192 Counter Mode), but to use no authentication method.  This
+ * policy is NOT RECOMMENDED unless it is unavoidable; see Section 7.5
+ * of RFC 3711 (http://www.ietf.org/rfc/rfc3711.txt).
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the crypto_policy_t datatype.
+ *
+ * @warning This policy is NOT RECOMMENDED for SRTP unless it is
+ * unavoidable, and it is NOT RECOMMENDED at all for SRTCP; see
+ * Section 7.5 of RFC 3711 (http://www.ietf.org/rfc/rfc3711.txt).
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_cm_192_null_auth(srtp_crypto_policy_t *p);
+
+
 /**
  * @brief srtp_crypto_policy_set_aes_gcm_128_8_auth() sets a crypto
  * policy structure to an AEAD encryption policy.
@@ -1203,18 +1292,19 @@ srtp_err_status_t srtp_dealloc(srtp_t s);
  * @brief identifies a particular SRTP profile 
  *
  * An srtp_profile_t enumeration is used to identify a particular SRTP
- * profile (that is, a set of algorithms and parameters).  These
- * profiles are defined in the DTLS-SRTP draft.
+ * profile (that is, a set of algorithms and parameters). These profiles
+ * are defined for DTLS-SRTP:
+ * https://www.iana.org/assignments/srtp-protection/srtp-protection.xhtml
  */
 
 typedef enum {
   srtp_profile_reserved           = 0,
   srtp_profile_aes128_cm_sha1_80  = 1,
   srtp_profile_aes128_cm_sha1_32  = 2,
-  srtp_profile_aes256_cm_sha1_80  = 3,
-  srtp_profile_aes256_cm_sha1_32  = 4,
   srtp_profile_null_sha1_80       = 5,
   srtp_profile_null_sha1_32       = 6,
+  srtp_profile_aead_aes_128_gcm   = 7,
+  srtp_profile_aead_aes_256_gcm   = 8,
 } srtp_profile_t;
 
 
@@ -1679,6 +1769,47 @@ srtp_err_status_t srtp_set_debug_module(char *mod_name, int v);
  *
  */
 srtp_err_status_t srtp_list_debug_modules(void);
+
+/**
+ * @brief srtp_log_level_t defines log levels.
+ *
+ * The enumeration srtp_log_level_t defines log levels reported
+ * in the srtp_log_handler_func_t.
+ *
+ */
+typedef enum {
+    srtp_log_level_error,   /**< log level is reporting an error message  */
+    srtp_log_level_warning, /**< log level is reporting a warning message */
+    srtp_log_level_info,    /**< log level is reporting an info message   */
+    srtp_log_level_debug    /**< log level is reporting a debug message   */
+} srtp_log_level_t;
+
+/**
+ * @brief srtp_log_handler_func_t is the function prototype for
+ * the log handler.
+ *
+ * The typedef srtp_event_handler_func_t is the prototype for the
+ * event handler function.  It has as srtp_log_level_t, log
+ * message and data as arguments.
+ * There can only be a single, global handler for all log messages in
+ * libSRTP.
+ */
+typedef void (srtp_log_handler_func_t)(srtp_log_level_t level, const char * msg, void *data);
+
+/**
+ * @brief sets the log handler to the function supplied by the caller.
+ *
+ * The function call srtp_install_log_handler(func) sets the log
+ * handler function to the value func.  The value NULL is acceptable
+ * as an argument; in this case, log messages will be ignored.
+ * This function can be called before srtp_init() inorder to capture
+ * any logging during start up.
+ *
+ * @param func is a pointer to a fuction of type srtp_log_handler_func_t.
+ *             This function will be used by libSRTP to output log messages.
+ * @param data is a user pointer that will be returned as the data argument in func.
+ */
+srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func, void *data);
 
 /**
  * @brief srtp_get_protect_trailer_length(session, use_mki, mki_index, length)
