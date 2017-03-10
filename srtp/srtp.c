@@ -3275,7 +3275,9 @@ srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys, v128_t *iv,
     in.v16[0] = 0;
     memcpy(&in.v16[1], &hdr->ssrc, 4); /* still in network order! */
     in.v16[3] = 0;
-    /*  The SRTCP index (seq_num) spans bits 0 through 30 inclusive.
+
+    /*
+     *  The SRTCP index (seq_num) spans bits 0 through 30 inclusive.
      *  The most significant bit should be zero.
      */
     if (seq_num & 0x80000000UL) {
