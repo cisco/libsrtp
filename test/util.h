@@ -41,8 +41,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef SRTP_TEST_UTIL_H
+#define SRTP_TEST_UTIL_H
 
 #define MAX_PRINT_STRING_LEN 1024
 
