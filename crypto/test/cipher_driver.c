@@ -182,14 +182,14 @@ main(int argc, char *argv[]) {
       cipher_driver_test_array_throughput(&srtp_null_cipher, 0, num_cipher); 
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
-      cipher_driver_test_array_throughput(&srtp_aes_icm_128, 30, num_cipher);
+      cipher_driver_test_array_throughput(&srtp_aes_icm_128, SRTP_AES_ICM_128_KEY_LEN_WSALT, num_cipher);
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
-      cipher_driver_test_array_throughput(&srtp_aes_icm_256, 46, num_cipher);
+      cipher_driver_test_array_throughput(&srtp_aes_icm_256, SRTP_AES_ICM_256_KEY_LEN_WSALT, num_cipher);
 
 #ifdef OPENSSL
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8)
-      cipher_driver_test_array_throughput(&srtp_aes_icm_192, 38, num_cipher);
+      cipher_driver_test_array_throughput(&srtp_aes_icm_192, SRTP_AES_ICM_192_KEY_LEN_WSALT, num_cipher);
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8) {
       cipher_driver_test_array_throughput(&srtp_aes_gcm_128_openssl, SRTP_AES_GCM_128_KEY_LEN_WSALT, num_cipher);
@@ -230,7 +230,7 @@ main(int argc, char *argv[]) {
   
 
   /* run the throughput test on the aes_icm cipher (128-bit key) */
-    status = srtp_cipher_type_alloc(&srtp_aes_icm_128, &c, 30, 0);
+    status = srtp_cipher_type_alloc(&srtp_aes_icm_128, &c, SRTP_AES_ICM_128_KEY_LEN_WSALT, 0);
     if (status) {
       fprintf(stderr, "error: can't allocate cipher\n");
       exit(status);
@@ -251,7 +251,7 @@ main(int argc, char *argv[]) {
     check_status(status);
 
   /* repeat the tests with 256-bit keys */
-    status = srtp_cipher_type_alloc(&srtp_aes_icm_256, &c, 46, 0);  
+    status = srtp_cipher_type_alloc(&srtp_aes_icm_256, &c, SRTP_AES_ICM_256_KEY_LEN_WSALT, 0);
     if (status) {
       fprintf(stderr, "error: can't allocate cipher\n");
       exit(status);

@@ -102,12 +102,12 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
                 "allocating cipher with key length %d", key_len);
 
     /*
-     * The check for key_len = 30/38/46 does not apply. Our usage
+     * The check for key_len = 30/46 does not apply. Our usage
      * of aes functions with key_len = values other than 30
      * has not broken anything. Don't know what would be the
      * effect of skipping this check for srtp in general.
      */
-    if (key_len != 30 && key_len != 46) {
+    if (key_len != SRTP_AES_ICM_128_KEY_LEN_WSALT && key_len != SRTP_AES_ICM_256_KEY_LEN_WSALT) {
         return srtp_err_status_bad_param;
     }
 
@@ -129,7 +129,7 @@ static srtp_err_status_t srtp_aes_icm_alloc (srtp_cipher_t **c, int key_len, int
     (*c)->state = icm;
 
     switch (key_len) {
-    case 46:
+    case SRTP_AES_ICM_256_KEY_LEN_WSALT:
         (*c)->algorithm = SRTP_AES_ICM_256;
         (*c)->type = &srtp_aes_icm_256;
         break;
@@ -184,8 +184,8 @@ static srtp_err_status_t srtp_aes_icm_context_init (void *cv, const uint8_t *key
     srtp_err_status_t status;
     int base_key_len, copy_len;
 
-    if (c->key_size == 30 || c->key_size == 38 || c->key_size == 46) {
-        base_key_len = c->key_size - 14;
+    if (c->key_size == SRTP_AES_ICM_128_KEY_LEN_WSALT || c->key_size == SRTP_AES_ICM_256_KEY_LEN_WSALT) {
+        base_key_len = c->key_size - SRTP_SALT_LEN;
     } else{
         return srtp_err_status_bad_param;
     }
@@ -199,8 +199,8 @@ static srtp_err_status_t srtp_aes_icm_context_init (void *cv, const uint8_t *key
 
     copy_len = c->key_size - base_key_len;
     /* force last two octets of the offset to be left zero (for srtp compatibility) */
-    if (copy_len > 14) {
-        copy_len = 14;
+    if (copy_len > SRTP_SALT_LEN) {
+        copy_len = SRTP_SALT_LEN;
     }
 
     memcpy(&c->counter, key + base_key_len, copy_len);
@@ -404,7 +404,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt (void *cv,
 static const char srtp_aes_icm_128_description[] = "AES-128 integer counter mode";
 static const char srtp_aes_icm_256_description[] = "AES-256 integer counter mode";
 
-static const uint8_t srtp_aes_icm_128_test_case_0_key[30] = {
+static const uint8_t srtp_aes_icm_128_test_case_0_key[SRTP_AES_ICM_128_KEY_LEN_WSALT] = {
     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
     0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
@@ -431,7 +431,7 @@ static const uint8_t srtp_aes_icm_128_test_case_0_ciphertext[32] = {
 };
 
 static const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0 = {
-    30,                                  /* octets in key            */
+    SRTP_AES_ICM_128_KEY_LEN_WSALT,              /* octets in key            */
     srtp_aes_icm_128_test_case_0_key,        /* key                      */
     srtp_aes_icm_128_test_case_0_nonce,      /* packet index             */
     32,                                  /* octets in plaintext      */
@@ -444,7 +444,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0 = {
     NULL                                 /* pointer to next testcase */
 };
 
-static const uint8_t srtp_aes_icm_256_test_case_0_key[46] = {
+static const uint8_t srtp_aes_icm_256_test_case_0_key[SRTP_AES_ICM_256_KEY_LEN_WSALT] = {
     0x57, 0xf8, 0x2f, 0xe3, 0x61, 0x3f, 0xd1, 0x70,
     0xa8, 0x5e, 0xc9, 0x3c, 0x40, 0xb1, 0xf0, 0x92,
     0x2e, 0xc4, 0xcb, 0x0d, 0xc0, 0x25, 0xb5, 0x82,
@@ -473,7 +473,7 @@ static const uint8_t srtp_aes_icm_256_test_case_0_ciphertext[32] = {
 };
 
 static const srtp_cipher_test_case_t srtp_aes_icm_256_test_case_0 = {
-    46,                                  /* octets in key            */
+    SRTP_AES_ICM_256_KEY_LEN_WSALT,              /* octets in key            */
     srtp_aes_icm_256_test_case_0_key,        /* key                      */
     srtp_aes_icm_256_test_case_0_nonce,      /* packet index             */
     32,                                  /* octets in plaintext      */

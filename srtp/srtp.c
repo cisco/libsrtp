@@ -313,11 +313,11 @@ srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     switch (p->rtp.cipher_type) {
     case SRTP_AES_GCM_128:
       enc_xtn_hdr_cipher_type = SRTP_AES_ICM_128;
-      enc_xtn_hdr_cipher_key_len = 30;
+      enc_xtn_hdr_cipher_key_len = SRTP_AES_ICM_128_KEY_LEN_WSALT;
       break;
     case SRTP_AES_GCM_256:
       enc_xtn_hdr_cipher_type = SRTP_AES_ICM_256;
-      enc_xtn_hdr_cipher_key_len = 46;
+      enc_xtn_hdr_cipher_key_len = SRTP_AES_ICM_256_KEY_LEN_WSALT;
       break;
     default:
       enc_xtn_hdr_cipher_type = p->rtp.cipher_type;
@@ -697,13 +697,13 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t *key, int 
 {
     srtp_cipher_type_id_t cipher_id;
     switch (key_len) {
-    case 46:
+    case SRTP_AES_ICM_256_KEY_LEN_WSALT:
         cipher_id = SRTP_AES_ICM_256;
         break;
-    case 38:
+    case SRTP_AES_ICM_192_KEY_LEN_WSALT:
         cipher_id = SRTP_AES_ICM_192;
         break;
-    case 30:
+    case SRTP_AES_ICM_128_KEY_LEN_WSALT:
         cipher_id = SRTP_AES_ICM_128;
         break;
     default:
@@ -769,13 +769,13 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher, int key_leng
   case SRTP_AES_ICM_256:
     /* The legacy modes are derived from
      * the configured key length on the policy */
-    return key_length - 14;
+    return key_length - SRTP_SALT_LEN;
     break;
   case SRTP_AES_GCM_128:
-    return 16;
+    return key_length - SRTP_AEAD_SALT_LEN;
     break;
   case SRTP_AES_GCM_256:
-    return 32;
+      return key_length - SRTP_AEAD_SALT_LEN;
     break;
   default:
     return key_length;
@@ -2964,7 +2964,7 @@ void
 srtp_crypto_policy_set_rtp_default(srtp_crypto_policy_t *p) {
 
   p->cipher_type     = SRTP_AES_ICM_128;
-  p->cipher_key_len  = 30;                /* default 128 bits per RFC 3711 */
+  p->cipher_key_len  = SRTP_AES_ICM_128_KEY_LEN_WSALT; /* default 128 bits per RFC 3711 */
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
   p->auth_tag_len    = 10;                /* default 80 bits per RFC 3711 */
@@ -2976,7 +2976,7 @@ void
 srtp_crypto_policy_set_rtcp_default(srtp_crypto_policy_t *p) {
 
   p->cipher_type     = SRTP_AES_ICM_128;
-  p->cipher_key_len  = 30;                 /* default 128 bits per RFC 3711 */
+  p->cipher_key_len  = SRTP_AES_ICM_128_KEY_LEN_WSALT; /* default 128 bits per RFC 3711 */
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                 /* default 160 bits per RFC 3711 */
   p->auth_tag_len    = 10;                 /* default 80 bits per RFC 3711 */
@@ -2994,7 +2994,7 @@ srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(srtp_crypto_policy_t *p) {
    */
 
   p->cipher_type     = SRTP_AES_ICM_128;
-  p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
+  p->cipher_key_len  = SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* 160 bit key               */
   p->auth_tag_len    = 4;                 /* 32 bit tag                */
@@ -3013,7 +3013,7 @@ srtp_crypto_policy_set_aes_cm_128_null_auth(srtp_crypto_policy_t *p) {
    */
 
   p->cipher_type     = SRTP_AES_ICM_128;
-  p->cipher_key_len  = 30;                /* 128 bit key, 112 bit salt */
+  p->cipher_key_len  = SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
   p->auth_type       = SRTP_NULL_AUTH;             
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 0; 
@@ -3063,7 +3063,7 @@ srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(srtp_crypto_policy_t *p) {
    */
 
   p->cipher_type     = SRTP_AES_ICM_256;
-  p->cipher_key_len  = 46;
+  p->cipher_key_len  = SRTP_AES_ICM_256_KEY_LEN_WSALT;
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
   p->auth_tag_len    = 10;                /* default 80 bits per RFC 3711 */
@@ -3081,7 +3081,7 @@ srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(srtp_crypto_policy_t *p) {
    */
 
   p->cipher_type     = SRTP_AES_ICM_256;
-  p->cipher_key_len  = 46;
+  p->cipher_key_len  = SRTP_AES_ICM_256_KEY_LEN_WSALT;
   p->auth_type       = SRTP_HMAC_SHA1;             
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
   p->auth_tag_len    = 4;                 /* default 80 bits per RFC 3711 */
@@ -3095,7 +3095,7 @@ void
 srtp_crypto_policy_set_aes_cm_256_null_auth (srtp_crypto_policy_t *p)
 {
     p->cipher_type     = SRTP_AES_ICM_256;
-    p->cipher_key_len  = 46;
+    p->cipher_key_len  = SRTP_AES_ICM_256_KEY_LEN_WSALT;
     p->auth_type       = SRTP_NULL_AUTH;
     p->auth_key_len    = 0;
     p->auth_tag_len    = 0;
@@ -3111,7 +3111,7 @@ srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p) {
    */
 
   p->cipher_type     = SRTP_AES_ICM_192;
-  p->cipher_key_len  = 38;
+  p->cipher_key_len  = SRTP_AES_ICM_192_KEY_LEN_WSALT;
   p->auth_type       = SRTP_HMAC_SHA1;
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
   p->auth_tag_len    = 10;                /* default 80 bits per RFC 3711 */
@@ -3129,7 +3129,7 @@ srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p) {
    */
 
   p->cipher_type     = SRTP_AES_ICM_192;
-  p->cipher_key_len  = 38;
+  p->cipher_key_len  = SRTP_AES_ICM_192_KEY_LEN_WSALT;
   p->auth_type       = SRTP_HMAC_SHA1;
   p->auth_key_len    = 20;                /* default 160 bits per RFC 3711 */
   p->auth_tag_len    = 4;                 /* default 80 bits per RFC 3711 */
@@ -3143,7 +3143,7 @@ void
 srtp_crypto_policy_set_aes_cm_192_null_auth (srtp_crypto_policy_t *p)
 {
     p->cipher_type     = SRTP_AES_ICM_192;
-    p->cipher_key_len  = 38;
+    p->cipher_key_len  = SRTP_AES_ICM_192_KEY_LEN_WSALT;
     p->auth_type       = SRTP_NULL_AUTH;
     p->auth_key_len    = 0;
     p->auth_tag_len    = 0;
@@ -4278,19 +4278,19 @@ srtp_profile_get_master_key_length(srtp_profile_t profile) {
 
   switch(profile) {
   case srtp_profile_aes128_cm_sha1_80:
-    return 16;
+    return SRTP_AES_128_KEY_LEN;
     break;
   case srtp_profile_aes128_cm_sha1_32:
-    return 16;
+    return SRTP_AES_128_KEY_LEN;
     break;
   case srtp_profile_null_sha1_80:
-    return 16;
+    return SRTP_AES_128_KEY_LEN;
     break;
   case srtp_profile_aead_aes_128_gcm:
-    return 16;
+    return SRTP_AES_128_KEY_LEN;
     break;
   case srtp_profile_aead_aes_256_gcm:
-    return 32;
+    return SRTP_AES_256_KEY_LEN;
     break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
@@ -4304,19 +4304,19 @@ srtp_profile_get_master_salt_length(srtp_profile_t profile) {
 
   switch(profile) {
   case srtp_profile_aes128_cm_sha1_80:
-    return 14;
+    return SRTP_SALT_LEN;
     break;
   case srtp_profile_aes128_cm_sha1_32:
-    return 14;
+    return SRTP_SALT_LEN;
     break;
   case srtp_profile_null_sha1_80:
-    return 14;
+    return SRTP_SALT_LEN;
     break;
   case srtp_profile_aead_aes_128_gcm:
-    return 12;
+    return SRTP_AEAD_SALT_LEN;
     break;
   case srtp_profile_aead_aes_256_gcm:
-    return 12;
+    return SRTP_AEAD_SALT_LEN;
     break;
     /* the following profiles are not (yet) supported */
   case srtp_profile_null_sha1_32:
