@@ -1424,8 +1424,8 @@ srtp_process_header_encryption(srtp_stream_ctx_t *stream,
 
 /*
  * AEAD uses a new IV formation method.  This function implements
- * section 9.1 from draft-ietf-avtcore-srtp-aes-gcm-07.txt.  The
- * calculation is defined as, where (+) is the xor operation:
+ * section 8.1. (SRTP IV Formation for AES-GCM) of RFC7714.
+ * The calculation is defined as, where (+) is the xor operation:
  *
  *
  *              0  0  0  0  0  0  0  0  0  0  1  1
