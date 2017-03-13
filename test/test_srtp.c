@@ -63,7 +63,7 @@
 
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output();
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param();
-void srtp_calc_aead_iv_srtcp_distinct_iv_per_seq_num();
+void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number();
 
 /*
  * NULL terminated array of tests.
@@ -73,8 +73,8 @@ TEST_LIST = {{"srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
               srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output},
              {"srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()",
               srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param},
-             {"srtp_calc_aead_iv_srtcp_distinct_iv_per_seq_num()",
-              srtp_calc_aead_iv_srtcp_distinct_iv_per_seq_num},
+             {"srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()",
+              srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number},
              {NULL} /* End of tests */};
 
 /*
@@ -133,55 +133,56 @@ void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
     TEST_CHECK(status == srtp_err_status_bad_param);
 }
 
-
 /*
  * Regression test for issue #256:
  * Srtcp IV calculation incorrectly masks high bit of sequence number for
  * little-endian platforms.
  * Ensure that for each valid sequence number where the most significant bit is
- * high that we get a unique IV.
+ * high that we get an expected and unique IV.
  */
-void srtp_calc_aead_iv_srtcp_distinct_iv_per_seq_num()
+void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()
 {
     // Preconditions
-    static const size_t SAMPLE_COUNT = 7;
+    // Test each significant bit high in each full byte.
+    static const size_t SAMPLE_COUNT = 3;
     srtp_session_keys_t session_keys;
     srtcp_hdr_t header;
-    v128_t output_init_vector[SAMPLE_COUNT];
-    memset(&output_init_vector, 0, SAMPLE_COUNT * sizeof(v128_t));
-    uint32_t sequence_numbers[SAMPLE_COUNT];
-    sequence_numbers[0] = 0x0;
-    sequence_numbers[1] = 0xF0;
-    sequence_numbers[2] = 0xF00;
-    sequence_numbers[3] = 0xF000;
-    sequence_numbers[4] = 0xF0000;
-    sequence_numbers[6] = 0xF00000;
-    sequence_numbers[7] = 0xF000000;
+    v128_t output_iv[SAMPLE_COUNT];
+    memset(&output_iv, 0, SAMPLE_COUNT * sizeof(v128_t));
+    uint32_t sequence_num[SAMPLE_COUNT];
+    sequence_num[0] = 0xFF;
+    sequence_num[1] = 0xFF00;
+    sequence_num[2] = 0xFF0000;
 
     // Postconditions
-    srtp_err_status_t status;
-    v128_t final_init_vector[SAMPLE_COUNT];
-    memset(&final_init_vector, 0, SAMPLE_COUNT * sizeof(v128_t));
-    final_init_vector[0].v8[8] = 0x0;
-    // final_init_vector[1][8] = 0xF;
-    // final_init_vector[2][8] = 0xF0;
-    // final_init_vector[3][9] = 0xF;
-    // final_init_vector[4][9] = 0xF0;
-    // final_init_vector[5][10] = 0xF0;
-    // final_init_vector[6][11] = 0xF;
-    // final_init_vector[6][12] = 0xF0;
-
+    v128_t final_iv[SAMPLE_COUNT];
+    memset(&final_iv, 0, SAMPLE_COUNT * sizeof(v128_t));
+    final_iv[0].v8[11] = 0xFF;
+    final_iv[1].v8[10] = 0xFF;
+    final_iv[2].v8[9] = 0xFF;
 
     // Given
     memset(&session_keys, 0, sizeof(srtp_session_keys_t));
-    // memset(&init_vector, 0, sizeof(v128_t));
     memset(&header, 0, sizeof(srtcp_hdr_t));
 
     // When
-    // status = srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num, &header);
+    TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[0],
+                                       sequence_num[0], &header)
+               == srtp_err_status_ok);
+    TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[1],
+                                       sequence_num[1], &header)
+               == srtp_err_status_ok);
+    TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[2],
+                                       sequence_num[2], &header)
+               == srtp_err_status_ok);
 
-    // Then
-    // TEST_CHECK(status == srtp_err_status_ok);
-    // TEST_CHECK(memcmp(&zero_vector, &init_vector, sizeof(v128_t)) == 0);
+    // Then all IVs are as expected
+    TEST_CHECK(memcmp(&final_iv[0], &output_iv[0], sizeof(v128_t)) == 0);
+    TEST_CHECK(memcmp(&final_iv[1], &output_iv[1], sizeof(v128_t)) == 0);
+    TEST_CHECK(memcmp(&final_iv[2], &output_iv[2], sizeof(v128_t)) == 0);
 
+    // And all IVs are distinct and ordered
+    TEST_CHECK(memcmp(&output_iv[0], &output_iv[1], sizeof(v128_t)) < 0);
+    TEST_CHECK(memcmp(&output_iv[0], &output_iv[2], sizeof(v128_t)) < 0);
+    TEST_CHECK(memcmp(&output_iv[1], &output_iv[2], sizeof(v128_t)) < 0);
 }
