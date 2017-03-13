@@ -93,7 +93,7 @@ extern "C" {
  *
  * @brief the maximum number of octets added by srtp_protect().
  */
-#define SRTP_MAX_TRAILER_LEN SRTP_MAX_TAG_LEN + SRTP_MAX_MKI_LEN
+#define SRTP_MAX_TRAILER_LEN (SRTP_MAX_TAG_LEN + SRTP_MAX_MKI_LEN)
 
 /**
  * SRTP_MAX_NUM_MASTER_KEYS is the maximum number of Master keys for
@@ -102,15 +102,25 @@ extern "C" {
  */
 #define SRTP_MAX_NUM_MASTER_KEYS 16
 
+#define SRTP_SALT_LEN                14
 /*
- * SRTP_AEAD_SALT_LEN is the length of the SALT values used with 
+ * SRTP_AEAD_SALT_LEN is the length of the SALT values used with
  * GCM mode.  GCM mode requires an IV.  The SALT value is used
  * as part of the IV formation logic applied to each RTP packet.
  */
-#define SRTP_AEAD_SALT_LEN	12
-#define SRTP_AES_GCM_128_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 16
-#define SRTP_AES_GCM_192_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 24
-#define SRTP_AES_GCM_256_KEYSIZE_WSALT   SRTP_AEAD_SALT_LEN + 32
+#define SRTP_AEAD_SALT_LEN               12
+
+#define SRTP_AES_128_KEY_LEN         16
+#define SRTP_AES_192_KEY_LEN         24
+#define SRTP_AES_256_KEY_LEN         32
+
+#define SRTP_AES_ICM_128_KEY_LEN_WSALT   (SRTP_SALT_LEN + SRTP_AES_128_KEY_LEN)
+#define SRTP_AES_ICM_192_KEY_LEN_WSALT   (SRTP_SALT_LEN + SRTP_AES_192_KEY_LEN)
+#define SRTP_AES_ICM_256_KEY_LEN_WSALT   (SRTP_SALT_LEN + SRTP_AES_256_KEY_LEN)
+
+#define SRTP_AES_GCM_128_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_128_KEY_LEN)
+#define SRTP_AES_GCM_192_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_192_KEY_LEN)
+#define SRTP_AES_GCM_256_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_256_KEY_LEN)
 
 /*
  * an srtp_hdr_t represents the srtp header

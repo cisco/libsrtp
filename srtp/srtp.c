@@ -3156,7 +3156,7 @@ srtp_crypto_policy_set_aes_cm_192_null_auth (srtp_crypto_policy_t *p)
 void
 srtp_crypto_policy_set_aes_gcm_128_8_auth(srtp_crypto_policy_t *p) {
   p->cipher_type     = SRTP_AES_GCM_128;
-  p->cipher_key_len  = SRTP_AES_GCM_128_KEYSIZE_WSALT;
+  p->cipher_key_len  = SRTP_AES_GCM_128_KEY_LEN_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */            
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3169,7 +3169,7 @@ srtp_crypto_policy_set_aes_gcm_128_8_auth(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_gcm_256_8_auth(srtp_crypto_policy_t *p) {
   p->cipher_type     = SRTP_AES_GCM_256;
-  p->cipher_key_len  = SRTP_AES_GCM_256_KEYSIZE_WSALT;
+  p->cipher_key_len  = SRTP_AES_GCM_256_KEY_LEN_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3182,7 +3182,7 @@ srtp_crypto_policy_set_aes_gcm_256_8_auth(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_gcm_128_8_only_auth(srtp_crypto_policy_t *p) {
   p->cipher_type     = SRTP_AES_GCM_128;
-  p->cipher_key_len  = SRTP_AES_GCM_128_KEYSIZE_WSALT;
+  p->cipher_key_len  = SRTP_AES_GCM_128_KEY_LEN_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3195,7 +3195,7 @@ srtp_crypto_policy_set_aes_gcm_128_8_only_auth(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_gcm_256_8_only_auth(srtp_crypto_policy_t *p) {
   p->cipher_type     = SRTP_AES_GCM_256;
-  p->cipher_key_len  = SRTP_AES_GCM_256_KEYSIZE_WSALT;
+  p->cipher_key_len  = SRTP_AES_GCM_256_KEY_LEN_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 8;   /* 8 octet tag length */
@@ -3208,7 +3208,7 @@ srtp_crypto_policy_set_aes_gcm_256_8_only_auth(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p) {
   p->cipher_type     = SRTP_AES_GCM_128;
-  p->cipher_key_len  = SRTP_AES_GCM_128_KEYSIZE_WSALT;
+  p->cipher_key_len  = SRTP_AES_GCM_128_KEY_LEN_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */            
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 16;   /* 16 octet tag length */
@@ -3221,7 +3221,7 @@ srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p) {
 void
 srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p) {
   p->cipher_type     = SRTP_AES_GCM_256;
-  p->cipher_key_len  = SRTP_AES_GCM_256_KEYSIZE_WSALT;
+  p->cipher_key_len  = SRTP_AES_GCM_256_KEY_LEN_WSALT;
   p->auth_type       = SRTP_NULL_AUTH; /* GCM handles the auth for us */ 
   p->auth_key_len    = 0; 
   p->auth_tag_len    = 16;   /* 16 octet tag length */

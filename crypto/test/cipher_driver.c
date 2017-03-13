@@ -192,11 +192,11 @@ main(int argc, char *argv[]) {
       cipher_driver_test_array_throughput(&srtp_aes_icm_192, 38, num_cipher);
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8) {
-      cipher_driver_test_array_throughput(&srtp_aes_gcm_128_openssl, SRTP_AES_GCM_128_KEYSIZE_WSALT, num_cipher);
+      cipher_driver_test_array_throughput(&srtp_aes_gcm_128_openssl, SRTP_AES_GCM_128_KEY_LEN_WSALT, num_cipher);
     }
 
     for (num_cipher=1; num_cipher < max_num_cipher; num_cipher *=8) {
-      cipher_driver_test_array_throughput(&srtp_aes_gcm_256_openssl, SRTP_AES_GCM_256_KEYSIZE_WSALT, num_cipher);
+      cipher_driver_test_array_throughput(&srtp_aes_gcm_256_openssl, SRTP_AES_GCM_256_KEY_LEN_WSALT, num_cipher);
     }
 #endif
   }
@@ -273,7 +273,7 @@ main(int argc, char *argv[]) {
 
 #ifdef OPENSSL
     /* run the throughput test on the aes_gcm_128_openssl cipher */
-    status = srtp_cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_GCM_128_KEYSIZE_WSALT, 8);
+    status = srtp_cipher_type_alloc(&srtp_aes_gcm_128_openssl, &c, SRTP_AES_GCM_128_KEY_LEN_WSALT, 8);
     if (status) {
         fprintf(stderr, "error: can't allocate GCM 128 cipher\n");
         exit(status);
@@ -292,7 +292,7 @@ main(int argc, char *argv[]) {
     check_status(status);
 
     /* run the throughput test on the aes_gcm_256_openssl cipher */
-    status = srtp_cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_GCM_256_KEYSIZE_WSALT, 16);
+    status = srtp_cipher_type_alloc(&srtp_aes_gcm_256_openssl, &c, SRTP_AES_GCM_256_KEY_LEN_WSALT, 16);
     if (status) {
         fprintf(stderr, "error: can't allocate GCM 256 cipher\n");
         exit(status);
