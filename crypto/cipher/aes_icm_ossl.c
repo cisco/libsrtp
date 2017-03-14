@@ -118,8 +118,8 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc (srtp_cipher_t **c, int key_
     /*
      * Verify the key_len is valid for one of: AES-128/192/256
      */
-    if (key_len != SRTP_AES_128_KEYSIZE_WSALT && key_len != SRTP_AES_192_KEYSIZE_WSALT &&
-        key_len != SRTP_AES_256_KEYSIZE_WSALT) {
+    if (key_len != SRTP_AES_ICM_128_KEY_LEN_WSALT && key_len != SRTP_AES_ICM_192_KEY_LEN_WSALT &&
+        key_len != SRTP_AES_ICM_256_KEY_LEN_WSALT) {
         return srtp_err_status_bad_param;
     }
 
@@ -151,20 +151,20 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc (srtp_cipher_t **c, int key_
 
     /* setup cipher parameters */
     switch (key_len) {
-    case SRTP_AES_128_KEYSIZE_WSALT:
+    case SRTP_AES_ICM_128_KEY_LEN_WSALT:
         (*c)->algorithm = SRTP_AES_ICM_128;
         (*c)->type = &srtp_aes_icm_128;
-        icm->key_size = SRTP_AES_128_KEYSIZE;
+        icm->key_size = SRTP_AES_128_KEY_LEN;
         break;
-    case SRTP_AES_192_KEYSIZE_WSALT:
+    case SRTP_AES_ICM_192_KEY_LEN_WSALT:
         (*c)->algorithm = SRTP_AES_ICM_192;
         (*c)->type = &srtp_aes_icm_192;
-        icm->key_size = SRTP_AES_192_KEYSIZE;
+        icm->key_size = SRTP_AES_192_KEY_LEN;
         break;
-    case SRTP_AES_256_KEYSIZE_WSALT:
+    case SRTP_AES_ICM_256_KEY_LEN_WSALT:
         (*c)->algorithm = SRTP_AES_ICM_256;
         (*c)->type = &srtp_aes_icm_256;
-        icm->key_size = SRTP_AES_256_KEYSIZE;
+        icm->key_size = SRTP_AES_256_KEY_LEN;
         break;
     }
 
@@ -223,24 +223,24 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init (void* cv, const uint
      */
     v128_set_to_zero(&c->counter);
     v128_set_to_zero(&c->offset);
-    memcpy(&c->counter, key + c->key_size, SRTP_SALT_SIZE);
-    memcpy(&c->offset, key + c->key_size, SRTP_SALT_SIZE);
+    memcpy(&c->counter, key + c->key_size, SRTP_SALT_LEN);
+    memcpy(&c->offset, key + c->key_size, SRTP_SALT_LEN);
 
     /* force last two octets of the offset to zero (for srtp compatibility) */
-    c->offset.v8[SRTP_SALT_SIZE] = c->offset.v8[SRTP_SALT_SIZE + 1] = 0;
-    c->counter.v8[SRTP_SALT_SIZE] = c->counter.v8[SRTP_SALT_SIZE + 1] = 0;
+    c->offset.v8[SRTP_SALT_LEN] = c->offset.v8[SRTP_SALT_LEN + 1] = 0;
+    c->counter.v8[SRTP_SALT_LEN] = c->counter.v8[SRTP_SALT_LEN + 1] = 0;
 
     debug_print(srtp_mod_aes_icm, "key:  %s", srtp_octet_string_hex_string(key, c->key_size));
     debug_print(srtp_mod_aes_icm, "offset: %s", v128_hex_string(&c->offset));
 
     switch (c->key_size) {
-    case SRTP_AES_256_KEYSIZE:
+    case SRTP_AES_256_KEY_LEN:
         evp = EVP_aes_256_ctr();
         break;
-    case SRTP_AES_192_KEYSIZE:
+    case SRTP_AES_192_KEY_LEN:
         evp = EVP_aes_192_ctr();
         break;
-    case SRTP_AES_128_KEYSIZE:
+    case SRTP_AES_128_KEY_LEN:
         evp = EVP_aes_128_ctr();
         break;
     default:
@@ -325,7 +325,7 @@ static const char srtp_aes_icm_256_openssl_description[] = "AES-256 counter mode
  * KAT values for AES self-test.  These
  * values came from the legacy libsrtp code.
  */
-static const uint8_t srtp_aes_icm_128_test_case_0_key[SRTP_AES_128_KEYSIZE_WSALT] = {
+static const uint8_t srtp_aes_icm_128_test_case_0_key[SRTP_AES_ICM_128_KEY_LEN_WSALT] = {
     0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6,
     0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c,
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
@@ -352,7 +352,7 @@ static const uint8_t srtp_aes_icm_128_test_case_0_ciphertext[32] = {
 };
 
 static const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0 = {
-    SRTP_AES_128_KEYSIZE_WSALT,                 /* octets in key            */
+    SRTP_AES_ICM_128_KEY_LEN_WSALT,                 /* octets in key            */
     srtp_aes_icm_128_test_case_0_key,               /* key                      */
     srtp_aes_icm_128_test_case_0_nonce,             /* packet index             */
     32,                                    /* octets in plaintext      */
@@ -369,7 +369,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0 = {
  * KAT values for AES-192-CTR self-test.  These
  * values came from section 7 of RFC 6188.
  */
-static const uint8_t srtp_aes_icm_192_test_case_0_key[SRTP_AES_192_KEYSIZE_WSALT] = {
+static const uint8_t srtp_aes_icm_192_test_case_0_key[SRTP_AES_ICM_192_KEY_LEN_WSALT] = {
     0xea, 0xb2, 0x34, 0x76, 0x4e, 0x51, 0x7b, 0x2d,
     0x3d, 0x16, 0x0d, 0x58, 0x7d, 0x8c, 0x86, 0x21,
     0x97, 0x40, 0xf6, 0x5f, 0x99, 0xb6, 0xbc, 0xf7,
@@ -397,7 +397,7 @@ static const uint8_t srtp_aes_icm_192_test_case_0_ciphertext[32] = {
 };
 
 static const srtp_cipher_test_case_t srtp_aes_icm_192_test_case_0 = {
-    SRTP_AES_192_KEYSIZE_WSALT,                 /* octets in key            */
+    SRTP_AES_ICM_192_KEY_LEN_WSALT,                 /* octets in key            */
     srtp_aes_icm_192_test_case_0_key,           /* key                      */
     srtp_aes_icm_192_test_case_0_nonce,         /* packet index             */
     32,                                    /* octets in plaintext      */
@@ -414,7 +414,7 @@ static const srtp_cipher_test_case_t srtp_aes_icm_192_test_case_0 = {
  * KAT values for AES-256-CTR self-test.  These
  * values came from section 7 of RFC 6188.
  */
-static const uint8_t srtp_aes_icm_256_test_case_0_key[SRTP_AES_256_KEYSIZE_WSALT] = {
+static const uint8_t srtp_aes_icm_256_test_case_0_key[SRTP_AES_ICM_256_KEY_LEN_WSALT] = {
     0x57, 0xf8, 0x2f, 0xe3, 0x61, 0x3f, 0xd1, 0x70,
     0xa8, 0x5e, 0xc9, 0x3c, 0x40, 0xb1, 0xf0, 0x92,
     0x2e, 0xc4, 0xcb, 0x0d, 0xc0, 0x25, 0xb5, 0x82,
@@ -443,7 +443,7 @@ static const uint8_t srtp_aes_icm_256_test_case_0_ciphertext[32] = {
 };
 
 static const srtp_cipher_test_case_t srtp_aes_icm_256_test_case_0 = {
-    SRTP_AES_256_KEYSIZE_WSALT,                 /* octets in key            */
+    SRTP_AES_ICM_256_KEY_LEN_WSALT,                 /* octets in key            */
     srtp_aes_icm_256_test_case_0_key,           /* key                      */
     srtp_aes_icm_256_test_case_0_nonce,         /* packet index             */
     32,                                    /* octets in plaintext      */
