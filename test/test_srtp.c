@@ -170,23 +170,15 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()
     memset(&header, 0, sizeof(srtcp_hdr_t));
 
     // When
-    TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[0],
-                                       sequence_num[0], &header)
-               == srtp_err_status_ok);
-    TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[1],
-                                       sequence_num[1], &header)
-               == srtp_err_status_ok);
-    TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[2],
-                                       sequence_num[2], &header)
-               == srtp_err_status_ok);
+    size_t i = 0;
+    for (i = 0; i < SAMPLE_COUNT; i++) {
+        TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[i],
+                                           sequence_num[i], &header)
+                   == srtp_err_status_ok);
+    }
 
     // Then all IVs are as expected
-    TEST_CHECK(memcmp(&final_iv[0], &output_iv[0], sizeof(v128_t)) == 0);
-    TEST_CHECK(memcmp(&final_iv[1], &output_iv[1], sizeof(v128_t)) == 0);
-    TEST_CHECK(memcmp(&final_iv[2], &output_iv[2], sizeof(v128_t)) == 0);
-
-    // And all IVs are distinct and ordered
-    TEST_CHECK(memcmp(&output_iv[0], &output_iv[1], sizeof(v128_t)) < 0);
-    TEST_CHECK(memcmp(&output_iv[0], &output_iv[2], sizeof(v128_t)) < 0);
-    TEST_CHECK(memcmp(&output_iv[1], &output_iv[2], sizeof(v128_t)) < 0);
+    for (i = 0; i < SAMPLE_COUNT; i++) {
+        TEST_CHECK(memcmp(&final_iv[i], &output_iv[i], sizeof(v128_t)) == 0);
+    }
 }
