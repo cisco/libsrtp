@@ -67,6 +67,9 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number();
 
 /*
  * NULL terminated array of tests.
+ * The first item in the array is a char[] which give some information about
+ * what is being tested and is displayed to the user during runtime, the second
+ * item is the test function.
  */
 
 TEST_LIST = {{"srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
