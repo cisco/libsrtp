@@ -205,7 +205,6 @@ was removed from the SRTP Internet Draft during the summer of 2002.
 Some options that are described in the SRTP specification are not
 supported. This includes
 
-- the Master Key Index (MKI),
 - key derivation rates other than zero,
 - the cipher F8,
 - anti-replay lists with sizes other than 128,
