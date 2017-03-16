@@ -250,9 +250,6 @@ terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
     less than 32,768; this trick is no longer required as the
     `rdbx_estimate_index(...)` function has been made smarter.
 
-  * The replay window is 128 bits in length, and is hard-coded to this
-    value for now.
-
 --------------------------------------------------------------------------------
 
 <a name="installing-and-building-libsrtp"></a>
