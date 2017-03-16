@@ -63,15 +63,21 @@
 
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output();
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param();
+void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number();
 
 /*
  * NULL terminated array of tests.
+ * The first item in the array is a char[] which give some information about
+ * what is being tested and is displayed to the user during runtime, the second
+ * item is the test function.
  */
 
 TEST_LIST = {{"srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
               srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output},
              {"srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()",
               srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param},
+             {"srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()",
+              srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number},
              {NULL} /* End of tests */};
 
 /*
@@ -98,7 +104,8 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
     sequence_num = 0x0UL;
 
     // When
-    status = srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num, &header);
+    status = srtp_calc_aead_iv_srtcp(&session_keys, &init_vector, sequence_num,
+                                     &header);
 
     // Then
     TEST_CHECK(status == srtp_err_status_ok);
@@ -128,4 +135,50 @@ void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
 
     // Then
     TEST_CHECK(status == srtp_err_status_bad_param);
+}
+
+/*
+ * Regression test for issue #256:
+ * Srtcp IV calculation incorrectly masks high bit of sequence number for
+ * little-endian platforms.
+ * Ensure that for each valid sequence number where the most significant bit is
+ * high that we get an expected and unique IV.
+ */
+void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()
+{
+    // Preconditions
+    // Test each significant bit high in each full byte.
+    static const size_t SAMPLE_COUNT = 3;
+    srtp_session_keys_t session_keys;
+    srtcp_hdr_t header;
+    v128_t output_iv[SAMPLE_COUNT];
+    memset(&output_iv, 0, SAMPLE_COUNT * sizeof(v128_t));
+    uint32_t sequence_num[SAMPLE_COUNT];
+    sequence_num[0] = 0xFF;
+    sequence_num[1] = 0xFF00;
+    sequence_num[2] = 0xFF0000;
+
+    // Postconditions
+    v128_t final_iv[SAMPLE_COUNT];
+    memset(&final_iv, 0, SAMPLE_COUNT * sizeof(v128_t));
+    final_iv[0].v8[11] = 0xFF;
+    final_iv[1].v8[10] = 0xFF;
+    final_iv[2].v8[9] = 0xFF;
+
+    // Given
+    memset(&session_keys, 0, sizeof(srtp_session_keys_t));
+    memset(&header, 0, sizeof(srtcp_hdr_t));
+
+    // When
+    size_t i = 0;
+    for (i = 0; i < SAMPLE_COUNT; i++) {
+        TEST_CHECK(srtp_calc_aead_iv_srtcp(&session_keys, &output_iv[i],
+                                           sequence_num[i], &header)
+                   == srtp_err_status_ok);
+    }
+
+    // Then all IVs are as expected
+    for (i = 0; i < SAMPLE_COUNT; i++) {
+        TEST_CHECK(memcmp(&final_iv[i], &output_iv[i], sizeof(v128_t)) == 0);
+    }
 }
