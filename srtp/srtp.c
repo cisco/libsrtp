@@ -2947,10 +2947,11 @@ srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
 
 
 /*
- * the default policy - provides a convenient way for callers to use
+ * The default policy - provides a convenient way for callers to use
  * the default security policy
- * 
- * this policy is that defined in the current SRTP internet draft.
+ *
+ * The default policy is defined in RFC 3711
+ * (Section 5. Default and mandatory-to-implement Transforms)
  *
  */
 
