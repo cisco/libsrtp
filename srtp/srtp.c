@@ -3060,7 +3060,7 @@ void
 srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188 (The Use of AES-192 and AES-256 in Secure RTP)
    */
 
   p->cipher_type     = SRTP_AES_ICM_256;
@@ -3076,7 +3076,7 @@ void
 srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188 (The Use of AES-192 and AES-256 in Secure RTP)
    *
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
@@ -3108,7 +3108,7 @@ void
 srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188 (The Use of AES-192 and AES-256 in Secure RTP)
    */
 
   p->cipher_type     = SRTP_AES_ICM_192;
@@ -3124,7 +3124,7 @@ void
 srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188 (The Use of AES-192 and AES-256 in Secure RTP)
    *
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
