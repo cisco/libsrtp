@@ -1000,7 +1000,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key,
 
     if (session_keys->rtp_xtn_hdr_cipher->type != session_keys->rtp_cipher->type) {
       /* With GCM ciphers, the header extensions are still encrypted using the corresponding ICM cipher. */
-      /* See https://tools.ietf.org/html/draft-ietf-avtcore-srtp-aes-gcm-17#section-8.3 */
+      /* See https://tools.ietf.org/html/rfc7714#section-8.3 */
       uint8_t tmp_xtn_hdr_key[MAX_SRTP_KEY_LEN];
       rtp_xtn_hdr_keylen = srtp_cipher_get_key_length(session_keys->rtp_xtn_hdr_cipher);
       rtp_xtn_hdr_base_key_len = base_key_length(session_keys->rtp_xtn_hdr_cipher->type,
