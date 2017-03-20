@@ -3400,8 +3400,8 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     } else {
         /*
          * Since payload encryption is not enabled, we must authenticate
-         * the entire packet as described in section 10.3 in revision 07
-         * of the draft.
+         * the entire packet as described in RFC 7714 (Section 9.3. Data
+         * Types in Unencrypted SRTCP Compound Packets)
          */
         status = srtp_cipher_set_aad(session_keys->rtcp_cipher,
                                  (uint8_t*)hdr, *pkt_octet_len);
@@ -3563,8 +3563,8 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     } else {
         /*
          * Since payload encryption is not enabled, we must authenticate
-         * the entire packet as described in section 10.3 in revision 07
-         * of the draft.
+         * the entire packet as described in RFC 7714 (Section 9.3. Data
+         * Types in Unencrypted SRTCP Compound Packets)
          */
         status = srtp_cipher_set_aad(
           session_keys->rtcp_cipher, (uint8_t*)hdr,
