@@ -207,7 +207,6 @@ supported. This includes
 
 - key derivation rates other than zero,
 - the cipher F8,
-- anti-replay lists with sizes other than 128,
 - the use of the packet index to select between master keys.
 
 The user should be aware that it is possible to misuse this libary,
