@@ -273,45 +273,15 @@ make
 
 The configure script accepts the following options:
 
-Option                                                     | Description
-----------------------------------------------------------|--------------------
-\-\-bindir                                                | user executables (EPREFIX/bin)
-\-\-build                                                 | configure for building on BUILD (guessed)
-\-\-cache-file                                            | cache test results in FILE (disabled)
-\-\-config-cache            \-C                           | alias for `--cache-file=config.cache'
-\-\-datadir                                               | read-only architecture-independent data (DATAROOTDIR)
-\-\-datarootdir                                           | read-only arch.-independent data root (PREFIX/share)
-\-\-disable-debug-logging   \-\-enable-debug-logging      | Enable/disable debug logging in all modules
-\-\-disable-log-stdout      \-\-enable-log-stdout         | Enable/disable logging to stdout
-\-\-disable-openssl         \-\-enable-openssl            | Enable/disable OpenSSL crypto engine
-\-\-disable-openssl-kdf     \-\-enable-openssl-kdf        | Enable/disable OpenSSL KDF algorithm
-\-\-disable-option-checking \-\-enable-option-checking    | Enable/disable unrecognized --enable/--with options
-\-\-docdir                                                | documentation root (DATAROOTDIR/doc/libsrtp2)
-\-\-dvidir                                                | dvi documentation (DOCDIR)
-\-\-exec-prefix                                           | install architecture-dependent files in EPREFIX
-\-\-help                    \-h                           | display this help and exit
-\-\-host                                                  | cross-compile to build programs to run on HOST (BUILD)
-\-\-htmldir                                               | html documentation (DOCDIR)
-\-\-includedir                                            | C header files (PREFIX/include)
-\-\-infodir                                               | info documentation (DATAROOTDIR/info)
-\-\-libdir                                                | object code libraries (EPREFIX/lib)
-\-\-libexecdir                                            | program executables (EPREFIX/libexec)
-\-\-localedir                                             | locale-dependent data (DATAROOTDIR/locale)
-\-\-localstatedir                                         | modifiable single-machine data (PREFIX/var)
-\-\-mandir                                                | man documentation (DATAROOTDIR/man)
-\-\-no-create               \-n                           | do not create output files
-\-\-oldincludedir                                         | C header files for non-gcc (/usr/include)
-\-\-pdfdir                                                | pdf documentation (DOCDIR)
-\-\-prefix                                                | install architecture-independent files in PREFIX
-\-\-psdir                                                 | ps documentation (DOCDIR)
-\-\-sbindir                                               | system admin executables (EPREFIX/sbin)
-\-\-sharedstatedir                                        | modifiable architecture-independent data (PREFIX/com)
-\-\-silent                  \-\-quiet                 \-q | do not print `checking ...' messages
-\-\-srcdir                                                | find the sources in DIR (configure dir or `..')
-\-\-sysconfdir                                            | read-only single-machine data (PREFIX/etc)
-\-\-version                 \-V                           | display version information and exit
-\-\-without-log-file        \-\-with-log-file             | Use file for logging
-\-\-without-openssl-dir     \-\-with-openssl-dir          | Location of OpenSSL installation
+Option                         | Description
+-------------------------------|--------------------
+\-\-help                   \-h | Display help
+\-\-enable-debug-logging       | Enable debug logging in all modules
+\-\-enable-log-stdout          | Enable logging to stdout
+\-\-enable-openssl             | Enable OpenSSL crypto engine
+\-\-enable-openssl-kdf         | Enable OpenSSL KDF algorithm
+\-\-with-log-file              | Use file for logging
+\-\-with-openssl-dir           | Location of OpenSSL installation
 
 By default there is no log output, logging can be enabled to be output to stdout
 or a given file using the configure options.
