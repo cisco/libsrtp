@@ -453,7 +453,7 @@ September, 2005
 Secure RTP is defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt).
 The counter mode definition is in Section 4.1.1.
 
-SHA-1 is defined in [RFC 3174](https://www.ietf.org/rfc/rfc3174.txt).
+SHA-1 is defined in [FIPS PUB 180-4](http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
 
 HMAC is defined in [RFC 2104](https://www.ietf.org/rfc/rfc2104.txt)
 and HMAC-SHA1 test vectors are available
