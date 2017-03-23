@@ -249,6 +249,8 @@ terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
     less than 32,768; this trick is no longer required as the
     `rdbx_estimate_index(...)` function has been made smarter.
 
+  * The replay window for (S)RTCP is hardcoded to 128 bits in length.
+
 --------------------------------------------------------------------------------
 
 <a name="installing-and-building-libsrtp"></a>
