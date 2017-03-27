@@ -191,7 +191,7 @@ in which a key is used for both inbound and outbound data.
 ## Supported Features
 
 This library supports all of the mandatory-to-implement features of
-SRTP (as defined by the most recent Internet Draft). Some of these
+SRTP (as defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt)). Some of these
 features can be selected (or de-selected) at run time by setting an
 appropriate policy; this is done using the structure `srtp_policy_t`.
 Some other behaviors of the protocol can be adapted by defining an
@@ -212,8 +212,8 @@ supported. This includes
 The user should be aware that it is possible to misuse this libary,
 and that the result may be that the security level it provides is
 inadequate. If you are implementing a feature using this library, you
-will want to read the Security Considerations section of the Internet
-Draft. In addition, it is important that you read and understand the
+will want to read the Security Considerations section of [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt).
+In addition, it is important that you read and understand the
 terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
 
 --------------------------------------------------------------------------------
