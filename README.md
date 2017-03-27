@@ -198,10 +198,6 @@ Some other behaviors of the protocol can be adapted by defining an
 approriate event handler for the exceptional events; see the SRTPevents
 section in the generated documentation.
 
-Some options that are not included in the specification are supported.
-Most notably, the TMMH authentication function is included, though it
-was removed from the SRTP Internet Draft during the summer of 2002.
-
 Some options that are described in the SRTP specification are not
 supported. This includes
 
