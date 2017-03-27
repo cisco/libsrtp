@@ -8,7 +8,7 @@
  */
 /*
  *	
- * Copyright (c) 2001-2006, Cisco Systems, Inc.
+ * Copyright (c) 2001-2017, Cisco Systems, Inc.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -972,8 +972,7 @@ void srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p);
  * 
  * The function call srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(&p)
  * sets the srtp_crypto_policy_t at location p to use policy
- * AES_CM_256_HMAC_SHA1_80 as defined in
- * draft-ietf-avt-srtp-big-aes-03.txt.  This policy uses AES-256
+ * AES_CM_256_HMAC_SHA1_80 as defined in RFC 6188.  This policy uses AES-256
  * Counter Mode encryption and HMAC-SHA1 authentication, with an 80 bit
  * authentication tag.
  * 
@@ -999,8 +998,7 @@ void srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(srtp_crypto_policy_t *p);
  * 
  * The function call srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(&p)
  * sets the srtp_crypto_policy_t at location p to use policy
- * AES_CM_256_HMAC_SHA1_32 as defined in
- * draft-ietf-avt-srtp-big-aes-03.txt.  This policy uses AES-256
+ * AES_CM_256_HMAC_SHA1_32 as defined in RFC 6188.  This policy uses AES-256
  * Counter Mode encryption and HMAC-SHA1 authentication, with an
  * authentication tag that is only 32 bits long.  This length is
  * considered adequate only for protecting audio and video media that
@@ -1061,8 +1059,7 @@ void srtp_crypto_policy_set_aes_cm_256_null_auth(srtp_crypto_policy_t *p);
  *
  * The function call srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(&p)
  * sets the crypto_policy_t at location p to use policy
- * AES_CM_192_HMAC_SHA1_80 as defined in
- * draft-ietf-avt-srtp-big-aes-03.txt.  This policy uses AES-192
+ * AES_CM_192_HMAC_SHA1_80 as defined in RFC 6188.  This policy uses AES-192
  * Counter Mode encryption and HMAC-SHA1 authentication, with an 80 bit
  * authentication tag.
  *
@@ -1087,8 +1084,7 @@ void srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p);
  *
  * The function call srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(&p)
  * sets the crypto_policy_t at location p to use policy
- * AES_CM_192_HMAC_SHA1_32 as defined in
- * draft-ietf-avt-srtp-big-aes-03.txt.  This policy uses AES-192
+ * AES_CM_192_HMAC_SHA1_32 as defined in RFC 6188.  This policy uses AES-192
  * Counter Mode encryption and HMAC-SHA1 authentication, with an
  * authentication tag that is only 32 bits long.  This length is
  * considered adequate only for protecting audio and video media that
