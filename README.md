@@ -65,7 +65,7 @@ libSRTP is distributed under the following license, which is included
 in the source code distribution. It is reproduced in the manual in
 case you got the library from another source.
 
-> Copyright (c) 2001-2005 Cisco Systems, Inc.  All rights reserved.
+> Copyright (c) 2001-2017 Cisco Systems, Inc.  All rights reserved.
 >
 > Redistribution and use in source and binary forms, with or without
 > modification, are permitted provided that the following conditions
