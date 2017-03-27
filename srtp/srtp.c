@@ -1000,7 +1000,7 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key,
 
     if (session_keys->rtp_xtn_hdr_cipher->type != session_keys->rtp_cipher->type) {
       /* With GCM ciphers, the header extensions are still encrypted using the corresponding ICM cipher. */
-      /* See https://tools.ietf.org/html/draft-ietf-avtcore-srtp-aes-gcm-17#section-8.3 */
+      /* See https://tools.ietf.org/html/rfc7714#section-8.3 */
       uint8_t tmp_xtn_hdr_key[MAX_SRTP_KEY_LEN];
       rtp_xtn_hdr_keylen = srtp_cipher_get_key_length(session_keys->rtp_xtn_hdr_cipher);
       rtp_xtn_hdr_base_key_len = base_key_length(session_keys->rtp_xtn_hdr_cipher->type,
@@ -2947,10 +2947,11 @@ srtp_update_stream(srtp_t session, const srtp_policy_t *policy) {
 
 
 /*
- * the default policy - provides a convenient way for callers to use
+ * The default policy - provides a convenient way for callers to use
  * the default security policy
- * 
- * this policy is that defined in the current SRTP internet draft.
+ *
+ * The default policy is defined in RFC 3711
+ * (Section 5. Default and mandatory-to-implement Transforms)
  *
  */
 
@@ -3059,7 +3060,7 @@ void
 srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188
    */
 
   p->cipher_type     = SRTP_AES_ICM_256;
@@ -3075,7 +3076,7 @@ void
 srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188
    *
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
@@ -3107,7 +3108,7 @@ void
 srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188
    */
 
   p->cipher_type     = SRTP_AES_ICM_192;
@@ -3123,7 +3124,7 @@ void
 srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(srtp_crypto_policy_t *p) {
 
   /*
-   * corresponds to draft-ietf-avt-big-aes-03.txt
+   * corresponds to RFC 6188
    *
    * note that this crypto policy is intended for SRTP, but not SRTCP
    */
@@ -3399,8 +3400,8 @@ srtp_protect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     } else {
         /*
          * Since payload encryption is not enabled, we must authenticate
-         * the entire packet as described in section 10.3 in revision 07
-         * of the draft.
+         * the entire packet as described in RFC 7714 (Section 9.3. Data
+         * Types in Unencrypted SRTCP Compound Packets)
          */
         status = srtp_cipher_set_aad(session_keys->rtcp_cipher,
                                  (uint8_t*)hdr, *pkt_octet_len);
@@ -3562,8 +3563,8 @@ srtp_unprotect_rtcp_aead (srtp_t ctx, srtp_stream_ctx_t *stream,
     } else {
         /*
          * Since payload encryption is not enabled, we must authenticate
-         * the entire packet as described in section 10.3 in revision 07
-         * of the draft.
+         * the entire packet as described in RFC 7714 (Section 9.3. Data
+         * Types in Unencrypted SRTCP Compound Packets)
          */
         status = srtp_cipher_set_aad(
           session_keys->rtcp_cipher, (uint8_t*)hdr,
