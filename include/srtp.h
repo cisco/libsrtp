@@ -1344,22 +1344,24 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy
  * @brief srtp_crypto_policy_set_from_profile_for_rtcp() sets a crypto policy
  * structure to the appropriate value for RTCP based on an srtp_profile_t
  *
- * @param p is a pointer to the policy structure to be set 
- * 
+ * @param policy is a pointer to the policy structure to be set
+ *
+ * @param profile is an enumeration for the policy to be set
+ *
  * The function call srtp_crypto_policy_set_rtcp_default(&policy, profile)
  * sets the srtp_crypto_policy_t at location policy to the policy for RTCP
  * protection, as defined by the srtp_profile_t profile.
- * 
+ *
  * This function is a convenience that helps to avoid dealing directly
  * with the policy data structure.  You are encouraged to initialize
  * policy elements with this function call.  Doing so may allow your
  * code to be forward compatible with later versions of libSRTP that
  * include more elements in the srtp_crypto_policy_t datatype.
- * 
+ *
  * @return values
  *     - srtp_err_status_ok         no problems were encountered
- *     - srtp_err_status_bad_param  the profile is not supported 
- * 
+ *     - srtp_err_status_bad_param  the profile is not supported
+ *
  */
 srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy, srtp_profile_t profile);
 
