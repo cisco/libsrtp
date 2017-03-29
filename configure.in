@@ -70,13 +70,16 @@ for w in -Werror -errwarn; do
   fi
 done
 
-dnl Note that -fPIC is also added to LDFLAGS.
+dnl Note that -fPIC is not explicitly added to LDFLAGS.
+dnl Since the compiler is used as the link driver, CFLAGS will be part of the
+dnl link line as well and the linker will get the flag from there.
+dnl Adding it to LDFLAGS explicitly would duplicate the flag on the link line,
+dnl but otherwise do no harm.
 AC_MSG_CHECKING([whether ${CC-c} accepts -fPIC])
 save_cflags="$CFLAGS"
 AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="-fPIC"], [CFLAGS="$CFLAGS -fPIC"])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
   [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="-fPIC"], [supported_cflags="$supported_cflags -fPIC"])
-   AS_IF([test "x$LDFLAGS" = "x"], [LDFLAGS="-fPIC"], [LDFLAGS="$LDFLAGS -fPIC"])
    AC_MSG_RESULT([yes])],
   [CFLAGS="$save_cflags"
    AC_MSG_RESULT([no])])
