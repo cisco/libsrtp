@@ -55,10 +55,10 @@ dnl This will be removed again once the tests are complete (see below).
 WERROR=""
 for w in -Werror -errwarn; do
   if test "x$WERROR" = "x"; then
-    AC_MSG_CHECKING([whether the compiler supports $w])
+    AC_MSG_CHECKING([whether ${CC-c} accepts $w])
     save_cflags="$CFLAGS"
     AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$w"], [CFLAGS="$CFLAGS $w"])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
       [WERROR="$w"
        AC_MSG_RESULT([yes])],
       [CFLAGS="$save_cflags"
@@ -67,10 +67,10 @@ for w in -Werror -errwarn; do
 done
 
 dnl Note that -fPIC is also added to LDFLAGS.
-AC_MSG_CHECKING([whether the compiler supports -fPIC])
+AC_MSG_CHECKING([whether ${CC-c} accepts -fPIC])
 save_cflags="$CFLAGS"
 AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="-fPIC"], [CFLAGS="$CFLAGS -fPIC"])
-AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
   [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="-fPIC"], [supported_cflags="$supported_cflags -fPIC"])
    AS_IF([test "x$LDFLAGS" = "x"], [LDFLAGS="-fPIC"], [LDFLAGS="$LDFLAGS -fPIC"])
    AC_MSG_RESULT([yes])],
@@ -78,11 +78,11 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
    AC_MSG_RESULT([no])])
 
 if test "$EMPTY_CFLAGS" = "yes"; then
-  for f in -Wall -pedantic; do
-    AC_MSG_CHECKING([whether the compiler supports $f])
+  for f in -Wall -pedantic -Wstrict-prototypes; do
+    AC_MSG_CHECKING([whether ${CC-c} accepts $f])
     save_cflags="$CFLAGS"
     AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
       [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
        AC_MSG_RESULT([yes])],
       [CFLAGS="$save_cflags"
@@ -92,10 +92,10 @@ if test "$EMPTY_CFLAGS" = "yes"; then
   OOPT=""
   for f in -O4 -O3; do
     if test "x$OOPT" = "x"; then
-      AC_MSG_CHECKING([whether the compiler supports $f])
+      AC_MSG_CHECKING([whether ${CC-c} accepts $f])
       save_cflags="$CFLAGS"
       AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
-      AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+      AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
         [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
          OOPT="$f"
          AC_MSG_RESULT([yes])],
@@ -105,10 +105,10 @@ if test "$EMPTY_CFLAGS" = "yes"; then
   done
 
   for f in -fexpensive-optimizations -funroll-loops; do
-    AC_MSG_CHECKING([whether the compiler supports $f])
+    AC_MSG_CHECKING([whether ${CC-c} accepts $f])
     save_cflags="$CFLAGS"
     AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$f"], [CFLAGS="$CFLAGS $f"])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
       [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
        AC_MSG_RESULT([yes])],
       [CFLAGS="$save_cflags"
@@ -121,11 +121,11 @@ dnl supported. However, the -Wno-<warning> form isn't consulted unless a warning
 dnl At least that's the case for GCC. So to check which warnings we can turn off, we dnl need to check
 dnl if they can be turned on, thereby forcing GCC to take the argument into account right away.
 for f in -Wno-language-extension-token; do
-  AC_MSG_CHECKING([whether the compiler supports $f])
+  AC_MSG_CHECKING([whether ${CC-c} accepts $f])
   save_cflags="$CFLAGS"
   testf=$(echo "$f" | $SED 's|-Wno-\(.*\)|-W\1|g')
   AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="$testf"], [CFLAGS="$CFLAGS $testf"])
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM()],
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
     [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="$f"], [supported_cflags="$supported_cflags $f"])
      AC_MSG_RESULT([yes])],
     [CFLAGS="$save_cflags"
@@ -166,13 +166,22 @@ if test "x$ac_cv_func_socket" = "xno"; then
   AC_MSG_CHECKING([for socket in -lwsock32])
   SAVELIBS="$LIBS"
   LIBS="$LIBS -lwsock32"
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+  AC_LINK_IFELSE(
+    [AC_LANG_SOURCE([
 #include <winsock2.h>
-]], [[
-socket(0, 0, 0);
-]])],[ac_cv_func_socket=yes
-    AC_MSG_RESULT([yes])],[LIBS="$SAVELIBS"
-    AC_MSG_RESULT([no])])
+int main(void)
+{
+    int fd = socket(0, 0, 0);
+    if (fd < 0)
+      return -1;
+    else
+      return 0;
+}
+    ])],
+    [ac_cv_func_socket=yes
+     AC_MSG_RESULT([yes])],
+    [LIBS="$SAVELIBS"
+     AC_MSG_RESULT([no])])
 fi
 
 AC_MSG_CHECKING([whether to enable debug logging in all modules])

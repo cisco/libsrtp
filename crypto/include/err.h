@@ -80,7 +80,7 @@ typedef enum {
  *
  */
 
-srtp_err_status_t srtp_err_reporting_init();
+srtp_err_status_t srtp_err_reporting_init(void);
 
 typedef void (srtp_err_report_handler_func_t)(srtp_err_reporting_level_t level, const char * msg);
 
