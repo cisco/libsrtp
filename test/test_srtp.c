@@ -148,7 +148,7 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()
 {
     // Preconditions
     // Test each significant bit high in each full byte.
-    static const size_t SAMPLE_COUNT = 3;
+    #define SAMPLE_COUNT (3)
     srtp_session_keys_t session_keys;
     srtcp_hdr_t header;
     v128_t output_iv[SAMPLE_COUNT];
@@ -181,4 +181,5 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()
     for (i = 0; i < SAMPLE_COUNT; i++) {
         TEST_CHECK(memcmp(&final_iv[i], &output_iv[i], sizeof(v128_t)) == 0);
     }
+    #undef SAMPLE_COUNT
 }
