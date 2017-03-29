@@ -559,7 +559,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
  * @param rtp_hdr is a pointer to the RTP packet (before the call); after
  * the function returns, it points to the srtp packet.
  *
- * @param len_ptr is a pointer to the length in octets of the complete
+ * @param pkt_octet_len is a pointer to the length in octets of the complete
  * RTP packet (header and body) before the function call, and of the
  * complete SRTP packet after the call, if srtp_err_status_ok was returned.
  * Otherwise, the value of the data to which it points is undefined.
