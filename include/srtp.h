@@ -258,7 +258,7 @@ typedef uint32_t srtp_cipher_type_id_t;
  */
 typedef uint32_t srtp_auth_type_id_t;
 
-/*
+/**
  * @brief srtp_err_status_t defines error codes.
  *
  * The enumeration srtp_err_status_t defines error codes.  Note that the
@@ -559,7 +559,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
  * @param rtp_hdr is a pointer to the RTP packet (before the call); after
  * the function returns, it points to the srtp packet.
  *
- * @param len_ptr is a pointer to the length in octets of the complete
+ * @param pkt_octet_len is a pointer to the length in octets of the complete
  * RTP packet (header and body) before the function call, and of the
  * complete SRTP packet after the call, if srtp_err_status_ok was returned.
  * Otherwise, the value of the data to which it points is undefined.
@@ -568,7 +568,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
  * set to false then will use the first set of session keys.  If set to true will
  * use the session keys identified by the mki_index
  *
- * @param mki_index integer value specifying which set of session kesy should be
+ * @param mki_index integer value specifying which set of session keys should be
  * used if use_mki is set to true.
  *
  * @return 
@@ -654,6 +654,10 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
  * srtp packet (header and body) before the function call, and of the
  * complete rtp packet after the call, if srtp_err_status_ok was returned.
  * Otherwise, the value of the data to which it points is undefined.
+ *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If
+ * set to false then will use the first set of session keys.  If set to true will
+ * use the session keys identified by the mki_index
  *
  * @return 
  *    - srtp_err_status_ok          if the RTP packet is valid.
@@ -1318,22 +1322,24 @@ typedef enum {
  * @brief srtp_crypto_policy_set_from_profile_for_rtp() sets a crypto policy
  * structure to the appropriate value for RTP based on an srtp_profile_t
  *
- * @param p is a pointer to the policy structure to be set 
- * 
+ * @param policy is a pointer to the policy structure to be set
+ *
+ * @param profile is an enumeration for the policy to be set
+ *
  * The function call srtp_crypto_policy_set_rtp_default(&policy, profile)
  * sets the srtp_crypto_policy_t at location policy to the policy for RTP
  * protection, as defined by the srtp_profile_t profile.
- * 
+ *
  * This function is a convenience that helps to avoid dealing directly
  * with the policy data structure.  You are encouraged to initialize
  * policy elements with this function call.  Doing so may allow your
  * code to be forward compatible with later versions of libSRTP that
  * include more elements in the srtp_crypto_policy_t datatype.
- * 
+ *
  * @return values
  *     - srtp_err_status_ok         no problems were encountered
  *     - srtp_err_status_bad_param  the profile is not supported 
- * 
+ *
  */
 srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy, srtp_profile_t profile);
 
@@ -1344,22 +1350,24 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy
  * @brief srtp_crypto_policy_set_from_profile_for_rtcp() sets a crypto policy
  * structure to the appropriate value for RTCP based on an srtp_profile_t
  *
- * @param p is a pointer to the policy structure to be set 
- * 
+ * @param policy is a pointer to the policy structure to be set
+ *
+ * @param profile is an enumeration for the policy to be set
+ *
  * The function call srtp_crypto_policy_set_rtcp_default(&policy, profile)
  * sets the srtp_crypto_policy_t at location policy to the policy for RTCP
  * protection, as defined by the srtp_profile_t profile.
- * 
+ *
  * This function is a convenience that helps to avoid dealing directly
  * with the policy data structure.  You are encouraged to initialize
  * policy elements with this function call.  Doing so may allow your
  * code to be forward compatible with later versions of libSRTP that
  * include more elements in the srtp_crypto_policy_t datatype.
- * 
+ *
  * @return values
  *     - srtp_err_status_ok         no problems were encountered
- *     - srtp_err_status_bad_param  the profile is not supported 
- * 
+ *     - srtp_err_status_bad_param  the profile is not supported
+ *
  */
 srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy, srtp_profile_t profile);
 
@@ -1578,6 +1586,10 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octe
  * and of the complete rtp packet after the call, if srtp_err_status_ok was
  * returned.  Otherwise, the value of the data to which it points is
  * undefined.
+ *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If
+ * set to false then will use the first set of session keys.  If set to true will
+ * use the session keys identified by the mki_index
  *
  * @return 
  *    - srtp_err_status_ok          if the RTCP packet is valid.
