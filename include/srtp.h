@@ -655,6 +655,10 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, int *len_ptr);
  * complete rtp packet after the call, if srtp_err_status_ok was returned.
  * Otherwise, the value of the data to which it points is undefined.
  *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If
+ * set to false then will use the first set of session keys.  If set to true will
+ * use the session keys identified by the mki_index
+ *
  * @return 
  *    - srtp_err_status_ok          if the RTP packet is valid.
  *    - srtp_err_status_auth_fail   if the SRTP packet failed the message 
@@ -1582,6 +1586,10 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octe
  * and of the complete rtp packet after the call, if srtp_err_status_ok was
  * returned.  Otherwise, the value of the data to which it points is
  * undefined.
+ *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If
+ * set to false then will use the first set of session keys.  If set to true will
+ * use the session keys identified by the mki_index
  *
  * @return 
  *    - srtp_err_status_ok          if the RTCP packet is valid.
