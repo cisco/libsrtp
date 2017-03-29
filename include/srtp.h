@@ -568,7 +568,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, int *len_ptr);
  * set to false then will use the first set of session keys.  If set to true will
  * use the session keys identified by the mki_index
  *
- * @param mki_index integer value specifying which set of session kesy should be
+ * @param mki_index integer value specifying which set of session keys should be
  * used if use_mki is set to true.
  *
  * @return 
