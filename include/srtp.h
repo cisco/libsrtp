@@ -258,7 +258,7 @@ typedef uint32_t srtp_cipher_type_id_t;
  */
 typedef uint32_t srtp_auth_type_id_t;
 
-/*
+/**
  * @brief srtp_err_status_t defines error codes.
  *
  * The enumeration srtp_err_status_t defines error codes.  Note that the
