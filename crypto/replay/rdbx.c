@@ -194,6 +194,7 @@ srtp_err_status_t srtp_rdbx_init (srtp_rdbx_t *rdbx, unsigned long ws)
     }
 
     srtp_index_init(&rdbx->index);
+    rdbx->is_roc_set = 0;
 
     return srtp_err_status_ok;
 }
@@ -231,6 +232,8 @@ srtp_err_status_t srtp_rdbx_set_roc (srtp_rdbx_t *rdbx, uint32_t roc)
     rdbx->index &= 0xffff;                /* retain lowest 16 bits */
     rdbx->index |= ((uint64_t)roc) << 16; /* set ROC */
 #endif
+
+    rdbx->is_roc_set = 1;
 
     return srtp_err_status_ok;
 }

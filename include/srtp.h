@@ -1855,6 +1855,29 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session, uint32_t 
 
 
 /**
+ * @brief srtp_set_stream_roc(session, ssrc, roc)
+ *
+ * Set the roll-over-counter on a session for a given SSRC
+ *
+ * returns err_status_ok on success, srtp_err_status_bad_param if there is no
+ * stream found
+ *
+ */
+srtp_err_status_t srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc);
+
+/**
+ * @brief srtp_get_stream_roc(session, ssrc, roc)
+ *
+ * Get the roll-over-counter on a session for a given SSRC
+ *
+ * returns err_status_ok on success, srtp_err_status_bad_param if there is no
+ * stream found
+ *
+ */
+srtp_err_status_t srtp_get_stream_roc(srtp_t session, uint32_t ssrc, uint32_t *roc);
+
+
+/**
  * @}
  */
 /* in host order, so outside the #if */

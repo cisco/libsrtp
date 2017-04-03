@@ -2251,8 +2251,14 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
     }
   } else {
   
-    /* estimate packet index from seq. num. in header */
-    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
+    if (stream->rtp_rdbx.is_roc_set) {
+        est = (srtp_xtd_seq_num_t) ntohs(hdr->seq) + stream->rtp_rdbx.index;
+        delta = (int)est;
+        stream->rtp_rdbx.is_roc_set = 0;
+    } else {
+        /* estimate packet index from seq. num. in header */
+        delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
+    }
     
     /* check replay database */
     status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
@@ -4459,5 +4465,29 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func, void * 
     if (srtp_log_handler) {
         srtp_install_err_report_handler(srtp_err_handler);
     }
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t
+srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc) {
+    srtp_stream_t stream;
+
+    stream = srtp_get_stream(session, htonl(ssrc));
+    if (stream == NULL)
+        return srtp_err_status_bad_param;
+
+    return srtp_rdbx_set_roc(&stream->rtp_rdbx, roc);
+}
+
+srtp_err_status_t
+srtp_get_stream_roc(srtp_t session, uint32_t ssrc, uint32_t *roc) {
+    srtp_stream_t stream;
+
+    stream = srtp_get_stream(session, htonl(ssrc));
+    if (stream == NULL)
+        return srtp_err_status_bad_param;
+
+    *roc = stream->rtp_rdbx.index >> 16;
+
     return srtp_err_status_ok;
 }
