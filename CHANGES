@@ -10,6 +10,12 @@ Compatibility changes
     This change will break backwards compatibility with older versions (1.5,
     2.0) of libSRTP when using the AES GCM cipher for RTCP.
 
+  PR #287 - Fix OOB read in key generation for encrypted headers with GCM ciphers
+    Adds padding of GCM salt to the corresponding ICM length used for header
+    encryption.
+    This change will break backwards compatibility with version 2.0 of libSRTP
+    when using the header encryption extension with the AES GCM cipher.
+
 Major changes
 
   PR #204 - OpenSSL performance improvements
