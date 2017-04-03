@@ -4812,8 +4812,8 @@ fi
 WERROR=""
 for w in -Werror -errwarn; do
   if test "x$WERROR" = "x"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports $w" >&5
-$as_echo_n "checking whether the compiler supports $w... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts $w" >&5
+$as_echo_n "checking whether ${CC-c} accepts $w... " >&6; }
     save_cflags="$CFLAGS"
     if test "x$CFLAGS" = "x"; then :
   CFLAGS="$w"
@@ -4822,14 +4822,7 @@ else
 fi
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
+int main(void) { return 0; }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   WERROR="$w"
@@ -4844,8 +4837,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   fi
 done
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports -fPIC" >&5
-$as_echo_n "checking whether the compiler supports -fPIC... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts -fPIC" >&5
+$as_echo_n "checking whether ${CC-c} accepts -fPIC... " >&6; }
 save_cflags="$CFLAGS"
 if test "x$CFLAGS" = "x"; then :
   CFLAGS="-fPIC"
@@ -4854,14 +4847,7 @@ else
 fi
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
+int main(void) { return 0; }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   if test "x$supported_cflags" = "x"; then :
@@ -4884,9 +4870,9 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 if test "$EMPTY_CFLAGS" = "yes"; then
-  for f in -Wall -pedantic; do
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports $f" >&5
-$as_echo_n "checking whether the compiler supports $f... " >&6; }
+  for f in -Wall -pedantic -Wstrict-prototypes; do
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts $f" >&5
+$as_echo_n "checking whether ${CC-c} accepts $f... " >&6; }
     save_cflags="$CFLAGS"
     if test "x$CFLAGS" = "x"; then :
   CFLAGS="$f"
@@ -4895,14 +4881,7 @@ else
 fi
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
+int main(void) { return 0; }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   if test "x$supported_cflags" = "x"; then :
@@ -4923,8 +4902,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   OOPT=""
   for f in -O4 -O3; do
     if test "x$OOPT" = "x"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports $f" >&5
-$as_echo_n "checking whether the compiler supports $f... " >&6; }
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts $f" >&5
+$as_echo_n "checking whether ${CC-c} accepts $f... " >&6; }
       save_cflags="$CFLAGS"
       if test "x$CFLAGS" = "x"; then :
   CFLAGS="$f"
@@ -4933,14 +4912,7 @@ else
 fi
       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
+int main(void) { return 0; }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   if test "x$supported_cflags" = "x"; then :
@@ -4961,8 +4933,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   done
 
   for f in -fexpensive-optimizations -funroll-loops; do
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports $f" >&5
-$as_echo_n "checking whether the compiler supports $f... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts $f" >&5
+$as_echo_n "checking whether ${CC-c} accepts $f... " >&6; }
     save_cflags="$CFLAGS"
     if test "x$CFLAGS" = "x"; then :
   CFLAGS="$f"
@@ -4971,14 +4943,7 @@ else
 fi
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
+int main(void) { return 0; }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   if test "x$supported_cflags" = "x"; then :
@@ -4998,8 +4963,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 
 for f in -Wno-language-extension-token; do
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports $f" >&5
-$as_echo_n "checking whether the compiler supports $f... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts $f" >&5
+$as_echo_n "checking whether ${CC-c} accepts $f... " >&6; }
   save_cflags="$CFLAGS"
   testf=$(echo "$f" | $SED 's|-Wno-\(.*\)|-W\1|g')
   if test "x$CFLAGS" = "x"; then :
@@ -5009,14 +4974,7 @@ else
 fi
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
+int main(void) { return 0; }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
   if test "x$supported_cflags" = "x"; then :
@@ -5536,24 +5494,23 @@ $as_echo_n "checking for socket in -lwsock32... " >&6; }
 /* end confdefs.h.  */
 
 #include <winsock2.h>
-
-int
-main ()
+int main(void)
 {
-
-socket(0, 0, 0);
-
-  ;
-  return 0;
+    int fd = socket(0, 0, 0);
+    if (fd < 0)
+      return -1;
+    else
+      return 0;
 }
+
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
   ac_cv_func_socket=yes
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 else
   LIBS="$SAVELIBS"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 rm -f core conftest.err conftest.$ac_objext \
