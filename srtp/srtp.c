@@ -1006,6 +1006,19 @@ srtp_stream_init_keys(srtp_stream_ctx_t *srtp, srtp_master_key_t *master_key,
       rtp_xtn_hdr_base_key_len = base_key_length(session_keys->rtp_xtn_hdr_cipher->type,
                                                  rtp_xtn_hdr_keylen);
       rtp_xtn_hdr_salt_len = rtp_xtn_hdr_keylen - rtp_xtn_hdr_base_key_len;
+      if (rtp_xtn_hdr_salt_len > rtp_salt_len) {
+        switch (session_keys->rtp_cipher->type->id) {
+        case SRTP_AES_GCM_128:
+        case SRTP_AES_GCM_256:
+          /* The shorter GCM salt is padded to the required ICM salt length. */
+          rtp_xtn_hdr_salt_len = rtp_salt_len;
+          break;
+        default:
+          /* zeroize temp buffer */
+          octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
+          return srtp_err_status_bad_param;
+        }
+      }
       memset(tmp_xtn_hdr_key, 0x0, MAX_SRTP_KEY_LEN);
       memcpy(tmp_xtn_hdr_key, key, (rtp_xtn_hdr_base_key_len + rtp_xtn_hdr_salt_len));
       xtn_hdr_kdf = &tmp_kdf;
