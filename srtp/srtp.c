@@ -2756,7 +2756,8 @@ srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len) {
   /* 
    * if we're using rindael counter mode, set nonce and seq 
    */
-  if (stream->rtcp_cipher->type->id == AES_ICM) {
+  if (stream->rtcp_cipher->type->id == AES_ICM ||
+      stream->rtcp_cipher->type->id == AES_256_ICM) {
     v128_t iv;
     
     iv.v32[0] = 0;
@@ -2977,7 +2978,8 @@ srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len) {
   /* 
    * if we're using aes counter mode, set nonce and seq 
    */
-  if (stream->rtcp_cipher->type->id == AES_ICM) {
+  if (stream->rtcp_cipher->type->id == AES_ICM ||
+      stream->rtcp_cipher->type->id == AES_256_ICM) {
     v128_t iv;
 
     iv.v32[0] = 0;
