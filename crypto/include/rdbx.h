@@ -85,7 +85,7 @@ typedef uint64_t srtp_xtd_seq_num_t;
 typedef struct {
     srtp_xtd_seq_num_t index;
     bitvector_t bitmask;
-    int is_roc_set;
+    uint32_t pending_roc;
 } srtp_rdbx_t;
 
 
@@ -148,7 +148,7 @@ srtp_err_status_t srtp_rdbx_add_index(srtp_rdbx_t *rdbx, int delta);
 srtp_err_status_t srtp_rdbx_set_roc(srtp_rdbx_t *rdbx, uint32_t roc);
 
 /*
- * srtp_rdbx_get_roc(rdbx) returns the value of the rollover counter for
+ * srtp_rdbx_get_packet_index(rdbx) returns the value of the rollover counter for
  * the srtp_rdbx_t pointed to by rdbx
  *
  */
@@ -186,6 +186,24 @@ void srtp_index_advance(srtp_xtd_seq_num_t *pi, srtp_sequence_number_t s);
  */
 int32_t srtp_index_guess(const srtp_xtd_seq_num_t *local, srtp_xtd_seq_num_t *guess, srtp_sequence_number_t s);
 
+/*
+ * srtp_rdbx_get_roc(rdbx)
+ *
+ * Get the current rollover counter
+ *
+ */
+uint32_t srtp_rdbx_get_roc(const srtp_rdbx_t *rdbx);
+
+/*
+ * srtp_rdbx_set_roc_seq(rdbx, roc, seq) initalizes the srtp_rdbx_t at the
+ * location rdbx to have the rollover counter value roc and packet sequence
+ * number seq.  If the new rollover counter value is less than the current
+ * rollover counter value, then the function returns
+ * srtp_err_status_replay_old, otherwise, srtp_err_status_ok is returned.
+ */
+srtp_err_status_t srtp_rdbx_set_roc_seq (srtp_rdbx_t *rdbx,
+                                         uint32_t roc,
+                                         uint16_t seq);
 
 #ifdef __cplusplus
 }

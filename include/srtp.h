@@ -292,7 +292,9 @@ typedef enum {
   srtp_err_status_encode_err   = 22, /**< error encoding data                     */
   srtp_err_status_semaphore_err = 23,/**< error while using semaphores            */
   srtp_err_status_pfkey_err    = 24, /**< error while using pfkey                 */
-  srtp_err_status_bad_mki      = 25  /**< error MKI present in packet is invalid */
+  srtp_err_status_bad_mki      = 25, /**< error MKI present in packet is invalid  */
+  srtp_err_status_pkt_idx_old  = 26, /**< packet index is too old to consider     */
+  srtp_err_status_pkt_idx_adv  = 27 /**< packet index advanced, reset needed      */
 } srtp_err_status_t;
 
 

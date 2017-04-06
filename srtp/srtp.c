@@ -559,7 +559,7 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   }
   srtp_rdb_init(&str->rtcp_rdb);
   str->allow_repeat_tx = stream_template->allow_repeat_tx;
-  
+
   /* set ssrc to that provided */
   str->ssrc = ssrc;
 
@@ -1532,6 +1532,110 @@ srtp_get_session_keys(srtp_stream_ctx_t *stream, uint8_t* hdr,
   return NULL;
 }
 
+static srtp_err_status_t
+srtp_estimate_index(srtp_rdbx_t *rdbx,
+                    uint32_t roc,
+                    srtp_xtd_seq_num_t *est,
+                    srtp_sequence_number_t seq,
+                    int *delta)
+{
+#ifdef NO_64BIT_MATH
+  uint32_t internal_pkt_idx_reduced;
+  uint32_t external_pkt_idx_reduced;
+  uint32_t internal_roc;
+  uint32_t roc_difference;
+#endif
+
+#ifdef NO_64BIT_MATH
+  *est = (srtp_xtd_seq_num_t)make64(roc >> 16, (roc << 16) | seq);
+  *delta = low32(est) - rdbx->index;
+#else
+  *est = (srtp_xtd_seq_num_t)(((uint64_t)roc) << 16) | seq;
+  *delta = (int)(*est - rdbx->index);
+#endif
+
+  if (*est > rdbx->index) {
+#ifdef NO_64BIT_MATH
+    internal_roc = (uint32_t)(rdbx->index >> 16);
+    roc_difference = roc - internal_roc;
+    if (roc_difference > 1) {
+      *delta = 0;
+      return srtp_err_status_pkt_idx_adv;
+    }
+
+    internal_pkt_idx_reduced = (uint32_t)(rdbx->index & 0xFFFF);
+    external_pkt_idx_reduced = (uint32_t)((roc_difference << 16) | seq);
+
+    if (external_pkt_idx_reduced - internal_pkt_idx_reduced >
+                                                    seq_num_median) {
+      *delta = 0;
+      return srtp_err_status_pkt_idx_adv;
+    }
+#else
+    if (*est - rdbx->index > seq_num_median) {
+      *delta = 0;
+      return srtp_err_status_pkt_idx_adv;
+    }
+#endif
+  } else if (*est < rdbx->index) {
+#ifdef NO_64BIT_MATH
+
+    internal_roc = (uint32_t)(rdbx->index >> 16);
+    roc_difference = internal_roc - roc;
+    if (roc_difference > 1) {
+      *delta = 0;
+      return srtp_err_status_pkt_idx_adv;
+    }
+
+    internal_pkt_idx_reduced =
+                (uint32_t)((roc_difference << 16) | rdbx->index & 0xFFFF);
+    external_pkt_idx_reduced = (uint32_t)(seq);
+
+    if (internal_pkt_idx_reduced - external_pkt_idx_reduced >
+                                                    seq_num_median) {
+      *delta = 0;
+      return srtp_err_status_pkt_idx_old;
+    }
+#else
+    if (rdbx->index - *est > seq_num_median) {
+      *delta = 0;
+      return srtp_err_status_pkt_idx_old;
+    }
+#endif
+  }
+
+  return srtp_err_status_ok;
+}
+
+static srtp_err_status_t
+srtp_get_est_pkt_index(srtp_hdr_t *hdr,
+                       srtp_stream_ctx_t *stream,
+                       srtp_xtd_seq_num_t *est,
+                       int *delta)
+{
+  srtp_err_status_t result = srtp_err_status_ok;
+
+  if (stream->rtp_rdbx.pending_roc) {
+    result = srtp_estimate_index(&stream->rtp_rdbx,
+                                 stream->rtp_rdbx.pending_roc,
+                                 est,
+                                 ntohs(hdr->seq),
+                                 delta);
+  } else {
+    /* estimate packet index from seq. num. in header */
+    *delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx,
+                                      est,
+                                      ntohs(hdr->seq));
+  }
+
+#ifdef NO_64BIT_MATH
+  debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(*est), low32(*est));
+#else
+  debug_print(mod_srtp, "estimated u_packet index: %016llx", *est);
+#endif
+  return result;
+}
+
 /*
  * This function handles outgoing SRTP packets while in AEAD mode,
  * which currently supports AES-GCM encryption.  All packets are
@@ -2202,6 +2306,7 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
   srtp_hdr_xtnd_t *xtn_hdr = NULL;
   unsigned int mki_size = 0;
   srtp_session_keys_t *session_keys = NULL;
+  int advance_packet_index = 0;
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
 
@@ -2250,20 +2355,24 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
       return srtp_err_status_no_ctx;
     }
   } else {
-  
-    if (stream->rtp_rdbx.is_roc_set) {
-        est = (srtp_xtd_seq_num_t) ntohs(hdr->seq) + stream->rtp_rdbx.index;
-        delta = (int)est;
-        stream->rtp_rdbx.is_roc_set = 0;
-    } else {
-        /* estimate packet index from seq. num. in header */
-        delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-    }
-    
-    /* check replay database */
-    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-    if (status)
+    status = srtp_get_est_pkt_index(hdr,
+                                    stream,
+                                    &est,
+                                    &delta);
+
+    if (status && (status != srtp_err_status_pkt_idx_adv))
       return status;
+
+    if (status == srtp_err_status_pkt_idx_adv) {
+      advance_packet_index = 1;
+    }
+
+    /* check replay database */
+    if (!advance_packet_index) {
+      status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+      if (status)
+        return status;
+    }
   }
 
 #ifdef NO_64BIT_MATH
@@ -2509,12 +2618,19 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
     /* set stream (the pointer used in this function) */
     stream = new_stream;
   }
-  
+
   /* 
    * the message authentication function passed, so add the packet
    * index into the replay database 
    */
-  srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+  if (advance_packet_index) {
+    srtp_rdbx_set_roc_seq(&stream->rtp_rdbx,
+                            (uint32_t)(est >> 16),
+                            (uint16_t)(est & 0xFFFF));
+    srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
+  } else {
+    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+  }
 
   /* decrease the packet length by the length of the auth tag */
   *pkt_octet_len -= tag_len;
@@ -4476,7 +4592,9 @@ srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc) {
     if (stream == NULL)
         return srtp_err_status_bad_param;
 
-    return srtp_rdbx_set_roc(&stream->rtp_rdbx, roc);
+    stream->rtp_rdbx.pending_roc = roc;
+
+    return srtp_err_status_ok;
 }
 
 srtp_err_status_t
@@ -4487,7 +4605,7 @@ srtp_get_stream_roc(srtp_t session, uint32_t ssrc, uint32_t *roc) {
     if (stream == NULL)
         return srtp_err_status_bad_param;
 
-    *roc = stream->rtp_rdbx.index >> 16;
+    *roc = srtp_rdbx_get_roc(&stream->rtp_rdbx);
 
     return srtp_err_status_ok;
 }
