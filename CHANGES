@@ -4,6 +4,12 @@ Changelog
 
 Compatibility changes
 
+  PR #253 - Cipher type cleanup for AES
+    When libSRTP is compiled with OpenSSL and the AES 256 ICM is used with RTCP
+    an incorrect initialization vector is formed.
+    This change will break backwards compatibility with older versions (1.5,
+    2.0) of libSRTP when using the AES 256 ICM cipher with OpenSSL for RTCP.
+
   PR #259 - Sequence number incorrectly masked for AES GCM IV
     The initializing vector for AES GCM encryption was incorrectly formed on
     little endian machines.
@@ -114,8 +120,6 @@ Other changes
   PR #249 - Remove support for generic aesicm from configure.in
 
   PR #250 - Update README.md, incorrect tag for link
-
-  PR #253 - Cipher type cleanup for AES
 
   PR #255 - Cleanup outdated comment related to MKI
 
