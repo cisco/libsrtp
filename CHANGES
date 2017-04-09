@@ -5,13 +5,13 @@ Changelog
 Compatibility changes
 
   PR #253 - Cipher type cleanup for AES
-    When libSRTP is compiled with OpenSSL and the AES 256 ICM is used with RTCP
-    an incorrect initialization vector is formed.
+    When libSRTP is compiled with OpenSSL and the AES 256 ICM cipher is used
+    with RTCP an incorrect initialization vector is formed.
     This change will break backwards compatibility with older versions (1.5,
     2.0) of libSRTP when using the AES 256 ICM cipher with OpenSSL for RTCP.
 
   PR #259 - Sequence number incorrectly masked for AES GCM IV
-    The initializing vector for AES GCM encryption was incorrectly formed on
+    The initialization vector for AES GCM encryption was incorrectly formed on
     little endian machines.
     This change will break backwards compatibility with older versions (1.5,
     2.0) of libSRTP when using the AES GCM cipher for RTCP.
@@ -28,25 +28,25 @@ Major changes
     Changed key expansion to occur once per key instead of once per packet.
 
   PR #209 - Restore AES-192 under BoringSSL
-    BoringSSL supports AES-192, now enabled in libSRTP.
+    BoringSSL supports AES-192 and is now enabled in libSRTP.
 
   PR #224 - Master Key Identifiers (MKI) Support patch
     Adds MKI support with up to 4 keys.
 
   PR #234 - Report SSRC instead of srtp_stream_t in srtp_event_data_t
-    srtp_stream_t is an opaque type making the event framework almost useless,
-    now the SSRC is returned instead for use as a key in the public API.
+    srtp_stream_t is an opaque type making the event framework almost useless.
+    Now the SSRC is returned instead for use as a key in the public API.
 
   PR #238 - Configure changes and improvements
     CFLAGS check more shell neutral, quotation fixes, always generate and
     install pkg-config file, improved OpenSSL discovery and linking, remove
     -fPIC flag on Windows, fix shared library generation under Cygwin, replace
-    hardcoded CFLAGS with compiler checks, regenerate configure after
+    hardcoded CFLAGS with compiler checks, and regenerate configure after
     configure.in changes.
 
   PR #241 & PR #261 - Improved logging API to receive log messages from libSRTP
-    Provides a logging API and the ability to enable logging to stdout and file
-    as well as a switch to enable all internal debug modules.
+    Provides a logging API and the ability to enable logging to stdout and a
+    file, as well as a switch to enable all internal debug modules.
 
 Other changes
 
