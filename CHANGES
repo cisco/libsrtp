@@ -144,3 +144,5 @@ Other changes
   PR #279 - Bump copyright year
 
   PR #283 - Add missing docs in srtp.h
+
+  PR #284 - Add strict-prototypes warning if supported
