@@ -555,7 +555,7 @@ srtp_err_status_t srtp_crypto_kernel_load_debug_module (srtp_debug_module_t *new
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_crypto_kernel_set_debug_module (char *name, int on)
+srtp_err_status_t srtp_crypto_kernel_set_debug_module (const char *name, int on)
 {
     srtp_kernel_debug_module_t *kdm;
 

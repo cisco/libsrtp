@@ -201,7 +201,7 @@ srtp_err_status_t srtp_crypto_kernel_alloc_auth(srtp_auth_type_id_t id, srtp_aut
  *
  * returns srtp_err_status_ok on success, srtp_err_status_fail otherwise
  */
-srtp_err_status_t srtp_crypto_kernel_set_debug_module(char *mod_name, int v);
+srtp_err_status_t srtp_crypto_kernel_set_debug_module(const char *mod_name, int v);
 
 #ifdef __cplusplus
 }
