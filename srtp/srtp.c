@@ -2005,6 +2005,7 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
    unsigned int mki_size = 0;
    srtp_session_keys_t *session_keys = NULL;
    uint8_t* mki_location = NULL;
+   int advance_packet_index = 0;
 
    debug_print(mod_srtp, "function srtp_protect", NULL);
 
@@ -2141,18 +2142,32 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
      auth_tag = NULL;
    }
 
-   /*
-    * estimate the packet index using the start of the replay window   
-    * and the sequence number from the header
-    */
-   delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-   status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-   if (status) {
-     if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx)
-       return status;  /* we've been asked to reuse an index */
-   }
-   else
-     srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+  /*
+   * estimate the packet index using the start of the replay window
+   * and the sequence number from the header
+   */
+  status = srtp_get_est_pkt_index(hdr,
+                                  stream,
+                                  &est,
+                                  &delta);
+
+  if (status && (status != srtp_err_status_pkt_idx_adv))
+    return status;
+
+  if (status == srtp_err_status_pkt_idx_adv)
+    advance_packet_index = 1;
+
+  if (advance_packet_index) {
+    srtp_rdbx_set_roc_seq(&stream->rtp_rdbx,
+                          (uint32_t)(est >> 16),
+                          (uint16_t)(est & 0xFFFF));
+    srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
+  } else {
+    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+    if (status)
+      return status;
+    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+  }
 
 #ifdef NO_64BIT_MATH
    debug_print2(mod_srtp, "estimated packet index: %08x%08x", 

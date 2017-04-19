@@ -111,7 +111,10 @@ srtp_err_status_t
 srtp_test_get_roc(void);
 
 srtp_err_status_t
-srtp_test_set_roc(void);
+srtp_test_set_receiver_roc(void);
+
+srtp_err_status_t
+srtp_test_set_sender_roc(void);
 
 double
 srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
@@ -547,8 +550,16 @@ main (int argc, char *argv[])
             exit(1);
         }
 
-        printf("testing srtp_test_set_roc()...");
-        if (srtp_test_set_roc() == srtp_err_status_ok) {
+        printf("testing srtp_test_set_receiver_roc()...");
+        if (srtp_test_set_receiver_roc() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_test_set_sender_roc()...");
+        if (srtp_test_set_sender_roc() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -3056,7 +3067,7 @@ srtp_test_get_roc() {
 }
 
 static srtp_err_status_t
-test_set_roc(uint32_t packets, uint32_t roc_to_set)
+test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
 {
   srtp_err_status_t status;
 
@@ -3162,8 +3173,106 @@ test_set_roc(uint32_t packets, uint32_t roc_to_set)
   return srtp_err_status_ok;
 }
 
+static srtp_err_status_t
+test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
+{
+  srtp_err_status_t status;
+
+  srtp_policy_t sender_policy;
+  srtp_t sender_session;
+
+  srtp_policy_t receiver_policy;
+  srtp_t receiver_session;
+
+  srtp_hdr_t *pkt;
+  unsigned char *recv_pkt;
+
+  uint32_t i;
+  uint32_t ts;
+
+  int msg_len_octets = 32;
+  int protected_msg_len_octets;
+
+  /* Create sender */
+  memset(&sender_policy, 0, sizeof(sender_policy));
+  srtp_crypto_policy_set_rtp_default(&sender_policy.rtp);
+  srtp_crypto_policy_set_rtcp_default(&sender_policy.rtcp);
+  sender_policy.ssrc.type  = ssrc_specific;
+  sender_policy.ssrc.value = 0xcafebabe;
+  sender_policy.key = test_key;
+  sender_policy.window_size = 128;
+
+  status = srtp_create(&sender_session, &sender_policy);
+  if (status) {
+    return status;
+  }
+
+  /* Set the ROC before encrypting the first packet */
+  status = srtp_set_stream_roc(sender_session, sender_policy.ssrc.value, roc_to_set);
+  if (status != srtp_err_status_ok) {
+    return status;
+  }
+
+  /* Create the packet to decrypt */
+  ts = 0;
+  pkt = srtp_create_test_packet_extended(msg_len_octets, sender_policy.ssrc.value, seq, ts);
+  protected_msg_len_octets = msg_len_octets;
+  status = srtp_protect(sender_session, pkt, &protected_msg_len_octets);
+  if (status) {
+    return status;
+  }
+
+  /* Create the receiver */
+  memset(&receiver_policy, 0, sizeof(receiver_policy));
+  srtp_crypto_policy_set_rtp_default(&receiver_policy.rtp);
+  srtp_crypto_policy_set_rtcp_default(&receiver_policy.rtcp);
+  receiver_policy.ssrc.type  = ssrc_specific;
+  receiver_policy.ssrc.value = sender_policy.ssrc.value;
+  receiver_policy.key = test_key;
+  receiver_policy.window_size = 128;
+
+  status = srtp_create(&receiver_session, &receiver_policy);
+  if (status) {
+    return status;
+  }
+
+  /* Make a copy of the sent protected packet */
+  recv_pkt = malloc(protected_msg_len_octets);
+  if (recv_pkt == NULL) {
+    return srtp_err_status_fail;
+  }
+  memcpy(recv_pkt, pkt, protected_msg_len_octets);
+
+  /* Set the ROC to the wanted value */
+  status = srtp_set_stream_roc(receiver_session, receiver_policy.ssrc.value, roc_to_set);
+  if (status) {
+    return status;
+  }
+
+  status = srtp_unprotect(receiver_session, recv_pkt, &protected_msg_len_octets);
+  if (status) {
+    return status;
+  }
+
+  /* Cleanup */
+  status = srtp_dealloc(sender_session);
+  if (status) {
+    return status;
+  }
+
+  status = srtp_dealloc(receiver_session);
+  if (status) {
+    return status;
+  }
+
+  free(pkt);
+  free(recv_pkt);
+
+  return srtp_err_status_ok;
+}
+
 srtp_err_status_t
-srtp_test_set_roc() {
+srtp_test_set_receiver_roc() {
   int packets;
   uint32_t roc;
   srtp_err_status_t status;
@@ -3172,22 +3281,22 @@ srtp_test_set_roc() {
   packets = 1;
   roc = 0;
 
-  status = test_set_roc(packets - 1, roc);
+  status = test_set_receiver_roc(packets - 1, roc);
   if (status) {
     return status;
   }
 
-  status = test_set_roc(packets, roc);
+  status = test_set_receiver_roc(packets, roc);
   if (status) {
     return status;
   }
 
-  status = test_set_roc(packets + 1, roc);
+  status = test_set_receiver_roc(packets + 1, roc);
   if (status) {
     return status;
   }
 
-  status = test_set_roc(packets + 60000, roc);
+  status = test_set_receiver_roc(packets + 60000, roc);
   if (status) {
     return status;
   }
@@ -3196,28 +3305,68 @@ srtp_test_set_roc() {
   packets = 65535;
   roc = 0;
 
-  status = test_set_roc(packets - 1, roc);
+  status = test_set_receiver_roc(packets - 1, roc);
   if (status) {
     return status;
   }
 
-  status = test_set_roc(packets, roc);
+  status = test_set_receiver_roc(packets, roc);
   if (status) {
     return status;
   }
 
   /* Now the rollover counter should be 1 */
   roc = 1;
-  status = test_set_roc(packets + 1, roc);
+  status = test_set_receiver_roc(packets + 1, roc);
   if (status) {
     return status;
   }
 
-  status = test_set_roc(packets + 60000, roc);
+  status = test_set_receiver_roc(packets + 60000, roc);
   if (status) {
     return status;
   }
 
+
+  return srtp_err_status_ok;
+}
+
+srtp_err_status_t
+srtp_test_set_sender_roc() {
+  uint32_t roc;
+  uint16_t seq;
+  srtp_err_status_t status;
+
+  seq = 43210;
+  roc = 0;
+  status = test_set_sender_roc(seq, roc);
+  if (status) {
+    return status;
+  }
+
+  roc = 65535;
+  status = test_set_sender_roc(seq, roc);
+  if (status) {
+    return status;
+  }
+
+  roc = 0xffff;
+  status = test_set_sender_roc(seq, roc);
+  if (status) {
+    return status;
+  }
+
+  roc = 0xffff00;
+  status = test_set_sender_roc(seq, roc);
+  if (status) {
+    return status;
+  }
+
+  roc = 0xfffffff0;
+  status = test_set_sender_roc(seq, roc);
+  if (status) {
+    return status;
+  }
 
   return srtp_err_status_ok;
 }
