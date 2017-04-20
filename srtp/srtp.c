@@ -4421,7 +4421,7 @@ srtp_get_protect_rtcp_trailer_length(srtp_t session,
 /*
  * SRTP debug interface
  */
-srtp_err_status_t srtp_set_debug_module(char *mod_name, int v)
+srtp_err_status_t srtp_set_debug_module(const char *mod_name, int v)
 {
     return srtp_crypto_kernel_set_debug_module(mod_name, v);
 }
