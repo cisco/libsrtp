@@ -130,8 +130,9 @@ rdb_add_index(rdb_t *rdb, uint32_t p_index) {
 err_status_t
 rdb_increment(rdb_t *rdb) {
 
-  if (rdb->window_start++ > 0x7fffffff)
+  if (rdb->window_start >= 0x7fffffff)
     return err_status_key_expired;
+  ++rdb->window_start;
   return err_status_ok;
 }
 
