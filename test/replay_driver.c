@@ -219,6 +219,29 @@ test_rdb_db() {
       return err;
   }
 
+  /* test for key expired */
+  if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
+    printf("rdb_init failed\n");
+    return srtp_err_status_fail;
+  }
+  rdb.window_start = 0x7ffffffe;
+  if (srtp_rdb_increment(&rdb) != srtp_err_status_ok) {
+    printf("srtp_rdb_increment of 0x7ffffffe failed\n");
+    return srtp_err_status_fail;
+  }
+  if (srtp_rdb_get_value(&rdb) != 0x7fffffff) {
+    printf("rdb valiue was not 0x7fffffff\n");
+    return srtp_err_status_fail;
+  }
+  if (srtp_rdb_increment(&rdb) != srtp_err_status_key_expired) {
+    printf("srtp_rdb_increment of 0x7fffffff did not return srtp_err_status_key_expired\n");
+    return srtp_err_status_fail;
+  }
+  if (srtp_rdb_get_value(&rdb) != 0x7fffffff) {
+    printf("rdb valiue was not 0x7fffffff\n");
+    return srtp_err_status_fail;
+  }
+
 
   return srtp_err_status_ok;
 }
