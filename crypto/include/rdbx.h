@@ -85,7 +85,6 @@ typedef uint64_t srtp_xtd_seq_num_t;
 typedef struct {
     srtp_xtd_seq_num_t index;
     bitvector_t bitmask;
-    uint32_t pending_roc;
 } srtp_rdbx_t;
 
 

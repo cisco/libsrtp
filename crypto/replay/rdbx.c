@@ -194,7 +194,6 @@ srtp_err_status_t srtp_rdbx_init (srtp_rdbx_t *rdbx, unsigned long ws)
     }
 
     srtp_index_init(&rdbx->index);
-    rdbx->pending_roc = 0;
 
     return srtp_err_status_ok;
 }
@@ -391,7 +390,6 @@ srtp_err_status_t srtp_rdbx_set_roc_seq (srtp_rdbx_t *rdbx,
 #endif
 
     bitvector_set_to_zero(&rdbx->bitmask);
-    rdbx->pending_roc = 0;
 
     return srtp_err_status_ok;
 }

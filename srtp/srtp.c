@@ -563,6 +563,9 @@ srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
   /* set ssrc to that provided */
   str->ssrc = ssrc;
 
+  /* reset pending ROC */
+  str->pending_roc = 0;
+
   /* set direction and security services */
   str->direction     = stream_template->direction;
   str->rtp_services  = stream_template->rtp_services;
@@ -1205,6 +1208,9 @@ srtp_stream_init(srtp_stream_ctx_t *srtp,
    /* set the SSRC value */
    srtp->ssrc = htonl(p->ssrc.value);
 
+   /* reset pending ROC */
+   srtp->pending_roc = 0;
+
    /* set the security service flags */
    srtp->rtp_services  = p->rtp.sec_serv;
    srtp->rtcp_services = p->rtcp.sec_serv;
@@ -1615,9 +1621,9 @@ srtp_get_est_pkt_index(srtp_hdr_t *hdr,
 {
   srtp_err_status_t result = srtp_err_status_ok;
 
-  if (stream->rtp_rdbx.pending_roc) {
+  if (stream->pending_roc) {
     result = srtp_estimate_index(&stream->rtp_rdbx,
-                                 stream->rtp_rdbx.pending_roc,
+                                 stream->pending_roc,
                                  est,
                                  ntohs(hdr->seq),
                                  delta);
@@ -2161,6 +2167,7 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
     srtp_rdbx_set_roc_seq(&stream->rtp_rdbx,
                           (uint32_t)(est >> 16),
                           (uint16_t)(est & 0xFFFF));
+    stream->pending_roc = 0;
     srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
   } else {
     status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
@@ -2642,6 +2649,7 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
     srtp_rdbx_set_roc_seq(&stream->rtp_rdbx,
                             (uint32_t)(est >> 16),
                             (uint16_t)(est & 0xFFFF));
+    stream->pending_roc = 0;
     srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
   } else {
     srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
@@ -4607,7 +4615,7 @@ srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc) {
     if (stream == NULL)
         return srtp_err_status_bad_param;
 
-    stream->rtp_rdbx.pending_roc = roc;
+    stream->pending_roc = roc;
 
     return srtp_err_status_ok;
 }
