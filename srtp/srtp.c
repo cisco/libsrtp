@@ -2171,8 +2171,11 @@ srtp_protect_mki(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len,
     srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
   } else {
     status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-    if (status)
+    if (status) {
       return status;
+      if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx)
+        return status; /* we've been asked to reuse an index */
+    }
     srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
   }
 
