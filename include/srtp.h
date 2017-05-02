@@ -292,7 +292,9 @@ typedef enum {
   srtp_err_status_encode_err   = 22, /**< error encoding data                     */
   srtp_err_status_semaphore_err = 23,/**< error while using semaphores            */
   srtp_err_status_pfkey_err    = 24, /**< error while using pfkey                 */
-  srtp_err_status_bad_mki      = 25  /**< error MKI present in packet is invalid */
+  srtp_err_status_bad_mki      = 25, /**< error MKI present in packet is invalid  */
+  srtp_err_status_pkt_idx_old  = 26, /**< packet index is too old to consider     */
+  srtp_err_status_pkt_idx_adv  = 27 /**< packet index advanced, reset needed      */
 } srtp_err_status_t;
 
 
@@ -1852,6 +1854,29 @@ srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session, uint32_t use_m
  */
 srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session, uint32_t use_mki,
                                                        uint32_t mki_index, uint32_t *length);
+
+
+/**
+ * @brief srtp_set_stream_roc(session, ssrc, roc)
+ *
+ * Set the roll-over-counter on a session for a given SSRC
+ *
+ * returns err_status_ok on success, srtp_err_status_bad_param if there is no
+ * stream found
+ *
+ */
+srtp_err_status_t srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc);
+
+/**
+ * @brief srtp_get_stream_roc(session, ssrc, roc)
+ *
+ * Get the roll-over-counter on a session for a given SSRC
+ *
+ * returns err_status_ok on success, srtp_err_status_bad_param if there is no
+ * stream found
+ *
+ */
+srtp_err_status_t srtp_get_stream_roc(srtp_t session, uint32_t ssrc, uint32_t *roc);
 
 
 /**

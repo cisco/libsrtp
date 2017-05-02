@@ -345,3 +345,52 @@ int32_t srtp_rdbx_estimate_index (const srtp_rdbx_t *rdbx, srtp_xtd_seq_num_t *g
     return s - (uint16_t)rdbx->index;
 #endif
 }
+
+/*
+ * srtp_rdbx_get_roc(rdbx)
+ *
+ * Get the current rollover counter
+ *
+ */
+uint32_t srtp_rdbx_get_roc(const srtp_rdbx_t *rdbx)
+{
+    uint32_t roc;
+
+#ifdef NO_64BIT_MATH
+    roc = ((high32(rdbx->index) << 16) | (low32(rdbx->index) >> 16));
+#else
+    roc = (uint32_t)(rdbx->index >> 16);
+#endif
+
+    return roc;
+}
+
+/*
+ * srtp_rdbx_set_roc_seq(rdbx, roc, seq) initalizes the srtp_rdbx_t at the
+ * location rdbx to have the rollover counter value roc and packet sequence
+ * number seq.  If the new rollover counter value is less than the current
+ * rollover counter value, then the function returns
+ * srtp_err_status_replay_old, otherwise, srtp_err_status_ok is returned.
+ */
+srtp_err_status_t srtp_rdbx_set_roc_seq (srtp_rdbx_t *rdbx,
+                                         uint32_t roc,
+                                         uint16_t seq)
+{
+#ifdef NO_64BIT_MATH
+  #error not yet implemented
+#else
+
+    /* make sure that we're not moving backwards */
+    if (roc < (rdbx->index >> 16)) {
+        return srtp_err_status_replay_old;
+    }
+
+    rdbx->index = seq;
+    rdbx->index |= ((uint64_t)roc) << 16; /* set ROC */
+#endif
+
+    bitvector_set_to_zero(&rdbx->bitmask);
+
+    return srtp_err_status_ok;
+}
+

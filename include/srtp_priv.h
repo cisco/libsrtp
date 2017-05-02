@@ -151,6 +151,7 @@ typedef struct srtp_stream_ctx_t_ {
   srtp_ekt_stream_t ekt; 
   int       *enc_xtn_hdr;
   int        enc_xtn_hdr_count;
+  uint32_t pending_roc;
   struct srtp_stream_ctx_t_ *next;   /* linked list of streams */
 } strp_stream_ctx_t_;
 
