@@ -9,9 +9,13 @@ if test "x$CFLAGS" = "x"; then
 fi
 
 dnl Checks for programs.
-m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
-AC_PROG_RANLIB
 AC_PROG_CC
+AC_PROG_CPP
+AC_ARG_VAR(
+  [EXTRA_CFLAGS],
+  [C compiler flags appended to the regular C compiler flags instead of overriding them])
+AM_PROG_AR
+AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_SED
 
@@ -66,13 +70,16 @@ for w in -Werror -errwarn; do
   fi
 done
 
-dnl Note that -fPIC is also added to LDFLAGS.
+dnl Note that -fPIC is not explicitly added to LDFLAGS.
+dnl Since the compiler is used as the link driver, CFLAGS will be part of the
+dnl link line as well and the linker will get the flag from there.
+dnl Adding it to LDFLAGS explicitly would duplicate the flag on the link line,
+dnl but otherwise do no harm.
 AC_MSG_CHECKING([whether ${CC-c} accepts -fPIC])
 save_cflags="$CFLAGS"
 AS_IF([test "x$CFLAGS" = "x"], [CFLAGS="-fPIC"], [CFLAGS="$CFLAGS -fPIC"])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main(void) { return 0; }])],
   [AS_IF([test "x$supported_cflags" = "x"], [supported_cflags="-fPIC"], [supported_cflags="$supported_cflags -fPIC"])
-   AS_IF([test "x$LDFLAGS" = "x"], [LDFLAGS="-fPIC"], [LDFLAGS="$LDFLAGS -fPIC"])
    AC_MSG_RESULT([yes])],
   [CFLAGS="$save_cflags"
    AC_MSG_RESULT([no])])
@@ -118,7 +125,7 @@ fi
 
 dnl When turning off warnigns, we're expecting unrecognized command line option errors if they're not
 dnl supported. However, the -Wno-<warning> form isn't consulted unless a warning is triggered.
-dnl At least that's the case for GCC. So to check which warnings we can turn off, we dnl need to check
+dnl At least that's the case for GCC. So to check which warnings we can turn off, we need to check
 dnl if they can be turned on, thereby forcing GCC to take the argument into account right away.
 for f in -Wno-language-extension-token; do
   AC_MSG_CHECKING([whether ${CC-c} accepts $f])
@@ -296,6 +303,14 @@ AC_ARG_WITH([log-file],
 AS_IF(
   [test "$enable_log_stdout" = "yes" && test "x$with_log_file" != "x"],
   [AC_MSG_FAILURE([Can only use one of --enable-log-stdout and --with-log-file; they are mutually exclusive])])
+
+dnl Appending EXTRA_CFLAGS, if given
+AC_MSG_CHECKING([for extra C compiler flags])
+AS_IF([test "x$EXTRA_CFLAGS" != "x"],
+   [AS_IF([test "x$CFLAGS" = "x"],
+      [CFLAGS="$EXTRA_CFLAGS"], [CFLAGS="$CFLAGS $EXTRA_CFLAGS"])
+    AC_MSG_RESULT([$EXTRA_CFLAGS])],
+   [AC_MSG_RESULT(no)])
 
 AC_CONFIG_HEADER([crypto/include/config.h:config_in.h])
 
