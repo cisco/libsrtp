@@ -37,7 +37,16 @@
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-RTPW=./rtpw
+case $(uname -s) in
+    *CYGWIN*|*MINGW*)
+        EXE=".exe"
+        ;;
+    *)
+        EXE=""
+        ;;
+esac
+
+RTPW=./rtpw$EXE
 DEST_PORT=9999
 DURATION=3
 
@@ -93,6 +102,9 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
+wait $receiver_pid 2>/dev/null
+wait $sender_pid 2>/dev/null
+
 GCMARGS128="-k 01234567890123456789012345678901234567890123456789012345 -g -t 16 -e 128"
 echo  $0 ": starting GCM mode 128-bit (16 byte tag) rtpw receiver process... "
 
@@ -135,6 +147,8 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
+wait $receiver_pid 2>/dev/null
+wait $sender_pid 2>/dev/null
 
 
 GCMARGS256="-k 0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 -g -e 256"
@@ -179,6 +193,8 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
+wait $receiver_pid 2>/dev/null
+wait $sender_pid 2>/dev/null
 
 GCMARGS256="-k a123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 -g -t 16 -e 256"
 echo  $0 ": starting GCM mode 256-bit (16 byte tag) rtpw receiver process... "
@@ -222,6 +238,8 @@ sleep $DURATION
 kill $receiver_pid
 kill $sender_pid
 
+wait $receiver_pid 2>/dev/null
+wait $sender_pid 2>/dev/null
 
 echo $0 ": done (test passed)"
 
