@@ -3187,7 +3187,6 @@ test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
   srtp_hdr_t *pkt;
   unsigned char *recv_pkt;
 
-  uint32_t i;
   uint32_t ts;
 
   int msg_len_octets = 32;
