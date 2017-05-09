@@ -271,6 +271,10 @@ void srtp_sha1_final (srtp_sha1_ctx_t *ctx, uint32_t *output)
             W[i]  = be32_to_cpu(ctx->M[i]);
         }
 
+        /* Avoid buffer overrun in case ctx->octets_in_buffer+3)/4 == 0 (0 iterations in the above loop) */
+        if (!i)
+            i++;
+
         /* set the high bit of the octet immediately following the message */
         switch (tail) {
         case (3):
