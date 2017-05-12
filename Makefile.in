@@ -74,7 +74,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libsrtp2.pc
 
 SHAREDLIBVERSION = 1
-ifeq (linux,$(findstring linux,@host@))
+ifneq (,$(or $(findstring linux,@host@), $(findstring gnu,@host@)))
 SHAREDLIB_DIR = $(libdir)
 SHAREDLIB_LDFLAGS = -shared -Wl,-soname,$@
 SHAREDLIBSUFFIXNOVER = so
