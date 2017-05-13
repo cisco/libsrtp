@@ -122,52 +122,6 @@ extern "C" {
 #define SRTP_AES_GCM_192_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_192_KEY_LEN)
 #define SRTP_AES_GCM_256_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_256_KEY_LEN)
 
-/*
- * an srtp_hdr_t represents the srtp header
- *
- * in this implementation, an srtp_hdr_t is assumed to be 32-bit aligned
- * 
- * (note that this definition follows that of RFC 1889 Appendix A, but
- * is not identical)
- */
- 
-#ifndef WORDS_BIGENDIAN
-
-/*
- * srtp_hdr_t represents an RTP or SRTP header.  The bit-fields in
- * this structure should be declared "unsigned int" instead of 
- * "unsigned char", but doing so causes the MS compiler to not
- * fully pack the bit fields.
- */
-
-typedef struct {
-  unsigned char cc:4;	/* CSRC count             */
-  unsigned char x:1;	/* header extension flag  */
-  unsigned char p:1;	/* padding flag           */
-  unsigned char version:2; /* protocol version    */
-  unsigned char pt:7;	/* payload type           */
-  unsigned char m:1;	/* marker bit             */
-  uint16_t seq;		/* sequence number        */
-  uint32_t ts;		/* timestamp              */
-  uint32_t ssrc;	/* synchronization source */
-} srtp_hdr_t;
-
-#else /*  BIG_ENDIAN */
-
-typedef struct {
-  unsigned char version:2; /* protocol version    */
-  unsigned char p:1;	/* padding flag           */
-  unsigned char x:1;	/* header extension flag  */
-  unsigned char cc:4;	/* CSRC count             */
-  unsigned char m:1;	/* marker bit             */
-  unsigned char pt:7;	/* payload type           */
-  uint16_t seq;		/* sequence number        */
-  uint32_t ts;		/* timestamp              */
-  uint32_t ssrc;	/* synchronization source */
-} srtp_hdr_t;
-
-#endif
-
 typedef struct {
   uint16_t profile_specific;    /* profile-specific info               */
   uint16_t length;              /* number of 32-bit words in extension */
