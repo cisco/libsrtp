@@ -166,14 +166,6 @@ typedef struct {
 } srtcp_hdr_t;
 
 typedef struct {
-  unsigned int version:2;  /* protocol version                     */
-  unsigned int p:1;        /* padding flag                         */
-  unsigned int count:5;    /* varies by packet type                */
-  unsigned int pt:8;       /* payload type                         */
-  uint16_t length;         /* len of uint32s of packet less header */
-} rtcp_common_t;
-
-typedef struct {
   unsigned int e:1;         /* encrypted? 1=yes */
   unsigned int index:31;    /* srtcp packet index */
   /* optional mikey/etc go here */
