@@ -122,12 +122,6 @@ extern "C" {
 #define SRTP_AES_GCM_192_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_192_KEY_LEN)
 #define SRTP_AES_GCM_256_KEY_LEN_WSALT   (SRTP_AEAD_SALT_LEN + SRTP_AES_256_KEY_LEN)
 
-typedef struct {
-  uint16_t profile_specific;    /* profile-specific info               */
-  uint16_t length;              /* number of 32-bit words in extension */
-} srtp_hdr_xtnd_t;
-
-
 /*
  * srtcp_hdr_t represents a secure rtcp header 
  *

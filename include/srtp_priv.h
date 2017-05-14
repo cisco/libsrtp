@@ -211,6 +211,12 @@ typedef struct {
 
 #endif
 
+
+typedef struct {
+  uint16_t profile_specific;   /* profile-specific info               */
+  uint16_t length;             /* number of 32-bit words in extension */
+} srtp_hdr_xtnd_t;
+
 /*
  * srtp_handle_event(srtp, srtm, evnt) calls the event handling
  * function, if there is one.
