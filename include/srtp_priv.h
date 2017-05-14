@@ -217,6 +217,53 @@ typedef struct {
   uint16_t length;             /* number of 32-bit words in extension */
 } srtp_hdr_xtnd_t;
 
+
+/*
+ * srtcp_hdr_t represents a secure rtcp header
+ *
+ * in this implementation, an srtcp header is assumed to be 32-bit
+ * alinged
+ */
+
+#ifndef WORDS_BIGENDIAN
+
+typedef struct {
+    unsigned char rc : 5;      /* reception report count */
+    unsigned char p : 1;       /* padding flag           */
+    unsigned char version : 2; /* protocol version       */
+    unsigned char pt : 8;      /* payload type           */
+    uint16_t len;              /* length                 */
+    uint32_t ssrc;             /* synchronization source */
+} srtcp_hdr_t;
+
+typedef struct {
+    unsigned int index : 31;   /* srtcp packet index in network order!  */
+    unsigned int e : 1;        /* encrypted? 1=yes                      */
+                               /* optional mikey/etc go here            */
+                               /* and then the variable-length auth tag */
+} srtcp_trailer_t;
+
+#else /*  BIG_ENDIAN */
+
+typedef struct {
+    unsigned char version : 2; /* protocol version       */
+    unsigned char p : 1;       /* padding flag           */
+    unsigned char rc : 5;      /* reception report count */
+    unsigned char pt : 8;      /* payload type           */
+    uint16_t len;              /* length                 */
+    uint32_t ssrc;             /* synchronization source */
+} srtcp_hdr_t;
+
+typedef struct {
+    unsigned int e : 1;        /* encrypted? 1=yes                      */
+    unsigned int index : 31;   /* srtcp packet index                    */
+                               /* optional mikey/etc go here            */
+                               /* and then the variable-length auth tag */
+} srtcp_trailer_t;
+
+#endif
+
+
 /*
  * srtp_handle_event(srtp, srtm, evnt) calls the event handling
  * function, if there is one.
