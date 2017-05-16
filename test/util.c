@@ -42,9 +42,10 @@
  *
  */
 
+#include "util.h"
+
 #include <string.h>
 #include <stdint.h>
-#include "util.h"
 
 char bit_string[MAX_PRINT_STRING_LEN];
 

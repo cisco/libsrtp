@@ -43,7 +43,7 @@
  *
  */
 
-#include "rtp_priv.h"
+#include "rtp.h"
 
 #include <stdio.h>
 #include <string.h>

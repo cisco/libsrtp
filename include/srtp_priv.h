@@ -45,7 +45,9 @@
 #ifndef SRTP_PRIV_H
 #define SRTP_PRIV_H
 
+// Leave this as the top level import. Ensures the existence of defines
 #include "config.h"
+
 #include "srtp.h"
 #include "rdbx.h"
 #include "rdb.h"
@@ -166,6 +168,100 @@ typedef struct srtp_ctx_t_ {
   void *user_data;                    /* user custom data */
 } srtp_ctx_t_;
 
+
+/*
+ * srtp_hdr_t represents an RTP or SRTP header.  The bit-fields in
+ * this structure should be declared "unsigned int" instead of
+ * "unsigned char", but doing so causes the MS compiler to not
+ * fully pack the bit fields.
+ *
+ * In this implementation, an srtp_hdr_t is assumed to be 32-bit aligned
+ *
+ * (note that this definition follows that of RFC 1889 Appendix A, but
+ * is not identical)
+ */
+
+#ifndef WORDS_BIGENDIAN
+
+typedef struct {
+    unsigned char cc : 4;      /* CSRC count             */
+    unsigned char x : 1;       /* header extension flag  */
+    unsigned char p : 1;       /* padding flag           */
+    unsigned char version : 2; /* protocol version       */
+    unsigned char pt : 7;      /* payload type           */
+    unsigned char m : 1;       /* marker bit             */
+    uint16_t seq;              /* sequence number        */
+    uint32_t ts;               /* timestamp              */
+    uint32_t ssrc;             /* synchronization source */
+} srtp_hdr_t;
+
+#else /*  BIG_ENDIAN */
+
+typedef struct {
+    unsigned char version : 2; /* protocol version       */
+    unsigned char p : 1;       /* padding flag           */
+    unsigned char x : 1;       /* header extension flag  */
+    unsigned char cc : 4;      /* CSRC count             */
+    unsigned char m : 1;       /* marker bit             */
+    unsigned char pt : 7;      /* payload type           */
+    uint16_t seq;              /* sequence number        */
+    uint32_t ts;               /* timestamp              */
+    uint32_t ssrc;             /* synchronization source */
+} srtp_hdr_t;
+
+#endif
+
+
+typedef struct {
+  uint16_t profile_specific;   /* profile-specific info               */
+  uint16_t length;             /* number of 32-bit words in extension */
+} srtp_hdr_xtnd_t;
+
+
+/*
+ * srtcp_hdr_t represents a secure rtcp header
+ *
+ * in this implementation, an srtcp header is assumed to be 32-bit
+ * alinged
+ */
+
+#ifndef WORDS_BIGENDIAN
+
+typedef struct {
+    unsigned char rc : 5;      /* reception report count */
+    unsigned char p : 1;       /* padding flag           */
+    unsigned char version : 2; /* protocol version       */
+    unsigned char pt : 8;      /* payload type           */
+    uint16_t len;              /* length                 */
+    uint32_t ssrc;             /* synchronization source */
+} srtcp_hdr_t;
+
+typedef struct {
+    unsigned int index : 31;   /* srtcp packet index in network order!  */
+    unsigned int e : 1;        /* encrypted? 1=yes                      */
+                               /* optional mikey/etc go here            */
+                               /* and then the variable-length auth tag */
+} srtcp_trailer_t;
+
+#else /*  BIG_ENDIAN */
+
+typedef struct {
+    unsigned char version : 2; /* protocol version       */
+    unsigned char p : 1;       /* padding flag           */
+    unsigned char rc : 5;      /* reception report count */
+    unsigned char pt : 8;      /* payload type           */
+    uint16_t len;              /* length                 */
+    uint32_t ssrc;             /* synchronization source */
+} srtcp_hdr_t;
+
+typedef struct {
+    unsigned int e : 1;        /* encrypted? 1=yes                      */
+    unsigned int index : 31;   /* srtcp packet index                    */
+                               /* optional mikey/etc go here            */
+                               /* and then the variable-length auth tag */
+} srtcp_trailer_t;
+
+#endif
 
 
 /*

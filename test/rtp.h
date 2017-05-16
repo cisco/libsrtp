@@ -60,8 +60,7 @@
 # include <winsock2.h>
 #endif
 
-//#include "srtp_priv.h"
-#include "srtp.h"
+#include "srtp_priv.h"
 
 #ifdef __cplusplus
 extern "C" {
