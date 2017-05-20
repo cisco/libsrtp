@@ -48,6 +48,13 @@ Major changes
     Provides a logging API and the ability to enable logging to stdout and a
     file, as well as a switch to enable all internal debug modules.
 
+  PR #289 - Added support for set and get the roll-over-counter
+    Adds an API to set and get the ROC in an (S)RTP session.
+
+  PR #304 - Fix (S)RTP and (S)RTCP for big endian machines
+    The structures srtp_hdr_t, srtcp_hdr_t and srtcp_trailer_t were defined
+    incorrectly on big endian systems.
+
 Other changes
 
   PR #149 - Don't create a symlink if there is no $(SHAREDLIBVERSION)
@@ -146,3 +153,15 @@ Other changes
   PR #283 - Add missing docs in srtp.h
 
   PR #284 - Add strict-prototypes warning if supported
+
+  PR #291 - Use const char * for srtp_set_debug_module()
+
+  PR #294 - Fix incorrect result of rdb_increment on overflow
+
+  PR #300 - Standalone tests
+
+  PR #301 - Configure fixes
+
+  PR #302 - Fix warning regarding unused variable
+
+  PR #303 - Makefile.in: Add gnu as match for shared lib suffix
