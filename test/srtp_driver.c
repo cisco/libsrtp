@@ -3077,15 +3077,19 @@ test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
   srtp_policy_t receiver_policy;
   srtp_t receiver_session;
 
-  srtp_hdr_t *pkt;
-  unsigned char *recv_pkt;
+  srtp_hdr_t *pkt_1;
+  unsigned char *recv_pkt_1;
+
+  srtp_hdr_t *pkt_2;
+  unsigned char *recv_pkt_2;
 
   uint32_t i;
   uint32_t ts;
   uint16_t seq;
 
   int msg_len_octets = 32;
-  int protected_msg_len_octets;
+  int protected_msg_len_octets_1;
+  int protected_msg_len_octets_2;
 
   /* Create sender */
   memset(&sender_policy, 0, sizeof(sender_policy));
@@ -3105,10 +3109,13 @@ test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
   seq = 0;
   ts = 0;
   for (i = 0; i < packets; i++) {
-    pkt = srtp_create_test_packet_extended(msg_len_octets, sender_policy.ssrc.value, seq, ts);
-    protected_msg_len_octets = msg_len_octets;
-    status = srtp_protect(sender_session, pkt, &protected_msg_len_octets);
-    free(pkt);
+    srtp_hdr_t *tmp_pkt;
+    int tmp_len;
+
+    tmp_pkt = srtp_create_test_packet_extended(msg_len_octets, sender_policy.ssrc.value, seq, ts);
+    tmp_len = msg_len_octets;
+    status = srtp_protect(sender_session, tmp_pkt, &tmp_len);
+    free(tmp_pkt);
     if (status) {
       return status;
     }
@@ -3116,10 +3123,20 @@ test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
     ts++;
   }
 
-  /* Create the packet to decrypt and test for ROC change */
-  pkt = srtp_create_test_packet_extended(msg_len_octets, sender_policy.ssrc.value, seq, ts);
-  protected_msg_len_octets = msg_len_octets;
-  status = srtp_protect(sender_session, pkt, &protected_msg_len_octets);
+  /* Create the first packet to decrypt and test for ROC change */
+  pkt_1 = srtp_create_test_packet_extended(msg_len_octets, sender_policy.ssrc.value, seq, ts);
+  protected_msg_len_octets_1 = msg_len_octets;
+  status = srtp_protect(sender_session, pkt_1, &protected_msg_len_octets_1);
+  if (status) {
+    return status;
+  }
+
+  /* Create the second packet to decrypt and test for ROC change */
+  seq++;
+  ts++;
+  pkt_2 = srtp_create_test_packet_extended(msg_len_octets, sender_policy.ssrc.value, seq, ts);
+  protected_msg_len_octets_2 = msg_len_octets;
+  status = srtp_protect(sender_session, pkt_2, &protected_msg_len_octets_2);
   if (status) {
     return status;
   }
@@ -3138,12 +3155,19 @@ test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
     return status;
   }
 
-  /* Make a copy of the sent protected packet */
-  recv_pkt = malloc(protected_msg_len_octets);
-  if (recv_pkt == NULL) {
+  /* Make a copy of the first sent protected packet */
+  recv_pkt_1 = malloc(protected_msg_len_octets_1);
+  if (recv_pkt_1 == NULL) {
     return srtp_err_status_fail;
   }
-  memcpy(recv_pkt, pkt, protected_msg_len_octets);
+  memcpy(recv_pkt_1, pkt_1, protected_msg_len_octets_1);
+
+  /* Make a copy of the second sent protected packet */
+  recv_pkt_2 = malloc(protected_msg_len_octets_2);
+  if (recv_pkt_2 == NULL) {
+    return srtp_err_status_fail;
+  }
+  memcpy(recv_pkt_2, pkt_2, protected_msg_len_octets_2);
 
   /* Set the ROC to the wanted value */
   status = srtp_set_stream_roc(receiver_session, receiver_policy.ssrc.value, roc_to_set);
@@ -3151,7 +3175,14 @@ test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
     return status;
   }
 
-  status = srtp_unprotect(receiver_session, recv_pkt, &protected_msg_len_octets);
+  /* Unprotect the first packet */
+  status = srtp_unprotect(receiver_session, recv_pkt_1, &protected_msg_len_octets_1);
+  if (status) {
+    return status;
+  }
+
+  /* Unprotect the second packet */
+  status = srtp_unprotect(receiver_session, recv_pkt_2, &protected_msg_len_octets_2);
   if (status) {
     return status;
   }
@@ -3167,8 +3198,10 @@ test_set_receiver_roc(uint32_t packets, uint32_t roc_to_set)
     return status;
   }
 
-  free(pkt);
-  free(recv_pkt);
+  free(pkt_1);
+  free(recv_pkt_1);
+  free(pkt_2);
+  free(recv_pkt_2);
 
   return srtp_err_status_ok;
 }
@@ -3325,7 +3358,6 @@ srtp_test_set_receiver_roc() {
   if (status) {
     return status;
   }
-
 
   return srtp_err_status_ok;
 }
