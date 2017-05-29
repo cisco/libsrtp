@@ -2346,6 +2346,8 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
   unsigned int mki_size = 0;
   srtp_session_keys_t *session_keys = NULL;
   int advance_packet_index = 0;
+  uint32_t roc_to_set;
+  uint16_t seq_to_set;
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
 
@@ -2404,6 +2406,8 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
 
     if (status == srtp_err_status_pkt_idx_adv) {
       advance_packet_index = 1;
+      roc_to_set = (uint32_t)(est >> 16);
+      seq_to_set = (uint16_t)(est & 0xFFFF);
     }
 
     /* check replay database */
@@ -2664,8 +2668,8 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
    */
   if (advance_packet_index) {
     srtp_rdbx_set_roc_seq(&stream->rtp_rdbx,
-                            (uint32_t)(est >> 16),
-                            (uint16_t)(est & 0xFFFF));
+                           roc_to_set,
+                           seq_to_set);
     stream->pending_roc = 0;
     srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
   } else {
