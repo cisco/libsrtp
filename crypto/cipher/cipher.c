@@ -306,7 +306,6 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* compare the resulting ciphertext with that in the test case */
         if (len != test_case->ciphertext_length_octets) {
-            printf("~> length mismatch [%d] != [%d]\n", len, test_case->ciphertext_length_octets);
             srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
@@ -314,7 +313,6 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         for (i = 0; i < test_case->ciphertext_length_octets; i++) {
             if (buffer[i] != test_case->ciphertext[i]) {
                 status = srtp_err_status_algo_fail;
-                printf("~> ciphertext mismatch\n");
                 debug_print(srtp_mod_cipher, "test case %d failed", case_num);
                 debug_print(srtp_mod_cipher, "(failure at byte %d)", i);
                 break;
