@@ -242,7 +242,7 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(srtp_cipher_type_alloc(&srtp_aes_gcm_128_double_openssl, &c, SRTP_AES_GCM_128_KEY_LEN_WSALT, 8));
+    err_check(srtp_cipher_type_alloc(&srtp_aes_gcm_128_double_openssl, &c, SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT, 32));
     err_check(srtp_cipher_init(c, key));
     err_check(srtp_cipher_set_iv(c, (uint8_t*)&nonce, srtp_direction_encrypt));
     err_check(srtp_cipher_encrypt(c, buffer, &buf_len));
@@ -271,7 +271,7 @@ main (int argc, char *argv[]) {
     for (i=0; i < 2500; i++) {
 	buffer[i] = 0;
     }
-    err_check(srtp_cipher_type_alloc(&srtp_aes_gcm_256_double_openssl, &c, SRTP_AES_GCM_256_KEY_LEN_WSALT, 16));
+    err_check(srtp_cipher_type_alloc(&srtp_aes_gcm_256_double_openssl, &c, SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT, 32));
     err_check(srtp_cipher_init(c, key));
     err_check(srtp_cipher_set_iv(c, (uint8_t*)&nonce, srtp_direction_encrypt));
     err_check(srtp_cipher_encrypt(c, buffer, &buf_len));

@@ -323,7 +323,7 @@ main(int argc, char *argv[]) {
     check_status(status);
 
     /* run the throughput test on the aes_gcm_128_double_openssl cipher */
-    status = srtp_cipher_type_alloc(&srtp_aes_gcm_128_double_openssl, &c, SRTP_AES_GCM_128_KEY_LEN_WSALT, 8);
+    status = srtp_cipher_type_alloc(&srtp_aes_gcm_128_double_openssl, &c, SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT, 32);
     if (status) {
         fprintf(stderr, "error: can't allocate double GCM 128 cipher\n");
         exit(status);
@@ -342,7 +342,7 @@ main(int argc, char *argv[]) {
     check_status(status);
 
     /* run the throughput test on the aes_gcm_256_double_openssl cipher */
-    status = srtp_cipher_type_alloc(&srtp_aes_gcm_256_double_openssl, &c, SRTP_AES_GCM_256_KEY_LEN_WSALT, 16);
+    status = srtp_cipher_type_alloc(&srtp_aes_gcm_256_double_openssl, &c, SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT, 32);
     if (status) {
         fprintf(stderr, "error: can't allocate double GCM 256 cipher\n");
         exit(status);
@@ -464,11 +464,22 @@ cipher_driver_test_buffering(srtp_cipher_t *c) {
     /* compare buffers */
     for (j=0; j < (int) buflen; j++) {
       if (buffer0[j] != buffer1[j]) {
-#if PRINT_DEBUG
+//#if PRINT_DEBUG
 	printf("test case %d failed at byte %d\n", i, j);
-	printf("computed: %s\n", octet_string_hex_string(buffer1, buflen));
-	printf("expected: %s\n", octet_string_hex_string(buffer0, buflen));
-#endif
+
+  for (j=0; j < (int) buflen; j++) {
+    printf("%02x", buffer0[j]);
+  }
+  printf("\n");
+
+  for (j=0; j < (int) buflen; j++) {
+    printf("%02x", buffer1[j]);
+  }
+  printf("\n");
+
+	//printf("computed: %s\n", octet_string_hex_string(buffer1, buflen));
+	//printf("expected: %s\n", octet_string_hex_string(buffer0, buflen));
+//#endif
 	return srtp_err_status_algo_fail;
       }
     }

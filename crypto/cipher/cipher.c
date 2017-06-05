@@ -89,7 +89,7 @@ srtp_err_status_t srtp_cipher_set_iv (srtp_cipher_t *c, uint8_t *iv, int directi
 	return (srtp_err_status_bad_param);
     }
 
-    return (((c)->type)->set_iv(((c)->state), iv, direction)); 
+    return (((c)->type)->set_iv(((c)->state), iv, direction));
 }
 
 srtp_err_status_t srtp_cipher_output (srtp_cipher_t *c, uint8_t *buffer, uint32_t *num_octets_to_output)
@@ -156,7 +156,7 @@ int srtp_cipher_get_key_length (const srtp_cipher_t *c)
  * A trivial platform independent random source.  The random
  * data is used for some of the cipher self-tests.
  */
-static srtp_err_status_t srtp_cipher_rand (void *dest, uint32_t len) 
+static srtp_err_status_t srtp_cipher_rand (void *dest, uint32_t len)
 {
 #if defined(HAVE_RAND_S)
   uint8_t *dst = (uint8_t *)dest;
@@ -167,7 +167,7 @@ static srtp_err_status_t srtp_cipher_rand (void *dest, uint32_t len)
 
     if (err != 0)
       return srtp_err_status_fail;
-  
+
     *dst++ = val & 0xff;
     len--;
   }
@@ -187,10 +187,10 @@ static srtp_err_status_t srtp_cipher_rand (void *dest, uint32_t len)
 #endif
   return srtp_err_status_ok;
 }
- 
+
 #define SELF_TEST_BUF_OCTETS 128
 #define NUM_RAND_TESTS       128
-#define MAX_KEY_LEN          64
+#define MAX_KEY_LEN          92
 /*
  * srtp_cipher_type_test(ct, test_data) tests a cipher of type ct against
  * test cases provided in a list test_data of values of key, salt, iv,
@@ -261,7 +261,8 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_AES_GCM_128_DOUBLE || c->algorithm == SRTP_AES_GCM_256_DOUBLE) {
             debug_print(srtp_mod_cipher, "IV:    %s",
                         srtp_octet_string_hex_string(test_case->idx, 12));
 
@@ -286,7 +287,8 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_AES_GCM_128_DOUBLE || c->algorithm == SRTP_AES_GCM_256_DOUBLE) {
             /*
              * Get the GCM tag
              */
@@ -304,6 +306,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
 
         /* compare the resulting ciphertext with that in the test case */
         if (len != test_case->ciphertext_length_octets) {
+            printf("~> length mismatch [%d] != [%d]\n", len, test_case->ciphertext_length_octets);
             srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }
@@ -311,6 +314,7 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
         for (i = 0; i < test_case->ciphertext_length_octets; i++) {
             if (buffer[i] != test_case->ciphertext[i]) {
                 status = srtp_err_status_algo_fail;
+                printf("~> ciphertext mismatch\n");
                 debug_print(srtp_mod_cipher, "test case %d failed", case_num);
                 debug_print(srtp_mod_cipher, "(failure at byte %d)", i);
                 break;
@@ -361,7 +365,8 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_AES_GCM_128_DOUBLE || c->algorithm == SRTP_AES_GCM_256_DOUBLE) {
             /*
              * Set the AAD
              */
@@ -491,7 +496,8 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             return status;
         }
 
-        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_AES_GCM_128_DOUBLE || c->algorithm == SRTP_AES_GCM_256_DOUBLE) {
             /*
              * Set the AAD
              */
@@ -512,7 +518,8 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_AES_GCM_128_DOUBLE || c->algorithm == SRTP_AES_GCM_256_DOUBLE) {
             /*
              * Get the GCM tag
              */
@@ -540,7 +547,8 @@ srtp_err_status_t srtp_cipher_type_test (const srtp_cipher_type_t *ct, const srt
             srtp_cipher_dealloc(c);
             return status;
         }
-        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256) {
+        if (c->algorithm == SRTP_AES_GCM_128 || c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_AES_GCM_128_DOUBLE || c->algorithm == SRTP_AES_GCM_256_DOUBLE) {
             /*
              * Set the AAD
              */
