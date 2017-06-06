@@ -397,6 +397,9 @@ uint8_t key[30] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
 // initialize libSRTP
 srtp_init();
 
+// default policy values
+memset(&policy, 0x0, sizeof(srtp_policy_t));
+
 // set policy to describe a policy for an SRTP stream
 crypto_policy_set_rtp_default(&policy.rtp);
 crypto_policy_set_rtcp_default(&policy.rtcp);
