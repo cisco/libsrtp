@@ -1177,6 +1177,63 @@ void srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p);
  */
 void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p);
 
+/**
+ * @brief srtp_crypto_policy_set_aes_gcm_128_double() sets a crypto
+ * policy structure to an AEAD encryption policy.
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_gcm_128_double(&p) sets
+ * the srtp_crypto_policy_t at location p to use apply AES-128 in Galois
+ * counter mode in a doubled configuration comprising "inner" and "outer"
+ * transforms.  (This allows the "outer" half of the key to be shared with
+ * intermediaries that need to be able to modify some parts of the packet.
+ *
+ * This policy applies confidentiality and authentication to both the RTP
+ * and RTCP packets.  RTCP packets are protected only with the "outer"
+ * transform, i.e., the standard AES-GCM transform using the "outer" key.
+ * Thus they are protected from network attackers, but intermediaries with
+ * the "outer" half of the key may observe and/or modify RTCP packets.
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the srtp_crypto_policy_t datatype.
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_gcm_128_double(srtp_crypto_policy_t *p);
+
+/**
+ * @brief srtp_crypto_policy_set_aes_gcm_256_16_auth() sets a crypto
+ * policy structure to an AEAD encryption policy
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_gcm_256_double(&p) sets
+ * the srtp_crypto_policy_t at location p to use apply AES-256 in Galois
+ * counter mode in a doubled configuration comprising "inner" and "outer"
+ * transforms.  (This allows the "outer" half of the key to be shared with
+ * intermediaries that need to be able to modify some parts of the packet.
+ *
+ * This policy applies confidentiality and authentication to both the RTP
+ * and RTCP packets.  RTCP packets are protected only with the "outer"
+ * transform, i.e., the standard AES-GCM transform using the "outer" key.
+ * Thus they are protected from network attackers, but intermediaries with
+ * the "outer" half of the key may observe and/or modify RTCP packets.
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the srtp_crypto_policy_t datatype.
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_gcm_256_double(srtp_crypto_policy_t *p);
 
 /**
  * @brief srtp_dealloc() deallocates storage for an SRTP session
@@ -1207,13 +1264,15 @@ srtp_err_status_t srtp_dealloc(srtp_t s);
  */
 
 typedef enum {
-  srtp_profile_reserved           = 0,
-  srtp_profile_aes128_cm_sha1_80  = 1,
-  srtp_profile_aes128_cm_sha1_32  = 2,
-  srtp_profile_null_sha1_80       = 5,
-  srtp_profile_null_sha1_32       = 6,
-  srtp_profile_aead_aes_128_gcm   = 7,
-  srtp_profile_aead_aes_256_gcm   = 8,
+  srtp_profile_reserved                 = 0,
+  srtp_profile_aes128_cm_sha1_80        = 1,
+  srtp_profile_aes128_cm_sha1_32        = 2,
+  srtp_profile_null_sha1_80             = 5,
+  srtp_profile_null_sha1_32             = 6,
+  srtp_profile_aead_aes_128_gcm         = 7,
+  srtp_profile_aead_aes_256_gcm         = 8,
+  srtp_profile_aead_aes_128_gcm_double  = 9,
+  srtp_profile_aead_aes_256_gcm_double  = 10,
 } srtp_profile_t;
 
 
