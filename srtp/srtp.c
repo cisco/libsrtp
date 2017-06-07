@@ -2346,8 +2346,8 @@ srtp_unprotect_mki(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len,
   unsigned int mki_size = 0;
   srtp_session_keys_t *session_keys = NULL;
   int advance_packet_index = 0;
-  uint32_t roc_to_set;
-  uint16_t seq_to_set;
+  uint32_t roc_to_set = 0;
+  uint16_t seq_to_set = 0;
 
   debug_print(mod_srtp, "function srtp_unprotect", NULL);
 
