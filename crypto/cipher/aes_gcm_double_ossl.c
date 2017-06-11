@@ -52,12 +52,39 @@
 #include "aes_icm_ossl.h"
 #include "aes_gcm_ossl.h"
 #include "alloc.h"
-#include "err.h"                /* for srtp_debug */
+/*#include "err.h"*/                /* for srtp_debug */
 #include "crypto_types.h"
 
+/*** XXXXXXXXXXXX ***/
+/* To make debug reporting work within cipher_driver */
+#define debug_print(mod, format, arg)                  \
+    srtp_err_report(srtp_err_level_debug, ("%s: " format "\n"), mod.name, arg)
+#define debug_print2(mod, format, arg1, arg2)                  \
+    srtp_err_report(srtp_err_level_debug, ("%s: " format "\n"), mod.name, arg1, arg2)
+
+typedef enum {
+    srtp_err_level_error,
+    srtp_err_level_warning,
+    srtp_err_level_info,
+    srtp_err_level_debug
+} srtp_err_reporting_level_t;
+
+typedef struct {
+    int on;           /* 1 if debugging is on, 0 if it is off */
+    const char *name; /* printable name for debug module      */
+} srtp_debug_module_t;
+
+static void srtp_err_report (srtp_err_reporting_level_t level, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+}
+/*** XXXXXXXXXXXX ***/
 
 srtp_debug_module_t srtp_mod_aes_gcm_double = {
-    0,               /* debugging is off by default */
+    1,               /* debugging is off by default */
     "aes gcm double" /* printable module name       */
 };
 
@@ -91,15 +118,6 @@ typedef struct {
 #ifndef WORDS_BIGENDIAN
 
 typedef struct {
-    uint8_t len : 4;
-    uint8_t type : 4;
-    uint8_t pt : 7;
-    uint8_t r : 1;
-    uint16_t seq;
-    uint16_t ext_len;
-} ohb_t;
-
-typedef struct {
     unsigned char cc : 4;      /* CSRC count             */
     unsigned char x : 1;       /* header extension flag  */
     unsigned char p : 1;       /* padding flag           */
@@ -112,15 +130,6 @@ typedef struct {
 } srtp_hdr_t;
 
 #else /*  BIG_ENDIAN */
-
-typedef struct {
-    uint8_t type : 4;
-    uint8_t len : 4;
-    uint8_t r : 1;
-    uint8_t pt : 7;
-    uint16_t seq;
-    uint16_t ext_len;
-} ohb_t;
 
 typedef struct {
     unsigned char version : 2; /* protocol version       */
@@ -144,7 +153,7 @@ typedef struct {
 
 #define RTP_HDR_LEN       12
 #define RTP_EXT_HDR_LEN   4
-#define OHB_LEN           6
+#define E2EEL_LEN         2
 
 /*
  * This function allocates a new instance of this crypto engine.
@@ -327,7 +336,8 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_iv (void *cv, uint8_t *
     }
     c->dir = direction;
 
-    debug_print(srtp_mod_aes_gcm_double, "setting iv: %s", v128_hex_string((v128_t*)iv));
+    debug_print(srtp_mod_aes_gcm_double, "setting iv (outer): %s",
+                srtp_octet_string_hex_string(iv, 12));
 
     /* initialize the contexts with a direction */
     if (!EVP_CipherInit_ex(c->outer_ctx, NULL, NULL, NULL,
@@ -347,6 +357,9 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_iv (void *cv, uint8_t *
     }
 
     if (c->do_inner) {
+        debug_print(srtp_mod_aes_gcm_double, "setting iv (inner): %s",
+                    srtp_octet_string_hex_string(iv, 12));
+
         if (!EVP_CipherInit_ex(c->inner_ctx, NULL, NULL, NULL,
                                NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
             return (srtp_err_status_init_fail);
@@ -377,47 +390,88 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_iv (void *cv, uint8_t *
 static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const uint8_t *aad, uint32_t aad_len)
 {
     srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
-    ohb_t *ohb;
+    uint8_t ohb_a_pt;
+    uint16_t ohb_seq;
     srtp_hdr_t *hdr;
     srtp_hdr_xtnd_t *ext_hdr;
-    int original_ext_len;
     int inner_aad_len;
+    int ext_hdr_len;
+    int ext_len;
+    uint8_t *ext_data;
+    uint16_t e2e_ext_len;
     int rv;
 
-    debug_print(srtp_mod_aes_gcm_double, "setting aad(outer): %s",
-                srtp_octet_string_hex_string(aad, aad_len));
-
     /*
-     * This tranform is RTP-specific, and all inputs are requried to have an
-     * Original Headers Block (OHB) extension as their first extension.
+     * Process the End-to-End Extensions Length and Original Headers Block
+     * extensions to determine the inner AAD.
+     *
+     * TODO: Move this to be gated on c->do_inner?
      */
-    if (aad_len < RTP_HDR_LEN) {
+    if ((aad_len < RTP_HDR_LEN) || (aad_len > MAX_AAD_LEN)) {
         return (srtp_err_status_bad_param);
     }
 
-    hdr = (srtp_hdr_t *)aad;
-    if ((hdr->x != 1) ||
-        (aad_len < RTP_HDR_LEN + (4 * (int) hdr->cc) + RTP_EXT_HDR_LEN + OHB_LEN)) {
-        return (srtp_err_status_bad_param);
-    }
+    /* By default, inner AAD only covers the base header */
+    memcpy(c->inner_aad, aad, aad_len);
+    hdr = (srtp_hdr_t *)c->inner_aad;
+    inner_aad_len = RTP_HDR_LEN + (4 * hdr->cc);
 
-    ext_hdr = (srtp_hdr_xtnd_t *)(aad + RTP_HDR_LEN + (4 * (int) hdr->cc));
-    if ((ntohs(ext_hdr->profile_specific) != 0xbede) || (4 * ntohs(ext_hdr->length) < OHB_LEN)) {
-        return (srtp_err_status_bad_param);
-    }
+    if (hdr->x == 1) {
+        ext_hdr = (srtp_hdr_xtnd_t *)(c->inner_aad + inner_aad_len);
+        if (ntohs(ext_hdr->profile_specific) == 0xbede) {
+            ext_hdr_len = 1;
+        } else if ((ntohs(ext_hdr->profile_specific) & 0x1fff) == 0x100) {
+            ext_hdr_len = 2;
+        } else {
+            debug_print(srtp_mod_aes_gcm_double, "bad ext_hdr_len %04x", ntohs(ext_hdr->profile_specific));
+            return (srtp_err_status_bad_param);
+        }
 
-    ohb = (ohb_t *)(aad + RTP_HDR_LEN + (4 * (int) hdr->cc) + RTP_EXT_HDR_LEN);
-    if (ohb->len != OHB_LEN - 2) {
-        return (srtp_err_status_bad_param);
-    }
+        debug_print(srtp_mod_aes_gcm_double, "ext header len: %d", ext_hdr_len);
 
-    original_ext_len = ntohs(ohb->ext_len);
-    if (aad_len < RTP_HDR_LEN + (4 * (int) hdr->cc) + RTP_EXT_HDR_LEN + original_ext_len) {
-        return (srtp_err_status_bad_param);
-    }
+        /* If len of first extn == 2, append to inner_aad */
+        ext_data = ((uint8_t*)ext_hdr) + sizeof(srtp_hdr_xtnd_t);
+        ext_len = (ext_hdr_len == 2)? *(ext_data + 1) : (*ext_data & 0x0f) + 1;
+        if (ext_len == 2) {
+            e2e_ext_len = ntohs(*((uint16_t*) (ext_data + ext_hdr_len)));
+            inner_aad_len += RTP_EXT_HDR_LEN + ext_hdr_len + E2EEL_LEN + e2e_ext_len;
+            ext_data += ext_hdr_len + E2EEL_LEN + e2e_ext_len;
+            if (aad_len < inner_aad_len) {
+                debug_print(srtp_mod_aes_gcm_double, "bad e2e_ext_len %0d", e2e_ext_len);
+                return (srtp_err_status_bad_param);
+            }
 
-    inner_aad_len = RTP_HDR_LEN + (4 * (int) hdr->cc) +
-                    RTP_EXT_HDR_LEN + original_ext_len;
+            debug_print(srtp_mod_aes_gcm_double, "e2e extensions len: %d", e2e_ext_len);
+
+            /* Adjust the extension length */
+            /* XXX: Set padding bytes to zero? and cover those? */
+            ext_hdr->length = (ext_hdr_len + E2EEL_LEN + e2e_ext_len) / 4;
+            if ((ext_hdr_len + E2EEL_LEN + e2e_ext_len) % 4 > 0) {
+                ext_hdr->length += 1;
+            }
+            ext_hdr->length = htons(ext_hdr->length);
+
+            debug_print(srtp_mod_aes_gcm_double, "new extensions len: %02x", ntohs(ext_hdr->length));
+        }
+
+        ext_len = (ext_hdr_len == 2)? *(ext_data + 1) : (*ext_data & 0x0f) + 1;
+        if (ext_len == 1) {
+            ohb_a_pt = *(ext_data + ext_hdr_len);
+            hdr->pt = (ohb_a_pt >> 7 == 1)? ohb_a_pt & 0x7f : hdr->pt;
+            debug_print(srtp_mod_aes_gcm_double, "short OHB: A=%d", ohb_a_pt >> 7);
+            debug_print(srtp_mod_aes_gcm_double, "           PT=%d", ohb_a_pt & 0x7f);
+        } else if (ext_len == 3) {
+            ohb_a_pt = *(ext_data + ext_hdr_len);
+            ohb_seq = *((uint16_t*) (ext_data + ext_hdr_len + 1));
+            hdr->pt = (ohb_a_pt >> 7 == 1)? ohb_a_pt & 0x7f : hdr->pt;
+            hdr->seq = ohb_seq;
+            debug_print(srtp_mod_aes_gcm_double, "long OHB: A=%d", ohb_a_pt >> 7);
+            debug_print(srtp_mod_aes_gcm_double, "          PT=%02x", ohb_a_pt & 0x7f);
+            debug_print(srtp_mod_aes_gcm_double, "          SEQ=%04x", ntohs(ohb_seq));
+        } else {
+            return (srtp_err_status_bad_param);
+        }
+    }
 
     /*
      * Set dummy tag, OpenSSL requires the Tag to be set before
@@ -435,29 +489,17 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
     EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_SET_TAG, GCM_AUTH_TAG_LEN, &dummy_tag);
     EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_SET_TAG, GCM_AUTH_TAG_LEN, &dummy_tag);
 
+    debug_print(srtp_mod_aes_gcm_double, "setting aad (outer): %s",
+                srtp_octet_string_hex_string(aad, aad_len));
+
     rv = EVP_Cipher(c->outer_ctx, NULL, aad, aad_len);
     if (rv != aad_len) {
         return (srtp_err_status_algo_fail);
     }
 
     if (c->do_inner) {
-        /* Make the changes specified in the OHB */
-        if (inner_aad_len > MAX_AAD_LEN) {
-            return (srtp_err_status_bad_param);
-        }
-
-        memcpy(c->inner_aad, aad, inner_aad_len);
-
-        debug_print(srtp_mod_aes_gcm_double, "setting aad(inner): %s",
+        debug_print(srtp_mod_aes_gcm_double, "setting aad (inner): %s",
                     srtp_octet_string_hex_string(c->inner_aad, inner_aad_len));
-
-        hdr = (srtp_hdr_t *) (c->inner_aad);
-        hdr->pt = ohb->pt;
-        hdr->seq = ohb->seq;
-
-        ext_hdr = (srtp_hdr_xtnd_t *)(c->inner_aad + RTP_HDR_LEN + (4 * (int) hdr->cc));
-        ext_hdr->length = htons(original_ext_len);
-
         /*
          * Set the AAD for the inner transform based on the revised packet.
          */
@@ -495,6 +537,9 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_encrypt (void *cv, unsigned
      */
     if (c->do_inner) {
         EVP_Cipher(c->inner_ctx, buf, buf, *enc_len);
+
+        debug_print(srtp_mod_aes_gcm_double, "ciphertext (inner): %s",
+                    srtp_octet_string_hex_string(buf, *enc_len));
     } else {
         *enc_len -= GCM_AUTH_TAG_LEN;
         memcpy(c->inner_tag, buf + *enc_len, GCM_AUTH_TAG_LEN);
@@ -504,6 +549,9 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_encrypt (void *cv, unsigned
      * Encrypt the data with the inner transform, if applicable
      */
     EVP_Cipher(c->outer_ctx, buf, buf, *enc_len);
+
+    debug_print(srtp_mod_aes_gcm_double, "ciphertext (outer): %s",
+                srtp_octet_string_hex_string(buf, *enc_len));
 
     return (srtp_err_status_ok);
 }
@@ -650,12 +698,9 @@ static uint8_t srtp_aes_gcm_double_test_case_0_iv[12] = {
     0x9c, 0x84, 0xd2, 0xd9,
 };
 
-static const uint8_t srtp_aes_gcm_double_test_case_0_aad[27] = {
-    0xf0, 0xed, 0xfa, 0xce, 0xde, 0xad, 0xbe, 0xef,
+static const uint8_t srtp_aes_gcm_double_test_case_0_aad_no_ext[12] = {
+    0x80, 0x01, 0x02, 0x03, 0xde, 0xad, 0xbe, 0xef,
     0xfe, 0xed, 0xfa, 0xce,
-    /* extension header and OHB */
-    0xbe, 0xde, 0x00, 0x0b, 0x04, 0x01, 0x02, 0x03,
-    0x00, 0x08, 0x01, 0x00, 0x02, 0xff, 0xff,
 };
 
 static const uint8_t srtp_aes_gcm_double_test_case_0_plaintext[60] = {
@@ -677,9 +722,9 @@ static const uint8_t srtp_aes_gcm_double_test_case_0_plaintext_0[76] = {
     0x18, 0x2a, 0xda, 0xeb, 0xe8, 0x6d, 0x6b, 0xb9,
     0x06, 0xc4, 0xde, 0xc5, 0x7a, 0x43, 0xa6, 0x51,
     0x50, 0x37, 0x68, 0x4a, 0x96, 0x35, 0x62, 0xb3,
-    0x9e, 0x24, 0x5d, 0xec, 0x86, 0xee, 0x9a, 0xfb,
-    0xbd, 0xc6, 0x2d, 0x24, 0x7a, 0x10, 0xc3, 0xc5,
-    0xcd, 0x51, 0x61, 0x6a,
+    0x9e, 0x24, 0x5d, 0xec, 0xe9, 0xde, 0xc5, 0x0c,
+    0x12, 0xcf, 0x6f, 0xa5, 0xe1, 0xdd, 0x7c, 0x2f,
+    0x38, 0x38, 0xe7, 0x18,
 };
 
 static const uint8_t srtp_aes_gcm_double_test_case_0_ciphertext[92] = {
@@ -690,13 +735,88 @@ static const uint8_t srtp_aes_gcm_double_test_case_0_ciphertext[92] = {
     0xd8, 0x5f, 0x9e, 0x54, 0xbb, 0xc0, 0xec, 0xd5,
     0xb3, 0xe5, 0x22, 0xde, 0xd0, 0xdf, 0x51, 0xe1,
     0x1c, 0xda, 0x6e, 0x5b, 0xca, 0x54, 0xf8, 0x77,
-    0x1a, 0x7d, 0xbf, 0xb7, 0xf9, 0x3d, 0xf4, 0x24,
-    0x44, 0x6e, 0x9f, 0x69, 0x4c, 0xa6, 0x7d, 0xe4,
-    0x60, 0x6e, 0x83, 0xc7, 0x88, 0x1c, 0xd5, 0x5f,
-    0xc9, 0xd0, 0x32, 0x9e, 0x60, 0x0e, 0xef, 0x3f,
-    0xa6, 0xb9, 0x42, 0x9a,
+    0x1a, 0x7d, 0xbf, 0xb7, 0x96, 0x0d, 0xab, 0xd3,
+    0xeb, 0x67, 0xdd, 0xe8, 0xd7, 0x6b, 0xc2, 0x0e,
+    0x95, 0x07, 0x05, 0xb5, 0xda, 0x55, 0x86, 0xe5,
+    0x92, 0x3c, 0x20, 0x6c, 0x22, 0xae, 0xc1, 0xe8,
+    0x62, 0x3a, 0xc7, 0x09,
 };
 
+static const uint8_t srtp_aes_gcm_double_test_case_0_aad_ohb[24] = {
+    0x90, 0x01, 0x02, 0x03, 0xde, 0xad, 0xbe, 0xef,
+    0xfe, 0xed, 0xfa, 0xce, 0xbe, 0xde, 0x00, 0x02,
+    0x10, 0xff, 0x23, 0xa0, 0xa1, 0xa2, 0xa3, 0x00,
+};
+
+static const uint8_t srtp_aes_gcm_double_test_case_0_ciphertext_ohb[92] = {
+    0x14, 0x9d, 0xc0, 0xb9, 0x2a, 0xa0, 0x36, 0x91,
+    0x52, 0x53, 0xc4, 0x22, 0x82, 0x4e, 0xec, 0x4a,
+    0x14, 0x2d, 0xc9, 0x40, 0xa5, 0x0f, 0xcd, 0x8e,
+    0x5d, 0x2e, 0x9c, 0x61, 0x9f, 0x13, 0x3c, 0x02,
+    0xd8, 0x5f, 0x9e, 0x54, 0xbb, 0xc0, 0xec, 0xd5,
+    0xb3, 0xe5, 0x22, 0xde, 0xd0, 0xdf, 0x51, 0xe1,
+    0x1c, 0xda, 0x6e, 0x5b, 0xca, 0x54, 0xf8, 0x77,
+    0x1a, 0x7d, 0xbf, 0xb7, 0x6b, 0x21, 0x79, 0x5f,
+    0xba, 0x95, 0x53, 0x9b, 0xbe, 0x28, 0x6c, 0x08,
+    0x9f, 0x3c, 0x1c, 0x22, 0xec, 0x2a, 0xba, 0x02,
+    0x4a, 0x69, 0x2c, 0x5c, 0x90, 0x0b, 0x87, 0xaf,
+    0xa2, 0x72, 0xa2, 0x6d,
+};
+
+
+static const uint8_t srtp_aes_gcm_double_test_case_0_aad_e2eel[28] = {
+    0x90, 0x01, 0x02, 0x03, 0xde, 0xad, 0xbe, 0xef,
+    0xfe, 0xed, 0xfa, 0xce, 0xbe, 0xde, 0x00, 0x03,
+    0x11, 0x00, 0x03, 0x00, 0x00, 0x00, 0x22, 0xff,
+    0xaa, 0xbb, 0x00, 0x00,
+};
+
+static const uint8_t srtp_aes_gcm_double_test_case_0_ciphertext_e2eel[92] = {
+    0x14, 0x9d, 0xc0, 0xb9, 0x2a, 0xa0, 0x36, 0x91,
+    0x52, 0x53, 0xc4, 0x22, 0x82, 0x4e, 0xec, 0x4a,
+    0x14, 0x2d, 0xc9, 0x40, 0xa5, 0x0f, 0xcd, 0x8e,
+    0x5d, 0x2e, 0x9c, 0x61, 0x9f, 0x13, 0x3c, 0x02,
+    0xd8, 0x5f, 0x9e, 0x54, 0xbb, 0xc0, 0xec, 0xd5,
+    0xb3, 0xe5, 0x22, 0xde, 0xd0, 0xdf, 0x51, 0xe1,
+    0x1c, 0xda, 0x6e, 0x5b, 0xca, 0x54, 0xf8, 0x77,
+    0x1a, 0x7d, 0xbf, 0xb7, 0xca, 0x1e, 0xba, 0x18,
+    0x99, 0xf0, 0x0c, 0x3a, 0x54, 0xde, 0x6a, 0xdf,
+    0xe6, 0xf6, 0x32, 0x4f, 0x7c, 0xf8, 0xeb, 0xe3,
+    0x12, 0xb4, 0xd8, 0x4c, 0xf2, 0x51, 0x04, 0xee,
+    0xf1, 0xad, 0xc6, 0xd1,
+};
+
+/* OHB and E2EEL, full key */
+static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_0_e2eel = {
+    SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT,            /* octets in key            */
+    srtp_aes_gcm_double_test_case_0_key,              /* key                      */
+    srtp_aes_gcm_double_test_case_0_iv,               /* packet index             */
+    60,                                               /* octets in plaintext      */
+    srtp_aes_gcm_double_test_case_0_plaintext,        /* plaintext                */
+    92,                                               /* octets in ciphertext     */
+    srtp_aes_gcm_double_test_case_0_ciphertext_e2eel, /* ciphertext  + tag        */
+    28,                                               /* octets in AAD            */
+    srtp_aes_gcm_double_test_case_0_aad_e2eel,        /* AAD                      */
+    GCM_DOUBLE_AUTH_TAG_LEN,
+    NULL,                                             /* pointer to next testcase */
+};
+
+/* OHB, full key */
+static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_0_ohb = {
+    SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT,          /* octets in key            */
+    srtp_aes_gcm_double_test_case_0_key,            /* key                      */
+    srtp_aes_gcm_double_test_case_0_iv,             /* packet index             */
+    60,                                             /* octets in plaintext      */
+    srtp_aes_gcm_double_test_case_0_plaintext,      /* plaintext                */
+    92,                                             /* octets in ciphertext     */
+    srtp_aes_gcm_double_test_case_0_ciphertext_ohb, /* ciphertext  + tag        */
+    24,                                             /* octets in AAD            */
+    srtp_aes_gcm_double_test_case_0_aad_ohb,        /* AAD                      */
+    GCM_DOUBLE_AUTH_TAG_LEN,
+    &srtp_aes_gcm_double_test_case_0_e2eel,         /* pointer to next testcase */
+};
+
+/* No extensions, half key */
 static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_0_0 = {
     SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT,       /* octets in key            */
     srtp_aes_gcm_double_test_case_0_key_0,       /* key                      */
@@ -705,12 +825,13 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_0_0 = {
     srtp_aes_gcm_double_test_case_0_plaintext_0, /* plaintext                */
     92,                                          /* octets in ciphertext     */
     srtp_aes_gcm_double_test_case_0_ciphertext,  /* ciphertext  + tag        */
-    27,                                          /* octets in AAD            */
-    srtp_aes_gcm_double_test_case_0_aad,         /* AAD                      */
+    12,                                          /* octets in AAD            */
+    srtp_aes_gcm_double_test_case_0_aad_no_ext,  /* AAD                      */
     GCM_DOUBLE_AUTH_TAG_LEN,
-    NULL                                         /* pointer to next testcase */
+    &srtp_aes_gcm_double_test_case_0_ohb,        /* pointer to next testcase */
 };
 
+/* No extensions, full key */
 static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_0 = {
     SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT,      /* octets in key            */
     srtp_aes_gcm_double_test_case_0_key,        /* key                      */
@@ -719,8 +840,8 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_0 = {
     srtp_aes_gcm_double_test_case_0_plaintext,  /* plaintext                */
     92,                                         /* octets in ciphertext     */
     srtp_aes_gcm_double_test_case_0_ciphertext, /* ciphertext  + tag        */
-    27,                                         /* octets in AAD            */
-    srtp_aes_gcm_double_test_case_0_aad,        /* AAD                      */
+    12,                                         /* octets in AAD            */
+    srtp_aes_gcm_double_test_case_0_aad_no_ext, /* AAD                      */
     GCM_DOUBLE_AUTH_TAG_LEN,
     &srtp_aes_gcm_double_test_case_0_0          /* pointer to next testcase */
 };
@@ -756,12 +877,9 @@ static uint8_t srtp_aes_gcm_double_test_case_1_iv[12] = {
     0x9c, 0x84, 0xd2, 0xd9,
 };
 
-static const uint8_t srtp_aes_gcm_double_test_case_1_aad[27] = {
-    0xf0, 0xed, 0xfa, 0xce, 0xde, 0xad, 0xbe, 0xef,
+static const uint8_t srtp_aes_gcm_double_test_case_1_aad_no_ext[12] = {
+    0x80, 0x01, 0x02, 0x03, 0xde, 0xad, 0xbe, 0xef,
     0xfe, 0xed, 0xfa, 0xce,
-    /* extension header and OHB */
-    0xbe, 0xde, 0x00, 0x0b, 0x04, 0x01, 0x02, 0x03,
-    0x00, 0x08, 0x01, 0x00, 0x02, 0xff, 0xff,
 };
 
 static const uint8_t srtp_aes_gcm_double_test_case_1_plaintext[60] = {
@@ -783,9 +901,9 @@ static const uint8_t srtp_aes_gcm_double_test_case_1_plaintext_0[76] = {
     0xdb, 0x2f, 0x99, 0xc6, 0x35, 0x6b, 0x47, 0x26,
     0x87, 0xc4, 0xf1, 0x08, 0xeb, 0x41, 0xd0, 0x4d,
     0xbe, 0xcc, 0x3a, 0x3b, 0x07, 0xe8, 0x7a, 0xbf,
-    0xee, 0xc2, 0xdc, 0x4f, 0xc4, 0x1a, 0x64, 0x8a,
-    0xf8, 0x13, 0x1d, 0xfe, 0x23, 0x2a, 0xe6, 0xbb,
-    0xdc, 0x1a, 0x1e, 0xa7,
+    0xee, 0xc2, 0xdc, 0x4f, 0xf2, 0xec, 0x9a, 0x70,
+    0xa0, 0x39, 0xd9, 0xc6, 0xf9, 0x22, 0x86, 0xdf,
+    0x1d, 0x69, 0x98, 0xac,
 };
 
 static const uint8_t srtp_aes_gcm_double_test_case_1_ciphertext[92] = {
@@ -796,11 +914,11 @@ static const uint8_t srtp_aes_gcm_double_test_case_1_ciphertext[92] = {
     0x7d, 0xe1, 0x36, 0x59, 0x9b, 0x1c, 0xe8, 0xa9,
     0x1d, 0xda, 0xa8, 0x78, 0xfb, 0x0f, 0x2e, 0x3c,
     0x80, 0x30, 0x33, 0x81, 0x86, 0x65, 0x2e, 0x67,
-    0x81, 0xc3, 0xf0, 0xbd, 0x9d, 0x62, 0x35, 0xc8,
-    0xd8, 0xf7, 0xa6, 0x19, 0xe4, 0x4a, 0x26, 0x6b,
-    0x7f, 0x91, 0xcf, 0x84, 0x99, 0xdb, 0x84, 0xd8,
-    0xab, 0xb7, 0x15, 0xe3, 0xea, 0x4e, 0xfb, 0x29,
-    0x1b, 0x34, 0x8e, 0x03,
+    0x81, 0xc3, 0xf0, 0xbd, 0xab, 0x94, 0xcb, 0x32,
+    0x80, 0xdd, 0x62, 0x21, 0x3e, 0x42, 0x46, 0x0f,
+    0xbe, 0xe2, 0x49, 0x8f, 0x17, 0xf4, 0x38, 0xb1,
+    0x5c, 0xa0, 0x4a, 0xa3, 0xe3, 0x85, 0x76, 0xae,
+    0xc3, 0x3a, 0x6e, 0x76,
 };
 
 static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_1_0 = {
@@ -811,8 +929,8 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_1_0 = {
     srtp_aes_gcm_double_test_case_1_plaintext_0, /* plaintext                */
     92,                                          /* octets in ciphertext     */
     srtp_aes_gcm_double_test_case_1_ciphertext,  /* ciphertext  + tag        */
-    27,                                          /* octets in AAD            */
-    srtp_aes_gcm_double_test_case_1_aad,         /* AAD                      */
+    12,                                          /* octets in AAD            */
+    srtp_aes_gcm_double_test_case_1_aad_no_ext,  /* AAD                      */
     GCM_DOUBLE_AUTH_TAG_LEN,
     NULL                                         /* pointer to next testcase */
 };
@@ -825,8 +943,8 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_1 = {
     srtp_aes_gcm_double_test_case_1_plaintext,  /* plaintext                */
     92,                                         /* octets in ciphertext     */
     srtp_aes_gcm_double_test_case_1_ciphertext, /* ciphertext  + tag        */
-    27,                                         /* octets in AAD            */
-    srtp_aes_gcm_double_test_case_1_aad,        /* AAD                      */
+    12,                                         /* octets in AAD            */
+    srtp_aes_gcm_double_test_case_1_aad_no_ext, /* AAD                      */
     GCM_DOUBLE_AUTH_TAG_LEN,
     &srtp_aes_gcm_double_test_case_1_0          /* pointer to next testcase */
 };
