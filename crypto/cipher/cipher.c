@@ -50,36 +50,8 @@
 
 #include "cipher.h"
 #include "crypto_types.h"
-//XXX #include "err.h"                /* for srtp_debug */
+#include "err.h"                /* for srtp_debug */
 #include "alloc.h"              /* for crypto_alloc(), crypto_free()  */
-
-/*** XXXXXXXXXXXX ***/
-/* To make debug reporting work within cipher_driver */
-#define debug_print(mod, format, arg)                  \
-    srtp_err_report(srtp_err_level_debug, ("%s: " format "\n"), mod.name, arg)
-#define debug_print2(mod, format, arg1, arg2)                  \
-    srtp_err_report(srtp_err_level_debug, ("%s: " format "\n"), mod.name, arg1, arg2)
-
-typedef enum {
-    srtp_err_level_error,
-    srtp_err_level_warning,
-    srtp_err_level_info,
-    srtp_err_level_debug
-} srtp_err_reporting_level_t;
-
-typedef struct {
-    int on;           /* 1 if debugging is on, 0 if it is off */
-    const char *name; /* printable name for debug module      */
-} srtp_debug_module_t;
-
-static void srtp_err_report (srtp_err_reporting_level_t level, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-}
-/*** XXXXXXXXXXXX ***/
 
 srtp_debug_module_t srtp_mod_cipher = {
     0,               /* debugging is off by default */
