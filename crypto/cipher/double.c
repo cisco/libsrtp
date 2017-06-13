@@ -1,7 +1,7 @@
 /*
- * aes_gcm_double_ossl.c
+ * double.c
  *
- * AES Galois Counter Mode
+ * Doubled AEAD mode, with specialization to AES-GCM
  *
  * Richard L. Barnes
  * Cisco
