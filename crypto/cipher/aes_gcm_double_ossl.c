@@ -55,36 +55,32 @@
 #include "err.h"                /* for srtp_debug */
 #include "crypto_types.h"
 
-srtp_debug_module_t srtp_mod_aes_gcm_double = {
-    0,               /* debugging is off by default */
-    "aes gcm double" /* printable module name       */
+srtp_debug_module_t srtp_mod_double = {
+    1,               /* debugging is off by default */
+    "double"         /* printable module name       */
 };
 
-/*
- * The following are the global singleton instances for the
- * 128-bit and 256-bit GCM ciphers.
- */
-extern const srtp_cipher_type_t srtp_aes_gcm_128_double_openssl;
-extern const srtp_cipher_type_t srtp_aes_gcm_256_double_openssl;
-
-/*
- * The auth tag for the doubled GCM mode consists of two
- * full-size GCM auth tags.
- */
-#define GCM_AUTH_TAG_LEN           16
-#define GCM_DOUBLE_AUTH_TAG_LEN    (GCM_AUTH_TAG_LEN + GCM_AUTH_TAG_LEN)
 #define MAX_AAD_LEN                512
+#define MAX_TAG_LEN                64
 
+/*
+ * The double framework can be used with different combinations of ciphers.
+ * Most of the functions below will just work with any length-preserving AEAD
+ * cipher.  However, to define a different combination, you will need to define
+ * a new srtp_cipher_type_t value and an allocator for it that calls
+ * srtp_double_alloc().
+ */
 typedef struct {
-    int key_size;
-    int tag_len;
+    int inner_key_size;
+    int outer_key_size;
+    int inner_tag_size;
+    int outer_tag_size;
+    srtp_cipher_t *inner;
+    srtp_cipher_t *outer;
     int do_inner;
     uint8_t inner_aad[MAX_AAD_LEN];
-    uint8_t inner_tag[GCM_AUTH_TAG_LEN];
-    EVP_CIPHER_CTX* inner_ctx;
-    EVP_CIPHER_CTX* outer_ctx;
-    srtp_cipher_direction_t dir;
-} srtp_aes_gcm_double_ctx_t;
+    uint8_t inner_tag[MAX_TAG_LEN];
+} srtp_double_ctx_t;
 
 /* XXX: srtp_hdr_t borrowed from srtp_priv.h */
 #ifndef WORDS_BIGENDIAN
@@ -128,102 +124,81 @@ typedef struct {
 #define E2EEL_LEN         2
 
 /*
- * This function allocates a new instance of this crypto engine.
- * The key_len parameter should be the length of two AES keys plus
- * the 12-byte salt used by SRTP with AEAD modes:
- *
- *   * 44 = 16 + 16 + 12
- *   * 76 = 32 + 32 + 12
+ * This function allocates an instance of a doubled cipher, allowing general
+ * combinations of ciphers.
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_alloc (srtp_cipher_t **c, int key_len, int tlen)
+static srtp_err_status_t srtp_double_alloc(const srtp_cipher_type_t *inner_type,
+                                           const srtp_cipher_type_t *outer_type,
+                                           const srtp_cipher_type_t *total_type,
+                                           int algorithm,
+                                           int inner_key_size, int outer_key_size,
+                                           int inner_tag_size, int outer_tag_size,
+                                           srtp_cipher_t **c)
 {
-    srtp_aes_gcm_double_ctx_t *dbl;
+    srtp_err_status_t err;
+    srtp_double_ctx_t *dbl;
 
-    debug_print(srtp_mod_aes_gcm_double, "allocating cipher with key length %d", key_len);
-    debug_print(srtp_mod_aes_gcm_double, "allocating cipher with tag length %d", tlen);
+    debug_print(srtp_mod_double, "alloc with key size %d", inner_key_size + outer_key_size);
+    debug_print(srtp_mod_double, "       ... tag size %d", inner_tag_size + outer_tag_size);
 
-    /*
-     * Verify the key_len is valid for one of: AES-128/256
-     */
-    if (key_len != SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT &&
-        key_len != SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT) {
-        return (srtp_err_status_bad_param);
-    }
-
-    if (tlen != GCM_DOUBLE_AUTH_TAG_LEN) {
-        return (srtp_err_status_bad_param);
-    }
-
-    /* Allocate inner and outer GCM contexts */
+    /* Allocate the base structs */
     *c = (srtp_cipher_t *)srtp_crypto_alloc(sizeof(srtp_cipher_t));
     if (*c == NULL) {
         return (srtp_err_status_alloc_fail);
     }
     memset(*c, 0x0, sizeof(srtp_cipher_t));
 
-    dbl = (srtp_aes_gcm_double_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_gcm_double_ctx_t));
+    dbl = (srtp_double_ctx_t *)srtp_crypto_alloc(sizeof(srtp_double_ctx_t));
     if (dbl == NULL) {
         srtp_crypto_free(*c);
         *c = NULL;
         return (srtp_err_status_alloc_fail);
     }
-    memset(dbl, 0x0, sizeof(srtp_aes_gcm_double_ctx_t));
+    memset(dbl, 0x0, sizeof(srtp_double_ctx_t));
 
-    dbl->inner_ctx = EVP_CIPHER_CTX_new();
-    if (dbl->inner_ctx == NULL) {
-        srtp_crypto_free(dbl);
-        srtp_crypto_free(*c);
-        *c = NULL;
-        return srtp_err_status_alloc_fail;
+    /* Allocate the inner and outer contexts */
+    err = inner_type->alloc(&dbl->inner, inner_key_size + SRTP_AEAD_SALT_LEN, inner_tag_size);
+    if (err != srtp_err_status_ok) {
+      debug_print(srtp_mod_double, "error alloc inner: %d", err);
+      return err;
     }
 
-    dbl->outer_ctx = EVP_CIPHER_CTX_new();
-    if (dbl->outer_ctx == NULL) {
-        srtp_crypto_free(dbl);
-        srtp_crypto_free(*c);
-        *c = NULL;
-        return srtp_err_status_alloc_fail;
+    err = outer_type->alloc(&dbl->outer, outer_key_size + SRTP_AEAD_SALT_LEN, outer_tag_size);
+    if (err != srtp_err_status_ok) {
+      debug_print(srtp_mod_double, "error alloc outer: %d", err);
+      return err;
     }
 
-    /* set pointers */
+    /* Set up the cipher */
+    dbl->inner_key_size = inner_key_size;
+    dbl->outer_key_size = outer_key_size;
+    dbl->inner_tag_size = inner_tag_size;
+    dbl->outer_tag_size = outer_tag_size;
     (*c)->state = dbl;
+    (*c)->key_len = inner_key_size + outer_key_size;
+    (*c)->type = total_type;
+    (*c)->algorithm = algorithm;
 
-    /* setup cipher attributes */
-    switch (key_len) {
-    case SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT:
-        (*c)->type = &srtp_aes_gcm_128_double_openssl;
-        (*c)->algorithm = SRTP_AES_GCM_128_DOUBLE;
-        dbl->key_size = SRTP_AES_128_DOUBLE_KEY_LEN;
-        dbl->tag_len = tlen;
-        break;
-    case SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT:
-        (*c)->type = &srtp_aes_gcm_256_double_openssl;
-        (*c)->algorithm = SRTP_AES_GCM_256_DOUBLE;
-        dbl->key_size = SRTP_AES_256_DOUBLE_KEY_LEN;
-        dbl->tag_len = tlen;
-        break;
-    }
-
-    /* set key size        */
-    (*c)->key_len = key_len;
-
+    debug_print(srtp_mod_double, "alloc ok", NULL);
     return (srtp_err_status_ok);
 }
-
 
 /*
  * This function deallocates a GCM session
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_dealloc (srtp_cipher_t *c)
+static srtp_err_status_t srtp_double_dealloc (srtp_cipher_t *c)
 {
-    srtp_aes_gcm_double_ctx_t *ctx;
+    srtp_double_ctx_t *ctx;
 
-    ctx = (srtp_aes_gcm_double_ctx_t*)c->state;
+    debug_print(srtp_mod_double, "dealloc", NULL);
+
+    ctx = (srtp_double_ctx_t*)c->state;
     if (ctx) {
-        EVP_CIPHER_CTX_free(ctx->inner_ctx);
-        EVP_CIPHER_CTX_free(ctx->outer_ctx);
+        ctx->inner->type->dealloc(ctx->inner);
+        ctx->outer->type->dealloc(ctx->outer);
+
         /* zeroize the key material */
-        octet_string_set_to_zero(ctx, sizeof(srtp_aes_gcm_double_ctx_t));
+        octet_string_set_to_zero(ctx, sizeof(srtp_double_ctx_t));
         srtp_crypto_free(ctx);
     }
 
@@ -239,37 +214,18 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_dealloc (srtp_cipher_t *c)
  *
  * The key countains two AES keys of the same size, inner || outer.
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_context_init (void* cv, const uint8_t *key)
+static srtp_err_status_t srtp_double_context_init (void* cv, const uint8_t *key)
 {
-    srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
-    const EVP_CIPHER *inner_evp;
-    const EVP_CIPHER *outer_evp;
-    int subkey_size;
     uint8_t inner_non_zero;
+    srtp_err_status_t err;
+    srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
 
-    c->dir = srtp_direction_any;
-
-    debug_print(srtp_mod_aes_gcm_double, "key:  %s", srtp_octet_string_hex_string(key, c->key_size));
-
-    switch (c->key_size) {
-    case SRTP_AES_128_DOUBLE_KEY_LEN:
-        inner_evp = EVP_aes_128_gcm();
-        outer_evp = EVP_aes_128_gcm();
-        subkey_size = SRTP_AES_128_KEY_LEN;
-        break;
-    case SRTP_AES_256_DOUBLE_KEY_LEN:
-        inner_evp = EVP_aes_256_gcm();
-        outer_evp = EVP_aes_256_gcm();
-        subkey_size = SRTP_AES_256_KEY_LEN;
-        break;
-    default:
-        return (srtp_err_status_bad_param);
-        break;
-    }
+    debug_print(srtp_mod_double, "init with key %s",
+                srtp_octet_string_hex_string(key, c->inner_key_size + c->outer_key_size));
 
     /* This context performs the inner transform iff the inner key is not all zero */
     inner_non_zero = 0;
-    for (int i=0; i < subkey_size; i++) {
+    for (int i=0; i < c->inner_key_size; i++) {
         inner_non_zero |= key[i];
     }
 
@@ -278,17 +234,15 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_context_init (void* cv, con
         c->do_inner = 1;
     }
 
+    /* Initialize the inner and outer contexts */
     if (c->do_inner) {
-        if (!EVP_CipherInit_ex(c->inner_ctx, inner_evp, NULL, key, NULL, 0)) {
-            return (srtp_err_status_init_fail);
+        err = c->inner->type->init(c->inner->state, key);
+        if (err != srtp_err_status_ok) {
+            return err;
         }
     }
 
-    if (!EVP_CipherInit_ex(c->outer_ctx, outer_evp, NULL, key + subkey_size, NULL, 0)) {
-        return (srtp_err_status_init_fail);
-    }
-
-    return (srtp_err_status_ok);
+    return c->outer->type->init(c->outer->state, key + c->inner_key_size);
 }
 
 
@@ -299,56 +253,22 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_context_init (void* cv, con
  * XXX: We use the same IV for both inner and outer contexts.  This should be
  * safe because the keys should be different.
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_set_iv (void *cv, uint8_t *iv, srtp_cipher_direction_t direction)
+static srtp_err_status_t srtp_double_set_iv (void *cv, uint8_t *iv, srtp_cipher_direction_t direction)
 {
-    srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
+    srtp_err_status_t err;
+    srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
 
-    if (direction != srtp_direction_encrypt && direction != srtp_direction_decrypt) {
-        return (srtp_err_status_bad_param);
-    }
-    c->dir = direction;
-
-    debug_print(srtp_mod_aes_gcm_double, "setting iv (outer): %s",
+    debug_print(srtp_mod_double, "iv: %s",
                 srtp_octet_string_hex_string(iv, 12));
 
-    /* initialize the contexts with a direction */
-    if (!EVP_CipherInit_ex(c->outer_ctx, NULL, NULL, NULL,
-                           NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
-        return (srtp_err_status_init_fail);
-    }
-
-    /* set IV len  and the IV value, the followiong 3 calls are required */
-    if (!EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
-        return (srtp_err_status_init_fail);
-    }
-    if (!EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_SET_IV_FIXED, -1, (void*)iv)) {
-        return (srtp_err_status_init_fail);
-    }
-    if (!EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_IV_GEN, 0, (void*)iv)) {
-        return (srtp_err_status_init_fail);
-    }
-
     if (c->do_inner) {
-        debug_print(srtp_mod_aes_gcm_double, "setting iv (inner): %s",
-                    srtp_octet_string_hex_string(iv, 12));
-
-        if (!EVP_CipherInit_ex(c->inner_ctx, NULL, NULL, NULL,
-                               NULL, (c->dir == srtp_direction_encrypt ? 1 : 0))) {
-            return (srtp_err_status_init_fail);
-        }
-
-        if (!EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
-            return (srtp_err_status_init_fail);
-        }
-        if (!EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_SET_IV_FIXED, -1, (void*)iv)) {
-            return (srtp_err_status_init_fail);
-        }
-        if (!EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_IV_GEN, 0, (void*)iv)) {
-            return (srtp_err_status_init_fail);
+        err = c->inner->type->set_iv(c->inner->state, iv, direction);
+        if (err != srtp_err_status_ok) {
+            return err;
         }
     }
 
-    return (srtp_err_status_ok);
+    return c->outer->type->set_iv(c->outer->state, iv, direction);
 }
 
 /*
@@ -359,9 +279,10 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_iv (void *cv, uint8_t *
  *	aad	Additional data to process for AEAD cipher suites
  *	aad_len	length of aad buffer
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const uint8_t *aad, uint32_t aad_len)
+static srtp_err_status_t srtp_double_set_aad (void *cv, const uint8_t *aad, uint32_t aad_len)
 {
-    srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
+    srtp_err_status_t err;
+    srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
     srtp_hdr_t *hdr;
     srtp_hdr_xtnd_t *ext_hdr;
     int inner_aad_len;
@@ -371,7 +292,9 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
     uint8_t ohb_r_pt;
     uint16_t ohb_seq;
     uint16_t e2e_ext_len;
-    int rv;
+
+    debug_print(srtp_mod_double, "aad: %s",
+                srtp_octet_string_hex_string(aad, aad_len));
 
     /*
      * Process the End-to-End Extensions Length and Original Headers Block
@@ -395,11 +318,11 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
         } else if ((ntohs(ext_hdr->profile_specific) & 0x1fff) == 0x100) {
             ext_hdr_len = 2;
         } else {
-            debug_print(srtp_mod_aes_gcm_double, "bad ext_hdr_len %04x", ntohs(ext_hdr->profile_specific));
+            debug_print(srtp_mod_double, "bad ext_hdr_len %04x", ntohs(ext_hdr->profile_specific));
             return (srtp_err_status_bad_param);
         }
 
-        debug_print(srtp_mod_aes_gcm_double, "ext header len: %d", ext_hdr_len);
+        debug_print(srtp_mod_double, "ext header len: %d", ext_hdr_len);
 
         /* If len of first extn == 2, append to inner_aad */
         ext_data = ((uint8_t*)ext_hdr) + sizeof(srtp_hdr_xtnd_t);
@@ -409,11 +332,11 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
             inner_aad_len += RTP_EXT_HDR_LEN + ext_hdr_len + E2EEL_LEN + e2e_ext_len;
             ext_data += ext_hdr_len + E2EEL_LEN + e2e_ext_len;
             if (aad_len < inner_aad_len) {
-                debug_print(srtp_mod_aes_gcm_double, "bad e2e_ext_len %0d", e2e_ext_len);
+                debug_print(srtp_mod_double, "bad e2e_ext_len %0d", e2e_ext_len);
                 return (srtp_err_status_bad_param);
             }
 
-            debug_print(srtp_mod_aes_gcm_double, "e2e extensions len: %d", e2e_ext_len);
+            debug_print(srtp_mod_double, "e2e extensions len: %d", e2e_ext_len);
 
             /* Adjust the extension length */
             /* XXX: Set padding bytes to zero? and cover those? */
@@ -423,7 +346,7 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
             }
             ext_hdr->length = htons(ext_hdr->length);
 
-            debug_print(srtp_mod_aes_gcm_double, "new extensions len: %02x", ntohs(ext_hdr->length));
+            debug_print(srtp_mod_double, "new extensions len: %02x", ntohs(ext_hdr->length));
         } else {
             /* If there were no E2E extensions, unset the X bit */
             hdr->x = 0;
@@ -439,8 +362,8 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
                 }
 
                 hdr->pt = ohb_r_pt & 0x7f;
-                debug_print(srtp_mod_aes_gcm_double, "short OHB: R=%d", ohb_r_pt >> 7);
-                debug_print(srtp_mod_aes_gcm_double, "           PT=%d", ohb_r_pt & 0x7f);
+                debug_print(srtp_mod_double, "short OHB: R=%d", ohb_r_pt >> 7);
+                debug_print(srtp_mod_double, "           PT=%d", ohb_r_pt & 0x7f);
             } else if (ext_len == 3) {
                 ohb_r_pt = *(ext_data + ext_hdr_len);
                 ohb_seq = *((uint16_t*) (ext_data + ext_hdr_len + 1));
@@ -450,52 +373,28 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
 
                 hdr->pt = ohb_r_pt & 0x7f;
                 hdr->seq = ohb_seq;
-                debug_print(srtp_mod_aes_gcm_double, "long OHB: R=%d", ohb_r_pt >> 7);
-                debug_print(srtp_mod_aes_gcm_double, "          PT=%02x", ohb_r_pt & 0x7f);
-                debug_print(srtp_mod_aes_gcm_double, "          SEQ=%04x", ntohs(ohb_seq));
+                debug_print(srtp_mod_double, "long OHB: R=%d", ohb_r_pt >> 7);
+                debug_print(srtp_mod_double, "          PT=%02x", ohb_r_pt & 0x7f);
+                debug_print(srtp_mod_double, "          SEQ=%04x", ntohs(ohb_seq));
             } else {
                 return (srtp_err_status_bad_param);
             }
         }
     }
 
-    /*
-     * Set dummy tag, OpenSSL requires the Tag to be set before
-     * processing AAD
-     */
-
-    /*
-     * OpenSSL never write to address pointed by the last parameter of
-     * EVP_CIPHER_CTX_ctrl while EVP_CTRL_GCM_SET_TAG (in reality,
-     * OpenSSL copy its content to the context), so we can make
-     * aad read-only in this function and all its wrappers.
-     */
-    unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
-    memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
-    EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_SET_TAG, GCM_AUTH_TAG_LEN, &dummy_tag);
-    EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_SET_TAG, GCM_AUTH_TAG_LEN, &dummy_tag);
-
-    debug_print(srtp_mod_aes_gcm_double, "setting aad (outer): %s",
-                srtp_octet_string_hex_string(aad, aad_len));
-
-    rv = EVP_Cipher(c->outer_ctx, NULL, aad, aad_len);
-    if (rv != aad_len) {
-        return (srtp_err_status_algo_fail);
-    }
-
+    /* Provide the proper AAD to the inner and outer contexts */
     if (c->do_inner) {
-        debug_print(srtp_mod_aes_gcm_double, "setting aad (inner): %s",
+        debug_print(srtp_mod_double, "inner aad: %s",
                     srtp_octet_string_hex_string(c->inner_aad, inner_aad_len));
-        /*
-         * Set the AAD for the inner transform based on the revised packet.
-         */
-        rv = EVP_Cipher(c->inner_ctx, NULL, c->inner_aad, inner_aad_len);
-        if (rv != inner_aad_len) {
-            return (srtp_err_status_algo_fail);
+        err = c->inner->type->set_aad(c->inner->state, c->inner_aad, inner_aad_len);
+        if (err != srtp_err_status_ok) {
+            return err;
         }
     }
 
-    return (srtp_err_status_ok);
+    debug_print(srtp_mod_double, "outer aad: %s",
+                srtp_octet_string_hex_string(aad, aad_len));
+    return c->outer->type->set_aad(c->outer->state, aad, aad_len);
 }
 
 /*
@@ -506,12 +405,10 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_set_aad (void *cv, const ui
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_encrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
+static srtp_err_status_t srtp_double_encrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
-    srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
-        return (srtp_err_status_bad_param);
-    }
+    srtp_err_status_t err;
+    srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
 
     /*
      * Encrypt the data with the inner transform, if applicable.  If
@@ -519,27 +416,27 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_encrypt (void *cv, unsigned
      * to be a GCM-protected payload+tag.  So we need to truncate it and
      * cache the tag.
      *
-     * XXX: Decreasing enc_len is probably going to cause problems.
+     * XXX: Decreasing enc_len seems likely to cause problems.
      */
     if (c->do_inner) {
-        EVP_Cipher(c->inner_ctx, buf, buf, *enc_len);
-
-        debug_print(srtp_mod_aes_gcm_double, "ciphertext (inner): %s",
-                    srtp_octet_string_hex_string(buf, *enc_len));
+        err = c->inner->type->encrypt(c->inner->state, buf, enc_len);
+        if (err != srtp_err_status_ok) {
+            return err;
+        }
     } else {
-        *enc_len -= GCM_AUTH_TAG_LEN;
-        memcpy(c->inner_tag, buf + *enc_len, GCM_AUTH_TAG_LEN);
+        *enc_len -= c->inner_tag_size;
+        memcpy(c->inner_tag, buf + *enc_len, c->inner_tag_size);
     }
 
-    /*
-     * Encrypt the data with the inner transform, if applicable
-     */
-    EVP_Cipher(c->outer_ctx, buf, buf, *enc_len);
-
-    debug_print(srtp_mod_aes_gcm_double, "ciphertext (outer): %s",
+    debug_print(srtp_mod_double, "inner ciphertext: %s",
                 srtp_octet_string_hex_string(buf, *enc_len));
 
-    return (srtp_err_status_ok);
+    err = c->outer->type->encrypt(c->outer->state, buf, enc_len);
+
+    debug_print(srtp_mod_double, "outer ciphertext: %s",
+                srtp_octet_string_hex_string(buf, *enc_len));
+
+    return err;
 }
 
 /*
@@ -553,32 +450,47 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_encrypt (void *cv, unsigned
  *	buf	data to encrypt
  *	len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_get_tag (void *cv, uint8_t *buf, uint32_t *len)
+static srtp_err_status_t srtp_double_get_tag (void *cv, uint8_t *buf, uint32_t *len)
 {
-    srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
+    srtp_err_status_t err;
+    uint32_t temp_len = 0;
+    srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
 
     /*
      * The first part of the tag is the tag from the inner transform,
      * encrypted with the outer transform.
      */
     if (c->do_inner) {
-        EVP_Cipher(c->inner_ctx, NULL, NULL, 0);
-        EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_GET_TAG, GCM_AUTH_TAG_LEN, buf);
+        err = c->inner->type->get_tag(c->inner->state, buf, &temp_len);
+        if (err != srtp_err_status_ok) {
+            return err;
+        }
     } else {
-        memcpy(buf, c->inner_tag, GCM_AUTH_TAG_LEN);
+        memcpy(buf, c->inner_tag, c->inner_tag_size);
+        temp_len = c->inner_tag_size;
     }
-    EVP_Cipher(c->outer_ctx, buf, buf, GCM_AUTH_TAG_LEN);
+
+    debug_print(srtp_mod_double, "inner tag: %s",
+                srtp_octet_string_hex_string(buf, c->inner_tag_size));
+
+    /* XXX: This assumes that encryption is size-preserving */
+    err = c->outer->type->encrypt(c->outer->state, buf, &temp_len);
+    if (err != srtp_err_status_ok) {
+        return err;
+    }
 
     /*
      * The second part of the tag is the tag from the outer tranform
      */
-    EVP_Cipher(c->outer_ctx, NULL, NULL, 0);
-    EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_GET_TAG, GCM_AUTH_TAG_LEN, buf + GCM_AUTH_TAG_LEN);
+    err = c->outer->type->get_tag(c->outer->state, buf + c->inner_tag_size, &temp_len);
+    if (err != srtp_err_status_ok) {
+        return err;
+    }
 
-    /*
-     * Increase encryption length by desired tag size
-     */
-    *len = c->tag_len;
+    *len = c->inner_tag_size + c->outer_tag_size;
+
+    debug_print(srtp_mod_double, "outer tag: %s",
+                srtp_octet_string_hex_string(buf, *len));
 
     return (srtp_err_status_ok);
 }
@@ -592,59 +504,119 @@ static srtp_err_status_t srtp_aes_gcm_double_openssl_get_tag (void *cv, uint8_t 
  *	buf	data to encrypt
  *	enc_len	length of encrypt buffer
  */
-static srtp_err_status_t srtp_aes_gcm_double_openssl_decrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
+static srtp_err_status_t srtp_double_decrypt (void *cv, unsigned char *buf, unsigned int *enc_len)
 {
-    srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
-        return (srtp_err_status_bad_param);
-    }
+    srtp_err_status_t err;
+    srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
+
+    debug_print(srtp_mod_double, "outer ciphertext: %s",
+                srtp_octet_string_hex_string(buf, *enc_len));
 
     /*
      * Undo the outer transform
      */
-
-    /*
-     * Set the tag before decrypting
-     */
-    EVP_CIPHER_CTX_ctrl(c->outer_ctx, EVP_CTRL_GCM_SET_TAG, GCM_AUTH_TAG_LEN,
-                        buf + (*enc_len - GCM_AUTH_TAG_LEN));
-    EVP_Cipher(c->outer_ctx, buf, buf, *enc_len - GCM_AUTH_TAG_LEN);
-
-    /*
-     * Check the tag
-     */
-    if (EVP_Cipher(c->outer_ctx, NULL, NULL, 0)) {
-        return (srtp_err_status_auth_fail);
+    err = c->outer->type->decrypt(c->outer->state, buf, enc_len);
+    if (err != srtp_err_status_ok) {
+        return err;
     }
+
+    debug_print(srtp_mod_double, "inner ciphertext: %s",
+                srtp_octet_string_hex_string(buf, *enc_len));
 
     /*
      * Undo the inner transform
      */
     if (c->do_inner) {
-        /*
-         * Set the tag before decrypting
-         */
-        EVP_CIPHER_CTX_ctrl(c->inner_ctx, EVP_CTRL_GCM_SET_TAG, GCM_AUTH_TAG_LEN,
-                            buf + (*enc_len - c->tag_len));
-        EVP_Cipher(c->inner_ctx, buf, buf, *enc_len - c->tag_len);
-
-        /*
-         * Check the tag
-         */
-        if (EVP_Cipher(c->inner_ctx, NULL, NULL, 0)) {
-            return (srtp_err_status_auth_fail);
-        }
-
-        /*
-         * Reduce the buffer size by the tag length since the tag
-         * is not part of the original payload
-         */
-        *enc_len -= c->tag_len;
+        err = c->inner->type->decrypt(c->inner->state, buf, enc_len);
     } else {
-        *enc_len -= GCM_AUTH_TAG_LEN;
+        err = (srtp_err_status_ok);
     }
 
-    return (srtp_err_status_ok);
+    debug_print(srtp_mod_double, "plaintext: %s",
+                srtp_octet_string_hex_string(buf, *enc_len));
+
+    return err;
+}
+
+/*
+ * Here we define the specific instantiation of the double framework with
+ * AES-GCM as the inner and outer transforms.  There are two variants, one with
+ * AES-128-GCM as the inner and outer transforms, and one with AES-256-GCM
+ * likewise.
+ */
+
+/*
+ * The auth tag for the doubled GCM mode consists of two
+ * full-size GCM auth tags.
+ */
+#define GCM_AUTH_TAG_LEN           16
+#define GCM_DOUBLE_AUTH_TAG_LEN    32
+
+/*
+ * The following are the global singleton isntances for the
+ * base 128-bit and 256-bit GCM ciphers.
+ */
+extern const srtp_cipher_type_t srtp_aes_gcm_128_openssl;
+extern const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
+
+/*
+ * The following are the global singleton instances for the
+ * 128-bit and 256-bit GCM ciphers.
+ */
+extern const srtp_cipher_type_t srtp_aes_gcm_128_double_openssl;
+extern const srtp_cipher_type_t srtp_aes_gcm_256_double_openssl;
+
+
+/*
+ * This function allocates a new instance of this crypto engine.
+ * The key_len parameter should be the length of two AES keys plus
+ * the 12-byte salt used by SRTP with AEAD modes:
+ *
+ *   * 44 = 16 + 16 + 12
+ *   * 76 = 32 + 32 + 12
+ */
+static srtp_err_status_t srtp_aes_gcm_double_openssl_alloc (srtp_cipher_t **c, int key_len, int tag_len)
+{
+    int base_key_size;
+    int base_tag_size;
+    const srtp_cipher_type_t *base_type;
+    const srtp_cipher_type_t *total_type;
+    int algorithm;
+
+    /*
+     * Verify the key_len is valid for one of: AES-128/256
+     */
+    if (key_len != SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT &&
+        key_len != SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT) {
+        return (srtp_err_status_bad_param);
+    }
+
+    if (tag_len != GCM_DOUBLE_AUTH_TAG_LEN) {
+        return (srtp_err_status_bad_param);
+    }
+
+    /* setup cipher attributes */
+    switch (key_len) {
+    case SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT:
+        base_key_size = SRTP_AES_128_KEY_LEN;
+        base_tag_size = GCM_AUTH_TAG_LEN;
+        base_type = &srtp_aes_gcm_128_openssl;
+        total_type = &srtp_aes_gcm_128_double_openssl;
+        algorithm = SRTP_AES_GCM_128_DOUBLE;
+        break;
+    case SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT:
+        base_key_size = SRTP_AES_256_KEY_LEN;
+        base_tag_size = GCM_AUTH_TAG_LEN;
+        base_type = &srtp_aes_gcm_256_openssl;
+        total_type = &srtp_aes_gcm_256_double_openssl;
+        algorithm = SRTP_AES_GCM_256_DOUBLE;
+        break;
+    }
+
+    return srtp_double_alloc(base_type, base_type,
+                             total_type, algorithm,
+                             base_key_size, base_key_size,
+                             base_tag_size, base_tag_size, c);
 }
 
 
@@ -939,13 +911,13 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_double_test_case_1 = {
  */
 const srtp_cipher_type_t srtp_aes_gcm_128_double_openssl = {
     srtp_aes_gcm_double_openssl_alloc,
-    srtp_aes_gcm_double_openssl_dealloc,
-    srtp_aes_gcm_double_openssl_context_init,
-    srtp_aes_gcm_double_openssl_set_aad,
-    srtp_aes_gcm_double_openssl_encrypt,
-    srtp_aes_gcm_double_openssl_decrypt,
-    srtp_aes_gcm_double_openssl_set_iv,
-    srtp_aes_gcm_double_openssl_get_tag,
+    srtp_double_dealloc,
+    srtp_double_context_init,
+    srtp_double_set_aad,
+    srtp_double_encrypt,
+    srtp_double_decrypt,
+    srtp_double_set_iv,
+    srtp_double_get_tag,
     srtp_aes_gcm_128_double_openssl_description,
     &srtp_aes_gcm_double_test_case_0,
     SRTP_AES_GCM_128_DOUBLE
@@ -956,13 +928,13 @@ const srtp_cipher_type_t srtp_aes_gcm_128_double_openssl = {
  */
 const srtp_cipher_type_t srtp_aes_gcm_256_double_openssl = {
     srtp_aes_gcm_double_openssl_alloc,
-    srtp_aes_gcm_double_openssl_dealloc,
-    srtp_aes_gcm_double_openssl_context_init,
-    srtp_aes_gcm_double_openssl_set_aad,
-    srtp_aes_gcm_double_openssl_encrypt,
-    srtp_aes_gcm_double_openssl_decrypt,
-    srtp_aes_gcm_double_openssl_set_iv,
-    srtp_aes_gcm_double_openssl_get_tag,
+    srtp_double_dealloc,
+    srtp_double_context_init,
+    srtp_double_set_aad,
+    srtp_double_encrypt,
+    srtp_double_decrypt,
+    srtp_double_set_iv,
+    srtp_double_get_tag,
     srtp_aes_gcm_256_double_openssl_description,
     &srtp_aes_gcm_double_test_case_1,
     SRTP_AES_GCM_256_DOUBLE

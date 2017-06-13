@@ -86,7 +86,7 @@ extern srtp_cipher_type_t srtp_aes_gcm_256_double_openssl;
 extern srtp_debug_module_t srtp_mod_aes_icm;
 #ifdef OPENSSL
 extern srtp_debug_module_t srtp_mod_aes_gcm;
-extern srtp_debug_module_t srtp_mod_aes_gcm_double;
+extern srtp_debug_module_t srtp_mod_double;
 #endif
 
 /*
@@ -194,7 +194,7 @@ srtp_err_status_t srtp_crypto_kernel_init ()
     if (status) {
         return status;
     }
-    status = srtp_crypto_kernel_load_debug_module(&srtp_mod_aes_gcm_double);
+    status = srtp_crypto_kernel_load_debug_module(&srtp_mod_double);
     if (status) {
         return status;
     }
