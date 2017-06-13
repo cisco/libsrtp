@@ -56,7 +56,7 @@
 #include "crypto_types.h"
 
 srtp_debug_module_t srtp_mod_double = {
-    1,               /* debugging is off by default */
+    0,               /* debugging is off by default */
     "double"         /* printable module name       */
 };
 
@@ -332,7 +332,7 @@ static srtp_err_status_t srtp_double_set_aad (void *cv, const uint8_t *aad, uint
             inner_aad_len += RTP_EXT_HDR_LEN + ext_hdr_len + E2EEL_LEN + e2e_ext_len;
             ext_data += ext_hdr_len + E2EEL_LEN + e2e_ext_len;
             if (aad_len < inner_aad_len) {
-                debug_print(srtp_mod_double, "bad e2e_ext_len %0d", e2e_ext_len);
+                debug_print(srtp_mod_double, "bad e2e_ext_len %d", e2e_ext_len);
                 return (srtp_err_status_bad_param);
             }
 
@@ -358,6 +358,7 @@ static srtp_err_status_t srtp_double_set_aad (void *cv, const uint8_t *aad, uint
             if (ext_len == 1) {
                 ohb_r_pt = *(ext_data + ext_hdr_len);
                 if ((ohb_r_pt & 0x80) != 0) {
+                    debug_print(srtp_mod_double, "bad R bit [short] %02x", ohb_r_pt);
                     return (srtp_err_status_bad_param);
                 }
 
@@ -368,6 +369,7 @@ static srtp_err_status_t srtp_double_set_aad (void *cv, const uint8_t *aad, uint
                 ohb_r_pt = *(ext_data + ext_hdr_len);
                 ohb_seq = *((uint16_t*) (ext_data + ext_hdr_len + 1));
                 if ((ohb_r_pt & 0x80) != 0) {
+                    debug_print(srtp_mod_double, "bad R bit [long] %02x", ohb_r_pt);
                     return (srtp_err_status_bad_param);
                 }
 
@@ -377,6 +379,7 @@ static srtp_err_status_t srtp_double_set_aad (void *cv, const uint8_t *aad, uint
                 debug_print(srtp_mod_double, "          PT=%02x", ohb_r_pt & 0x7f);
                 debug_print(srtp_mod_double, "          SEQ=%04x", ntohs(ohb_seq));
             } else {
+                debug_print(srtp_mod_double, "bad OHB length %02x", ext_len);
                 return (srtp_err_status_bad_param);
             }
         }
@@ -409,6 +412,9 @@ static srtp_err_status_t srtp_double_encrypt (void *cv, unsigned char *buf, unsi
 {
     srtp_err_status_t err;
     srtp_double_ctx_t *c = (srtp_double_ctx_t *)cv;
+
+    debug_print(srtp_mod_double, "plaintext: %s",
+                srtp_octet_string_hex_string(buf, *enc_len));
 
     /*
      * Encrypt the data with the inner transform, if applicable.  If
