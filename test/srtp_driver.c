@@ -1361,6 +1361,7 @@ srtcp_test (const srtp_policy_t *policy, int mki_index)
 
     err_check(srtp_create(&srtcp_rcvr, rcvr_policy));
 
+    printf("33 unprotecting rtcp, mki: %d\n", use_mki);
     err_check(srtp_test_call_unprotect_rtcp(srtcp_rcvr, hdr, &len, use_mki));
 
     debug_print(mod_driver, "after unprotection:\n%s",
