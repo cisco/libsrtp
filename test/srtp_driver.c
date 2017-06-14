@@ -1065,10 +1065,10 @@ srtp_test (const srtp_policy_t *policy, int extension_header, int mki_index)
 #endif
     err_check(srtp_test_call_protect(srtp_sender, hdr, &len, mki_index));
 
-    debug_print(mod_driver, "after protection:\n%s",
+    debug_print(mod_driver, "rtp: after protection:\n%s",
                 srtp_packet_to_string(hdr, len));
 #if PRINT_REFERENCE_PACKET
-    debug_print(mod_driver, "after protection:\n%s",
+    debug_print(mod_driver, "rtp: after protection:\n%s",
                 octet_string_hex_string((uint8_t*)hdr, len));
 #endif
 
@@ -1083,6 +1083,7 @@ srtp_test (const srtp_policy_t *policy, int extension_header, int mki_index)
      * data following the packet is different, then we know that the
      * protect function is overwriting the end of the packet.
      */
+    debug_print(mod_driver, "%s\n", "overwrite check");
     srtp_get_protect_trailer_length(srtp_sender, use_mki, mki_index, &tag_length);
     pkt_end = (uint8_t*)hdr + msg_len + tag_length;
     for (i = 0; i < 4; i++) {
@@ -1105,6 +1106,7 @@ srtp_test (const srtp_policy_t *policy, int extension_header, int mki_index)
      * reason, we skip this check if the plaintext is less than four
      * octets long.
      */
+    debug_print(mod_driver, "%s\n", "has chnaged check");
     if ((policy->rtp.sec_serv & sec_serv_conf) && (msg_len_octets >= 4)) {
         printf("testing that ciphertext is distinct from plaintext...");
         status = srtp_err_status_algo_fail;
@@ -1147,8 +1149,11 @@ srtp_test (const srtp_policy_t *policy, int extension_header, int mki_index)
         }
     }
 
+    debug_print(mod_driver, "%s\n", "create rx");
     err_check(srtp_create(&srtp_rcvr, rcvr_policy));
 
+    debug_print(mod_driver, "%s\n", "unprotect");
+    debug_print(mod_driver, "mki ? %d\n", use_mki);
     err_check(srtp_test_call_unprotect(srtp_rcvr, hdr, &len, use_mki));
 
     debug_print(mod_driver, "after unprotection:\n%s",
