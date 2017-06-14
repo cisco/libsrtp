@@ -18,6 +18,7 @@ matrix:
 before_script:
   - if [ $TRAVIS_OS_NAME == osx ]; then brew install ccache; fi
 script:
-  - ./configure $CONFIGURE_FLAGS
+  - ./configure $CONFIGURE_FLAGS --enable-log-stdout
   - make
+  - test/srtp_driver -v -d driver
   - make runtest
