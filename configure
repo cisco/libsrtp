@@ -5544,6 +5544,43 @@ See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether EVP_aes_128_gcm() is broken" >&5
+$as_echo_n "checking whether EVP_aes_128_gcm() is broken... " >&6; }
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+        #include <openssl/opensslv.h>
+
+int
+main ()
+{
+
+        #if (OPENSSL_VERSION_NUMBER >= 0x1000104fL)
+        return 0;
+        #else
+        #error Broken OpenSSL
+        return 1;
+        #endif
+
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "You need at least OpenSSL >= 1.0.1d .
+See \`config.log' for more details" "$LINENO" 5; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
 
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
