@@ -250,7 +250,7 @@ if test "$enable_openssl" = "yes"; then
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
 
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
-   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o crypto/cipher/double.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    AC_SUBST([USE_OPENSSL], [1])
 
