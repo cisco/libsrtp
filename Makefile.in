@@ -30,9 +30,9 @@ runtest: test
 	test/roc_driver$(EXE) -v >/dev/null
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
-	cd test; $(abspath $(srcdir))/test/rtpw_test.sh >/dev/null
+	cd test; $(abspath $(srcdir))/test/rtpw_test.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
 ifeq (1, $(USE_OPENSSL))
-	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh >/dev/null
+	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
 endif
 	@echo "libsrtp2 test applications passed."
 	$(MAKE) -C crypto runtest

@@ -8,7 +8,7 @@
  *
  * This app is a simple RTP application intended only for testing
  * libsrtp.  It reads one word at a time from words.txt (or
- * whatever file is specified as DICT_FILE), and sends one word out
+ * whatever file is specified as DICT_FILE or with -w), and sends one word out
  * each USEC_RATE microseconds.  Secure RTP protections can be
  * applied.  See the usage() function for more details.
  *
@@ -198,7 +198,7 @@ main (int argc, char *argv[]) {
 
   /* check args */
   while (1) {
-    c = getopt_s(argc, argv, "b:k:rsgt:ae:ld:");
+    c = getopt_s(argc, argv, "b:k:rsgt:ae:ld:w:");
     if (c == -1) {
       break;
     }
@@ -247,6 +247,9 @@ main (int argc, char *argv[]) {
     case 'l':
       do_list_mods = 1;
       break;
+	case 'w':
+		dictfile = optarg_s;
+		break;
     default:
       usage(argv[0]);
     }
@@ -640,8 +643,9 @@ usage(char *string) {
 	 "       -s act as rtp sender\n"
 	 "       -r act as rtp receiver\n"
 	 "       -l list debug modules\n"
-	 "       -d <debug> turn on debugging for module <debug>\n",
-	 string, string);
+	 "       -d <debug> turn on debugging for module <debug>\n"
+	 "       -w <wordsfile> use <wordsfile> for input, rather than %s\n",
+	 string, string, DICT_FILE);
   exit(1);
   
 }
