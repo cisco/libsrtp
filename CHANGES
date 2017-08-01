@@ -1,5 +1,21 @@
 Changelog
 
+1.6.0
+
+  PR #293  Fix incorrect result of rdb_increment on overflow
+
+  PR #290 - Cipher type cleanup for AES
+    When libSRTP is compiled with OpenSSL and the AES 256 ICM cipher is used
+    with RTCP an incorrect initialization vector is formed.
+    This change will break backwards compatibility with older versions (1.5,
+    2.0) of libSRTP when using the AES 256 ICM cipher with OpenSSL for RTCP.
+
+  PR #281 - Sequence number incorrectly masked for AES GCM IV
+    The initialization vector for AES GCM encryption was incorrectly formed on
+    little endian machines.
+    This change will break backwards compatibility with older versions (1.5,
+    2.0) of libSRTP when using the AES GCM cipher for RTCP.
+
 1.5.4
 
   Use BE byte ordering of RTCP trailer.
