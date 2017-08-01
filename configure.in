@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([libsrtp], [1.6.0], [https://github.com/cisco/libsrtp/issues])
+AC_INIT([libsrtp], [1.6.1-pre], [https://github.com/cisco/libsrtp/issues])
 
 dnl Must come before AC_PROG_CC
 if test -z "$CFLAGS"; then
