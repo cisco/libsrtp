@@ -54,7 +54,7 @@
 #include "datatypes.h"
 
 // clang-format off
-octet_weight[256] = {
+int octet_weight[256] = {
   0, 1, 1, 2, 1, 2, 2, 3,
   1, 2, 2, 3, 2, 3, 3, 4,
   1, 2, 2, 3, 2, 3, 3, 4,
