@@ -51,6 +51,7 @@ because it does its work behind the scenes.
   - [Supported Features](#supported-features)
   - [Implementation Notes](#implementation-notes)
 - [Installing and Building libSRTP](#installing-and-building-libsrtp)
+  - [Changing Build Configuration](#changing-build-configuration)
 - [Applications](#applications)
   - [Example Code](#example-code)
 - [Credits](#credits)
@@ -288,6 +289,26 @@ This package has been tested on the following platforms: Mac OS X
 (powerpc-apple-darwin1.4), Cygwin (i686-pc-cygwin), Solaris
 (sparc-sun-solaris2.6), RedHat Linux 7.1 and 9 (i686-pc-linux), and
 OpenBSD (sparc-unknown-openbsd2.7).
+
+--------------------------------------------------------------------------------
+
+<a name="changing-build-configuration"></a>
+## Changing Build Configuration
+
+To build the `./configure` script mentioned above, libSRTP relies on the
+[automake](https://www.gnu.org/software/automake/) toolchain.  Since
+`./configure` is built from `configure.in` by automake, if you make changes in
+how `./configure` works (e.g., to add a new library dependency), you will need
+to rebuild `./configure` and commit the updated version.  In addition to
+automake itself, you will need to have the `pkgconfig` tools installed as well.
+
+For example, on macOS:
+
+```
+brew install automake pkgconfig
+# Edit configure.in
+autoremake -ivf
+```
 
 --------------------------------------------------------------------------------
 
