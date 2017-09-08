@@ -57,6 +57,8 @@ PenaltyBreakString: 1000
 PenaltyExcessCharacter: 1000
 PenaltyReturnTypeOnItsOwnLine: 9000
 
+Cpp11BracedListStyle: false
+
 PointerAlignment: Right
 
 ReflowComments:  true
