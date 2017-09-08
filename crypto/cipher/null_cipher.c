@@ -134,7 +134,8 @@ static const srtp_cipher_test_case_t srtp_null_cipher_test_0 = {
     NULL,      /* ciphertext               */
     0,         /* */
     NULL,      /* */
-    0,    NULL /* pointer to next testcase */
+    0,         /* */
+    NULL       /* pointer to next testcase */
 };
 
 /*
