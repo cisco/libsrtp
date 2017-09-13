@@ -280,7 +280,7 @@ static void srtp_aes_icm_advance(srtp_aes_icm_ctx_t *c)
     }
 }
 
-/*e
+/*
  * icm_encrypt deals with the following cases:
  *
  * bytes_to_encr < bytes_in_buffer
