@@ -177,7 +177,7 @@ srtp_err_status_t srtp_auth_type_test(const srtp_auth_type_t *at,
 }
 
 /*
- * auth_type_self_test(at) performs srtp_auth_type_test on at's internal
+ * srtp_auth_type_self_test(at) performs srtp_auth_type_test on at's internal
  * list of test data.
  */
 
