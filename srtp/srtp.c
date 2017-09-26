@@ -2903,6 +2903,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
     switch (policy->ssrc.type) {
     case (ssrc_any_outbound):
         if (session->stream_template) {
+            srtp_crypto_free(tmp);
             return srtp_err_status_bad_param;
         }
         session->stream_template = tmp;
@@ -2910,6 +2911,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
         break;
     case (ssrc_any_inbound):
         if (session->stream_template) {
+            srtp_crypto_free(tmp);
             return srtp_err_status_bad_param;
         }
         session->stream_template = tmp;
