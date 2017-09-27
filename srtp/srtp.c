@@ -513,6 +513,7 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     str = (srtp_stream_ctx_t *)srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
     if (str == NULL)
         return srtp_err_status_alloc_fail;
+    memset(str, 0x0, sizeof(srtp_stream_ctx_t));
     *str_ptr = str;
 
     str->num_master_keys = stream_template->num_master_keys;
@@ -520,10 +521,12 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
         sizeof(srtp_session_keys_t) * str->num_master_keys);
 
     if (str->session_keys == NULL) {
-        srtp_crypto_free(*str_ptr);
+        srtp_stream_free(*str_ptr);
         *str_ptr = NULL;
         return srtp_err_status_alloc_fail;
     }
+    memset(str->session_keys, 0x0, sizeof(srtp_session_keys_t) *
+                                   str->num_master_keys);
 
     for (i = 0; i < stream_template->num_master_keys; i++) {
         session_keys = &str->session_keys[i];
@@ -545,6 +548,8 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
                 srtp_crypto_alloc(template_session_keys->mki_size);
 
             if (session_keys->mki_id == NULL) {
+                srtp_stream_free(*str_ptr);
+                *str_ptr = NULL;
                 return srtp_err_status_init_fail;
             }
             memset(session_keys->mki_id, 0x0, session_keys->mki_size);
@@ -561,7 +566,7 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
         status = srtp_key_limit_clone(template_session_keys->limit,
                                       &session_keys->limit);
         if (status) {
-            srtp_crypto_free(*str_ptr);
+            srtp_stream_free(*str_ptr);
             *str_ptr = NULL;
             return status;
         }
@@ -571,7 +576,7 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     status = srtp_rdbx_init(
         &str->rtp_rdbx, srtp_rdbx_get_window_size(&stream_template->rtp_rdbx));
     if (status) {
-        srtp_crypto_free(*str_ptr);
+        srtp_stream_free(*str_ptr);
         *str_ptr = NULL;
         return status;
     }
@@ -2888,7 +2893,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
     /* initialize stream  */
     status = srtp_stream_init(tmp, policy);
     if (status) {
-        srtp_crypto_free(tmp);
+        srtp_stream_free(tmp);
         return status;
     }
 
@@ -2903,7 +2908,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
     switch (policy->ssrc.type) {
     case (ssrc_any_outbound):
         if (session->stream_template) {
-            srtp_crypto_free(tmp);
+            srtp_stream_free(tmp);
             return srtp_err_status_bad_param;
         }
         session->stream_template = tmp;
@@ -2911,7 +2916,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
         break;
     case (ssrc_any_inbound):
         if (session->stream_template) {
-            srtp_crypto_free(tmp);
+            srtp_stream_free(tmp);
             return srtp_err_status_bad_param;
         }
         session->stream_template = tmp;
@@ -2923,7 +2928,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
         break;
     case (ssrc_undefined):
     default:
-        srtp_crypto_free(tmp);
+        srtp_stream_free(tmp);
         return srtp_err_status_bad_param;
     }
 
