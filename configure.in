@@ -249,6 +249,26 @@ if test "$enable_openssl" = "yes"; then
    AC_SEARCH_LIBS([EVP_aes_128_gcm], [crypto],
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
 
+   AC_MSG_CHECKING([whether EVP_aes_128_gcm() is broken])
+   AC_COMPILE_IFELSE(
+     [AC_LANG_PROGRAM(
+       [
+        #include <openssl/opensslv.h>
+       ],
+       [
+        #if (OPENSSL_VERSION_NUMBER >= 0x1000104fL)
+        return 0;
+        #else
+        #error Broken OpenSSL
+        return 1;
+        #endif
+       ]
+     )],
+     [AC_MSG_RESULT([no])],
+     [AC_MSG_RESULT([yes])
+      AC_MSG_FAILURE([You need at least OpenSSL >= 1.0.1d .])]
+   )
+
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
