@@ -131,7 +131,6 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc(srtp_cipher_t **c,
     if (*c == NULL) {
         return srtp_err_status_alloc_fail;
     }
-    memset(*c, 0x0, sizeof(srtp_cipher_t));
 
     icm = (srtp_aes_icm_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_icm_ctx_t));
     if (icm == NULL) {
@@ -139,7 +138,6 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc(srtp_cipher_t **c,
         *c = NULL;
         return srtp_err_status_alloc_fail;
     }
-    memset(icm, 0x0, sizeof(srtp_aes_icm_ctx_t));
 
     icm->ctx = EVP_CIPHER_CTX_new();
     if (icm->ctx == NULL) {

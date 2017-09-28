@@ -215,7 +215,6 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     if (str == NULL)
         return srtp_err_status_alloc_fail;
 
-    memset(str, 0, sizeof(srtp_stream_ctx_t));
     *str_ptr = str;
 
     /*
@@ -235,9 +234,6 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
         srtp_stream_free(str);
         return srtp_err_status_alloc_fail;
     }
-
-    memset(str->session_keys, 0,
-           sizeof(srtp_session_keys_t) * str->num_master_keys);
 
     for (i = 0; i < str->num_master_keys; i++) {
         session_keys = &str->session_keys[i];
@@ -513,7 +509,6 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     str = (srtp_stream_ctx_t *)srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
     if (str == NULL)
         return srtp_err_status_alloc_fail;
-    memset(str, 0x0, sizeof(srtp_stream_ctx_t));
     *str_ptr = str;
 
     str->num_master_keys = stream_template->num_master_keys;
@@ -525,8 +520,6 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
         *str_ptr = NULL;
         return srtp_err_status_alloc_fail;
     }
-    memset(str->session_keys, 0x0,
-           sizeof(srtp_session_keys_t) * str->num_master_keys);
 
     for (i = 0; i < stream_template->num_master_keys; i++) {
         session_keys = &str->session_keys[i];
@@ -552,7 +545,6 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
                 *str_ptr = NULL;
                 return srtp_err_status_init_fail;
             }
-            memset(session_keys->mki_id, 0x0, session_keys->mki_size);
             memcpy(session_keys->mki_id, template_session_keys->mki_id,
                    session_keys->mki_size);
         }
@@ -949,7 +941,6 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         if (session_keys->mki_id == NULL) {
             return srtp_err_status_init_fail;
         }
-        memset(session_keys->mki_id, 0x0, master_key->mki_size);
         memcpy(session_keys->mki_id, master_key->mki_id, master_key->mki_size);
     } else {
         session_keys->mki_id = NULL;

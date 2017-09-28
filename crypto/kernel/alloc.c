@@ -71,7 +71,7 @@ void *srtp_crypto_alloc(size_t size)
 {
     void *ptr;
 
-    ptr = malloc(size);
+    ptr = calloc(1, size);
 
     if (ptr) {
         debug_print(mod_alloc, "(location: %p) allocated", ptr);

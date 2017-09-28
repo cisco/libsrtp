@@ -49,7 +49,6 @@
 
 #include <stdio.h>  /* for printf() */
 #include <stdlib.h> /* for rand() */
-#include <string.h> /* for memset() */
 #include "getopt_s.h"
 #include "cipher.h"
 #ifdef OPENSSL
@@ -542,7 +541,6 @@ uint64_t cipher_array_bits_per_second(srtp_cipher_t *cipher_array[],
     enc_buf = srtp_crypto_alloc(octets_in_buffer + 17);
     if (enc_buf == NULL)
         return 0; /* indicate bad parameters by returning null */
-    memset(enc_buf, 0, octets_in_buffer);
 
     /* time repeated trials */
     v128_set_to_zero(&nonce);

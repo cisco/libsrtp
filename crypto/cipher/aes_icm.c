@@ -118,14 +118,12 @@ static srtp_err_status_t srtp_aes_icm_alloc(srtp_cipher_t **c,
     if (*c == NULL) {
         return srtp_err_status_alloc_fail;
     }
-    memset(*c, 0x0, sizeof(srtp_cipher_t));
 
     icm = (srtp_aes_icm_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_icm_ctx_t));
     if (icm == NULL) {
         srtp_crypto_free(*c);
         return srtp_err_status_alloc_fail;
     }
-    memset(icm, 0x0, sizeof(srtp_aes_icm_ctx_t));
 
     /* set pointers */
     (*c)->state = icm;

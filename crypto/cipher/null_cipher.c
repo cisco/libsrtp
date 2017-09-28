@@ -71,7 +71,6 @@ static srtp_err_status_t srtp_null_cipher_alloc(srtp_cipher_t **c,
     if (*c == NULL) {
         return srtp_err_status_alloc_fail;
     }
-    memset(*c, 0x0, sizeof(srtp_cipher_t));
 
     /* set pointers */
     (*c)->algorithm = SRTP_NULL_CIPHER;

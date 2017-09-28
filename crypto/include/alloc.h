@@ -51,8 +51,22 @@
 extern "C" {
 #endif
 
+/*
+ * srtp_crypto_alloc
+ *
+ * Allocates a block of memory  of given size. The memory will be
+ * initialized to zero's. Free the memory with a call to srtp_crypto_free.
+ *
+ * returns pointer to memory on success or else NULL
+ */
 void *srtp_crypto_alloc(size_t size);
 
+/*
+ * srtp_crypto_free
+ *
+ * Frees the block of memory  ptr previously  allocated with
+ * srtp_crypto_alloc
+ */
 void srtp_crypto_free(void *ptr);
 
 #ifdef __cplusplus
