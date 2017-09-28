@@ -47,8 +47,9 @@
 
  Example usage (with first NIST FIPS 197 test case):
 
-[sh]$ test/aes_calc 000102030405060708090a0b0c0d0e0f
-00112233445566778899aabbccddeeff -v
+ [sh]$ test/aes_calc 000102030405060708090a0b0c0d0e0f \
+       00112233445566778899aabbccddeeff -v
+
  plaintext:      00112233445566778899aabbccddeeff
  key:            000102030405060708090a0b0c0d0e0f
  ciphertext:     69c4e0d86a7b0430d8cdb78070b4c55a
