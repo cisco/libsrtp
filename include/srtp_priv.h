@@ -91,11 +91,11 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
  * by deriving all of the needed keys for all the master keys using the KDF and
  * the keys from k.
  */
-srtp_err_status_t
-srtp_steam_init_all_master_keys(srtp_stream_ctx_t *srtp,
-                                unsigned char *key,
-                                srtp_master_key_t **keys,
-                                const unsigned int max_master_keys);
+srtp_err_status_t srtp_steam_init_all_master_keys(
+    srtp_stream_ctx_t *srtp,
+    unsigned char *key,
+    srtp_master_key_t **keys,
+    const unsigned int max_master_keys);
 
 /*
  * srtp_stream_init(s, p) initializes the srtp_stream_t s to
