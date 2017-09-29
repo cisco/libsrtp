@@ -1205,9 +1205,9 @@ typedef enum {
  *     - srtp_err_status_bad_param  the profile is not supported
  *
  */
-srtp_err_status_t
-srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
-                                            srtp_profile_t profile);
+srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
+    srtp_crypto_policy_t *policy,
+    srtp_profile_t profile);
 
 /**
  * @brief srtp_crypto_policy_set_from_profile_for_rtcp() sets a crypto policy
@@ -1232,9 +1232,9 @@ srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
  *     - srtp_err_status_bad_param  the profile is not supported
  *
  */
-srtp_err_status_t
-srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy,
-                                             srtp_profile_t profile);
+srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(
+    srtp_crypto_policy_t *policy,
+    srtp_profile_t profile);
 
 /**
  * @brief returns the master key length for a given SRTP profile
@@ -1322,8 +1322,9 @@ void srtp_append_salt_to_key(unsigned char *key,
  *    - [other]                  if there was a failure in
  *                               the cryptographic mechanisms.
  */
-srtp_err_status_t
-srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len);
+srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
+                                    void *rtcp_hdr,
+                                    int *pkt_octet_len);
 
 /**
  * @brief srtp_protect_rtcp_mki() is the Secure RTCP sender-side packet
@@ -1414,8 +1415,9 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
  *    - [other]  if there has been an error in the cryptographic mechanisms.
  *
  */
-srtp_err_status_t
-srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len);
+srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
+                                      void *srtcp_hdr,
+                                      int *pkt_octet_len);
 
 /**
  * @brief srtp_unprotect_rtcp() is the Secure RTCP receiver-side packet
@@ -1722,8 +1724,9 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
  * stream found
  *
  */
-srtp_err_status_t
-srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc);
+srtp_err_status_t srtp_set_stream_roc(srtp_t session,
+                                      uint32_t ssrc,
+                                      uint32_t roc);
 
 /**
  * @brief srtp_get_stream_roc(session, ssrc, roc)
@@ -1734,8 +1737,9 @@ srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc);
  * stream found
  *
  */
-srtp_err_status_t
-srtp_get_stream_roc(srtp_t session, uint32_t ssrc, uint32_t *roc);
+srtp_err_status_t srtp_get_stream_roc(srtp_t session,
+                                      uint32_t ssrc,
+                                      uint32_t *roc);
 
 /**
  * @}
