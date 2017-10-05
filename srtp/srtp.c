@@ -525,8 +525,8 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
         *str_ptr = NULL;
         return srtp_err_status_alloc_fail;
     }
-    memset(str->session_keys, 0x0, sizeof(srtp_session_keys_t) *
-                                   str->num_master_keys);
+    memset(str->session_keys, 0x0,
+           sizeof(srtp_session_keys_t) * str->num_master_keys);
 
     for (i = 0; i < stream_template->num_master_keys; i++) {
         session_keys = &str->session_keys[i];
@@ -649,8 +649,10 @@ typedef struct {
     const EVP_CIPHER *evp;
 } srtp_kdf_t;
 
-static srtp_err_status_t
-srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t *key, int key_len, int salt_len)
+static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
+                                       const uint8_t *key,
+                                       int key_len,
+                                       int salt_len)
 {
     memset(kdf, 0x0, sizeof(srtp_kdf_t));
 
@@ -725,8 +727,9 @@ typedef struct {
     srtp_cipher_t *cipher; /* cipher used for key derivation  */
 } srtp_kdf_t;
 
-static srtp_err_status_t
-srtp_kdf_init(srtp_kdf_t *kdf, const uint8_t *key, int key_len)
+static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
+                                       const uint8_t *key,
+                                       int key_len)
 {
     srtp_cipher_type_id_t cipher_id;
     switch (key_len) {
@@ -846,10 +849,10 @@ unsigned int srtp_validate_policy_master_keys(const srtp_policy_t *policy)
     return 1;
 }
 
-srtp_session_keys_t *
-srtp_get_session_keys_with_mki_index(srtp_stream_ctx_t *stream,
-                                     unsigned int use_mki,
-                                     unsigned int mki_index)
+srtp_session_keys_t *srtp_get_session_keys_with_mki_index(
+    srtp_stream_ctx_t *stream,
+    unsigned int use_mki,
+    unsigned int mki_index)
 {
     if (use_mki) {
         if (mki_index < stream->num_master_keys) {
@@ -878,11 +881,11 @@ unsigned int srtp_inject_mki(uint8_t *mki_tag_location,
     return mki_size;
 }
 
-srtp_err_status_t
-srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp,
-                                 unsigned char *key,
-                                 srtp_master_key_t **keys,
-                                 const unsigned int max_master_keys)
+srtp_err_status_t srtp_stream_init_all_master_keys(
+    srtp_stream_ctx_t *srtp,
+    unsigned char *key,
+    srtp_master_key_t **keys,
+    const unsigned int max_master_keys)
 {
     int i = 0;
     srtp_err_status_t status = srtp_err_status_ok;
@@ -1425,10 +1428,10 @@ static int srtp_protect_extension_header(srtp_stream_ctx_t *stream, int id)
 /*
  * extensions header encryption RFC 6904
  */
-static srtp_err_status_t
-srtp_process_header_encryption(srtp_stream_ctx_t *stream,
-                               srtp_hdr_xtnd_t *xtn_hdr,
-                               srtp_session_keys_t *session_keys)
+static srtp_err_status_t srtp_process_header_encryption(
+    srtp_stream_ctx_t *stream,
+    srtp_hdr_xtnd_t *xtn_hdr,
+    srtp_session_keys_t *session_keys)
 {
     srtp_err_status_t status;
     uint8_t keystream[257]; /* Maximum 2 bytes header + 255 bytes data. */
@@ -2082,8 +2085,9 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_protect(srtp_ctx_t *ctx, void *rtp_hdr, int *pkt_octet_len)
+srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
+                               void *rtp_hdr,
+                               int *pkt_octet_len)
 {
     return srtp_protect_mki(ctx, rtp_hdr, pkt_octet_len, 0, 0);
 }
@@ -2407,8 +2411,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_unprotect(srtp_ctx_t *ctx, void *srtp_hdr, int *pkt_octet_len)
+srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
+                                 void *srtp_hdr,
+                                 int *pkt_octet_len)
 {
     return srtp_unprotect_mki(ctx, srtp_hdr, pkt_octet_len, 0);
 }
@@ -3489,11 +3494,11 @@ void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p)
  *          if seq_num is invalid
  *
  */
-static srtp_err_status_t
-srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys,
-                        v128_t *iv,
-                        uint32_t seq_num,
-                        srtcp_hdr_t *hdr)
+static srtp_err_status_t srtp_calc_aead_iv_srtcp(
+    srtp_session_keys_t *session_keys,
+    v128_t *iv,
+    uint32_t seq_num,
+    srtcp_hdr_t *hdr)
 {
     v128_t in;
     v128_t salt;
@@ -3534,13 +3539,13 @@ srtp_calc_aead_iv_srtcp(srtp_session_keys_t *session_keys,
  * This code handles AEAD ciphers for outgoing RTCP.  We currently support
  * AES-GCM mode with 128 or 256 bit keys.
  */
-static srtp_err_status_t
-srtp_protect_rtcp_aead(srtp_t ctx,
-                       srtp_stream_ctx_t *stream,
-                       void *rtcp_hdr,
-                       unsigned int *pkt_octet_len,
-                       srtp_session_keys_t *session_keys,
-                       unsigned int use_mki)
+static srtp_err_status_t srtp_protect_rtcp_aead(
+    srtp_t ctx,
+    srtp_stream_ctx_t *stream,
+    void *rtcp_hdr,
+    unsigned int *pkt_octet_len,
+    srtp_session_keys_t *session_keys,
+    unsigned int use_mki)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t *)rtcp_hdr;
     uint32_t *enc_start;            /* pointer to start of encrypted portion  */
@@ -3705,13 +3710,13 @@ srtp_protect_rtcp_aead(srtp_t ctx,
  * at the end of the packet stream and is automatically checked by GCM
  * when decrypting the payload.
  */
-static srtp_err_status_t
-srtp_unprotect_rtcp_aead(srtp_t ctx,
-                         srtp_stream_ctx_t *stream,
-                         void *srtcp_hdr,
-                         unsigned int *pkt_octet_len,
-                         srtp_session_keys_t *session_keys,
-                         unsigned int use_mki)
+static srtp_err_status_t srtp_unprotect_rtcp_aead(
+    srtp_t ctx,
+    srtp_stream_ctx_t *stream,
+    void *srtcp_hdr,
+    unsigned int *pkt_octet_len,
+    srtp_session_keys_t *session_keys,
+    unsigned int use_mki)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t *)srtcp_hdr;
     uint32_t *enc_start;            /* pointer to start of encrypted portion  */
@@ -3898,8 +3903,9 @@ srtp_unprotect_rtcp_aead(srtp_t ctx,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_protect_rtcp(srtp_t ctx, void *rtcp_hdr, int *pkt_octet_len)
+srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
+                                    void *rtcp_hdr,
+                                    int *pkt_octet_len)
 {
     return srtp_protect_rtcp_mki(ctx, rtcp_hdr, pkt_octet_len, 0, 0);
 }
@@ -4126,8 +4132,9 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_unprotect_rtcp(srtp_t ctx, void *srtcp_hdr, int *pkt_octet_len)
+srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
+                                      void *srtcp_hdr,
+                                      int *pkt_octet_len)
 {
     return srtp_unprotect_rtcp_mki(ctx, srtcp_hdr, pkt_octet_len, 0);
 }
@@ -4461,9 +4468,9 @@ void *srtp_get_user_data(srtp_t ctx)
  * dtls keying for srtp
  */
 
-srtp_err_status_t
-srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
-                                            srtp_profile_t profile)
+srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
+    srtp_crypto_policy_t *policy,
+    srtp_profile_t profile)
 {
     /* set SRTP policy from the SRTP profile in the key set */
     switch (profile) {
@@ -4493,9 +4500,9 @@ srtp_crypto_policy_set_from_profile_for_rtp(srtp_crypto_policy_t *policy,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_crypto_policy_set_from_profile_for_rtcp(srtp_crypto_policy_t *policy,
-                                             srtp_profile_t profile)
+srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(
+    srtp_crypto_policy_t *policy,
+    srtp_profile_t profile)
 {
     /* set SRTP policy from the SRTP profile in the key set */
     switch (profile) {
@@ -4728,8 +4735,9 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc)
+srtp_err_status_t srtp_set_stream_roc(srtp_t session,
+                                      uint32_t ssrc,
+                                      uint32_t roc)
 {
     srtp_stream_t stream;
 
@@ -4742,8 +4750,9 @@ srtp_set_stream_roc(srtp_t session, uint32_t ssrc, uint32_t roc)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t
-srtp_get_stream_roc(srtp_t session, uint32_t ssrc, uint32_t *roc)
+srtp_err_status_t srtp_get_stream_roc(srtp_t session,
+                                      uint32_t ssrc,
+                                      uint32_t *roc)
 {
     srtp_stream_t stream;
 

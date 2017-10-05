@@ -125,17 +125,17 @@ static srtp_err_status_t srtp_null_cipher_encrypt(void *cv,
 static const char srtp_null_cipher_description[] = "null cipher";
 
 static const srtp_cipher_test_case_t srtp_null_cipher_test_0 = {
-    0,         /* octets in key            */
-    NULL,      /* key                      */
-    0,         /* packet index             */
-    0,         /* octets in plaintext      */
-    NULL,      /* plaintext                */
-    0,         /* octets in plaintext      */
-    NULL,      /* ciphertext               */
-    0,         /* */
-    NULL,      /* */
-    0,         /* */
-    NULL       /* pointer to next testcase */
+    0,    /* octets in key            */
+    NULL, /* key                      */
+    0,    /* packet index             */
+    0,    /* octets in plaintext      */
+    NULL, /* plaintext                */
+    0,    /* octets in plaintext      */
+    NULL, /* ciphertext               */
+    0,    /* */
+    NULL, /* */
+    0,    /* */
+    NULL  /* pointer to next testcase */
 };
 
 /*
