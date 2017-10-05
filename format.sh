@@ -5,7 +5,7 @@
 # run clang-format on each .c & .h file
 
 if [ -z "${CLANG_FORMAT}" ]; then
-    CLANG_FORMAT=clang-format-3.9
+    CLANG_FORMAT=clang-format
 fi
 
 a=`git ls-files | grep "\.h$\|\.c$"`
