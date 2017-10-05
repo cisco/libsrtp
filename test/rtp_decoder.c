@@ -4,18 +4,19 @@
  * decoder structures and functions for SRTP pcap decoder
  *
  * Example:
- * $ wget --no-check-certificate
- * https://raw.githubusercontent.com/gteissier/srtp-decrypt/master/marseillaise-srtp.pcap
- * $ ./test/rtp_decoder -a -t 10 -e 128 -b
- * aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz \
- *    < ~/marseillaise-srtp.pcap | text2pcap -t "%M:%S." -u 10000,10000 - - >
- * ./marseillaise-rtp.pcap
+ * $ wget --no-check-certificate \
+ *     https://raw.githubusercontent.com/gteissier/srtp-decrypt/master/marseillaise-srtp.pcap
+ * $ ./test/rtp_decoder -a -t 10 -e 128 -b \
+ *     aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz \
+ *         < ~/marseillaise-srtp.pcap \
+ *         | text2pcap -t "%M:%S." -u 10000,10000 - - \
+ *         > ./marseillaise-rtp.pcap
  *
  * There is also a different way of setting up key size and tag size
  * based upon RFC 4568 crypto suite specification, i.e.:
  *
- * $ ./test/rtp_decoder -s AES_CM_128_HMAC_SHA1_80 -b
- * aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz ...
+ * $ ./test/rtp_decoder -s AES_CM_128_HMAC_SHA1_80 -b \
+ *     aSBrbm93IGFsbCB5b3VyIGxpdHRsZSBzZWNyZXRz ...
  *
  * Audio can be extracted using extractaudio utility from the RTPproxy
  * package:
