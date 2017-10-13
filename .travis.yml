@@ -1,30 +1,70 @@
 dist: trusty
 sudo: false
 language: c
-cache: ccache
-osx_image: xcode8.2
-addons:
-  apt:
-    packages:
-      - clang-format-3.9
-compiler:
-  - clang
-  - gcc
-os:
-  - linux
-  - osx
-env:
-  - CONFIGURE_FLAGS=
-  - CONFIGURE_FLAGS=--enable-openssl
+
 matrix:
-  exclude:
+  include:
+
+    # default linux build with gcc
+    - os: linux
+      env:
+        - TEST="linux gcc"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+          - gcc-6
+      script:
+        - ./configure
+        - make
+        - make runtest
+
+    # linux build with openssl and gcc
+    - os: linux
+      env:
+        - TEST="linux gcc (openssl)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+      script:
+        - ./configure --enable-openssl
+        - make
+        - make runtest
+
+    # linux build with openssl and clang
+    - os: linux
+      env:
+        - TEST="linux clang (openssl)"
+      addons:
+        apt:
+          packages:
+            - clang
+      script:
+        - CC=clang ./configure --enable-openssl
+        - make
+        - make runtest
+
+    # default osx build with xcode (clang)
     - os: osx
-      env: CONFIGURE_FLAGS=--enable-openssl
-before_script:
-  - if [ $TRAVIS_OS_NAME == osx ]; then brew update; fi
-  - if [ $TRAVIS_OS_NAME == osx ]; then brew install ccache; fi
-  - if [ $TRAVIS_OS_NAME == linux ]; then ./format.sh -d; fi
-script:
-  - ./configure $CONFIGURE_FLAGS
-  - make
-  - make runtest
+      env:
+        - TEST="osx XCode 8.2"
+      osx_image: xcode8.2
+      script:
+        - ./configure
+        - make
+        - make runtest
+
+    # code format check
+    - os: linux
+      env:
+        - TEST="clang-format"
+      addons:
+        apt:
+          packages:
+            - clang-format-3.9
+      script:
+        - ./format.sh -d
