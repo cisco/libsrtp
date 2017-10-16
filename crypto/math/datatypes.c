@@ -335,7 +335,6 @@ int bitvector_alloc(bitvector_t *v, unsigned long length)
     else {
         v->word = (uint32_t *)srtp_crypto_alloc(l);
         if (v->word == NULL) {
-            v->word = NULL;
             v->length = 0;
             return -1;
         }
