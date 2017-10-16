@@ -2902,6 +2902,13 @@ srtp_err_status_t srtp_test_protect_trailer_length()
         return srtp_err_status_fail;
 #endif // OPENSSL
 
+    srtp_dealloc(srtp_send);
+    srtp_dealloc(srtp_send_mki);
+#ifdef OPENSSL
+    srtp_dealloc(srtp_send_aes_gcm);
+    srtp_dealloc(srtp_send_aes_gcm_mki);
+#endif
+
     return srtp_err_status_ok;
 }
 
@@ -2952,6 +2959,13 @@ srtp_err_status_t srtp_test_protect_rtcp_trailer_length()
     if (length != 24)
         return srtp_err_status_fail;
 #endif // OPENSSL
+
+    srtp_dealloc(srtp_send);
+    srtp_dealloc(srtp_send_mki);
+#ifdef OPENSSL
+    srtp_dealloc(srtp_send_aes_gcm);
+    srtp_dealloc(srtp_send_aes_gcm_mki);
+#endif
 
     return srtp_err_status_ok;
 }
