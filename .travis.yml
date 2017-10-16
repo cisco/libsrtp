@@ -68,3 +68,19 @@ matrix:
             - clang-format-3.9
       script:
         - ./format.sh -d
+
+    # valgrind
+    - os: linux
+      env:
+        - TEST="valgrind (openssl)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - valgrind
+      script:
+        - ./configure --enable-openssl
+        - make
+        - make runtest-valgrind
