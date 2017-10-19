@@ -2,6 +2,10 @@ dist: trusty
 sudo: false
 language: c
 
+env:
+  global:
+    - secure: "YJSSinoWNfMicNYCdxsnlgZc9AIi1yKkgJTmKk41zRI23r8c5Z339Zl1p/boxOxD+YLCQshBYR00ckJXT9R8wQy0WhpWdA3YJYAMWjnVkbBMBNf3VEQSIvHwV8kLDBMPBikhks7b4ACPG3UYLsQrxUJFfJz4Grn7z8tbUedv1Gk="
+
 matrix:
   include:
 
@@ -109,3 +113,20 @@ matrix:
         - test/srtp_driver -v
         - file test/test_srtp
         - test/test_srtp
+
+    # coverity scan
+    - os: linux
+      env:
+        - TEST="Coverity Scan"
+      addons:
+        coverity_scan:
+          project:
+            name: "cisco-libSRTP"
+            description: "Build submitted via Travis CI"
+            version: 2
+          notification_email: pabuhler@cisco.com
+          build_command_prepend: "./configure"
+          build_command: "make"
+          branch_pattern: master
+      script:
+        - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
