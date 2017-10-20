@@ -176,7 +176,7 @@ test/rtpw$(EXE): test/rtpw.c test/rtp.c test/util.c test/getopt_s.c \
 ifeq (1, $(HAVE_PCAP))
 test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/util.c test/getopt_s.c \
 		crypto/math/datatypes.c
-	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) $(LDFLAGS) -o $@ $^ -lpcap $(LIBS) $(SRTPLIB)
 endif
 
 crypto/test/aes_calc$(EXE): crypto/test/aes_calc.c test/util.c
