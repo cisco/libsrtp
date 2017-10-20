@@ -456,8 +456,8 @@ srtp_err_status_t cipher_array_alloc_init(srtp_cipher_t ***ca,
     int klen_pad = ((klen + 15) >> 4) << 4;
 
     /* allocate array of pointers to ciphers */
-    cipher_array =
-        (srtp_cipher_t **)malloc(sizeof(srtp_cipher_t *) * num_ciphers);
+    cipher_array = (srtp_cipher_t **)srtp_crypto_alloc(sizeof(srtp_cipher_t *) *
+                                                       num_ciphers);
     if (cipher_array == NULL)
         return srtp_err_status_alloc_fail;
 
@@ -467,7 +467,7 @@ srtp_err_status_t cipher_array_alloc_init(srtp_cipher_t ***ca,
     /* allocate key */
     key = srtp_crypto_alloc(klen_pad);
     if (key == NULL) {
-        free(cipher_array);
+        srtp_crypto_free(cipher_array);
         return srtp_err_status_alloc_fail;
     }
 
@@ -509,7 +509,7 @@ srtp_err_status_t cipher_array_delete(srtp_cipher_t *cipher_array[],
         srtp_cipher_dealloc(cipher_array[i]);
     }
 
-    free(cipher_array);
+    srtp_crypto_free(cipher_array);
 
     return srtp_err_status_ok;
 }
@@ -562,7 +562,7 @@ uint64_t cipher_array_bits_per_second(srtp_cipher_t *cipher_array[],
     }
     timer = clock() - timer;
 
-    free(enc_buf);
+    srtp_crypto_free(enc_buf);
 
     if (timer == 0) {
         /* Too fast! */
