@@ -57,9 +57,6 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
-/* Define to 1 if you have the `pcap' library (-lpcap) */
-#undef HAVE_PCAP
-
 /* Define to 1 if you have the `sigaction' function. */
 #undef HAVE_SIGACTION
 
