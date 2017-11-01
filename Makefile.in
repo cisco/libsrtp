@@ -55,6 +55,7 @@ LIBS	= @LIBS@
 LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 SRTPLIB	= -lsrtp2
+PCAP_LIB = @PCAP_LIB@
 
 AR      = @AR@
 RANLIB	= @RANLIB@
@@ -176,7 +177,7 @@ test/rtpw$(EXE): test/rtpw.c test/rtp.c test/util.c test/getopt_s.c \
 ifeq (1, $(HAVE_PCAP))
 test/rtp_decoder$(EXE): test/rtp_decoder.c test/rtp.c test/util.c test/getopt_s.c \
 		crypto/math/datatypes.c
-	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(PCAP_LIB) $(LIBS) $(SRTPLIB)
 endif
 
 crypto/test/aes_calc$(EXE): crypto/test/aes_calc.c test/util.c

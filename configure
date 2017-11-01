@@ -623,6 +623,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+PCAP_LIB
 HAVE_PCAP
 HMAC_OBJS
 AES_ICM_OBJS
@@ -5636,6 +5637,7 @@ fi
 
 
 
+PCAP_LIB=""
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_create in -lpcap" >&5
 $as_echo_n "checking for pcap_create in -lpcap... " >&6; }
 if ${ac_cv_lib_pcap_pcap_create+:} false; then :
@@ -5673,7 +5675,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pcap_pcap_create" >&5
 $as_echo "$ac_cv_lib_pcap_pcap_create" >&6; }
 if test "x$ac_cv_lib_pcap_pcap_create" = xyes; then :
-  LIBS="-lpcap $LIBS"
+  PCAP_LIB="-lpcap"
 
 $as_echo "#define HAVE_PCAP 1" >>confdefs.h
 
@@ -5719,13 +5721,14 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_wpcap_pcap_create" >&5
 $as_echo "$ac_cv_lib_wpcap_pcap_create" >&6; }
 if test "x$ac_cv_lib_wpcap_pcap_create" = xyes; then :
-  LIBS="-lwpcap $LIBS"
+  PCAP_LIB="-lwpcap"
 
 $as_echo "#define HAVE_PCAP 1" >>confdefs.h
 
    HAVE_PCAP=1
 
 fi
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to redirect logging to stdout" >&5

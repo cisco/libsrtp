@@ -272,16 +272,18 @@ AC_SUBST([AES_ICM_OBJS])
 AC_SUBST([HMAC_OBJS])
 
 dnl Checking for PCAP
+PCAP_LIB=""
 AC_CHECK_LIB([pcap], [pcap_create],
-  [LIBS="-lpcap $LIBS"
+  [PCAP_LIB="-lpcap"
    AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `pcap' library (-lpcap)])
    AC_SUBST([HAVE_PCAP], [1])])
    
 AC_CHECK_LIB([wpcap], [pcap_create],
-  [LIBS="-lwpcap $LIBS"
+  [PCAP_LIB="-lwpcap"
    AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `winpcap' library (-lwpcap)])
    AC_SUBST([HAVE_PCAP], [1])])
-
+AC_SUBST([PCAP_LIB])
+   
 AC_MSG_CHECKING([whether to redirect logging to stdout])
 AC_ARG_ENABLE([log-stdout],
   [AS_HELP_STRING([--enable-log-stdout], [redirecting logging to stdout])],
