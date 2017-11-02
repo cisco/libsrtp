@@ -821,7 +821,7 @@ double srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy)
     int i;
     clock_t timer;
     int num_trials = 100000;
-    int len;
+    int input_len, len;
     uint32_t ssrc;
     srtp_err_status_t status;
 
@@ -846,12 +846,13 @@ double srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy)
     /*
      * create a test packet
      */
-    mesg = srtp_create_test_packet(msg_len_octets, ssrc, &len);
+    mesg = srtp_create_test_packet(msg_len_octets, ssrc, &input_len);
     if (mesg == NULL) {
         return 0.0; /* indicate failure by returning zero */
     }
     timer = clock();
     for (i = 0; i < num_trials; i++) {
+        len = input_len;
         /* srtp protect message */
         status = srtp_protect(srtp, mesg, &len);
         if (status) {
