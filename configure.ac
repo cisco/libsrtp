@@ -272,6 +272,7 @@ AC_SUBST([AES_ICM_OBJS])
 AC_SUBST([HMAC_OBJS])
 
 dnl Checking for PCAP
+
 PCAP_LIB=""
 AC_CHECK_LIB([pcap], [pcap_create],
   [PCAP_LIB="-lpcap"
