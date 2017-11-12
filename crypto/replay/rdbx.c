@@ -130,13 +130,8 @@ int32_t srtp_index_guess(const srtp_xtd_seq_num_t *local,
     uint32_t local_roc = (uint32_t)(*local >> 16);
     uint16_t local_seq = (uint16_t)*local;
 #endif
-#ifdef NO_64BIT_MATH
-    uint32_t guess_roc = ((high32(*guess) << 16) | (low32(*guess) >> 16));
-    uint16_t guess_seq = (uint16_t)(low32(*guess));
-#else
-    uint32_t guess_roc = (uint32_t)(*guess >> 16);
-    uint16_t guess_seq = (uint16_t)*guess;
-#endif
+    uint32_t guess_roc;
+    uint16_t guess_seq;
     int32_t difference;
 
     if (local_seq < seq_num_median) {
