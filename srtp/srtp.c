@@ -821,7 +821,7 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher,
 
 unsigned int srtp_validate_policy_master_keys(const srtp_policy_t *policy)
 {
-    int i = 0;
+    unsigned long i = 0;
 
     if (policy->key == NULL) {
         if (policy->num_master_keys <= 0)
@@ -879,7 +879,7 @@ srtp_err_status_t srtp_stream_init_all_master_keys(
     srtp_master_key_t **keys,
     const unsigned int max_master_keys)
 {
-    int i = 0;
+    unsigned int i = 0;
     srtp_err_status_t status = srtp_err_status_ok;
     srtp_master_key_t single_master_key;
 
@@ -4156,12 +4156,15 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
 
     /* we assume the hdr is 32-bit aligned to start */
 
+    if (pkt_octet_len < 0)
+      return srtp_err_status_bad_param;
+
     /*
      * check that the length value is sane; we'll check again once we
      * know the tag length, but we at least want to know that it is
      * a positive value
      */
-    if (*pkt_octet_len < octets_in_rtcp_header + sizeof(srtcp_trailer_t))
+    if ((unsigned int)(*pkt_octet_len) < octets_in_rtcp_header + sizeof(srtcp_trailer_t))
         return srtp_err_status_bad_param;
 
     /*

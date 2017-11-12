@@ -347,7 +347,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
         *b++ ^= c->keystream_buffer.v32[3];
         buf = (uint8_t *)b;
 #else
-        if ((((unsigned long)buf) & 0x03) != 0) {
+        if ((((uintptr_t)buf) & 0x03) != 0) {
             *buf++ ^= c->keystream_buffer.v8[0];
             *buf++ ^= c->keystream_buffer.v8[1];
             *buf++ ^= c->keystream_buffer.v8[2];

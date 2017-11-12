@@ -100,7 +100,7 @@ srtp_err_status_t srtp_rdb_check(const srtp_rdb_t *rdb, uint32_t p_index)
  */
 srtp_err_status_t srtp_rdb_add_index(srtp_rdb_t *rdb, uint32_t p_index)
 {
-    int delta;
+    unsigned int delta;
 
     /* here we *assume* that p_index > rdb->window_start */
 

@@ -135,9 +135,9 @@ typedef struct srtp_cipher_test_case_t {
     int key_length_octets;        /* octets in key            */
     const uint8_t *key;           /* key                      */
     uint8_t *idx;                 /* packet index             */
-    int plaintext_length_octets;  /* octets in plaintext      */
+    unsigned int plaintext_length_octets;  /* octets in plaintext      */
     const uint8_t *plaintext;     /* plaintext                */
-    int ciphertext_length_octets; /* octets in plaintext      */
+    unsigned int ciphertext_length_octets; /* octets in plaintext      */
     const uint8_t *ciphertext;    /* ciphertext               */
     int aad_length_octets;        /* octets in AAD            */
     const uint8_t *aad;           /* AAD                      */
