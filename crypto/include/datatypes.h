@@ -274,7 +274,7 @@ void octet_string_set_to_zero(void *s, size_t len);
 #include <byteswap.h>
 #define be32_to_cpu(x) bswap_32((x))
 #define be64_to_cpu(x) bswap_64((x))
-#else
+#else /* WORDS_BIGENDIAN */
 
 #if defined(__GNUC__) && defined(HAVE_X86)
 /* Fall back. */
@@ -289,7 +289,7 @@ static inline uint32_t be32_to_cpu(uint32_t v)
 #include <netinet/in.h>
 #elif defined HAVE_WINSOCK2_H
 #include <winsock2.h>
-#endif
+#endif /* HAVE_NETINET_IN_H */
 #define be32_to_cpu(x) ntohl((x))
 #endif /* HAVE_X86 */
 
@@ -298,17 +298,17 @@ static inline uint64_t be64_to_cpu(uint64_t v)
 #ifdef NO_64BIT_MATH
     /* use the make64 functions to do 64-bit math */
     v = make64(htonl(low32(v)), htonl(high32(v)));
-#else
+#else /* NO_64BIT_MATH */
     /* use the native 64-bit math */
     v = (uint64_t)((be32_to_cpu((uint32_t)(v >> 32))) |
                    (((uint64_t)be32_to_cpu((uint32_t)v)) << 32));
-#endif
+#endif /* NO_64BIT_MATH */
     return v;
 }
 
-#endif
-
 #endif /* WORDS_BIGENDIAN */
+
+#endif /* HAVE_CONFIG_H */
 
 /*
  * functions manipulating bitvector_t
