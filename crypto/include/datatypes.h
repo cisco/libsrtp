@@ -298,7 +298,7 @@ static inline uint64_t be64_to_cpu(uint64_t v)
 #ifdef NO_64BIT_MATH
     /* use the make64 functions to do 64-bit math */
     v = make64(htonl(low32(v)), htonl(high32(v)));
-#else /* NO_64BIT_MATH */
+#else  /* NO_64BIT_MATH */
     /* use the native 64-bit math */
     v = (uint64_t)((be32_to_cpu((uint32_t)(v >> 32))) |
                    (((uint64_t)be32_to_cpu((uint32_t)v)) << 32));
