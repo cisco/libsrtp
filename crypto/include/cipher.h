@@ -132,16 +132,16 @@ typedef srtp_err_status_t (*srtp_cipher_get_tag_func_t)(void *state,
  * (see the srtp_cipher_type_self_test() function below)
  */
 typedef struct srtp_cipher_test_case_t {
-    int key_length_octets;        /* octets in key            */
-    const uint8_t *key;           /* key                      */
-    uint8_t *idx;                 /* packet index             */
+    int key_length_octets;                 /* octets in key            */
+    const uint8_t *key;                    /* key                      */
+    uint8_t *idx;                          /* packet index             */
     unsigned int plaintext_length_octets;  /* octets in plaintext      */
-    const uint8_t *plaintext;     /* plaintext                */
+    const uint8_t *plaintext;              /* plaintext                */
     unsigned int ciphertext_length_octets; /* octets in plaintext      */
-    const uint8_t *ciphertext;    /* ciphertext               */
-    int aad_length_octets;        /* octets in AAD            */
-    const uint8_t *aad;           /* AAD                      */
-    int tag_length_octets;        /* Length of AEAD tag       */
+    const uint8_t *ciphertext;             /* ciphertext               */
+    int aad_length_octets;                 /* octets in AAD            */
+    const uint8_t *aad;                    /* AAD                      */
+    int tag_length_octets;                 /* Length of AEAD tag       */
     const struct srtp_cipher_test_case_t
         *next_test_case; /* pointer to next testcase */
 } srtp_cipher_test_case_t;

@@ -4157,14 +4157,15 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     /* we assume the hdr is 32-bit aligned to start */
 
     if (pkt_octet_len < 0)
-      return srtp_err_status_bad_param;
+        return srtp_err_status_bad_param;
 
     /*
      * check that the length value is sane; we'll check again once we
      * know the tag length, but we at least want to know that it is
      * a positive value
      */
-    if ((unsigned int)(*pkt_octet_len) < octets_in_rtcp_header + sizeof(srtcp_trailer_t))
+    if ((unsigned int)(*pkt_octet_len) <
+        octets_in_rtcp_header + sizeof(srtcp_trailer_t))
         return srtp_err_status_bad_param;
 
     /*
