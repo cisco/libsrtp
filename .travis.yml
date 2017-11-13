@@ -20,7 +20,7 @@ matrix:
           packages:
           - gcc-6
       script:
-        - ./configure
+        - CC=gcc-6 ./configure
         - make
         - make runtest
 
@@ -35,7 +35,7 @@ matrix:
           packages:
             - gcc-6
       script:
-        - ./configure --enable-openssl
+        - CC=gcc-6 ./configure --enable-openssl
         - make
         - make runtest
 
@@ -85,7 +85,7 @@ matrix:
             - gcc-6
             - valgrind
       script:
-        - ./configure --enable-openssl
+        - CC=gcc-6 ./configure --enable-openssl
         - make
         - make runtest-valgrind
 
