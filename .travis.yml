@@ -20,7 +20,7 @@ matrix:
           packages:
           - gcc-6
       script:
-        - CC=gcc-6 ./configure
+        - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure
         - make
         - make runtest
 
@@ -35,7 +35,7 @@ matrix:
           packages:
             - gcc-6
       script:
-        - CC=gcc-6 ./configure --enable-openssl
+        - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
 
@@ -48,7 +48,7 @@ matrix:
           packages:
             - clang
       script:
-        - CC=clang ./configure --enable-openssl
+        - CC=clang EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
 
@@ -58,7 +58,7 @@ matrix:
         - TEST="osx XCode 8.2"
       osx_image: xcode8.2
       script:
-        - ./configure
+        - EXTRA_CFLAGS=-Werror ./configure
         - make
         - make runtest
 
