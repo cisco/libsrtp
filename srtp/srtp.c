@@ -4156,7 +4156,7 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
 
     /* we assume the hdr is 32-bit aligned to start */
 
-    if (pkt_octet_len < 0)
+    if (*pkt_octet_len < 0)
         return srtp_err_status_bad_param;
 
     /*

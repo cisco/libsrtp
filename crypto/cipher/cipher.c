@@ -330,7 +330,7 @@ srtp_err_status_t srtp_cipher_type_test(
             if (buffer[k] != test_case->ciphertext[k]) {
                 status = srtp_err_status_algo_fail;
                 debug_print(srtp_mod_cipher, "test case %d failed", case_num);
-                debug_print(srtp_mod_cipher, "(failure at byte %d)", k);
+                debug_print(srtp_mod_cipher, "(failure at byte %u)", k);
                 break;
             }
         }
@@ -418,7 +418,7 @@ srtp_err_status_t srtp_cipher_type_test(
             if (buffer[k] != test_case->plaintext[k]) {
                 status = srtp_err_status_algo_fail;
                 debug_print(srtp_mod_cipher, "test case %d failed", case_num);
-                debug_print(srtp_mod_cipher, "(failure at byte %d)", k);
+                debug_print(srtp_mod_cipher, "(failure at byte %u)", k);
             }
         }
         if (status) {
@@ -602,7 +602,7 @@ srtp_err_status_t srtp_cipher_type_test(
                 status = srtp_err_status_algo_fail;
                 debug_print(srtp_mod_cipher, "random test case %d failed",
                             case_num);
-                debug_print(srtp_mod_cipher, "(failure at byte %d)", k);
+                debug_print(srtp_mod_cipher, "(failure at byte %u)", k);
             }
         }
         if (status) {
