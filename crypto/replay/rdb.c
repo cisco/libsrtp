@@ -102,8 +102,8 @@ srtp_err_status_t srtp_rdb_add_index(srtp_rdb_t *rdb, uint32_t p_index)
 {
     unsigned int delta;
 
-    if (p_index <= rdb->window_start)
-      return srtp_err_status_replay_fail;
+    if (p_index < rdb->window_start)
+        return srtp_err_status_replay_fail;
 
     delta = (p_index - rdb->window_start);
     if (delta < rdb_bits_in_bitmask) {
