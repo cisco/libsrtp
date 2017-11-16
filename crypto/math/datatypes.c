@@ -53,7 +53,7 @@
 
 #include "datatypes.h"
 
-int octet_weight[256] = {
+static const int8_t octet_weight[256] = {
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4,
     2, 3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
     2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2, 2, 3, 2, 3, 3, 4,
@@ -69,9 +69,7 @@ int octet_weight[256] = {
 
 int octet_get_weight(uint8_t octet)
 {
-    extern int octet_weight[256];
-
-    return octet_weight[octet];
+    return (int)octet_weight[octet];
 }
 
 /*
