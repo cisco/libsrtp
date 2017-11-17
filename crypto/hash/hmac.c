@@ -48,6 +48,7 @@
 
 #include "hmac.h"
 #include "alloc.h"
+#include "cipher_types.h"
 
 /* the debug module for authentiation */
 
