@@ -70,9 +70,9 @@ extern srtp_debug_module_t mod_alloc;
  * cipher types that can be included in the kernel
  */
 
-extern srtp_cipher_type_t srtp_null_cipher;
-extern srtp_cipher_type_t srtp_aes_icm_128;
-extern srtp_cipher_type_t srtp_aes_icm_256;
+extern const srtp_cipher_type_t srtp_null_cipher;
+extern const srtp_cipher_type_t srtp_aes_icm_128;
+extern const srtp_cipher_type_t srtp_aes_icm_256;
 #ifdef OPENSSL
 extern srtp_cipher_type_t srtp_aes_icm_192;
 extern srtp_cipher_type_t srtp_aes_gcm_128_openssl;
@@ -89,8 +89,8 @@ extern srtp_debug_module_t srtp_mod_aes_gcm;
  * auth func types that can be included in the kernel
  */
 
-extern srtp_auth_type_t srtp_null_auth;
-extern srtp_auth_type_t srtp_hmac;
+extern const srtp_auth_type_t srtp_null_auth;
+extern const srtp_auth_type_t srtp_hmac;
 
 /* debug modules for auth types */
 extern srtp_debug_module_t srtp_mod_hmac;
