@@ -44,20 +44,20 @@
  * cipher types that can be included in the kernel
  */
 
-extern const srtp_cipher_type_t srtp_null_cipher;
-extern const srtp_cipher_type_t srtp_aes_icm_128;
-extern const srtp_cipher_type_t srtp_aes_icm_256;
+const srtp_cipher_type_t srtp_null_cipher;
+const srtp_cipher_type_t srtp_aes_icm_128;
+const srtp_cipher_type_t srtp_aes_icm_256;
 #ifdef OPENSSL
-extern const srtp_cipher_type_t srtp_aes_icm_192;
-extern const srtp_cipher_type_t srtp_aes_gcm_128_openssl;
-extern const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
+const srtp_cipher_type_t srtp_aes_icm_192;
+const srtp_cipher_type_t srtp_aes_gcm_128_openssl;
+const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
 
 /*
  * auth func types that can be included in the kernel
  */
 
-extern const srtp_auth_type_t srtp_null_auth;
-extern const srtp_auth_type_t srtp_hmac;
+const srtp_auth_type_t srtp_null_auth;
+const srtp_auth_type_t srtp_hmac;
 
 #endif
