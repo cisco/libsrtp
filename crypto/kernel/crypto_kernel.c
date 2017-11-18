@@ -58,7 +58,6 @@ srtp_debug_module_t srtp_mod_crypto_kernel = {
     "crypto kernel" /* printable name for module   */
 };
 
-
 /* crypto_kernel is a global variable, the only one of its datatype */
 
 srtp_crypto_kernel_t crypto_kernel = {
