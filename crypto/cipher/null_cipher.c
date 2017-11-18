@@ -54,10 +54,6 @@
 #include "alloc.h"
 #include "cipher_types.h"
 
-/* the null_cipher uses the cipher debug module  */
-
-extern srtp_debug_module_t srtp_mod_cipher;
-
 static srtp_err_status_t srtp_null_cipher_alloc(srtp_cipher_t **c,
                                                 int key_len,
                                                 int tlen)

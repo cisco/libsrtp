@@ -60,4 +60,22 @@ const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 const srtp_auth_type_t srtp_null_auth;
 const srtp_auth_type_t srtp_hmac;
 
+/*
+ * other generic debug modules that can be included in the kernel
+ */
+
+srtp_debug_module_t srtp_mod_auth;
+srtp_debug_module_t srtp_mod_cipher;
+srtp_debug_module_t mod_stat;
+srtp_debug_module_t mod_alloc;
+
+/* debug modules for cipher types */
+srtp_debug_module_t srtp_mod_aes_icm;
+#ifdef OPENSSL
+srtp_debug_module_t srtp_mod_aes_gcm;
+#endif
+
+/* debug modules for auth types */
+srtp_debug_module_t srtp_mod_hmac;
+
 #endif

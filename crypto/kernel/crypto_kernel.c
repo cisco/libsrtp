@@ -58,23 +58,6 @@ srtp_debug_module_t srtp_mod_crypto_kernel = {
     "crypto kernel" /* printable name for module   */
 };
 
-/*
- * other generic debug modules that can be included in the kernel
- */
-
-extern srtp_debug_module_t srtp_mod_auth;
-extern srtp_debug_module_t srtp_mod_cipher;
-extern srtp_debug_module_t mod_stat;
-extern srtp_debug_module_t mod_alloc;
-
-/* debug modules for cipher types */
-extern srtp_debug_module_t srtp_mod_aes_icm;
-#ifdef OPENSSL
-extern srtp_debug_module_t srtp_mod_aes_gcm;
-#endif
-
-/* debug modules for auth types */
-extern srtp_debug_module_t srtp_mod_hmac;
 
 /* crypto_kernel is a global variable, the only one of its datatype */
 
