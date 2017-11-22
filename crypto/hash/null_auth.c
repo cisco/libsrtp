@@ -51,10 +51,7 @@
 #include "null_auth.h"
 #include "err.h" /* for srtp_debug */
 #include "alloc.h"
-
-/* null_auth uses the auth debug module */
-
-extern srtp_debug_module_t srtp_mod_auth;
+#include "cipher_types.h"
 
 static srtp_err_status_t srtp_null_auth_alloc(srtp_auth_t **a,
                                               int key_len,

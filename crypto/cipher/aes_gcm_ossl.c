@@ -54,18 +54,12 @@
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "crypto_types.h"
+#include "cipher_types.h"
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
     0,        /* debugging is off by default */
     "aes gcm" /* printable module name       */
 };
-
-/*
- * The following are the global singleton instances for the
- * 128-bit and 256-bit GCM ciphers.
- */
-extern const srtp_cipher_type_t srtp_aes_gcm_128_openssl;
-extern const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 
 /*
  * For now we only support 8 and 16 octet tags.  The spec allows for

@@ -51,13 +51,12 @@
 
 #include "aes_icm.h"
 #include "alloc.h"
+#include "cipher_types.h"
 
 srtp_debug_module_t srtp_mod_aes_icm = {
     0,        /* debugging is off by default */
     "aes icm" /* printable module name       */
 };
-extern const srtp_cipher_type_t srtp_aes_icm_128;
-extern const srtp_cipher_type_t srtp_aes_icm_256;
 
 /*
  * integer counter mode works as follows:
