@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/cisco/libsrtp.svg?branch=master)](https://travis-ci.org/cisco/libsrtp)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/14274/badge.svg)](https://scan.coverity.com/projects/cisco-libsrtp)
+
 <a name="introduction-to-libsrtp"></a>
 # Introduction to libSRTP
 
