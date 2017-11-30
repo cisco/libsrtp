@@ -71,6 +71,10 @@ void *srtp_crypto_alloc(size_t size)
 {
     void *ptr;
 
+    if (!size) {
+        return NULL;
+    }
+
     ptr = calloc(1, size);
 
     if (ptr) {
