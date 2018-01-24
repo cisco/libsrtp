@@ -153,39 +153,41 @@ static void srtp_stream_free(srtp_stream_ctx_t *str)
     unsigned int i = 0;
     srtp_session_keys_t *session_keys = NULL;
 
-    for (i = 0; i < str->num_master_keys; i++) {
-        session_keys = &str->session_keys[i];
+    if (str->session_keys) {
+        for (i = 0; i < str->num_master_keys; i++) {
+            session_keys = &str->session_keys[i];
 
-        if (session_keys->rtp_xtn_hdr_cipher) {
-            srtp_cipher_dealloc(session_keys->rtp_xtn_hdr_cipher);
+            if (session_keys->rtp_xtn_hdr_cipher) {
+                srtp_cipher_dealloc(session_keys->rtp_xtn_hdr_cipher);
+            }
+
+            if (session_keys->rtcp_cipher) {
+                srtp_cipher_dealloc(session_keys->rtcp_cipher);
+            }
+
+            if (session_keys->rtcp_auth) {
+                srtp_auth_dealloc(session_keys->rtcp_auth);
+            }
+
+            if (session_keys->rtp_cipher) {
+                srtp_cipher_dealloc(session_keys->rtp_cipher);
+            }
+
+            if (session_keys->rtp_auth) {
+                srtp_auth_dealloc(session_keys->rtp_auth);
+            }
+
+            if (session_keys->mki_id) {
+                srtp_crypto_free(session_keys->mki_id);
+            }
+
+            if (session_keys->limit) {
+                srtp_crypto_free(session_keys->limit);
+            }
         }
 
-        if (session_keys->rtcp_cipher) {
-            srtp_cipher_dealloc(session_keys->rtcp_cipher);
-        }
-
-        if (session_keys->rtcp_auth) {
-            srtp_auth_dealloc(session_keys->rtcp_auth);
-        }
-
-        if (session_keys->rtp_cipher) {
-            srtp_cipher_dealloc(session_keys->rtp_cipher);
-        }
-
-        if (session_keys->rtp_auth) {
-            srtp_auth_dealloc(session_keys->rtp_auth);
-        }
-
-        if (session_keys->mki_id) {
-            srtp_crypto_free(session_keys->mki_id);
-        }
-
-        if (session_keys->limit) {
-            srtp_crypto_free(session_keys->limit);
-        }
+        srtp_crypto_free(str->session_keys);
     }
-
-    srtp_crypto_free(str->session_keys);
 
     if (str->enc_xtn_hdr) {
         srtp_crypto_free(str->enc_xtn_hdr);
@@ -4612,7 +4614,7 @@ srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
     }
 
     if (use_mki) {
-        if (mki_index > stream->num_master_keys)
+        if (mki_index >= stream->num_master_keys)
             return srtp_err_status_bad_mki;
 
         *length += stream->session_keys[mki_index].mki_size;
@@ -4650,7 +4652,7 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
     }
 
     if (use_mki) {
-        if (mki_index > stream->num_master_keys)
+        if (mki_index >= stream->num_master_keys)
             return srtp_err_status_bad_mki;
 
         *length += stream->session_keys[mki_index].mki_size;
