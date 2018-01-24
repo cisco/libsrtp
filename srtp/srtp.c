@@ -4614,7 +4614,7 @@ srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
     }
 
     if (use_mki) {
-        if (mki_index > stream->num_master_keys)
+        if (mki_index >= stream->num_master_keys)
             return srtp_err_status_bad_mki;
 
         *length += stream->session_keys[mki_index].mki_size;
@@ -4652,7 +4652,7 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
     }
 
     if (use_mki) {
-        if (mki_index > stream->num_master_keys)
+        if (mki_index >= stream->num_master_keys)
             return srtp_err_status_bad_mki;
 
         *length += stream->session_keys[mki_index].mki_size;
