@@ -67,6 +67,7 @@ srtp_debug_module_t mod_alloc = {
 
 #if defined(HAVE_STDLIB_H)
 
+extern void *fuzz_calloc(size_t nmemb, size_t size);
 void *srtp_crypto_alloc(size_t size)
 {
     void *ptr;
@@ -75,7 +76,7 @@ void *srtp_crypto_alloc(size_t size)
         return NULL;
     }
 
-    ptr = calloc(1, size);
+    ptr = fuzz_calloc(1, size);
 
     if (ptr) {
         debug_print(mod_alloc, "(location: %p) allocated", ptr);
@@ -87,11 +88,12 @@ void *srtp_crypto_alloc(size_t size)
     return ptr;
 }
 
+extern void fuzz_free(void* ptr);
 void srtp_crypto_free(void *ptr)
 {
     debug_print(mod_alloc, "(location: %p) freed", ptr);
 
-    free(ptr);
+    fuzz_free(ptr);
 }
 
 #else /* we need to define our own memory allocation routines */

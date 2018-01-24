@@ -11,6 +11,7 @@ fi
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_CXX
 AC_ARG_VAR(
   [EXTRA_CFLAGS],
   [C compiler flags appended to the regular C compiler flags instead of overriding them])
@@ -200,6 +201,46 @@ if test "$enable_debug_logging" = "yes"; then
 fi
 AC_MSG_RESULT([$enable_debug_logging])
 
+AC_MSG_CHECKING([whether to build with AddressSanitizer enabled])
+AC_ARG_ENABLE([asan],
+  [AS_HELP_STRING([--enable-asan], [Enable building with AddressSanitizer enabled])],
+  [], enable_asan=no)
+if test "$enable_asan" = "yes"; then
+   AC_DEFINE([ENABLE_ASAN], [1], [Define to build with AddressSanitizer enabled.])
+   [CFLAGS="$CFLAGS -fsanitize=address"]
+fi
+AC_MSG_RESULT([$enable_asan])
+
+AC_MSG_CHECKING([whether to build with UndefinedBehaviorSanitizer enabled])
+AC_ARG_ENABLE([ubsan],
+  [AS_HELP_STRING([--enable-ubsan], [Enable building with UndefinedBehaviorSanitizer enabled])],
+  [], enable_ubsan=no)
+if test "$enable_ubsan" = "yes"; then
+   AC_DEFINE([ENABLE_UBSAN], [1], [Define to build with UndefinedBehaviorSanitizer enabled.])
+   [CFLAGS="$CFLAGS -fsanitize=undefined"]
+fi
+AC_MSG_RESULT([$enable_ubsan])
+
+AC_MSG_CHECKING([whether to build with MemorySanitizer enabled])
+AC_ARG_ENABLE([msan],
+  [AS_HELP_STRING([--enable-msan], [Enable building with MemorySanitizer enabled])],
+  [], enable_msan=no)
+if test "$enable_msan" = "yes"; then
+   AC_DEFINE([ENABLE_MSAN], [1], [Define to build with MemorySanitizer enabled.])
+   [CFLAGS="$CFLAGS -fsanitize=memory"]
+fi
+AC_MSG_RESULT([$enable_msan])
+
+AC_MSG_CHECKING([whether to build with code coverage instrumentation])
+AC_ARG_ENABLE([code-coverage],
+  [AS_HELP_STRING([--enable-code-coverage], [Enable building with code coverage instrumentation])],
+  [], enable_code_coverage=no)
+if test "$enable_code_coverage" = "yes"; then
+   AC_DEFINE([ENABLE_CODE_COVERAGE], [1], [Define to build with code coverage instrumentation.])
+   [CFLAGS="$CFLAGS -fsanitize-coverage=trace-pc-guard,indirect-calls,trace-cmp,trace-gep,trace-div,edge"]
+fi
+AC_MSG_RESULT([$enable_code_coverage])
+
 PKG_PROG_PKG_CONFIG
 AS_IF([test "x$PKG_CONFIG" != "x"], [PKG_CONFIG="$PKG_CONFIG --static"])
 
@@ -322,7 +363,7 @@ AS_IF([test "x$EXTRA_CFLAGS" != "x"],
 
 AC_CONFIG_HEADER([crypto/include/config.h:config_in.h])
 
-AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile libsrtp2.pc])
+AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile fuzzer/Makefile libsrtp2.pc])
 AC_OUTPUT
 
 # This is needed when building outside the source dir.
