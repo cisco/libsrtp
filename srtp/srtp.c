@@ -1604,7 +1604,8 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
     base_mki_start_location -= tag_len;
 
     for (i = 0; i < stream->num_master_keys; i++) {
-        if (stream->session_keys[i].mki_size != 0) {
+        if (stream->session_keys[i].mki_size != 0 &&
+            stream->session_keys[i].mki_size <= base_mki_start_location) {
             *mki_size = stream->session_keys[i].mki_size;
             mki_start_location = base_mki_start_location - *mki_size;
 
