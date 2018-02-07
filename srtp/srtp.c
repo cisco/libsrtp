@@ -800,9 +800,10 @@ srtp_session_keys_t *srtp_get_session_keys_with_mki_index(
     unsigned int mki_index)
 {
     if (use_mki) {
-        if (mki_index < stream->num_master_keys) {
-            return &stream->session_keys[mki_index];
+        if (mki_index >= stream->num_master_keys) {
+            return NULL;
         }
+        return &stream->session_keys[mki_index];
     }
 
     return &stream->session_keys[0];
@@ -2122,6 +2123,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
 
     session_keys =
         srtp_get_session_keys_with_mki_index(stream, use_mki, mki_index);
+
+    if (session_keys == NULL)
+        return srtp_err_status_bad_mki;
 
     /*
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
@@ -3926,6 +3930,9 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
 
     session_keys =
         srtp_get_session_keys_with_mki_index(stream, use_mki, mki_index);
+
+    if (session_keys == NULL)
+        return srtp_err_status_bad_mki;
 
     /*
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
