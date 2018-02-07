@@ -4540,42 +4540,85 @@ unsigned int srtp_profile_get_master_salt_length(srtp_profile_t profile)
     }
 }
 
+srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
+                                                    uint32_t is_rtp,
+                                                    uint32_t use_mki,
+                                                    uint32_t mki_index,
+                                                    uint32_t *length)
+{
+    *length = 0;
+
+    srtp_session_keys_t *session_key;
+
+    if (use_mki) {
+        if (mki_index >= stream->num_master_keys) {
+            return srtp_err_status_bad_mki;
+        }
+        session_key = &stream->session_keys[mki_index];
+
+        *length += session_key->mki_size;
+
+    } else {
+        session_key = &stream->session_keys[0];
+    }
+    if (is_rtp) {
+        *length += srtp_auth_get_tag_length(session_key->rtp_auth);
+    } else {
+        *length += srtp_auth_get_tag_length(session_key->rtcp_auth);
+        *length += sizeof(srtcp_trailer_t);
+    }
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t get_protect_trailer_length(srtp_t session,
+                                             uint32_t is_rtp,
+                                             uint32_t use_mki,
+                                             uint32_t mki_index,
+                                             uint32_t *length)
+{
+    srtp_stream_ctx_t *stream;
+
+    if (session == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (session->stream_template == NULL && session->stream_list == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    *length = 0;
+
+    stream = session->stream_template;
+
+    if (stream != NULL) {
+        stream_get_protect_trailer_length(stream, is_rtp, use_mki, mki_index,
+                                          length);
+    }
+
+    stream = session->stream_list;
+
+    while (stream != NULL) {
+        uint32_t temp_length;
+        if (stream_get_protect_trailer_length(stream, is_rtp, use_mki,
+                                              mki_index, &temp_length) ==
+            srtp_err_status_ok) {
+            if (temp_length > *length) {
+                *length = temp_length;
+            }
+        }
+        stream = stream->next;
+    }
+
+    return srtp_err_status_ok;
+}
+
 srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
                                                   uint32_t use_mki,
                                                   uint32_t mki_index,
                                                   uint32_t *length)
 {
-    srtp_stream_ctx_t *stream;
-
-    if (session == NULL)
-        return srtp_err_status_bad_param;
-
-    *length = 0;
-
-    /* Try obtaining stream from stream_list */
-    stream = session->stream_list;
-
-    if (stream == NULL) {
-        /* Try obtaining the template stream */
-        stream = session->stream_template;
-    }
-
-    if (stream == NULL) {
-        return srtp_err_status_bad_param;
-    }
-
-    if (use_mki) {
-        if (mki_index >= stream->num_master_keys)
-            return srtp_err_status_bad_mki;
-
-        *length += stream->session_keys[mki_index].mki_size;
-        *length +=
-            srtp_auth_get_tag_length(stream->session_keys[mki_index].rtp_auth);
-    } else {
-        *length += srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
-    }
-
-    return srtp_err_status_ok;
+    return get_protect_trailer_length(session, 1, use_mki, mki_index, length);
 }
 
 srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
@@ -4583,39 +4626,7 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
                                                        uint32_t mki_index,
                                                        uint32_t *length)
 {
-    srtp_stream_ctx_t *stream;
-
-    if (session == NULL)
-        return srtp_err_status_bad_param;
-
-    *length = 0;
-
-    /* Try obtaining stream from stream_list */
-    stream = session->stream_list;
-
-    if (stream == NULL) {
-        /* Try obtaining the template stream */
-        stream = session->stream_template;
-    }
-
-    if (stream == NULL) {
-        return srtp_err_status_bad_param;
-    }
-
-    if (use_mki) {
-        if (mki_index >= stream->num_master_keys)
-            return srtp_err_status_bad_mki;
-
-        *length += stream->session_keys[mki_index].mki_size;
-        *length +=
-            srtp_auth_get_tag_length(stream->session_keys[mki_index].rtcp_auth);
-    } else {
-        *length += srtp_auth_get_tag_length(stream->session_keys[0].rtcp_auth);
-    }
-
-    *length += sizeof(srtcp_trailer_t);
-
-    return srtp_err_status_ok;
+    return get_protect_trailer_length(session, 0, use_mki, mki_index, length);
 }
 
 /*
