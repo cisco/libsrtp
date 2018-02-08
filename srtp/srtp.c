@@ -164,7 +164,8 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
         for (i = 0; i < stream->num_master_keys; i++) {
             session_keys = &stream->session_keys[i];
 
-            if (stream_template) {
+            if (stream_template &&
+                stream->num_master_keys == stream_template->num_master_keys) {
                 template_session_keys = &stream_template->session_keys[i];
             } else {
                 template_session_keys = NULL;
