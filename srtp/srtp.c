@@ -191,6 +191,8 @@ static void srtp_stream_free(srtp_stream_ctx_t *str)
         srtp_crypto_free(str->enc_xtn_hdr);
     }
 
+    srtp_rdbx_dealloc(&str->rtp_rdbx);
+
     srtp_crypto_free(str);
 }
 
