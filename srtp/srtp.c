@@ -257,12 +257,6 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
                 srtp_crypto_free(session_keys->limit);
             }
         }
-    }
-
-    if (stream_template &&
-        stream->session_keys == stream_template->session_keys) {
-        /* do nothing */
-    } else {
         srtp_crypto_free(stream->session_keys);
     }
 
