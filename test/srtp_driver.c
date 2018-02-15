@@ -1077,8 +1077,8 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
      * data following the packet is different, then we know that the
      * protect function is overwriting the end of the packet.
      */
-    srtp_get_protect_trailer_length(srtp_sender, use_mki, mki_index,
-                                    &tag_length);
+    err_check(srtp_get_protect_trailer_length(srtp_sender, use_mki, mki_index,
+                                              &tag_length));
     pkt_end = (uint8_t *)hdr + msg_len + tag_length;
     for (i = 0; i < 4; i++) {
         if (pkt_end[i] != 0xff) {
