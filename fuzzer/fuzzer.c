@@ -13,7 +13,6 @@
 #include "testmem.h"
 
 /* Global variables */
-static bool g_debug_print = false; /* Can be enabled with --debug */
 static bool g_no_align = false; /* Can be enabled with --no_align */
 static bool g_post_init = false; /* Set to true once past initialization phase */
 static bool g_write_input = false;
@@ -178,117 +177,43 @@ void fuzz_free(void* ptr)
     }
 }
 
-static void fuzz_print_bytes(const char* variable, const uint8_t* data, size_t size)
-{
-    size_t i;
-    printf("const uint8_t %s [] = {", variable);
-    for (i = 0; i < size; i++) {
-        if ( i != 0 ) {
-            printf(", ");
-        }
-        printf("0x%02X", data[i]);
-    }
-    printf("};\n");
-}
-
-static void fuzz_print_ints(const char* variable, const int* data, size_t size)
-{
-    size_t i;
-    printf("const int %s [] = {", variable);
-    for (i = 0; i < size; i++) {
-        if ( i != 0 ) {
-            printf(", ");
-        }
-        printf("%d", data[i]);
-    }
-    printf("};\n");
-}
-
 static srtp_err_status_t fuzz_srtp_protect(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_protect(srtp_ctx, hdr, &len);\n");
-        printf("\t\t}\n");
-    }
     return srtp_protect(srtp_sender, hdr, len);
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_unprotect(srtp_ctx, hdr, &len);\n");
-        printf("\t\t}\n");
-    }
     return srtp_unprotect(srtp_sender, hdr, len);
 }
 
 static srtp_err_status_t fuzz_srtp_protect_rtcp(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_protect_rtcp(srtp_ctx, copy, &len);\n");
-        printf("\t\t}\n");
-    }
     return srtp_protect_rtcp(srtp_sender, hdr, len);
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect_rtcp(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_unprotect_rtcp(srtp_ctx, copy, &len);\n");
-        printf("\t\t}\n");
-    }
     return srtp_unprotect_rtcp(srtp_sender, hdr, len);
 }
 
 static srtp_err_status_t fuzz_srtp_protect_mki(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_protect_mki(srtp_ctx, copy, &len, %u, %u);\n", use_mki, mki);
-        printf("\t\t}\n");
-    }
     return srtp_protect_mki(srtp_sender, hdr, len, use_mki, mki);
 }
 
 static srtp_err_status_t fuzz_srtp_protect_rtcp_mki(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_protect_rtcp_mki(srtp_ctx, copy, &len, %u, %u);\n", use_mki, mki);
-        printf("\t\t}\n");
-    }
     return srtp_protect_rtcp_mki(srtp_sender, hdr, len, use_mki, mki);
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect_mki(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_unprotect_mki(srtp_ctx, copy, &len, %u);\n", use_mki);
-        printf("\t\t}\n");
-    }
     return srtp_unprotect_mki(srtp_sender, hdr, len, use_mki);
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect_rtcp_mki(srtp_t srtp_sender, void* hdr, int* len, uint8_t use_mki, unsigned int mki)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\tint len = %d;\n", *len);
-        printf("\t\tsrtp_unprotect_rtcp_mki(srtp_ctx, copy, &len, %u);\n", use_mki);
-        printf("\t\t}\n");
-    }
     return srtp_unprotect_rtcp_mki(srtp_sender, hdr, len, use_mki);
 }
 
@@ -296,33 +221,21 @@ static srtp_err_status_t fuzz_srtp_unprotect_rtcp_mki(srtp_t srtp_sender, void* 
 
 static srtp_err_status_t fuzz_srtp_get_protect_length(const srtp_t srtp_ctx, uint8_t use_mki, unsigned int mki, uint32_t* length)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\tsrtp_get_protect_trailer_length(srtp_ctx, 0, 0, &trailer_length);\n");
-    }
     return srtp_get_protect_trailer_length(srtp_ctx, 0, 0, length);
 }
 
 static srtp_err_status_t fuzz_srtp_get_protect_rtcp_length(const srtp_t srtp_ctx, uint8_t use_mki, unsigned int mki, uint32_t* length)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\tsrtp_get_protect_rtcp_trailer_length(srtp_ctx, 0, 0, &trailer_length);\n");
-    }
     return srtp_get_protect_rtcp_trailer_length(srtp_ctx, 0, 0, length);
 }
 
 static srtp_err_status_t fuzz_srtp_get_protect_mki_length(const srtp_t srtp_ctx, uint8_t use_mki, unsigned int mki, uint32_t* length)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\tsrtp_get_protect_trailer_length(srtp_ctx, %u, %u, &trailer_length);\n", use_mki, mki);
-    }
     return srtp_get_protect_trailer_length(srtp_ctx, use_mki, mki, length);
 }
 
 static srtp_err_status_t fuzz_srtp_get_protect_rtcp_mki_length(const srtp_t srtp_ctx, uint8_t use_mki, unsigned int mki, uint32_t* length)
 {
-    if ( g_debug_print == true ) {
-        printf("\t\tsrtp_get_protect_rtcp_trailer_length(srtp_ctx, %u, %u, &trailer_length);\n", use_mki, mki);
-    }
     return srtp_get_protect_rtcp_trailer_length(srtp_ctx, use_mki, mki, length);
 }
 
@@ -677,12 +590,6 @@ static uint8_t* run_srtp_func(const srtp_t srtp_ctx, const uint8_t** data, size_
     } params_2;
     int ret_size;
 
-    if ( g_debug_print == true ) {
-        printf("\t{\n");
-        printf("\t\tuint32_t trailer_length;\n");
-        printf("\t\tuint8_t* copy = NULL;\n");
-    }
-
     EXTRACT_IF(&params_1, *data, *size, sizeof(params_1));
     params_1.srtp_func %= sizeof(srtp_funcs) / sizeof(srtp_funcs[0]);
     params_1.use_mki %= 2;
@@ -710,25 +617,11 @@ static uint8_t* run_srtp_func(const srtp_t srtp_ctx, const uint8_t** data, size_
         }
 
         copy = fuzz_alloc_succeed(ret_size + alloc_size, false);
-
-        if ( g_debug_print == true ) {
-            printf("\t\tcopy = malloc(%d + trailer_length);\n", ret_size);
-        }
     } else {
-        if ( g_debug_print == true ) {
-            printf("\t\tcopy = malloc(%d);\n", ret_size);
-        }
         copy = fuzz_alloc_succeed(ret_size, false);
     }
 
     EXTRACT(copy, *data, *size, params_1.size);
-    if ( g_debug_print == true ) {
-        printf("\t\t{\n");
-        printf("\t\t\t");
-        fuzz_print_bytes("copycopy", copy, (size_t)params_1.size);
-        printf("\t\t\tmemcpy(copy, copycopy, %d);\n", params_1.size);
-        printf("\t\t}\n");
-    }
 
     if ( srtp_funcs[params_1.srtp_func].srtp_func(srtp_ctx, copy, &ret_size, params_1.use_mki, params_1.mki) != srtp_err_status_ok ) {
         fuzz_free(copy);
@@ -803,121 +696,6 @@ static void fuzz_write_input(const uint8_t* data, size_t size) {
 
     fclose(fp);
 }
-static size_t fuzz_print_policy_chain(const srtp_policy_t* policy_chain)
-{
-    size_t i = 1, j;
-    while ( policy_chain ) {
-        printf("\tsrtp_policy_t* policy_%zu = malloc(sizeof(srtp_policy_t));\n", i);
-
-        /* ssrc */
-        printf("\tpolicy_%zu->ssrc.type = %d;\n", i, policy_chain->ssrc.type);
-        printf("\tpolicy_%zu->ssrc.value = %u;\n", i, policy_chain->ssrc.value);
-
-        /* rtp */
-        printf("\tpolicy_%zu->rtp.cipher_type = %u;\n", i, policy_chain->rtp.cipher_type);
-        printf("\tpolicy_%zu->rtp.cipher_key_len = %d;\n", i, policy_chain->rtp.cipher_key_len);
-        printf("\tpolicy_%zu->rtp.auth_type = %u;\n", i, policy_chain->rtp.auth_type);
-        printf("\tpolicy_%zu->rtp.auth_key_len = %d;\n", i, policy_chain->rtp.auth_key_len);
-        printf("\tpolicy_%zu->rtp.auth_tag_len = %d;\n", i, policy_chain->rtp.auth_tag_len);
-        printf("\tpolicy_%zu->rtp.sec_serv = %d;\n", i, policy_chain->rtp.sec_serv);
-
-        /* rctp */
-        printf("\tpolicy_%zu->rtcp.cipher_type = %u;\n", i, policy_chain->rtcp.cipher_type);
-        printf("\tpolicy_%zu->rtcp.cipher_key_len = %d;\n", i, policy_chain->rtcp.cipher_key_len);
-        printf("\tpolicy_%zu->rtcp.auth_type = %u;\n", i, policy_chain->rtcp.auth_type);
-        printf("\tpolicy_%zu->rtcp.auth_key_len = %d;\n", i, policy_chain->rtcp.auth_key_len);
-        printf("\tpolicy_%zu->rtcp.auth_tag_len = %d;\n", i, policy_chain->rtcp.auth_tag_len);
-        printf("\tpolicy_%zu->rtcp.sec_serv = %d;\n", i, policy_chain->rtcp.sec_serv);
-
-        /* key */
-        printf("\tpolicy_%zu->num_master_keys = %zu;\n", i, policy_chain->num_master_keys);
-        if ( fuzz_is_special_pointer(policy_chain->key) == true || policy_chain->key == NULL ) {
-            printf("\tpolicy_%zu->key = (void*)0x%zX;\n", i, (size_t)policy_chain->key);
-        } else {
-            printf("\tpolicy_%zu->key = malloc(policy_%zu->rtp.cipher_key_len);\n", i, i);
-            printf("\t{\n");
-            printf("\t\t");
-            fuzz_print_bytes("key", policy_chain->key, policy_chain->rtp.cipher_key_len);
-            printf("\t\tmemcpy(policy_%zu->key, key, %d);\n", i, policy_chain->rtp.cipher_key_len);
-            printf("\t}\n");
-        }
-
-        /* keys */
-        if ( fuzz_is_special_pointer(policy_chain->keys) == true || policy_chain->keys == NULL ) {
-            printf("\tpolicy_%zu->keys = (void*)0x%zX;\n", i, (size_t)policy_chain->keys);
-        } else {
-            size_t j;
-            printf("\tpolicy_%zu->keys = malloc(%zu * sizeof(srtp_master_key_t*));\n", i, policy_chain->num_master_keys);
-            for (j = 0; j < policy_chain->num_master_keys; j++) {
-                printf("\tpolicy_%zu->keys[%zu] = malloc(sizeof(srtp_master_key_t));\n", i, j);
-                if ( fuzz_is_special_pointer(policy_chain->keys[j]->key) == true || policy_chain->keys[j]->key == NULL ) {
-                    printf("\tpolicy_%zu->keys[%zu]->key = (void*)0x%zX;\n", i, j, (size_t)policy_chain->keys[j]->key);
-                } else {
-                    printf("\tpolicy_%zu->keys[%zu]->key = malloc(policy_%zu->rtp.cipher_key_len);\n", i, j, i);
-                    printf("\t{\n");
-                    printf("\t\t");
-                    fuzz_print_bytes("key", policy_chain->keys[j]->key, policy_chain->rtp.cipher_key_len);
-                    printf("\t\tmemcpy(policy_%zu->keys[%zu]->key, key, policy_%zu->rtp.cipher_key_len);\n", i, j, i);
-                    printf("\t}\n");
-                }
-                if ( fuzz_is_special_pointer(policy_chain->keys[j]->mki_id) == true || policy_chain->keys[j]->mki_id == NULL ) {
-                    printf("\tpolicy_%zu->keys[%zu]->mki_id = (void*)0x%zX;\n", i, j, (size_t)policy_chain->keys[j]->mki_id);
-                } else {
-                    printf("\tpolicy_%zu->keys[%zu]->mki_id = malloc(%d);\n", i, j, policy_chain->keys[j]->mki_size);
-                    printf("\t{\n");
-                    printf("\t\t");
-                    fuzz_print_bytes("key", policy_chain->keys[j]->mki_id, policy_chain->keys[j]->mki_size);
-                    printf("\t\tmemcpy(policy_%zu->keys[%zu]->mki_id, key, %d);\n", i, j, policy_chain->keys[j]->mki_size);
-                    printf("\t}\n");
-                    printf("\tpolicy_%zu->keys[%zu]->mki_size = %d;\n", i, j, policy_chain->keys[j]->mki_size);
-                }
-            }
-        }
-
-        /* ekt */
-        if ( fuzz_is_special_pointer(policy_chain->ekt) == true || policy_chain->ekt == NULL ) {
-            printf("\tpolicy_%zu->ekt = (void*)0x%zX;\n", i, (size_t)policy_chain->ekt);
-        } else {
-            printf("\tpolicy_%zu->ekt = malloc(struct srtp_ekt_policy_ctx_t);\n", i);
-            printf("\tpolicy_%zu->ekt->spi = %u;\n", i, policy_chain->ekt->spi);
-            printf("\tpolicy_%zu->ekt->ekt_cipher_type = %u;\n", i, policy_chain->ekt->ekt_cipher_type);
-            printf("\tpolicy_%zu->ekt->key = malloc(16);\n", i);
-            printf("\t{\n");
-            fuzz_print_bytes("ekt_key", policy_chain->ekt->ekt_key, 16);
-            printf("\tmemcpy(policy_%zu->ekt->ekt_key, ekt_key, 16);\n", i);
-            printf("\t}\n");
-        }
-
-        /* misc */
-        printf("\tpolicy_%zu->window_size = %lu;\n", i, policy_chain->window_size);
-        printf("\tpolicy_%zu->allow_repeat_tx = %d;\n", i, policy_chain->allow_repeat_tx);
-
-        /* enc_xtn_hdr */
-        if ( fuzz_is_special_pointer(policy_chain->enc_xtn_hdr) == true || policy_chain->enc_xtn_hdr == NULL ) {
-            printf("\tpolicy_%zu->enc_xtn_hdr = (void*)0x%zX;\n", i, (size_t)policy_chain->enc_xtn_hdr);
-        } else {
-            printf("\tpolicy_%zu->enc_xtn_hdr = malloc(%d * sizeof(int));\n", i, policy_chain->enc_xtn_hdr_count);
-            printf("\t{\n");
-            fuzz_print_ints("enc_xtn_hdr", policy_chain->enc_xtn_hdr, (size_t)policy_chain->enc_xtn_hdr_count);
-            printf("\tmemcpy(policy_%zu->enc_xtn_hdr, enc_xtn_hdr, %d * sizeof(int));\n", i, policy_chain->enc_xtn_hdr_count);
-            printf("\t}\n");
-        }
-        printf("\tpolicy_%zu->enc_xtn_hdr_count = %d;\n", i, policy_chain->enc_xtn_hdr_count);
-
-        printf("\tpolicy_%zu->next = NULL;\n", i);
-
-        printf("\t\n");
-
-        policy_chain = policy_chain->next;
-        i++;
-    }
-
-    for (j = 1; j < i - 1; j++) {
-        printf("policy_%zu->next = policy_%zu;\n", j, j + 1);
-    }
-
-    return i - 1;
-}
 
 int LLVMFuzzerInitialize(int *argc, char ***argv)
 {
@@ -931,10 +709,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
     }
 
     for (i = 0; i < *argc; i++) {
-        if ( strcmp("--debug", _argv[i]) == 0 ) {
-            g_debug_print = true;
-        }
-        else if ( strcmp("--no_align", _argv[i]) == 0 ) {
+        if ( strcmp("--no_align", _argv[i]) == 0 ) {
             g_no_align = true;
         }
         else if ( strcmp("--no_custom_event_handler", _argv[i]) == 0 ) {
@@ -983,21 +758,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         /* TODO version check etc and send it to MSAN */
     }
 
-    if ( g_debug_print == true ) {
-        printf("#include <stdint.h>\n");
-        printf("#include <string.h>\n");
-        printf("#include \"srtp.h\"\n");
-        printf("#include \"srtp_priv.h\"\n");
-        printf("#include \"ekt.h\"\n");
-        printf("\n");
-        printf("void* fuzz_calloc(size_t x, size_t y) { return calloc(x, y); }\n");
-        printf("void fuzz_free(void* p) { free(p); }\n");
-        printf("\n");
-        printf("int main(void) {\n");
-        printf("\tsrtp_t srtp_ctx = NULL;\n");
-        printf("\tsrtp_init();\n");
-    }
-
 #ifdef FUZZ_32BIT
     /* Free the mmap allocation made during the previous iteration, if applicable */
     fuzz_free(g_mmap_allocation);
@@ -1018,12 +778,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     /* policy_chain_2 is used as an argument to srtp_update later on */
     if ( (policy_chain_2 = extract_policies(&data, &size)) == NULL ) {
         goto end;
-    }
-
-    if ( g_debug_print == true ) {
-        if ( fuzz_print_policy_chain(policy_chain) > 0 ) {
-            printf("\tsrtp_create(&srtp_ctx, policy_1);\n");
-        }
     }
 
     /* Create context */
@@ -1050,9 +804,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
             /* Keep removing streams until the set of SSRCs extracted from the
              * fuzzer input is exhausted */
             if ( i < num_remove_stream ) {
-                if ( g_debug_print == true ) {
-                    printf("srtp_remove_stream(srtp_ctx, %u);\n", remove_stream_ssrc[i]);
-                }
                 if ( srtp_remove_stream(srtp_ctx, remove_stream_ssrc[i]) != srtp_err_status_ok ) {
                     goto end;
                 }
@@ -1063,14 +814,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
              * extracted from the fuzzer input is exhausted */
             if ( j < num_set_roc * 2 ) {
                 uint32_t roc;
-                if ( g_debug_print == true ) {
-                    printf("srtp_set_stream_roc(srtp_ctx, %u, %u);\n", set_roc[j], set_roc[j + 1]);
-                }
                 if ( srtp_set_stream_roc(srtp_ctx, set_roc[j], set_roc[j + 1]) != srtp_err_status_ok ) {
                     goto end;
-                }
-                if ( g_debug_print == true ) {
-                    printf("srtp_get_stream_roc(srtp_ctx, %u);\n", set_roc[j + 1]);
                 }
                 if ( srtp_get_stream_roc(srtp_ctx, set_roc[j + 1], &roc) != srtp_err_status_ok ) {
                     goto end;
@@ -1097,8 +842,6 @@ end:
         srtp_dealloc(srtp_ctx);
     }
     fuzz_mt19937_destroy();
-    if ( g_debug_print == true ) {
-        printf("}\n");
-    }
+
     return 0;
 }

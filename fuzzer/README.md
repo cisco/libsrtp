@@ -73,10 +73,6 @@ if ( end - n > start ) {
 If MemorySanitizer is enabled, then ``fuzz_testmem``` calls ```fuzz_testmem_msan````. The latter function writes the data at hand to ```/dev/null```. This is an nice trick to make MemorySanitizer evaluate this data, and crash if it contains uninitialized bytes.
 This function has been implemented in a separate file for a reason: from the perspective of an optimizing compiler, this is a meaningless operation, and as such it might be optimized away. Hence, this file must be compiled without optimizations (```-O0``` flag).
 
-### Generating proofs of concept
-
-By using the ```--debug``` command line argument, the fuzzer will output a C file that sets relevant libsrtp data structures to the values used internally by the fuzzer for a given input. This ought to make it easier for the analyst to determine the root cause of an issue.
-
 ## Contributing
 
 When extending the current fuzzer, use variable types whose width is consistent across systems where possible. This is necessary to retain corpus portability. For example, use ```uint64_t``` rather than ```unsigned long```.
