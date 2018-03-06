@@ -66,8 +66,8 @@ extern const srtp_auth_type_t srtp_hmac;
 
 extern srtp_debug_module_t srtp_mod_auth;
 extern srtp_debug_module_t srtp_mod_cipher;
-extern srtp_debug_module_t mod_stat;
-extern srtp_debug_module_t mod_alloc;
+extern srtp_debug_module_t srtp_mod_stat;
+extern srtp_debug_module_t srtp_mod_alloc;
 
 /* debug modules for cipher types */
 extern srtp_debug_module_t srtp_mod_aes_icm;
