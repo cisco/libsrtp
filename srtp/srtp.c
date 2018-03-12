@@ -1563,8 +1563,7 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
             *mki_size = stream->session_keys[i].mki_size;
             mki_start_location = base_mki_start_location - *mki_size;
 
-            if (mki_start_location >= *mki_size &&
-                memcmp(hdr + mki_start_location, stream->session_keys[i].mki_id,
+            if (memcmp(hdr + mki_start_location, stream->session_keys[i].mki_id,
                        *mki_size) == 0) {
                 return &stream->session_keys[i];
             }
