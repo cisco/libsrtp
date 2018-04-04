@@ -220,20 +220,12 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv(
     debug_print(srtp_mod_aes_gcm, "setting iv: %s",
                 v128_hex_string((v128_t *)iv));
 
-    if (!EVP_CipherInit_ex(c->ctx, NULL, NULL, NULL, NULL,
-                           (c->dir == srtp_direction_encrypt ? 1 : 0))) {
-        return (srtp_err_status_init_fail);
-    }
-
-    /* set IV len  and the IV value, the followiong 3 calls are required */
     if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
         return (srtp_err_status_init_fail);
     }
-    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IV_FIXED, -1,
-                             (void *)iv)) {
-        return (srtp_err_status_init_fail);
-    }
-    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_IV_GEN, 0, (void *)iv)) {
+
+    if (!EVP_CipherInit_ex(c->ctx, NULL, NULL, NULL, iv,
+                           (c->dir == srtp_direction_encrypt ? 1 : 0))) {
         return (srtp_err_status_init_fail);
     }
 
