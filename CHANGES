@@ -4,7 +4,7 @@ Changelog
 
 Major changes
 
-All code has been re format to be consistent. A .clang-format file and format.sh script has been added that can be use to verify and enforce consistent formatting. An automated check on code formatting is now part of travis build.
+All code has been reformatted to be consistent. A .clang-format file and format.sh script has been added that can be use to verify and enforce consistent formatting. An automated check on code formatting is now part of travis build.
 
 Other changes
 
