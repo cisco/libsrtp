@@ -243,7 +243,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
     }
 
     int rv;
-    SECItem param = { siBuffer, (unsigned char *) &c->params, sizeof(srtp_aes_gcm_ctx_t) };
+    SECItem param = { siBuffer, (unsigned char *) &c->params, sizeof(CK_GCM_PARAMS) };
     if (encrypt) {
         rv = PK11_Encrypt(key, CKM_AES_GCM, &param,
                           buf, enc_len, *enc_len + 16,
