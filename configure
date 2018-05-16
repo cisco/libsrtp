@@ -627,6 +627,7 @@ PCAP_LIB
 HAVE_PCAP
 HMAC_OBJS
 AES_ICM_OBJS
+USE_NSS
 USE_OPENSSL
 crypto_LIBS
 crypto_CFLAGS
@@ -704,8 +705,10 @@ ac_user_opts='
 enable_option_checking
 enable_debug_logging
 enable_openssl
+enable_nss
 with_openssl_dir
 enable_openssl_kdf
+with_nss_dir
 enable_log_stdout
 with_log_file
 '
@@ -1350,6 +1353,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debug-logging  Enable debug logging in all modules
   --enable-openssl        compile in OpenSSL crypto engine
+  --enable-nss            compile in NSS crypto engine
   --enable-openssl-kdf    Use OpenSSL KDF algorithm
   --enable-log-stdout     redirecting logging to stdout
 
@@ -1357,6 +1361,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-openssl-dir      Location of OpenSSL installation
+  --with-nss-dir          Location of NSS installation
   --with-log-file         Use file for logging
 
 Some influential environment variables:
@@ -5144,6 +5149,19 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl" >&5
 $as_echo "$enable_openssl" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to leverage NSS crypto" >&5
+$as_echo_n "checking whether to leverage NSS crypto... " >&6; }
+# Check whether --enable-nss was given.
+if test "${enable_nss+set}" = set; then :
+  enableval=$enable_nss;
+else
+  enable_nss=no
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_nss" >&5
+$as_echo "$enable_nss" >&6; }
+
 if test "$enable_openssl" = "yes"; then
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for user specified OpenSSL directory" >&5
 $as_echo_n "checking for user specified OpenSSL directory... " >&6; }
@@ -5696,6 +5714,48 @@ fi
 $as_echo "#define OPENSSL_KDF 1" >>confdefs.h
 
    fi
+elif test "$enable_nss" = "yes"; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for user specified NSS directory" >&5
+$as_echo_n "checking for user specified NSS directory... " >&6; }
+
+# Check whether --with-nss-dir was given.
+if test "${with_nss_dir+set}" = set; then :
+  withval=$with_nss_dir; if test -d $with_nss_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_nss_dir/include/nspr/"
+         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
+         if test "x$LDFLAGS" = "x"; then
+           LDFLAGS="-L$with_nss_dir/lib"
+         else
+           LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
+         fi
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
+$as_echo "$with_nss_dir" >&6; }
+       else
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
+$as_echo "invalid" >&6; }
+         { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Invalid OpenSSL location: $with_nss_dir
+See \`config.log' for more details" "$LINENO" 5; }
+      fi
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+$as_echo "#define NSS 1" >>confdefs.h
+
+   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
+
+   # TODO(RLB): Use NSS for HMAC
+   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
+
+   # TODO(RLB): Use NSS for KDF
+
+   USE_NSS=1
+
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"

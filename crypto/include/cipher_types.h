@@ -52,6 +52,11 @@ extern const srtp_cipher_type_t srtp_aes_icm_192;
 extern const srtp_cipher_type_t srtp_aes_gcm_128_openssl;
 extern const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
 #endif
+#ifdef NSS
+extern const srtp_cipher_type_t srtp_aes_icm_192;
+extern const srtp_cipher_type_t srtp_aes_gcm_128_nss;
+extern const srtp_cipher_type_t srtp_aes_gcm_256_nss;
+#endif
 
 /*
  * auth func types that can be included in the kernel
@@ -72,6 +77,9 @@ extern srtp_debug_module_t srtp_mod_alloc;
 /* debug modules for cipher types */
 extern srtp_debug_module_t srtp_mod_aes_icm;
 #ifdef OPENSSL
+extern srtp_debug_module_t srtp_mod_aes_gcm;
+#endif
+#ifdef NSS
 extern srtp_debug_module_t srtp_mod_aes_gcm;
 #endif
 

@@ -208,6 +208,13 @@ AC_ARG_ENABLE([openssl],
   [AS_HELP_STRING([--enable-openssl], [compile in OpenSSL crypto engine])],
   [], [enable_openssl=no])
 AC_MSG_RESULT([$enable_openssl])
+
+AC_MSG_CHECKING([whether to leverage NSS crypto])
+AC_ARG_ENABLE([nss],
+  [AS_HELP_STRING([--enable-nss], [compile in NSS crypto engine])],
+  [], [enable_nss=no])
+AC_MSG_RESULT([$enable_nss])
+
 if test "$enable_openssl" = "yes"; then
    AC_MSG_CHECKING([for user specified OpenSSL directory])
    AC_ARG_WITH([openssl-dir],
@@ -289,6 +296,34 @@ if test "$enable_openssl" = "yes"; then
        [], [AC_MSG_FAILURE([can't find openssl KDF lib])])
      AC_DEFINE([OPENSSL_KDF], [1], [Define this to use OpenSSL KDF for SRTP.])
    fi
+elif test "$enable_nss" = "yes"; then
+   AC_MSG_CHECKING([for user specified NSS directory])
+   AC_ARG_WITH([nss-dir],
+      [AS_HELP_STRING([--with-nss-dir], [Location of NSS installation])],
+      [if test -d $with_nss_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_nss_dir/include/nspr/"
+         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
+         if test "x$LDFLAGS" = "x"; then
+           LDFLAGS="-L$with_nss_dir/lib"
+         else
+           LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
+         fi
+         AC_MSG_RESULT([$with_nss_dir])
+       else
+         AC_MSG_RESULT([invalid])
+         AC_MSG_FAILURE([Invalid OpenSSL location: $with_nss_dir])
+      fi],
+      [AC_MSG_RESULT([no])])
+
+   AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
+   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
+
+   # TODO(RLB): Use NSS for HMAC
+   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
+
+   # TODO(RLB): Use NSS for KDF
+
+   AC_SUBST([USE_NSS], [1])
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
