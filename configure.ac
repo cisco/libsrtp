@@ -256,10 +256,11 @@ if test "$enable_openssl" = "yes"; then
    AC_SEARCH_LIBS([EVP_aes_128_gcm], [crypto],
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
 
+   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
-   AC_SUBST([USE_OPENSSL], [1])
+   AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
 
    AC_MSG_CHECKING([if OPENSSL_cleanse is broken])
    AC_RUN_IFELSE([AC_LANG_PROGRAM([
@@ -308,6 +309,7 @@ elif test "$enable_nss" = "yes"; then
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
+         LIBS="-lnss $LIBS"
          AC_MSG_RESULT([$with_nss_dir])
        else
          AC_MSG_RESULT([invalid])
@@ -315,6 +317,7 @@ elif test "$enable_nss" = "yes"; then
       fi],
       [AC_MSG_RESULT([no])])
 
+   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
 
@@ -323,7 +326,7 @@ elif test "$enable_nss" = "yes"; then
 
    # TODO(RLB): Use NSS for KDF
 
-   AC_SUBST([USE_NSS], [1])
+   AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"

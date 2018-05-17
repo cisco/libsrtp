@@ -51,9 +51,9 @@
 #include <stdlib.h> /* for rand() */
 #include "getopt_s.h"
 #include "cipher.h"
-#ifdef OPENSSL
-#include "aes_icm_ossl.h"
-#include "aes_gcm_ossl.h"
+#ifdef GCM
+#include "aes_icm_ext.h"
+#include "aes_gcm.h"
 #else
 #include "aes_icm.h"
 #endif

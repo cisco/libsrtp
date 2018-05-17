@@ -1,15 +1,15 @@
 /*
- * aes_gcm_ossl.h
+ * aes_icm.h
  *
- * Header for AES Galois Counter Mode.
+ * Header for AES Integer Counter Mode.
  *
- * Richard L. Barnes
+ * David A. McGrew
  * Cisco Systems, Inc.
  *
  */
 /*
  *
- * Copyright (c) 2013-2017, Cisco Systems, Inc.
+ * Copyright (c) 2001-2017, Cisco Systems, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,19 +43,38 @@
  *
  */
 
-#ifndef AES_GCM_NSS_H
-#define AES_GCM_NSS_H
+#ifndef AES_ICM_H
+#define AES_ICM_H
 
 #include "cipher.h"
-#include "srtp.h"
 #include "datatypes.h"
+
+#ifdef OPENSSL
+
+#include <openssl/evp.h>
+#include <openssl/aes.h>
+
+typedef struct {
+    v128_t counter; /* holds the counter value          */
+    v128_t offset;  /* initial offset value             */
+    int key_size;
+    EVP_CIPHER_CTX *ctx;
+} srtp_aes_icm_ctx_t;
+
+#endif /* OPENSSL */
+
+#ifdef NSS
+
 #include <pk11pub.h>
 
 typedef struct {
+    v128_t counter;
+    v128_t offset;
     int key_size;
-    srtp_cipher_direction_t dir;
     uint8_t key[32];
-    CK_GCM_PARAMS params;
-} srtp_aes_gcm_ctx_t;
+    CK_AES_CTR_PARAMS params;
+} srtp_aes_icm_ctx_t;
 
-#endif /* AES_GCM_NSS_H */
+#endif /* NSS */
+
+#endif /* AES_ICM_H */

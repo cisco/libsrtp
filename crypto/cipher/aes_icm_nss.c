@@ -47,7 +47,7 @@
 #include <config.h>
 #endif
 
-#include "aes_icm_nss.h"
+#include "aes_icm_ext.h"
 #include "crypto_types.h"
 #include "err.h" /* for srtp_debug */
 #include "alloc.h"

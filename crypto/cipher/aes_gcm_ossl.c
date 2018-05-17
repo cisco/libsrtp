@@ -49,8 +49,7 @@
 #endif
 
 #include <openssl/evp.h>
-#include "aes_icm_ossl.h"
-#include "aes_gcm_ossl.h"
+#include "aes_gcm.h"
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "crypto_types.h"

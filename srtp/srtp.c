@@ -52,10 +52,10 @@
 #include "alloc.h" /* for srtp_crypto_alloc() */
 
 #ifdef OPENSSL
-#include "aes_gcm_ossl.h" /* for AES GCM mode */
+#include "aes_gcm.h" /* for AES GCM mode */
 #ifdef OPENSSL_KDF
 #include <openssl/kdf.h>
-#include "aes_icm_ossl.h" /* for AES GCM mode */
+#include "aes_icm_ext.h" /* for AES GCM mode */
 #endif
 #endif
 

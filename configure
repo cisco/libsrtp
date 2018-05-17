@@ -627,8 +627,7 @@ PCAP_LIB
 HAVE_PCAP
 HMAC_OBJS
 AES_ICM_OBJS
-USE_NSS
-USE_OPENSSL
+USE_EXTERNAL_CRYPTO
 crypto_LIBS
 crypto_CFLAGS
 PKG_CONFIG_LIBDIR
@@ -5576,11 +5575,14 @@ fi
 
 
 
+$as_echo "#define GCM 1" >>confdefs.h
+
+
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
-   USE_OPENSSL=1
+   USE_EXTERNAL_CRYPTO=1
 
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if OPENSSL_cleanse is broken" >&5
@@ -5728,6 +5730,7 @@ if test "${with_nss_dir+set}" = set; then :
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
+         LIBS="-lnss $LIBS"
          { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
 $as_echo "$with_nss_dir" >&6; }
        else
@@ -5745,6 +5748,9 @@ fi
 
 
 
+$as_echo "#define GCM 1" >>confdefs.h
+
+
 $as_echo "#define NSS 1" >>confdefs.h
 
    AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
@@ -5754,7 +5760,7 @@ $as_echo "#define NSS 1" >>confdefs.h
 
    # TODO(RLB): Use NSS for KDF
 
-   USE_NSS=1
+   USE_EXTERNAL_CRYPTO=1
 
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"

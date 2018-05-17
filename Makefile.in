@@ -14,7 +14,7 @@
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
 
-USE_OPENSSL = @USE_OPENSSL@
+USE_EXTERNAL_CRYPTO = @USE_EXTERNAL_CRYPTO@
 HAVE_PCAP = @HAVE_PCAP@
 
 .PHONY: all shared_library test
@@ -32,7 +32,7 @@ runtest: test
 	test/replay_driver$(EXE) -v >/dev/null
 	test/dtls_srtp_driver$(EXE) >/dev/null
 	cd test; $(abspath $(srcdir))/test/rtpw_test.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
-ifeq (1, $(USE_OPENSSL))
+ifeq (1, $(USE_EXTERNAL_CRYPTO))
 	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
 endif
 	@echo "libsrtp2 test applications passed."
@@ -151,7 +151,7 @@ libsrtp2.so: $(srtpobj) $(cryptobj)
 		-o libsrtp2.so $^ $(LDFLAGS)
 
 # test applications
-ifneq (1, $(USE_OPENSSL))
+ifneq (1, $(USE_EXTERNAL_CRYPTO))
 AES_CALC = crypto/test/aes_calc$(EXE)
 endif
 
