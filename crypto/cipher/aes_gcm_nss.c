@@ -53,6 +53,7 @@
 #include "err.h" /* for srtp_debug */
 #include "crypto_types.h"
 #include "cipher_types.h"
+#include <nss.h>
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
     0,            /* debugging is off by default */
@@ -93,6 +94,11 @@ static srtp_err_status_t srtp_aes_gcm_nss_alloc(srtp_cipher_t **c,
 
     if (tlen != GCM_AUTH_TAG_LEN && tlen != GCM_AUTH_TAG_LEN_8) {
         return (srtp_err_status_bad_param);
+    }
+
+    /* Initialize NSS */
+    if (!NSS_IsInitialized() && NSS_NoDB_Init(NULL) != SECSuccess) {
+        return (srtp_err_status_cipher_fail);
     }
 
     /* allocate memory a cipher of type aes_gcm */

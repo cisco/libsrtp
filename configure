@@ -627,6 +627,7 @@ PCAP_LIB
 HAVE_PCAP
 HMAC_OBJS
 AES_ICM_OBJS
+CRYPTO_LIBDIR
 USE_EXTERNAL_CRYPTO
 crypto_LIBS
 crypto_CFLAGS
@@ -5730,7 +5731,7 @@ if test "${with_nss_dir+set}" = set; then :
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
-         LIBS="-lnss $LIBS"
+         LIBS="-lnss3 $LIBS"
          { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
 $as_echo "$with_nss_dir" >&6; }
        else
@@ -5761,6 +5762,8 @@ $as_echo "#define NSS 1" >>confdefs.h
    # TODO(RLB): Use NSS for KDF
 
    USE_EXTERNAL_CRYPTO=1
+
+   CRYPTO_LIBDIR=$with_nss_dir/lib
 
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"

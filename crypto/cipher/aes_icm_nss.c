@@ -52,6 +52,7 @@
 #include "err.h" /* for srtp_debug */
 #include "alloc.h"
 #include "cipher_types.h"
+#include <nss.h>
 
 srtp_debug_module_t srtp_mod_aes_icm = {
     0,             /* debugging is off by default */
@@ -116,6 +117,11 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
         key_len != SRTP_AES_ICM_192_KEY_LEN_WSALT &&
         key_len != SRTP_AES_ICM_256_KEY_LEN_WSALT) {
         return srtp_err_status_bad_param;
+    }
+
+    /* Initialize NSS */
+    if (!NSS_IsInitialized() && NSS_NoDB_Init(NULL) != SECSuccess) {
+        return (srtp_err_status_cipher_fail);
     }
 
     /* allocate memory a cipher of type aes_icm */

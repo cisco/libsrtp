@@ -309,7 +309,7 @@ elif test "$enable_nss" = "yes"; then
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
-         LIBS="-lnss $LIBS"
+         LIBS="-lnss3 $LIBS"
          AC_MSG_RESULT([$with_nss_dir])
        else
          AC_MSG_RESULT([invalid])
@@ -327,6 +327,7 @@ elif test "$enable_nss" = "yes"; then
    # TODO(RLB): Use NSS for KDF
 
    AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
+   AC_SUBST([CRYPTO_LIBDIR], [$with_nss_dir/lib])
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"

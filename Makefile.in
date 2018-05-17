@@ -14,8 +14,11 @@
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
 
+CRYPTO_LIBDIR = @CRYPTO_LIBDIR@
 USE_EXTERNAL_CRYPTO = @USE_EXTERNAL_CRYPTO@
 HAVE_PCAP = @HAVE_PCAP@
+
+FIND_LIBRARIES = DYLD_LIBRARY_PATH=$(CRYPTO_LIBDIR)
 
 .PHONY: all shared_library test
 
@@ -23,7 +26,8 @@ all: test
 
 runtest: test
 	@echo "running libsrtp2 test applications..."
-	crypto/test/cipher_driver$(EXE) -v >/dev/null
+	# XXX(RLB): This is a hack
+	$(FIND_LIBRARIES) crypto/test/cipher_driver$(EXE) -v >/dev/null
 	crypto/test/kernel_driver$(EXE) -v >/dev/null
 	test/test_srtp$(EXE) >/dev/null
 	test/rdbx_driver$(EXE) -v >/dev/null
