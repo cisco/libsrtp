@@ -137,9 +137,6 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
         return srtp_err_status_alloc_fail;
     }
 
-    /* populate ICM parameters */
-    icm->params.ulCounterBits = 16;
-
     /* set pointers */
     (*c)->state = icm;
 
@@ -177,7 +174,12 @@ static srtp_err_status_t srtp_aes_icm_nss_dealloc(srtp_cipher_t *c)
 
     ctx = (srtp_aes_icm_ctx_t *)c->state;
     if (ctx) {
-        /* zeroize the key material */
+        /* free PK11 context if it has been created */
+        if (ctx->ctx) {
+          PK11_DestroyContext(ctx->ctx, PR_TRUE);
+        }
+
+        /* zeroize everything */
         octet_string_set_to_zero(ctx, sizeof(srtp_aes_icm_ctx_t));
         srtp_crypto_free(ctx);
     }
@@ -244,7 +246,33 @@ static srtp_err_status_t srtp_aes_icm_nss_set_iv(void *cv,
     debug_print(srtp_mod_aes_icm, "set_counter: %s",
                 v128_hex_string(&c->counter));
 
-    memcpy(&c->params.cb, &nonce, 16);
+    /* set up the PK11 context now that we have all the info */
+    CK_AES_CTR_PARAMS param;
+    param.ulCounterBits = 16;
+    memcpy(param.cb, &c->counter, 16);
+
+    PK11SlotInfo *slot = PK11_GetInternalSlot();
+    if (!slot) {
+      return srtp_err_status_cipher_fail;
+    }
+
+    SECItem keyItem = { siBuffer, c->key, c->key_size };
+    PK11SymKey *symKey = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
+                                           CKA_ENCRYPT, &keyItem, NULL);
+    if (!symKey) {
+      PK11_FreeSlot(slot);
+      return srtp_err_status_cipher_fail;
+    }
+
+    SECItem paramItem = { siBuffer, (unsigned char*) &param, sizeof(CK_AES_CTR_PARAMS) };
+    c->ctx = PK11_CreateContextBySymKey(CKM_AES_CTR, CKA_ENCRYPT, symKey, &paramItem);
+
+    PK11_FreeSymKey(symKey);
+    PK11_FreeSlot(slot);
+
+    if (!c->ctx) {
+      return srtp_err_status_cipher_fail;
+    }
 
     return srtp_err_status_ok;
 }
@@ -263,32 +291,17 @@ static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
 
-    // XXX(RLB): Can we grab this at alloc time and just hold on to it?
-    PK11SlotInfo *slot = PK11_GetInternalSlot();
-    if (!slot) {
-        return (srtp_err_status_cipher_fail);
+    if (!c->ctx) {
+      return srtp_err_status_bad_param;
     }
 
-    SECItem key_item = { siBuffer, c->key, c->key_size };
-    PK11SymKey *key = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
-                                        CKA_ENCRYPT, &key_item, NULL);
-    if (!key) {
-        PK11_FreeSlot(slot);
-        return (srtp_err_status_cipher_fail);
-    }
-
-    SECItem param = { siBuffer, (unsigned char *) &c->params, sizeof(CK_AES_CTR_PARAMS) };
-    int rv = PK11_Encrypt(key, CKM_AES_CTR, &param,
-                          buf, enc_len, *enc_len,
-                          buf, *enc_len);
+    int rv = PK11_CipherOp(c->ctx, buf, (int*) enc_len, *enc_len, buf, *enc_len);
 
     srtp_err_status_t status = (srtp_err_status_ok);
     if (rv != SECSuccess) {
         status = (srtp_err_status_cipher_fail);
     }
 
-    PK11_FreeSymKey(key);
-    PK11_FreeSlot(slot);
     return status;
 }
 

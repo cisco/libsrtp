@@ -72,7 +72,8 @@ typedef struct {
     v128_t offset;
     int key_size;
     uint8_t key[32];
-    CK_AES_CTR_PARAMS params;
+    uint8_t iv[16];
+    PK11Context *ctx;
 } srtp_aes_icm_ctx_t;
 
 #endif /* NSS */
