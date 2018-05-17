@@ -47,15 +47,10 @@
 extern const srtp_cipher_type_t srtp_null_cipher;
 extern const srtp_cipher_type_t srtp_aes_icm_128;
 extern const srtp_cipher_type_t srtp_aes_icm_256;
-#ifdef OPENSSL
+#ifdef GCM
 extern const srtp_cipher_type_t srtp_aes_icm_192;
-extern const srtp_cipher_type_t srtp_aes_gcm_128_openssl;
-extern const srtp_cipher_type_t srtp_aes_gcm_256_openssl;
-#endif
-#ifdef NSS
-extern const srtp_cipher_type_t srtp_aes_icm_192;
-extern const srtp_cipher_type_t srtp_aes_gcm_128_nss;
-extern const srtp_cipher_type_t srtp_aes_gcm_256_nss;
+extern const srtp_cipher_type_t srtp_aes_gcm_128;
+extern const srtp_cipher_type_t srtp_aes_gcm_256;
 #endif
 
 /*
