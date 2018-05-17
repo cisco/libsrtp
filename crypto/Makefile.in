@@ -25,7 +25,7 @@ RANLIB	= @RANLIB@
 # `make clean` will work on the cygwin platform
 EXE = @EXE@
 # Random source.
-USE_OPENSSL = @USE_OPENSSL@
+USE_EXTERNAL_CRYPTO = @USE_EXTERNAL_CRYPTO@
 
 ifdef ARCH
   DEFS += -D$(ARCH)=1
@@ -40,7 +40,7 @@ endif
 dummy : all runtest
 
 # test applications
-ifneq (1, $(USE_OPENSSL))
+ifneq (1, $(USE_EXTERNAL_CRYPTO))
 AES_CALC = test/aes_calc$(EXE)
 endif
 
@@ -64,7 +64,7 @@ c256=8ea2b7ca516745bfeafc49904b496089
 runtest: $(testapp)
 	test/env$(EXE) # print out information on the build environment
 	@echo "running crypto test applications..."
-ifneq (1, $(USE_OPENSSL))
+ifneq (1, $(USE_EXTERNAL_CRYPTO))
 	test `test/aes_calc $(k128) $(p128)` = $(c128)
 	test `test/aes_calc $(k256) $(p256)` = $(c256)
 endif
