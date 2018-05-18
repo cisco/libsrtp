@@ -123,12 +123,14 @@ static srtp_err_status_t srtp_aes_gcm_nss_alloc(srtp_cipher_t **c,
         (*c)->type = &srtp_aes_gcm_128;
         (*c)->algorithm = SRTP_AES_GCM_128;
         gcm->key_size = SRTP_AES_128_KEY_LEN;
+        gcm->tag_size = tlen;
         gcm->params.ulTagBits = 8*tlen;
         break;
     case SRTP_AES_GCM_256_KEY_LEN_WSALT:
         (*c)->type = &srtp_aes_gcm_256;
         (*c)->algorithm = SRTP_AES_GCM_256;
         gcm->key_size = SRTP_AES_256_KEY_LEN;
+        gcm->tag_size = tlen;
         gcm->params.ulTagBits = 8*tlen;
         break;
     }
@@ -254,7 +256,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
                           buf, enc_len, *enc_len + 16,
                           buf, *enc_len);
     } else {
-        rv = PK11_Encrypt(key, CKM_AES_GCM, &param,
+        rv = PK11_Decrypt(key, CKM_AES_GCM, &param,
                           buf, enc_len, *enc_len + 16,
                           buf, *enc_len);
     }
@@ -273,6 +275,11 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
 /*
  * This function encrypts a buffer using AES GCM mode
  *
+ * XXX(rlb@ipv.sx): We're required to break off and cache the tag
+ * here, because the get_tag() method is separate and the tests expect
+ * encrypt() not to change the size of the plaintext.  It might be
+ * good to update the calling API so that this is cleaner.
+ *
  * Parameters:
  *	c	Crypto context
  *	buf	data to encrypt
@@ -282,7 +289,17 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
                                                       unsigned char *buf,
                                                       unsigned int *enc_len)
 {
-    return srtp_aes_gcm_nss_do_crypto(cv, 1, buf, enc_len);
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
+    int in_len = *enc_len;
+
+    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 1, buf, enc_len);
+    if (status != srtp_err_status_ok) {
+      return status;
+    }
+
+    memcpy(c->tag, buf + in_len, c->tag_size);
+    *enc_len -= c->tag_size;
+    return srtp_err_status_ok;
 }
 
 /*
@@ -300,8 +317,9 @@ static srtp_err_status_t srtp_aes_gcm_nss_get_tag(void *cv,
                                                       uint8_t *buf,
                                                       uint32_t *len)
 {
-    // This function is a noop for the NSS implementation of GCM,
-    // because the tag is added in the encrypt() call.
+    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
+    *len = c->tag_size;
+    memcpy(buf, c->tag, c->tag_size);
     return (srtp_err_status_ok);
 }
 

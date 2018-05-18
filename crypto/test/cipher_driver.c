@@ -291,10 +291,8 @@ int main(int argc, char *argv[])
         cipher_driver_test_throughput(c);
     }
 
-    if (do_validation) {
-        status = cipher_driver_test_buffering(c);
-        check_status(status);
-    }
+    // GCM ciphers don't do buffering; they're "one shot"
+
     status = srtp_cipher_dealloc(c);
     check_status(status);
 
@@ -311,10 +309,8 @@ int main(int argc, char *argv[])
         cipher_driver_test_throughput(c);
     }
 
-    if (do_validation) {
-        status = cipher_driver_test_buffering(c);
-        check_status(status);
-    }
+    // GCM ciphers don't do buffering; they're "one shot"
+
     status = srtp_cipher_dealloc(c);
     check_status(status);
 #endif

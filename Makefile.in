@@ -28,16 +28,16 @@ runtest: test
 	@echo "running libsrtp2 test applications..."
 	# XXX(RLB): This is a hack
 	$(FIND_LIBRARIES) crypto/test/cipher_driver$(EXE) -v >/dev/null
-	crypto/test/kernel_driver$(EXE) -v >/dev/null
-	test/test_srtp$(EXE) >/dev/null
-	test/rdbx_driver$(EXE) -v >/dev/null
-	test/srtp_driver$(EXE) -v >/dev/null
-	test/roc_driver$(EXE) -v >/dev/null
-	test/replay_driver$(EXE) -v >/dev/null
-	test/dtls_srtp_driver$(EXE) >/dev/null
-	cd test; $(abspath $(srcdir))/test/rtpw_test.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
+	$(FIND_LIBRARIES) crypto/test/kernel_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/test_srtp$(EXE) >/dev/null
+	$(FIND_LIBRARIES) test/rdbx_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/srtp_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/roc_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/replay_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/dtls_srtp_driver$(EXE) >/dev/null
+	$(FIND_LIBRARIES) cd test; $(abspath $(srcdir))/test/rtpw_test.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
 ifeq (1, $(USE_EXTERNAL_CRYPTO))
-	cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
+	$(FIND_LIBRARIES) cd test; $(abspath $(srcdir))/test/rtpw_test_gcm.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
 endif
 	@echo "libsrtp2 test applications passed."
 	$(MAKE) -C crypto runtest

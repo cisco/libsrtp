@@ -70,9 +70,11 @@ typedef struct {
 
 typedef struct {
     int key_size;
+    int tag_size;
     srtp_cipher_direction_t dir;
     uint8_t key[32];
     CK_GCM_PARAMS params;
+    uint8_t tag[16];
 } srtp_aes_gcm_ctx_t;
 
 #endif /* NSS */

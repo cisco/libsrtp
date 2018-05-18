@@ -271,9 +271,6 @@ srtp_err_status_t srtp_cipher_type_test(
                         buffer, test_case->plaintext_length_octets));
 
         /* set the initialization vector */
-        //debug_print(srtp_mod_cipher, "IV:    %s",
-        //            srtp_octet_string_hex_string(test_case->idx, 12));
-
         status = srtp_cipher_set_iv(c, (uint8_t *)test_case->idx,
                                     srtp_direction_encrypt);
         if (status) {
