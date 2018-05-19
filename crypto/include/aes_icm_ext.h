@@ -71,8 +71,9 @@ typedef struct {
     v128_t counter;
     v128_t offset;
     int key_size;
-    uint8_t key[32];
     uint8_t iv[16];
+    PK11SlotInfo *slot;
+    PK11SymKey *key;
     PK11Context *ctx;
 } srtp_aes_icm_ctx_t;
 

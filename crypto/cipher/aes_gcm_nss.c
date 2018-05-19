@@ -54,6 +54,8 @@
 #include "crypto_types.h"
 #include "cipher_types.h"
 #include <nss.h>
+#include <secerr.h>
+#include <nspr.h>
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
     0,            /* debugging is off by default */
@@ -64,6 +66,7 @@ srtp_debug_module_t srtp_mod_aes_gcm = {
  * For now we only support 8 and 16 octet tags.  The spec allows for
  * optional 12 byte tag, which may be supported in the future.
  */
+#define GCM_IV_LEN 12
 #define GCM_AUTH_TAG_LEN 16
 #define GCM_AUTH_TAG_LEN_8 8
 
@@ -203,8 +206,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_iv(
     debug_print(srtp_mod_aes_gcm, "setting iv: %s",
                 v128_hex_string((v128_t *)iv));
 
-    c->params.pIv = iv;
-    c->params.ulIvLen = 12;
+    memcpy(c->iv, iv, GCM_IV_LEN);
 
     return (srtp_err_status_ok);
 }
@@ -223,8 +225,15 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_aad(void *cv,
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
-    c->params.pAAD = (CK_BYTE_PTR) aad;
-    c->params.ulAADLen = aad_len;
+    debug_print(srtp_mod_aes_gcm, "setting AAD: %s",
+                srtp_octet_string_hex_string(aad, aad_len));
+
+    if (aad_len + c->aad_size > MAX_AD_SIZE) {
+        return srtp_err_status_bad_param;
+    }
+
+    memcpy(c->aad + c->aad_size, aad, aad_len);
+    c->aad_size += aad_len;
 
     return (srtp_err_status_ok);
 }
@@ -235,7 +244,14 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
-    // XXX(RLB): Can we grab this at alloc time and just hold on to it?
+    c->params.pIv = c->iv;
+    c->params.ulIvLen = GCM_IV_LEN;
+    c->params.pAAD = c->aad;
+    c->params.ulAADLen = c->aad_size;
+
+    // Reset AAD
+    c->aad_size = 0;
+
     PK11SlotInfo *slot = PK11_GetInternalSlot();
     if (!slot) {
         return (srtp_err_status_cipher_fail);
@@ -249,6 +265,13 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
         return (srtp_err_status_cipher_fail);
     }
 
+    printf("--> gcm op <--\n");
+    printf("key: [%d] %s\n", c->key_size, srtp_octet_string_hex_string(c->key, c->key_size));
+    printf("iv: [%d] %s\n", c->params.ulIvLen, srtp_octet_string_hex_string(c->params.pIv, c->params.ulIvLen));
+    printf("aad: [%d] %s\n", c->params.ulAADLen, srtp_octet_string_hex_string(c->params.pAAD, c->params.ulAADLen));
+    printf("tag bits: [%d]\n", c->params.ulTagBits);
+    printf("plaintext: [%d] %s \n", *enc_len, srtp_octet_string_hex_string(buf, *enc_len));
+
     int rv;
     SECItem param = { siBuffer, (unsigned char *) &c->params, sizeof(CK_GCM_PARAMS) };
     if (encrypt) {
@@ -257,7 +280,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
                           buf, *enc_len);
     } else {
         rv = PK11_Decrypt(key, CKM_AES_GCM, &param,
-                          buf, enc_len, *enc_len + 16,
+                          buf, enc_len, *enc_len,
                           buf, *enc_len);
     }
 
@@ -265,6 +288,10 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
     if (rv != SECSuccess) {
         status = (srtp_err_status_cipher_fail);
     }
+
+    printf("status: [%d] [%d]\n", rv, status);
+    printf("ciphertext: [%d] %s \n", *enc_len, srtp_octet_string_hex_string(buf, *enc_len));
+    printf("-----\n");
 
     PK11_FreeSymKey(key);
     PK11_FreeSlot(slot);
@@ -290,14 +317,26 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
                                                       unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    int in_len = *enc_len;
 
-    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 1, buf, enc_len);
+    // When we get a non-NULL buffer, we know that the caller is
+    // prepared to also take the tag.  When we get a NULL buffer,
+    // even though there's no data, we need to give NSS a buffer
+    // where it can write the tag.  We can't just use c->tag because
+    // memcpy has undefined behavior on overlapping ranges.
+    unsigned char tagbuf[16];
+    unsigned char *non_null_buf = buf;
+    if (!non_null_buf && (*enc_len == 0)) {
+        non_null_buf = tagbuf;
+    } else if (!non_null_buf) {
+        return srtp_err_status_bad_param;
+    }
+
+    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 1, non_null_buf, enc_len);
     if (status != srtp_err_status_ok) {
       return status;
     }
 
-    memcpy(c->tag, buf + in_len, c->tag_size);
+    memcpy(c->tag, non_null_buf + (*enc_len - c->tag_size), c->tag_size);
     *enc_len -= c->tag_size;
     return srtp_err_status_ok;
 }
@@ -335,7 +374,15 @@ static srtp_err_status_t srtp_aes_gcm_nss_decrypt(void *cv,
                                                       unsigned char *buf,
                                                       unsigned int *enc_len)
 {
-    return srtp_aes_gcm_nss_do_crypto(cv, 0, buf, enc_len);
+    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 0, buf, enc_len);
+    if (status != srtp_err_status_ok) {
+        int err = PR_GetError();
+        if (err == SEC_ERROR_BAD_DATA) {
+            status = srtp_err_status_auth_fail;
+        }
+    }
+
+    return status;
 }
 
 /*

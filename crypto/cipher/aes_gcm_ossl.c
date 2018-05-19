@@ -56,7 +56,7 @@
 #include "cipher_types.h"
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
-    0,        /* debugging is off by default */
+    1,        /* debugging is off by default */
     "aes gcm" /* printable module name       */
 };
 
@@ -245,6 +245,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int rv;
+
+    debug_print(srtp_mod_aes_gcm, "setting AAD: %s",
+                srtp_octet_string_hex_string(aad, aad_len));
 
     /*
      * Set dummy tag, OpenSSL requires the Tag to be set before

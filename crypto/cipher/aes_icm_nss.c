@@ -137,6 +137,14 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
         return srtp_err_status_alloc_fail;
     }
 
+    icm->slot = PK11_GetInternalSlot();
+    if (!icm->slot) {
+      return srtp_err_status_cipher_fail;
+    }
+
+    icm->key = NULL;
+    icm->ctx = NULL;
+
     /* set pointers */
     (*c)->state = icm;
 
@@ -174,9 +182,20 @@ static srtp_err_status_t srtp_aes_icm_nss_dealloc(srtp_cipher_t *c)
 
     ctx = (srtp_aes_icm_ctx_t *)c->state;
     if (ctx) {
-        /* free PK11 context if it has been created */
+        /* free any PK11 values that have been created */
+        if (ctx->slot) {
+            PK11_FreeSlot(ctx->slot);
+            ctx->slot = NULL;
+        }
+
+        if (ctx->key) {
+            PK11_FreeSymKey(ctx->key);
+            ctx->key = NULL;
+        }
+
         if (ctx->ctx) {
-          PK11_DestroyContext(ctx->ctx, PR_TRUE);
+            PK11_DestroyContext(ctx->ctx, PR_TRUE);
+            ctx->ctx = NULL;
         }
 
         /* zeroize everything */
@@ -221,7 +240,17 @@ static srtp_err_status_t srtp_aes_icm_nss_context_init(void *cv,
                 srtp_octet_string_hex_string(key, c->key_size));
     debug_print(srtp_mod_aes_icm, "offset: %s", v128_hex_string(&c->offset));
 
-    memcpy(c->key, key, c->key_size);
+    if (!c->slot) {
+        return srtp_err_status_bad_param;
+    }
+
+    SECItem keyItem = { siBuffer, key, c->key_size };
+    c->key = PK11_ImportSymKey(c->slot, CKM_AES_CTR, PK11_OriginUnwrap,
+                               CKA_ENCRYPT, &keyItem, NULL);
+    if (!c->key) {
+        return srtp_err_status_cipher_fail;
+    }
+
     return (srtp_err_status_ok);
 }
 
@@ -251,25 +280,16 @@ static srtp_err_status_t srtp_aes_icm_nss_set_iv(void *cv,
     param.ulCounterBits = 16;
     memcpy(param.cb, &c->counter, 16);
 
-    PK11SlotInfo *slot = PK11_GetInternalSlot();
-    if (!slot) {
-      return srtp_err_status_cipher_fail;
+    if (!c->key) {
+        return srtp_err_status_bad_param;
     }
 
-    SECItem keyItem = { siBuffer, c->key, c->key_size };
-    PK11SymKey *symKey = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
-                                           CKA_ENCRYPT, &keyItem, NULL);
-    if (!symKey) {
-      PK11_FreeSlot(slot);
-      return srtp_err_status_cipher_fail;
+    if (c->ctx) {
+      PK11_DestroyContext(c->ctx, PR_TRUE);
     }
 
     SECItem paramItem = { siBuffer, (unsigned char*) &param, sizeof(CK_AES_CTR_PARAMS) };
-    c->ctx = PK11_CreateContextBySymKey(CKM_AES_CTR, CKA_ENCRYPT, symKey, &paramItem);
-
-    PK11_FreeSymKey(symKey);
-    PK11_FreeSlot(slot);
-
+    c->ctx = PK11_CreateContextBySymKey(CKM_AES_CTR, CKA_ENCRYPT, c->key, &paramItem);
     if (!c->ctx) {
       return srtp_err_status_cipher_fail;
     }
@@ -292,7 +312,7 @@ static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
 
     if (!c->ctx) {
-      return srtp_err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     int rv = PK11_CipherOp(c->ctx, buf, (int*) enc_len, *enc_len, buf, *enc_len);

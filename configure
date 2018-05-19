@@ -5731,7 +5731,7 @@ if test "${with_nss_dir+set}" = set; then :
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
-         LIBS="-lnss3 $LIBS"
+         LIBS="-lnss3 -lnspr4 $LIBS"
          { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
 $as_echo "$with_nss_dir" >&6; }
        else

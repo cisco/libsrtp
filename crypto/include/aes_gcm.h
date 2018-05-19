@@ -68,11 +68,16 @@ typedef struct {
 
 #include <pk11pub.h>
 
+#define MAX_AD_SIZE 2048
+
 typedef struct {
     int key_size;
     int tag_size;
     srtp_cipher_direction_t dir;
     uint8_t key[32];
+    uint8_t iv[12];
+    uint8_t aad[MAX_AD_SIZE];
+    int aad_size;
     CK_GCM_PARAMS params;
     uint8_t tag[16];
 } srtp_aes_gcm_ctx_t;
