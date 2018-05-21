@@ -63,7 +63,7 @@ if test -x $RTPW; then
 GCMARGS128="-k 01234567890123456789012345678901234567890123456789012345 -g -e 128"
 echo  $0 ": starting GCM mode 128-bit rtpw receiver process... "
 
-exec $RTPW $* $GCMARGS128 -r 127.0.0.1 $DEST_PORT &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec  $RTPW $* $GCMARGS128 -r 127.0.0.1 $DEST_PORT &
 
 receiver_pid=$!
 
@@ -82,7 +82,7 @@ fi
 
 echo  $0 ": starting GCM 128-bit rtpw sender process..."
 
-exec $RTPW $* $GCMARGS128 -s 127.0.0.1 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS128 -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
@@ -108,7 +108,7 @@ wait $sender_pid 2>/dev/null
 GCMARGS128="-k 01234567890123456789012345678901234567890123456789012345 -g -t 16 -e 128"
 echo  $0 ": starting GCM mode 128-bit (16 byte tag) rtpw receiver process... "
 
-exec $RTPW $* $GCMARGS128 -r 127.0.0.1 $DEST_PORT &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS128 -r 127.0.0.1 $DEST_PORT &
 
 receiver_pid=$!
 
@@ -127,7 +127,7 @@ fi
 
 echo  $0 ": starting GCM 128-bit (16 byte tag) rtpw sender process..."
 
-exec $RTPW $* $GCMARGS128 -s 127.0.0.1 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS128 -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
@@ -154,7 +154,7 @@ wait $sender_pid 2>/dev/null
 GCMARGS256="-k 0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 -g -e 256"
 echo  $0 ": starting GCM mode 256-bit rtpw receiver process... "
 
-exec $RTPW $* $GCMARGS256 -r 127.0.0.1 $DEST_PORT &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS256 -r 127.0.0.1 $DEST_PORT &
 
 receiver_pid=$!
 
@@ -173,7 +173,7 @@ fi
 
 echo  $0 ": starting GCM 256-bit rtpw sender process..."
 
-exec $RTPW $* $GCMARGS256 -s 127.0.0.1 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS256 -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
@@ -199,7 +199,7 @@ wait $sender_pid 2>/dev/null
 GCMARGS256="-k a123456789012345678901234567890123456789012345678901234567890123456789012345678901234567 -g -t 16 -e 256"
 echo  $0 ": starting GCM mode 256-bit (16 byte tag) rtpw receiver process... "
 
-exec $RTPW $* $GCMARGS256 -r 127.0.0.1 $DEST_PORT &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS256 -r 127.0.0.1 $DEST_PORT &
 
 receiver_pid=$!
 
@@ -218,7 +218,7 @@ fi
 
 echo  $0 ": starting GCM 256-bit (16 byte tag) rtpw sender process..."
 
-exec $RTPW $* $GCMARGS256 -s 127.0.0.1 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib exec $RTPW $* $GCMARGS256 -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 

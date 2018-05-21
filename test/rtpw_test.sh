@@ -66,7 +66,7 @@ if test -x $RTPW; then
 
 echo  $0 ": starting rtpw receiver process... "
 
-$RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
 
 receiver_pid=$!
 
@@ -85,7 +85,7 @@ fi
 
 echo  $0 ": starting rtpw sender process..."
 
-$RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
@@ -115,7 +115,7 @@ ARGS="-k $key -a -e 256"
 
 echo  $0 ": starting rtpw receiver process... "
 
-$RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
 
 receiver_pid=$!
 
@@ -134,7 +134,7 @@ fi
 
 echo  $0 ": starting rtpw sender process..."
 
-$RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
+DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
