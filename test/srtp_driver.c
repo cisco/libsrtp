@@ -1198,7 +1198,6 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         /* unprotect, and check for authentication failure */
         status = srtp_test_call_unprotect(srtp_rcvr, hdr, &len, use_mki);
         if (status != srtp_err_status_auth_fail) {
-            printf("status: %d\n", status);
             printf("failed\n");
             free(hdr);
             free(hdr2);

@@ -210,8 +210,6 @@ srtp_err_status_t srtp_cipher_type_test(
     const srtp_cipher_type_t *ct,
     const srtp_cipher_test_case_t *test_data)
 {
-    srtp_err_reporting_init();
-
     const srtp_cipher_test_case_t *test_case = test_data;
     srtp_cipher_t *c;
     srtp_err_status_t status;
@@ -280,6 +278,9 @@ srtp_err_status_t srtp_cipher_type_test(
 
         if (c->algorithm == SRTP_AES_GCM_128 ||
             c->algorithm == SRTP_AES_GCM_256) {
+            debug_print(srtp_mod_cipher, "IV:    %s",
+                        srtp_octet_string_hex_string(test_case->idx, 12));
+
             /*
              * Set the AAD
              */
@@ -298,7 +299,6 @@ srtp_err_status_t srtp_cipher_type_test(
         len = test_case->plaintext_length_octets;
         status = srtp_cipher_encrypt(c, buffer, &len);
         if (status) {
-            printf("--> x %d <--\n", status);
             srtp_cipher_dealloc(c);
             return status;
         }
@@ -310,13 +310,11 @@ srtp_err_status_t srtp_cipher_type_test(
              */
             status = srtp_cipher_get_tag(c, buffer + len, &tag_len);
             if (status) {
-                printf("--> xx <--\n");
                 srtp_cipher_dealloc(c);
                 return status;
             }
             len += tag_len;
         }
-        printf("--> xxx <--\n");
 
         debug_print(srtp_mod_cipher, "ciphertext:   %s",
                     srtp_octet_string_hex_string(
@@ -413,7 +411,6 @@ srtp_err_status_t srtp_cipher_type_test(
         /* compare the resulting plaintext with that in the test case */
         if (len != test_case->plaintext_length_octets) {
             srtp_cipher_dealloc(c);
-            printf("len fail: %d != %d\n", len, test_case->plaintext_length_octets);
             return srtp_err_status_algo_fail;
         }
         status = srtp_err_status_ok;

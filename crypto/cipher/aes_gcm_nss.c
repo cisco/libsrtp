@@ -265,13 +265,6 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
         return (srtp_err_status_cipher_fail);
     }
 
-    printf("--> gcm op <--\n");
-    printf("key: [%d] %s\n", c->key_size, srtp_octet_string_hex_string(c->key, c->key_size));
-    printf("iv: [%d] %s\n", c->params.ulIvLen, srtp_octet_string_hex_string(c->params.pIv, c->params.ulIvLen));
-    printf("aad: [%d] %s\n", c->params.ulAADLen, srtp_octet_string_hex_string(c->params.pAAD, c->params.ulAADLen));
-    printf("tag bits: [%d]\n", c->params.ulTagBits);
-    printf("plaintext: [%d] %s \n", *enc_len, srtp_octet_string_hex_string(buf, *enc_len));
-
     int rv;
     SECItem param = { siBuffer, (unsigned char *) &c->params, sizeof(CK_GCM_PARAMS) };
     if (encrypt) {
@@ -288,10 +281,6 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
     if (rv != SECSuccess) {
         status = (srtp_err_status_cipher_fail);
     }
-
-    printf("status: [%d] [%d]\n", rv, status);
-    printf("ciphertext: [%d] %s \n", *enc_len, srtp_octet_string_hex_string(buf, *enc_len));
-    printf("-----\n");
 
     PK11_FreeSymKey(key);
     PK11_FreeSlot(slot);
