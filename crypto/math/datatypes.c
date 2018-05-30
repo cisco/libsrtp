@@ -436,7 +436,7 @@ void srtp_cleanse(void *s, size_t len)
 
 void octet_string_set_to_zero(void *s, size_t len)
 {
-#ifdef OPENSSL
+#if defined(OPENSSL) && !defined(OPENSSL_CLEANSE_BROKEN)
     OPENSSL_cleanse(s, len);
 #else
     srtp_cleanse(s, len);
