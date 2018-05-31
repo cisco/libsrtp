@@ -5569,7 +5569,7 @@ $as_echo "#define GCM 1" >>confdefs.h
 
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
-   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o crypto/cipher/aes_gcm_double.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    USE_EXTERNAL_CRYPTO=1
 
@@ -5742,7 +5742,7 @@ $as_echo "#define GCM 1" >>confdefs.h
 
 $as_echo "#define NSS 1" >>confdefs.h
 
-   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o crypto/cipher/aes_gcm_double.o"
 
    # TODO(RLB): Use NSS for HMAC
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
