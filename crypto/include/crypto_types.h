@@ -98,6 +98,22 @@
 #define SRTP_AES_GCM_256 7
 
 /*
+ * Double AES-128_GCM Galois Counter Mode
+ *
+ * Double AES-128 GCM is the variant of AES GCM that enables its use
+ * with two crypto contexts.  This cipher uses a 32-octet key.
+ */
+#define SRTP_AES_GCM_128_DOUBLE 8
+
+/*
+ * Double AES-256_GCM Galois Counter Mode
+ *
+ * Double AES-256 GCM is the variant of AES GCM that enables its use
+ * with two crypto contexts.  This cipher uses a 64-octet key.
+ */
+#define SRTP_AES_GCM_256_DOUBLE 9
+
+/*
  * The null authentication function performs no authentication.
  *
  * The NULL_AUTH function does nothing, and can be selected to indicate

@@ -52,6 +52,10 @@ extern const srtp_cipher_type_t srtp_aes_icm_192;
 extern const srtp_cipher_type_t srtp_aes_gcm_128;
 extern const srtp_cipher_type_t srtp_aes_gcm_256;
 #endif
+#ifdef DOUBLE
+extern const srtp_cipher_type_t srtp_aes_gcm_128_double;
+extern const srtp_cipher_type_t srtp_aes_gcm_256_double;
+#endif
 
 /*
  * auth func types that can be included in the kernel

@@ -51,17 +51,19 @@
 #include "datatypes.h"
 #include "aes_gcm.h"
 
-#define MAX_AD_SIZE 2048
+#define MAX_AD_SIZE         512
+#define MAX_TAG_SIZE        16 + 4 + 16
+#define MAX_PLAINTEXT_SIZE  2048
 
 typedef struct {
     int key_size;
-    int tag_size;
     srtp_cipher_direction_t dir;
     uint8_t aad[MAX_AD_SIZE];
     int aad_size;
-
-    srtp_aes_gcm_ctx_t *inner_ctx;
-    srtp_aes_gcm_ctx_t *outer_ctx;
-} srtp_aes_gcm_ctx_t;
+    uint8_t tag[MAX_TAG_SIZE];
+    int tag_size;
+    srtp_cipher_t *inner;
+    srtp_cipher_t *outer;
+} srtp_aes_gcm_double_ctx_t;
 
 #endif /* AES_GCM_DOUBLE_H */
