@@ -128,8 +128,9 @@ static srtp_err_status_t srtp_aes_gcm_double_alloc(srtp_cipher_t **c,
     }
     memset(dbl, 0x0, sizeof(srtp_cipher_t));
 
-    /* set pointers */
+    /* configure the base state */
     (*c)->state = dbl;
+    (*c)->key_len = key_size;
 
     /* setup cipher attributes */
     const srtp_cipher_type_t *base_type = NULL;
@@ -327,6 +328,11 @@ static srtp_err_status_t srtp_aes_gcm_double_encrypt(void *cv,
 {
     srtp_err_status_t err;
     srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
+
+    /* This transform requires a minimum amount of AAD */
+    if (c->aad_size < RTP_HEADER_SIZE) {
+        return srtp_err_status_bad_param;
+    }
 
     /*
      * Prepare the AAD for the inner transform by unsetting the X

@@ -658,6 +658,8 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
 {
     int i;
     v128_t nonce;
+    uint8_t aad[12];
+    unsigned int aad_size = 12;
     clock_t timer;
     unsigned char *enc_buf;
     unsigned int len = octets_in_buffer;
@@ -666,6 +668,10 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
     if (enc_buf == NULL) {
         return 0; /* indicate bad parameters by returning null */
     }
+
+    /* provide stub AAD to AEAD ciphers */
+    memset(aad, 0, aad_size);
+
     /* time repeated trials */
     v128_set_to_zero(&nonce);
     timer = clock();
@@ -675,6 +681,16 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
             srtp_crypto_free(enc_buf);
             return 0;
         }
+
+        if ((c->algorithm == SRTP_AES_GCM_128 ||
+             c->algorithm == SRTP_AES_GCM_256 ||
+             c->algorithm == SRTP_AES_GCM_128_DOUBLE ||
+             c->algorithm == SRTP_AES_GCM_256_DOUBLE) &&
+            (srtp_cipher_set_aad(c, aad, aad_size) != srtp_err_status_ok)) {
+            srtp_crypto_free(enc_buf);
+            return 0;
+        }
+
         if (srtp_cipher_encrypt(c, enc_buf, &len) != srtp_err_status_ok) {
             srtp_crypto_free(enc_buf);
             return 0;
