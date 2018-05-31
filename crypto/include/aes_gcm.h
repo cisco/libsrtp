@@ -1,5 +1,5 @@
 /*
- * aes_gcm_ossl.h
+ * aes_gcm.h
  *
  * Header for AES Galois Counter Mode.
  *
@@ -43,8 +43,8 @@
  *
  */
 
-#ifndef AES_GCM_OSSL_H
-#define AES_GCM_OSSL_H
+#ifndef AES_GCM_H
+#define AES_GCM_H
 
 #include "cipher.h"
 #include "srtp.h"
@@ -84,4 +84,4 @@ typedef struct {
 
 #endif /* NSS */
 
-#endif /* AES_GCM_OSSL_H */
+#endif /* AES_GCM_H */
