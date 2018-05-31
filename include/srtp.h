@@ -124,6 +124,11 @@ extern "C" {
 #define SRTP_AES_GCM_256_KEY_LEN_WSALT                                         \
     (SRTP_AEAD_SALT_LEN + SRTP_AES_256_KEY_LEN)
 
+#define SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT                                  \
+    (SRTP_AES_GCM_128_KEY_LEN_WSALT + SRTP_AES_GCM_128_KEY_LEN_WSALT)
+#define SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT                                  \
+    (SRTP_AES_GCM_256_KEY_LEN_WSALT + SRTP_AES_GCM_256_KEY_LEN_WSALT)
+
 /**
  *  @brief A srtp_cipher_type_id_t is an identifier for a particular cipher
  *  type.
