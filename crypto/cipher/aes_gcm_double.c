@@ -669,7 +669,7 @@ const srtp_cipher_type_t srtp_aes_gcm_128_double = {
     srtp_aes_gcm_double_get_tag,
     srtp_aes_gcm_128_double_description,
     &srtp_aes_gcm_128_double_test_case,
-    SRTP_AES_GCM_128
+    SRTP_AES_GCM_128_DOUBLE
 };
 
 /*
@@ -686,5 +686,5 @@ const srtp_cipher_type_t srtp_aes_gcm_256_double = {
     srtp_aes_gcm_double_get_tag,
     srtp_aes_gcm_256_double_description,
     &srtp_aes_gcm_256_double_test_case,
-    SRTP_AES_GCM_256
+    SRTP_AES_GCM_256_DOUBLE
 };

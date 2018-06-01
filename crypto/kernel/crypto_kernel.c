@@ -150,6 +150,20 @@ srtp_err_status_t srtp_crypto_kernel_init()
     if (status) {
         return status;
     }
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_gcm_128_double,
+                                                 SRTP_AES_GCM_128_DOUBLE);
+    if (status) {
+        return status;
+    }
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_gcm_256_double,
+                                                 SRTP_AES_GCM_256_DOUBLE);
+    if (status) {
+        return status;
+    }
+    status = srtp_crypto_kernel_load_debug_module(&srtp_mod_aes_gcm_double);
+    if (status) {
+        return status;
+    }
 #endif
 
     /* load auth func types */

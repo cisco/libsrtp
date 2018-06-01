@@ -73,11 +73,9 @@ extern srtp_debug_module_t srtp_mod_alloc;
 
 /* debug modules for cipher types */
 extern srtp_debug_module_t srtp_mod_aes_icm;
-#ifdef OPENSSL
+#ifdef GCM
 extern srtp_debug_module_t srtp_mod_aes_gcm;
-#endif
-#ifdef NSS
-extern srtp_debug_module_t srtp_mod_aes_gcm;
+extern srtp_debug_module_t srtp_mod_aes_gcm_double;
 #endif
 
 /* debug modules for auth types */

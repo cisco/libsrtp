@@ -109,9 +109,16 @@ extern "C" {
  */
 #define SRTP_AEAD_SALT_LEN 12
 
+/*
+ * Doubled AEAD algorithms use double-length salt.
+ */
+#define SRTP_AEAD_DOUBLE_SALT_LEN (SRTP_AEAD_SALT_LEN + SRTP_AEAD_SALT_LEN)
+
 #define SRTP_AES_128_KEY_LEN 16
 #define SRTP_AES_192_KEY_LEN 24
 #define SRTP_AES_256_KEY_LEN 32
+#define SRTP_AES_128_DOUBLE_KEY_LEN (SRTP_AES_128_KEY_LEN + SRTP_AES_128_KEY_LEN)
+#define SRTP_AES_256_DOUBLE_KEY_LEN (SRTP_AES_256_KEY_LEN + SRTP_AES_256_KEY_LEN)
 
 #define SRTP_AES_ICM_128_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_128_KEY_LEN)
 #define SRTP_AES_ICM_192_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_192_KEY_LEN)
@@ -1153,6 +1160,52 @@ void srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p);
 void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p);
 
 /**
+ * @brief srtp_crypto_policy_set_aes_gcm_128_16_auth() sets a crypto
+ * policy structure to an AEAD encryption policy.
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_gcm_128_16_auth(&p) sets
+ * the srtp_crypto_policy_t at location p to use the SRTP default cipher
+ * (AES-128 Galois Counter Mode) in "doubled" mode.  This
+ * policy applies confidentiality and authentication to both the
+ * RTP and RTCP packets.
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the srtp_crypto_policy_t datatype.
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_gcm_128_double(srtp_crypto_policy_t *p);
+
+/**
+ * @brief srtp_crypto_policy_set_aes_gcm_256_16_auth() sets a crypto
+ * policy structure to an AEAD encryption policy
+ *
+ * @param p is a pointer to the policy structure to be set
+ *
+ * The function call srtp_crypto_policy_set_aes_gcm_256_16_auth(&p) sets
+ * the srtp_crypto_policy_t at location p to use the SRTP default cipher
+ * (AES-256 Galois Counter Mode) in "doubled" mode.  This
+ * policy applies confidentiality and authentication to both the
+ * RTP and RTCP packets.
+ *
+ * This function is a convenience that helps to avoid dealing directly
+ * with the policy data structure.  You are encouraged to initialize
+ * policy elements with this function call.  Doing so may allow your
+ * code to be forward compatible with later versions of libSRTP that
+ * include more elements in the srtp_crypto_policy_t datatype.
+ *
+ * @return void.
+ *
+ */
+void srtp_crypto_policy_set_aes_gcm_256_double(srtp_crypto_policy_t *p);
+
+/**
  * @brief srtp_dealloc() deallocates storage for an SRTP session
  * context.
  *
@@ -1185,6 +1238,8 @@ typedef enum {
     srtp_profile_null_sha1_32 = 6,
     srtp_profile_aead_aes_128_gcm = 7,
     srtp_profile_aead_aes_256_gcm = 8,
+    srtp_profile_aead_aes_128_gcm_double = 9,
+    srtp_profile_aead_aes_256_gcm_double =10,
 } srtp_profile_t;
 
 /**
