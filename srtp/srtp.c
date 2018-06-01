@@ -1705,6 +1705,54 @@ static void srtp_calc_aead_iv(srtp_session_keys_t *session_keys,
     v128_xor(iv, &in, &salt);
 }
 
+static void srtp_calc_double_aead_iv(srtp_session_keys_t *session_keys,
+                                     v128_t *iv_inner,
+                                     v128_t *iv_outer,
+                                     srtp_xtd_seq_num_t *seq,
+                                     srtp_hdr_t *hdr)
+{
+    v128_t in;
+    v128_t salt_inner;
+    v128_t salt_outer;
+
+#ifdef NO_64BIT_MATH
+    uint32_t local_roc = ((high32(*seq) << 16) | (low32(*seq) >> 16));
+    uint16_t local_seq = (uint16_t)(low32(*seq));
+#else
+    uint32_t local_roc = (uint32_t)(*seq >> 16);
+    uint16_t local_seq = (uint16_t)*seq;
+#endif
+
+    memset(&in, 0, sizeof(v128_t));
+    memset(&salt_inner, 0, sizeof(v128_t));
+    memset(&salt_outer, 0, sizeof(v128_t));
+
+    in.v16[5] = htons(local_seq);
+    local_roc = htonl(local_roc);
+    memcpy(&in.v16[3], &local_roc, sizeof(local_roc));
+
+    /*
+     * Copy in the RTP SSRC value
+     */
+    memcpy(&in.v8[2], &hdr->ssrc, 4);
+    debug_print(mod_srtp, "Pre-salted RTP IV = %s\n", v128_hex_string(&in));
+
+    /*
+     * Get the SALT value from the context
+     */
+    memcpy(salt_inner.v8, session_keys->salt, SRTP_AEAD_SALT_LEN);
+    memcpy(salt_outer.v8, session_keys->salt + SRTP_AEAD_SALT_LEN, SRTP_AEAD_SALT_LEN);
+    debug_print(mod_srtp, "RTP SALT (inner) = %s\n", v128_hex_string(&salt_inner));
+    debug_print(mod_srtp, "RTP SALT (outer) = %s\n", v128_hex_string(&salt_outer));
+
+    /*
+     * Finally, apply tyhe SALT to the input
+     */
+    v128_xor(iv_inner, &in, &salt_inner);
+    v128_xor(iv_outer, &in, &salt_outer);
+}
+
+
 srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
                                            uint8_t *hdr,
                                            const unsigned int *pkt_octet_len,
@@ -1865,7 +1913,9 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     int delta;              /* delta of local pkt idx and that in hdr */
     srtp_err_status_t status;
     uint32_t tag_len;
-    v128_t iv;
+    v128_t iv_inner;
+    v128_t iv_outer;
+    uint8_t iv[SRTP_MAX_IV_LEN];
     unsigned int aad_len;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     unsigned int mki_size = 0;
@@ -1934,9 +1984,18 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
 #endif
 
     /*
-     * AEAD uses a new IV formation method
+     * AEAD uses a new IV formation method, and double AEAD uses a
+     * double-size IV formation
      */
-    srtp_calc_aead_iv(session_keys, &iv, &est, hdr);
+    if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128_DOUBLE ||
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256_DOUBLE) {
+        srtp_calc_double_aead_iv(session_keys, &iv_inner, &iv_outer, &est, hdr);
+        memcpy(iv, &iv_inner, SRTP_AEAD_SALT_LEN);
+        memcpy(iv + SRTP_AEAD_SALT_LEN, &iv_outer, SRTP_AEAD_SALT_LEN);
+    } else {
+        srtp_calc_aead_iv(session_keys, &iv_outer, &est, hdr);
+        memcpy(iv, &iv_outer, SRTP_AEAD_SALT_LEN);
+    }
 /* shift est, put into network byte order */
 #ifdef NO_64BIT_MATH
     est = be64_to_cpu(
@@ -1945,14 +2004,14 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     est = be64_to_cpu(est << 16);
 #endif
 
-    status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
+    status = srtp_cipher_set_iv(session_keys->rtp_cipher, iv,
                                 srtp_direction_encrypt);
     if (!status && session_keys->rtp_xtn_hdr_cipher) {
-        iv.v32[0] = 0;
-        iv.v32[1] = hdr->ssrc;
-        iv.v64[1] = est;
+        iv_outer.v32[0] = 0;
+        iv_outer.v32[1] = hdr->ssrc;
+        iv_outer.v64[1] = est;
         status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
-                                    (uint8_t *)&iv, srtp_direction_encrypt);
+                                    (uint8_t *)&iv_outer, srtp_direction_encrypt);
     }
     if (status) {
         return srtp_err_status_cipher_fail;
@@ -2026,7 +2085,10 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
     uint32_t *enc_start;            /* pointer to start of encrypted portion  */
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
-    v128_t iv;
+    unsigned int dec_octet_len = 0; /* number of octets in decrypted portion */
+    v128_t iv_inner;
+    v128_t iv_outer;
+    uint8_t iv[SRTP_MAX_IV_LEN];
     srtp_err_status_t status;
     int tag_len;
     unsigned int aad_len;
@@ -2047,20 +2109,29 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     /*
      * AEAD uses a new IV formation method
      */
-    srtp_calc_aead_iv(session_keys, &iv, &est, hdr);
+    if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128_DOUBLE ||
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256_DOUBLE) {
+        srtp_calc_double_aead_iv(session_keys, &iv_inner, &iv_outer, &est, hdr);
+        memcpy(iv, &iv_inner, SRTP_AEAD_SALT_LEN);
+        memcpy(iv + SRTP_AEAD_SALT_LEN, &iv_outer, SRTP_AEAD_SALT_LEN);
+    } else {
+        srtp_calc_aead_iv(session_keys, &iv_outer, &est, hdr);
+        memcpy(iv, &iv_outer, SRTP_AEAD_SALT_LEN);
+    }
+
     status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
                                 srtp_direction_decrypt);
     if (!status && session_keys->rtp_xtn_hdr_cipher) {
-        iv.v32[0] = 0;
-        iv.v32[1] = hdr->ssrc;
+        iv_outer.v32[0] = 0;
+        iv_outer.v32[1] = hdr->ssrc;
 #ifdef NO_64BIT_MATH
-        iv.v64[1] = be64_to_cpu(
+        iv_outer.v64[1] = be64_to_cpu(
             make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
 #else
-        iv.v64[1] = be64_to_cpu(est << 16);
+        iv_outer.v64[1] = be64_to_cpu(est << 16);
 #endif
         status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
-                                    (uint8_t *)&iv, srtp_direction_encrypt);
+                                    (uint8_t *)&iv_outer, srtp_direction_encrypt);
     }
     if (status) {
         return srtp_err_status_cipher_fail;
@@ -2077,9 +2148,19 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
         enc_start += (ntohs(xtn_hdr->length) + 1);
     }
+
+    /*
+     * XXX(RLB): This check interacts badly with ciphers that have
+     * variable-length tags.  Is there some more sane way to address
+     * this?  Maybe this just gets swept up in the refactor of the
+     * AEAD API.
+     */
+    /*
     if (!((uint8_t *)enc_start <=
           (uint8_t *)hdr + (*pkt_octet_len - tag_len - mki_size)))
         return srtp_err_status_parse_err;
+    */
+
     /*
      * We pass the tag down to the cipher when doing GCM mode
      */
@@ -2091,9 +2172,17 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      * the tag size.  It must always be at least as large
      * as the tag length.
      */
+    /*
+     * XXX(RLB): Same comment as above w.r.t. ciphers that have
+     * unpredictable tags.  We should just pass the whole payload
+     * down to the cipher, and it either authenticates or it
+     * doesn't.
+     */
+    /*
     if (enc_octet_len < (unsigned int)tag_len) {
         return srtp_err_status_cipher_fail;
     }
+    */
 
     /*
      * update the key usage limit, and check it to make sure that we
@@ -2125,11 +2214,13 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 
     /* Decrypt the ciphertext.  This also checks the auth tag based
      * on the AAD we just specified above */
+    dec_octet_len = enc_octet_len;
     status = srtp_cipher_decrypt(session_keys->rtp_cipher, (uint8_t *)enc_start,
-                                 &enc_octet_len);
+                                 &dec_octet_len);
     if (status) {
         return status;
     }
+    tag_len = enc_octet_len - dec_octet_len;
 
     if (xtn_hdr && session_keys->rtp_xtn_hdr_cipher) {
         /*
@@ -2305,7 +2396,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
      * the request to our AEAD handler.
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128_DOUBLE ||
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256_DOUBLE) {
         return srtp_protect_aead(ctx, stream, rtp_hdr,
                                  (unsigned int *)pkt_octet_len, session_keys,
                                  use_mki);
@@ -2652,7 +2745,9 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
      * the request to our AEAD handler.
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128_DOUBLE ||
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256_DOUBLE) {
         return srtp_unprotect_aead(ctx, stream, delta, est, srtp_hdr,
                                    (unsigned int *)pkt_octet_len, session_keys,
                                    mki_size);

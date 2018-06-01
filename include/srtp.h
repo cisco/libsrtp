@@ -69,7 +69,12 @@ extern "C" {
 /*
  * SRTP_MAX_KEY_LEN is the maximum key length supported by libSRTP
  */
-#define SRTP_MAX_KEY_LEN 64
+#define SRTP_MAX_KEY_LEN 96
+
+/*
+ * SRTP_MAX_KEY_LEN is the maximum IV length supported by libSRTP
+ */
+#define SRTP_MAX_IV_LEN 24
 
 /*
  * SRTP_MAX_TAG_LEN is the maximum tag length supported by libSRTP
