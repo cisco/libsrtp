@@ -17,8 +17,11 @@ LIBS	= @LIBS@
 LDFLAGS	= @LDFLAGS@ -L. -L..
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 CRYPTOLIB = -lsrtp2
+CRYPTO_LIBDIR = @CRYPTO_LIBDIR@
 
 RANLIB	= @RANLIB@
+
+FIND_LIBRARIES = DYLD_LIBRARY_PATH=../$(CRYPTO_LIBDIR)
 
 # EXE defines the suffix on executables - it's .exe for cygwin, and
 # null on linux, bsd, and OS X and other OSes.  we define this so that
@@ -62,17 +65,17 @@ c256=8ea2b7ca516745bfeafc49904b496089
 
 
 runtest: $(testapp)
-	test/env$(EXE) # print out information on the build environment
+	$(FIND_LIBRARIES) test/env$(EXE) # print out information on the build environment
 	@echo "running crypto test applications..."
 ifneq (1, $(USE_EXTERNAL_CRYPTO))
-	test `test/aes_calc $(k128) $(p128)` = $(c128)
-	test `test/aes_calc $(k256) $(p256)` = $(c256)
+	$(FIND_LIBRARIES) test `test/aes_calc $(k128) $(p128)` = $(c128)
+	$(FIND_LIBRARIES) test `test/aes_calc $(k256) $(p256)` = $(c256)
 endif
-	test/cipher_driver$(EXE) -v >/dev/null
-	test/datatypes_driver$(EXE) -v >/dev/null
-	test/stat_driver$(EXE) >/dev/null
-	test/sha1_driver$(EXE) -v >/dev/null
-	test/kernel_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/cipher_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/datatypes_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/stat_driver$(EXE) >/dev/null
+	$(FIND_LIBRARIES) test/sha1_driver$(EXE) -v >/dev/null
+	$(FIND_LIBRARIES) test/kernel_driver$(EXE) -v >/dev/null
 	@echo "crypto test applications passed."
 
 
