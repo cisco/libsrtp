@@ -1155,8 +1155,6 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
                 switch (session_keys->rtp_cipher->type->id) {
                 case SRTP_AES_GCM_128:
                 case SRTP_AES_GCM_256:
-                case SRTP_AES_GCM_128_DOUBLE:
-                case SRTP_AES_GCM_256_DOUBLE:
                     /*
                      * The shorter GCM salt is padded to the required ICM salt
                      * length.
@@ -1178,6 +1176,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
                  */
                 int half_base_key_len = rtp_base_key_len / 2;
                 int half_salt_len = rtp_salt_len / 2;
+                rtp_xtn_hdr_salt_len = half_salt_len;
 
                 /* ... and we need to grab only the "outer" parts of the
                  * master key
@@ -1223,6 +1222,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
             xtn_hdr_kdf = &kdf;
         }
 
+        octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
         stat = srtp_kdf_generate(xtn_hdr_kdf, label_rtp_header_encryption,
                                  tmp_key, rtp_xtn_hdr_base_key_len);
         if (stat) {
@@ -1581,6 +1581,7 @@ static srtp_err_status_t srtp_process_header_encryption(
 
             if (srtp_protect_extension_header(stream, xid)) {
                 keystream_pos = 1;
+
                 while (xlen > 0) {
                     *xtn_hdr_data ^= keystream[keystream_pos++];
                     xtn_hdr_data++;
@@ -1765,7 +1766,9 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
 
     // Determine the authentication tag size
     if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128_DOUBLE ||
+        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256_DOUBLE) {
         tag_len = 0;
     } else {
         tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
