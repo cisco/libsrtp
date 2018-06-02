@@ -65,6 +65,8 @@ srtp_err_status_t srtp_validate(void);
 srtp_err_status_t srtp_validate_gcm(void);
 
 srtp_err_status_t srtp_validate_gcm_double(void);
+
+srtp_err_status_t srtp_validate_gcm_double_modified(void);
 #endif
 
 srtp_err_status_t srtp_validate_encrypted_extensions_headers(void);
@@ -441,6 +443,15 @@ int main(int argc, char *argv[])
         printf("testing srtp_protect and srtp_unprotect against "
                "reference packet using double GCM\n");
         if (srtp_validate_gcm_double() == srtp_err_status_ok) {
+            printf("passed\n\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_unprotect against modified "
+               "reference packet using double GCM\n");
+        if (srtp_validate_gcm_double_modified() == srtp_err_status_ok) {
             printf("passed\n\n");
         } else {
             printf("failed\n");
@@ -2155,6 +2166,103 @@ srtp_err_status_t srtp_validate_gcm_double()
     status = srtp_dealloc(srtp_snd);
     if (status) {
         return status;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * srtp_validate_gcm_double_modified() verifies the correctness of
+ * libsrtp by verifying that srtp_unprotect() correctly verifies and
+ * decrypts a packet that has been encryped with double GCM and
+ * modified by an intermediary with the outer key.
+ */
+srtp_err_status_t srtp_validate_gcm_double_modified()
+{
+    // clang-format off
+    /*
+     * This represents the same packet as in the base double GCM
+     * test, but modified by an intermediary to set the three octets
+     * of (M, PT, SEQ) to 0xA0A0A0.
+     */
+    unsigned char test_key_gcm[56] = {
+        /* inner key */
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+        /* outer key */
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        /* inner salt */
+        0xb0, 0xb1, 0xb2, 0xb3, 0xb4, 0xb5, 0xb6, 0xb7,
+        0xb8, 0xb9, 0xba, 0xbb,
+        /* outer salt */
+        0xa0, 0xa1, 0xa2, 0xa3, 0xa4, 0xa5, 0xa6, 0xa7,
+        0xa8, 0xa9, 0xaa, 0xab,
+    };
+    uint8_t rtp_plaintext_ref[28] = {
+        0x80, 0xa0, 0xa0, 0xa0, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab
+    };
+    uint8_t srtp_ciphertext[64] = {
+        0x80, 0xa0, 0xa0, 0xa0, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0x3d, 0x46, 0x23, 0x97,
+        0x92, 0xde, 0xad, 0x18, 0x76, 0xc5, 0x57, 0xc0,
+        0xa7, 0xe5, 0x28, 0x42, 0x3c, 0x1d, 0xd5, 0x5d,
+        0x95, 0x62, 0xc7, 0xb2, 0xea, 0x8d, 0x0a, 0xc9,
+        0x41, 0x52, 0xbf, 0x1c, 0x79, 0xda, 0x10, 0x7d,
+        0xab, 0x07, 0xed, 0x4d, 0x99, 0xcd, 0x8e, 0xa1,
+        0xa2, 0xbe, 0x6e, 0xb6, 0x9c, 0xd7, 0x5e, 0x95,
+    };
+    // clang-format on
+
+    srtp_t srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+
+    /*
+     * create a session with a single stream using the default srtp
+     * policy and with the SSRC value 0xcafebabe
+     */
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_aes_gcm_128_double(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key = test_key_gcm;
+    policy.ekt = NULL;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    /*
+     * create a receiver session context comparable to the one created
+     * above - we need to do this so that the replay checking doesn't
+     * complain
+     */
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    /*
+     * unprotect srtp ciphertext, then compare with rtp plaintext
+     */
+    len = 64;
+    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    if (status || (len != 28)) {
+        return status;
+    }
+
+    if (octet_string_is_eq(srtp_ciphertext, rtp_plaintext_ref, len)) {
+        return srtp_err_status_fail;
     }
 
     status = srtp_dealloc(srtp_recv);
