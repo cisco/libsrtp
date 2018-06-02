@@ -61,13 +61,6 @@ srtp_debug_module_t srtp_mod_aes_gcm = {
 };
 
 /*
- * For now we only support 8 and 16 octet tags.  The spec allows for
- * optional 12 byte tag, which may be supported in the future.
- */
-#define GCM_AUTH_TAG_LEN 16
-#define GCM_AUTH_TAG_LEN_8 8
-
-/*
  * This function allocates a new instance of this crypto engine.
  * The key_len parameter should be one of 28 or 44 for
  * AES-128-GCM or AES-256-GCM respectively.  Note that the

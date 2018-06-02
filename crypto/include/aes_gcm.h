@@ -50,6 +50,14 @@
 #include "srtp.h"
 #include "datatypes.h"
 
+/*
+ * For now we only support 8 and 16 octet tags.  The spec allows for
+ * optional 12 byte tag, which may be supported in the future.
+ */
+#define GCM_IV_LEN 12
+#define GCM_AUTH_TAG_LEN 16
+#define GCM_AUTH_TAG_LEN_8 8
+
 #ifdef OPENSSL
 
 #include <openssl/evp.h>
@@ -68,7 +76,7 @@ typedef struct {
 
 #include <pk11pub.h>
 
-#define MAX_AD_SIZE 2048
+#define GCM_MAX_AD_SIZE 512
 
 typedef struct {
     int key_size;
@@ -76,7 +84,7 @@ typedef struct {
     srtp_cipher_direction_t dir;
     PK11SymKey *key;
     uint8_t iv[12];
-    uint8_t aad[MAX_AD_SIZE];
+    uint8_t aad[GCM_MAX_AD_SIZE];
     int aad_size;
     CK_GCM_PARAMS params;
     uint8_t tag[16];

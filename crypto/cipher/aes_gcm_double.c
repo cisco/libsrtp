@@ -65,9 +65,7 @@ srtp_debug_module_t srtp_mod_aes_gcm_double = {
 #define GCM_IV_LEN 12
 #define GCM_AUTH_TAG_LEN 16
 
-#define MAX_OHB_LEN 4
-#define  GCM_DOUBLE_MAX_AUTH_TAG_LEN                                     \
-    (GCM_AUTH_TAG_LEN + MAX_OHB_LEN + GCM_AUTH_TAG_LEN)
+
 
 #define SRTP_AES_128_DOUBLE_KEY_LEN                                     \
     (SRTP_AES_128_KEY_LEN + SRTP_AES_128_KEY_LEN)
@@ -306,7 +304,7 @@ static srtp_err_status_t srtp_aes_gcm_double_set_aad(void *cv,
     debug_print(srtp_mod_aes_gcm, "setting AAD: %s",
                 srtp_octet_string_hex_string(aad, aad_size));
 
-    if (aad_size + c->aad_size > MAX_AD_SIZE) {
+    if (aad_size + c->aad_size > GCM_DOUBLE_MAX_AD_LEN) {
         return srtp_err_status_bad_param;
     }
 
@@ -368,11 +366,11 @@ static srtp_err_status_t srtp_aes_gcm_double_encrypt(void *cv,
     // of the interpretation risks of the current API
     unsigned int pt_size = *enc_size;
     unsigned int ct_size = *enc_size;
-    unsigned char ct[MAX_PLAINTEXT_SIZE + GCM_DOUBLE_MAX_AUTH_TAG_LEN];
-    if (*enc_size > MAX_PLAINTEXT_SIZE) {
+    unsigned char ct[GCM_DOUBLE_MAX_PLAINTEXT_LEN + GCM_DOUBLE_MAX_AUTH_TAG_LEN];
+    if (*enc_size > GCM_DOUBLE_MAX_PLAINTEXT_LEN) {
         return srtp_err_status_bad_param;
     }
-    memset(ct, 0, MAX_PLAINTEXT_SIZE + GCM_DOUBLE_MAX_AUTH_TAG_LEN);
+    memset(ct, 0, GCM_DOUBLE_MAX_PLAINTEXT_LEN + GCM_DOUBLE_MAX_AUTH_TAG_LEN);
     memcpy(ct, buf, *enc_size);
 
     debug_print(srtp_mod_aes_gcm_double, "inner plaintext: %s",
