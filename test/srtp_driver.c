@@ -1608,6 +1608,9 @@ double mips_estimate(int num_trials, int *ignore)
         sum += i;
     }
     t = clock() - t;
+    if (t < 1) {
+        t = 1;
+    }
 
     /*   printf("%d\n", sum); */
     *ignore = sum;
