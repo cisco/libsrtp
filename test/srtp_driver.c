@@ -1341,6 +1341,8 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
      */
     rcvr_policy = (srtp_policy_t *)malloc(sizeof(srtp_policy_t));
     if (rcvr_policy == NULL) {
+        free(hdr);
+        free(hdr2);
         return srtp_err_status_alloc_fail;
     }
     memcpy(rcvr_policy, policy, sizeof(srtp_policy_t));
@@ -1606,6 +1608,9 @@ double mips_estimate(int num_trials, int *ignore)
         sum += i;
     }
     t = clock() - t;
+    if (t < 1) {
+        t = 1;
+    }
 
     /*   printf("%d\n", sum); */
     *ignore = sum;

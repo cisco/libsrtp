@@ -317,6 +317,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    memset(&name, 0, sizeof(struct sockaddr_in));
     name.sin_addr = rcvr_addr;
     name.sin_family = PF_INET;
     name.sin_port = htons(port);
