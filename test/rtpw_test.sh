@@ -41,8 +41,13 @@ case $(uname -s) in
     *CYGWIN*|*MINGW*)
         EXE=".exe"
         ;;
-    *)
+    *Linux*)
         EXE=""
+        export LD_LIBRARY_PATH=$CRYPTO_LIBDIR
+        ;;
+    *Darwin*)
+        EXE=""
+        export DYLD_LIBRARY_PATH=$CRYPTO_LIBDIR
         ;;
 esac
 
@@ -66,7 +71,7 @@ if test -x $RTPW; then
 
 echo  $0 ": starting rtpw receiver process... "
 
-DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
+$RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
 
 receiver_pid=$!
 
@@ -85,7 +90,7 @@ fi
 
 echo  $0 ": starting rtpw sender process..."
 
-DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
+$RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
@@ -115,7 +120,7 @@ ARGS="-k $key -a -e 256"
 
 echo  $0 ": starting rtpw receiver process... "
 
-DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
+$RTPW $* $ARGS -r 0.0.0.0 $DEST_PORT  &
 
 receiver_pid=$!
 
@@ -134,7 +139,7 @@ fi
 
 echo  $0 ": starting rtpw sender process..."
 
-DYLD_LIBRARY_PATH=../../nss/dist/Debug/lib $RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
+$RTPW $* $ARGS -s 127.0.0.1 $DEST_PORT  &
 
 sender_pid=$!
 
