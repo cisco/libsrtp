@@ -127,14 +127,14 @@ static srtp_err_status_t srtp_aes_gcm_nss_alloc(srtp_cipher_t **c,
         (*c)->algorithm = SRTP_AES_GCM_128;
         gcm->key_size = SRTP_AES_128_KEY_LEN;
         gcm->tag_size = tlen;
-        gcm->params.ulTagBits = 8*tlen;
+        gcm->params.ulTagBits = 8 * tlen;
         break;
     case SRTP_AES_GCM_256_KEY_LEN_WSALT:
         (*c)->type = &srtp_aes_gcm_256;
         (*c)->algorithm = SRTP_AES_GCM_256;
         gcm->key_size = SRTP_AES_256_KEY_LEN;
         gcm->tag_size = tlen;
-        gcm->params.ulTagBits = 8*tlen;
+        gcm->params.ulTagBits = 8 * tlen;
         break;
     default:
         /* this should never hit, but to be sure... */
@@ -239,8 +239,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_iv(
  *	aad_len	length of aad buffer
  */
 static srtp_err_status_t srtp_aes_gcm_nss_set_aad(void *cv,
-                                                      const uint8_t *aad,
-                                                      uint32_t aad_len)
+                                                  const uint8_t *aad,
+                                                  uint32_t aad_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
@@ -257,9 +257,10 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_aad(void *cv,
     return (srtp_err_status_ok);
 }
 
-static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
-                                                  unsigned char *buf,
-                                                  unsigned int *enc_len)
+static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
+                                                    int encrypt,
+                                                    unsigned char *buf,
+                                                    unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
@@ -272,15 +273,14 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
     c->aad_size = 0;
 
     int rv;
-    SECItem param = { siBuffer, (unsigned char *) &c->params, sizeof(CK_GCM_PARAMS) };
+    SECItem param = { siBuffer, (unsigned char *) &c->params,
+                      sizeof(CK_GCM_PARAMS) };
     if (encrypt) {
-        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param,
-                          buf, enc_len, *enc_len + 16,
+        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, buf, enc_len, *enc_len + 16,
                           buf, *enc_len);
     } else {
-        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param,
-                          buf, enc_len, *enc_len,
-                          buf, *enc_len);
+        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, buf, enc_len, *enc_len, buf,
+                          *enc_len);
     }
 
     srtp_err_status_t status = (srtp_err_status_ok);
@@ -306,8 +306,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv, int encrypt,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
-                                                      unsigned char *buf,
-                                                      unsigned int *enc_len)
+                                                  unsigned char *buf,
+                                                  unsigned int *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
@@ -346,8 +346,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
  *	len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_nss_get_tag(void *cv,
-                                                      uint8_t *buf,
-                                                      uint32_t *len)
+                                                  uint8_t *buf,
+                                                  uint32_t *len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     *len = c->tag_size;
@@ -364,8 +364,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_get_tag(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_nss_decrypt(void *cv,
-                                                      unsigned char *buf,
-                                                      unsigned int *enc_len)
+                                                  unsigned char *buf,
+                                                  unsigned int *enc_len)
 {
     srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 0, buf, enc_len);
     if (status != srtp_err_status_ok) {
@@ -381,10 +381,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_decrypt(void *cv,
 /*
  * Name of this crypto engine
  */
-static const char srtp_aes_gcm_128_nss_description[] =
-    "AES-128 GCM using NSS";
-static const char srtp_aes_gcm_256_nss_description[] =
-    "AES-256 GCM using NSS";
+static const char srtp_aes_gcm_128_nss_description[] = "AES-128 GCM using NSS";
+static const char srtp_aes_gcm_256_nss_description[] = "AES-256 GCM using NSS";
 
 /*
  * KAT values for AES self-test.  These
@@ -557,6 +555,7 @@ static const srtp_cipher_test_case_t srtp_aes_gcm_test_case_1 = {
 /*
  * This is the vector function table for this crypto engine.
  */
+/* clang-format off */
 const srtp_cipher_type_t srtp_aes_gcm_128 = {
     srtp_aes_gcm_nss_alloc,
     srtp_aes_gcm_nss_dealloc,
@@ -570,10 +569,12 @@ const srtp_cipher_type_t srtp_aes_gcm_128 = {
     &srtp_aes_gcm_test_case_0,
     SRTP_AES_GCM_128
 };
+/* clang-format on */
 
 /*
  * This is the vector function table for this crypto engine.
  */
+/* clang-format off */
 const srtp_cipher_type_t srtp_aes_gcm_256 = {
     srtp_aes_gcm_nss_alloc,
     srtp_aes_gcm_nss_dealloc,
@@ -587,3 +588,4 @@ const srtp_cipher_type_t srtp_aes_gcm_256 = {
     &srtp_aes_gcm_test_case_1,
     SRTP_AES_GCM_256
 };
+/* clang-format on */

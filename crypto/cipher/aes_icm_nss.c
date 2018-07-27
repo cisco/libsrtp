@@ -55,7 +55,7 @@
 #include <nss.h>
 
 srtp_debug_module_t srtp_mod_aes_icm = {
-    0,             /* debugging is off by default */
+    0,            /* debugging is off by default */
     "aes icm nss" /* printable module name       */
 };
 
@@ -278,13 +278,15 @@ static srtp_err_status_t srtp_aes_icm_nss_set_iv(void *cv,
     }
 
     if (c->ctx) {
-      PK11_DestroyContext(c->ctx, PR_TRUE);
+        PK11_DestroyContext(c->ctx, PR_TRUE);
     }
 
-    SECItem paramItem = { siBuffer, (unsigned char*) &param, sizeof(CK_AES_CTR_PARAMS) };
-    c->ctx = PK11_CreateContextBySymKey(CKM_AES_CTR, CKA_ENCRYPT, c->key, &paramItem);
+    SECItem paramItem = { siBuffer, (unsigned char*) &param,
+                          sizeof(CK_AES_CTR_PARAMS) };
+    c->ctx = PK11_CreateContextBySymKey(CKM_AES_CTR, CKA_ENCRYPT, c->key,
+                                        &paramItem);
     if (!c->ctx) {
-      return srtp_err_status_cipher_fail;
+        return srtp_err_status_cipher_fail;
     }
 
     return srtp_err_status_ok;
@@ -308,7 +310,8 @@ static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
         return srtp_err_status_bad_param;
     }
 
-    int rv = PK11_CipherOp(c->ctx, buf, (int*) enc_len, *enc_len, buf, *enc_len);
+    int rv =
+        PK11_CipherOp(c->ctx, buf, (int*) enc_len, *enc_len, buf, *enc_len);
 
     srtp_err_status_t status = (srtp_err_status_ok);
     if (rv != SECSuccess) {
@@ -531,12 +534,12 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     srtp_aes_icm_nss_alloc,           /* */
     srtp_aes_icm_nss_dealloc,         /* */
     srtp_aes_icm_nss_context_init,    /* */
-    0,                                    /* set_aad */
+    0,                                /* set_aad */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                    /* get_tag */
+    0,                                /* get_tag */
     srtp_aes_icm_256_nss_description, /* */
-    &srtp_aes_icm_256_test_case_0,        /* */
-    SRTP_AES_ICM_256                      /* */
+    &srtp_aes_icm_256_test_case_0,    /* */
+    SRTP_AES_ICM_256                  /* */
 };

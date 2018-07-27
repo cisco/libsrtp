@@ -377,8 +377,8 @@ int main(int argc, char *argv[])
                     break;
                 }
 #else
-                printf("error: GCM mode only supported when using the OpenSSL or NSS"
-                       "crypto engine.\n");
+                printf("error: GCM mode only supported when using the OpenSSL "
+                       "or NSS crypto engine.\n");
                 return 0;
 #endif
             } else {

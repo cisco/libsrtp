@@ -193,15 +193,13 @@ int main(int argc, char *argv[])
                 &srtp_aes_icm_192, SRTP_AES_ICM_192_KEY_LEN_WSALT, num_cipher);
 
         for (num_cipher = 1; num_cipher < max_num_cipher; num_cipher *= 8) {
-            cipher_driver_test_array_throughput(&srtp_aes_gcm_128,
-                                                SRTP_AES_GCM_128_KEY_LEN_WSALT,
-                                                num_cipher);
+            cipher_driver_test_array_throughput(
+                &srtp_aes_gcm_128, SRTP_AES_GCM_128_KEY_LEN_WSALT, num_cipher);
         }
 
         for (num_cipher = 1; num_cipher < max_num_cipher; num_cipher *= 8) {
-            cipher_driver_test_array_throughput(&srtp_aes_gcm_256,
-                                                SRTP_AES_GCM_256_KEY_LEN_WSALT,
-                                                num_cipher);
+            cipher_driver_test_array_throughput(
+                &srtp_aes_gcm_256, SRTP_AES_GCM_256_KEY_LEN_WSALT, num_cipher);
         }
 #endif
     }
