@@ -281,7 +281,7 @@ static srtp_err_status_t srtp_aes_icm_nss_set_iv(void *cv,
         PK11_DestroyContext(c->ctx, PR_TRUE);
     }
 
-    SECItem paramItem = { siBuffer, (unsigned char*)&param,
+    SECItem paramItem = { siBuffer, (unsigned char *)&param,
                           sizeof(CK_AES_CTR_PARAMS) };
     c->ctx = PK11_CreateContextBySymKey(CKM_AES_CTR, CKA_ENCRYPT, c->key,
                                         &paramItem);
@@ -311,7 +311,7 @@ static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
     }
 
     int rv =
-        PK11_CipherOp(c->ctx, buf, (int *) enc_len, *enc_len, buf, *enc_len);
+        PK11_CipherOp(c->ctx, buf, (int *)enc_len, *enc_len, buf, *enc_len);
 
     srtp_err_status_t status = (srtp_err_status_ok);
     if (rv != SECSuccess) {
