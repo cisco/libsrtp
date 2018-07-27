@@ -309,7 +309,7 @@ elif test "$enable_nss" = "yes"; then
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
-         LIBS="-lnss3 -lnspr4 $LIBS"
+         LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
          AC_MSG_RESULT([$with_nss_dir])
        else
          AC_MSG_RESULT([invalid])
