@@ -291,7 +291,6 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
     return status;
 }
 
-
 /*
  * This function encrypts a buffer using AES GCM mode
  *
