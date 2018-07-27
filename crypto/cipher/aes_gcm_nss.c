@@ -193,7 +193,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_context_init(void *cv,
         return (srtp_err_status_cipher_fail);
     }
 
-    SECItem key_item = { siBuffer, (unsigned char*) key, c->key_size };
+    SECItem key_item = { siBuffer, (unsigned char *) key, c->key_size };
     c->key = PK11_ImportSymKey(slot, CKM_AES_GCM, PK11_OriginUnwrap,
                                CKA_ENCRYPT, &key_item, NULL);
     PK11_FreeSlot(slot);
@@ -273,14 +273,14 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
     c->aad_size = 0;
 
     int rv;
-    SECItem param = { siBuffer, (unsigned char *) &c->params,
+    SECItem param = { siBuffer, (unsigned char *)&c->params,
                       sizeof(CK_GCM_PARAMS) };
     if (encrypt) {
-        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, buf, enc_len, *enc_len + 16,
-                          buf, *enc_len);
+        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, buf, enc_len,
+                          *enc_len + 16, buf, *enc_len);
     } else {
-        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, buf, enc_len, *enc_len, buf,
-                          *enc_len);
+        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, buf, enc_len, *enc_len,
+                          buf, *enc_len);
     }
 
     srtp_err_status_t status = (srtp_err_status_ok);
@@ -324,9 +324,10 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
         return srtp_err_status_bad_param;
     }
 
-    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 1, non_null_buf, enc_len);
+    srtp_err_status_t status =
+        srtp_aes_gcm_nss_do_crypto(cv, 1, non_null_buf, enc_len);
     if (status != srtp_err_status_ok) {
-      return status;
+        return status;
     }
 
     memcpy(c->tag, non_null_buf + (*enc_len - c->tag_size), c->tag_size);
