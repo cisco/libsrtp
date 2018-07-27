@@ -21,7 +21,21 @@ CRYPTO_LIBDIR = @CRYPTO_LIBDIR@
 
 RANLIB	= @RANLIB@
 
-FIND_LIBRARIES = DYLD_LIBRARY_PATH=../$(CRYPTO_LIBDIR)
+# Specify how tests should find shared libraries on macOS and Linux
+#
+# macOS purges DYLD_LIBRARY_PATH when spawning subprocesses, so it's
+# not possible to pass this in from the outside; we have to specify
+# it for any subprocesses we call. No support for dynamic linked
+# tests on Windows.
+ifneq ($(OS),Windows_NT)
+	UNAME_S = $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		FIND_LIBRARIES = LD_LIBRARY_PATH=../$(CRYPTO_LIBDIR)
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		FIND_LIBRARIES = DYLD_LIBRARY_PATH=../$(CRYPTO_LIBDIR)
+	endif
+endif
 
 # EXE defines the suffix on executables - it's .exe for cygwin, and
 # null on linux, bsd, and OS X and other OSes.  we define this so that
