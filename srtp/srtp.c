@@ -3544,7 +3544,6 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
      */
     /* Note: This would need to change for optional mikey data */
     auth_tag = (uint8_t *)hdr + *pkt_octet_len;
-    octet_string_set_to_zero(auth_tag, tag_len);
 
     /*
      * check sequence number for overruns, and copy it into the packet

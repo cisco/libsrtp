@@ -302,7 +302,7 @@ elif test "$enable_nss" = "yes"; then
    AC_ARG_WITH([nss-dir],
       [AS_HELP_STRING([--with-nss-dir], [Location of NSS installation])],
       [if test -d $with_nss_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_nss_dir/include/nspr/"
+         CFLAGS="$CFLAGS -I$with_nss_dir/include/"
          CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
          if test "x$LDFLAGS" = "x"; then
            LDFLAGS="-L$with_nss_dir/lib"
@@ -313,7 +313,7 @@ elif test "$enable_nss" = "yes"; then
          AC_MSG_RESULT([$with_nss_dir])
        else
          AC_MSG_RESULT([invalid])
-         AC_MSG_FAILURE([Invalid OpenSSL location: $with_nss_dir])
+         AC_MSG_FAILURE([Invalid NSS location: $with_nss_dir])
       fi],
       [AC_MSG_RESULT([no])])
 

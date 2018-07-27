@@ -137,11 +137,6 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
         return srtp_err_status_alloc_fail;
     }
 
-    icm->slot = PK11_GetInternalSlot();
-    if (!icm->slot) {
-      return srtp_err_status_cipher_fail;
-    }
-
     icm->key = NULL;
     icm->ctx = NULL;
 
@@ -183,11 +178,6 @@ static srtp_err_status_t srtp_aes_icm_nss_dealloc(srtp_cipher_t *c)
     ctx = (srtp_aes_icm_ctx_t *)c->state;
     if (ctx) {
         /* free any PK11 values that have been created */
-        if (ctx->slot) {
-            PK11_FreeSlot(ctx->slot);
-            ctx->slot = NULL;
-        }
-
         if (ctx->key) {
             PK11_FreeSymKey(ctx->key);
             ctx->key = NULL;
@@ -240,13 +230,16 @@ static srtp_err_status_t srtp_aes_icm_nss_context_init(void *cv,
                 srtp_octet_string_hex_string(key, c->key_size));
     debug_print(srtp_mod_aes_icm, "offset: %s", v128_hex_string(&c->offset));
 
-    if (!c->slot) {
+    PK11SlotInfo *slot = PK11_GetBestSlot(CKM_AES_CTR, NULL);
+    if (!slot) {
         return srtp_err_status_bad_param;
     }
 
-    SECItem keyItem = { siBuffer, key, c->key_size };
-    c->key = PK11_ImportSymKey(c->slot, CKM_AES_CTR, PK11_OriginUnwrap,
+    SECItem keyItem = { siBuffer, (unsigned char*)key, c->key_size };
+    c->key = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
                                CKA_ENCRYPT, &keyItem, NULL);
+    PK11_FreeSlot(slot);
+
     if (!c->key) {
         return srtp_err_status_cipher_fail;
     }

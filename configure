@@ -5724,7 +5724,7 @@ $as_echo_n "checking for user specified NSS directory... " >&6; }
 # Check whether --with-nss-dir was given.
 if test "${with_nss_dir+set}" = set; then :
   withval=$with_nss_dir; if test -d $with_nss_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_nss_dir/include/nspr/"
+         CFLAGS="$CFLAGS -I$with_nss_dir/include/"
          CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
          if test "x$LDFLAGS" = "x"; then
            LDFLAGS="-L$with_nss_dir/lib"
@@ -5739,7 +5739,7 @@ $as_echo "$with_nss_dir" >&6; }
 $as_echo "invalid" >&6; }
          { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "Invalid OpenSSL location: $with_nss_dir
+as_fn_error $? "Invalid NSS location: $with_nss_dir
 See \`config.log' for more details" "$LINENO" 5; }
       fi
 else

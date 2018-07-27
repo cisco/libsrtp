@@ -74,7 +74,7 @@ typedef struct {
     int key_size;
     int tag_size;
     srtp_cipher_direction_t dir;
-    uint8_t key[32];
+    PK11SymKey *key;
     uint8_t iv[12];
     uint8_t aad[MAX_AD_SIZE];
     int aad_size;
