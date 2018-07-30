@@ -48,6 +48,9 @@
 
 #include "cipher.h"
 #include "datatypes.h"
+
+#ifdef OPENSSL
+
 #include <openssl/evp.h>
 #include <openssl/aes.h>
 
@@ -57,5 +60,22 @@ typedef struct {
     int key_size;
     EVP_CIPHER_CTX *ctx;
 } srtp_aes_icm_ctx_t;
+
+#endif /* OPENSSL */
+
+#ifdef NSS
+
+#include <pk11pub.h>
+
+typedef struct {
+    v128_t counter;
+    v128_t offset;
+    int key_size;
+    uint8_t iv[16];
+    PK11SymKey *key;
+    PK11Context *ctx;
+} srtp_aes_icm_ctx_t;
+
+#endif /* NSS */
 
 #endif /* AES_ICM_H */

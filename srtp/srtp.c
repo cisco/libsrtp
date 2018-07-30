@@ -51,12 +51,13 @@
 #include "ekt.h"   /* for SRTP Encrypted Key Transport */
 #include "alloc.h" /* for srtp_crypto_alloc() */
 
-#ifdef OPENSSL
-#include "aes_gcm_ossl.h" /* for AES GCM mode */
+#ifdef GCM
+#include "aes_gcm.h" /* for AES GCM mode */
+#endif
+
 #ifdef OPENSSL_KDF
 #include <openssl/kdf.h>
-#include "aes_icm_ossl.h" /* for AES GCM mode */
-#endif
+#include "aes_icm_ext.h"
 #endif
 
 #include <limits.h>
@@ -3286,7 +3287,7 @@ void srtp_crypto_policy_set_aes_cm_256_null_auth(srtp_crypto_policy_t *p)
     p->sec_serv = sec_serv_conf;
 }
 
-#ifdef OPENSSL
+#ifdef GCM
 void srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p)
 {
     /*
@@ -4435,7 +4436,7 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
     case srtp_profile_null_sha1_80:
         srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
         break;
-#if defined(OPENSSL)
+#ifdef GCM
     case srtp_profile_aead_aes_128_gcm:
         srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
         break;
@@ -4469,7 +4470,7 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(
     case srtp_profile_null_sha1_80:
         srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
         break;
-#if defined(OPENSSL)
+#ifdef GCM
     case srtp_profile_aead_aes_128_gcm:
         srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
         break;

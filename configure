@@ -627,7 +627,8 @@ PCAP_LIB
 HAVE_PCAP
 HMAC_OBJS
 AES_ICM_OBJS
-USE_OPENSSL
+CRYPTO_LIBDIR
+USE_EXTERNAL_CRYPTO
 crypto_LIBS
 crypto_CFLAGS
 PKG_CONFIG_LIBDIR
@@ -679,7 +680,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -704,8 +704,10 @@ ac_user_opts='
 enable_option_checking
 enable_debug_logging
 enable_openssl
+enable_nss
 with_openssl_dir
 enable_openssl_kdf
+with_nss_dir
 enable_log_stdout
 with_log_file
 '
@@ -762,7 +764,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1015,15 +1016,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1161,7 +1153,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1314,7 +1306,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1350,6 +1341,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-debug-logging  Enable debug logging in all modules
   --enable-openssl        compile in OpenSSL crypto engine
+  --enable-nss            compile in NSS crypto engine
   --enable-openssl-kdf    Use OpenSSL KDF algorithm
   --enable-log-stdout     redirecting logging to stdout
 
@@ -1357,6 +1349,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-openssl-dir      Location of OpenSSL installation
+  --with-nss-dir          Location of NSS installation
   --with-log-file         Use file for logging
 
 Some influential environment variables:
@@ -5144,6 +5137,19 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openssl" >&5
 $as_echo "$enable_openssl" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to leverage NSS crypto" >&5
+$as_echo_n "checking whether to leverage NSS crypto... " >&6; }
+# Check whether --enable-nss was given.
+if test "${enable_nss+set}" = set; then :
+  enableval=$enable_nss;
+else
+  enable_nss=no
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_nss" >&5
+$as_echo "$enable_nss" >&6; }
+
 if test "$enable_openssl" = "yes"; then
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for user specified OpenSSL directory" >&5
 $as_echo_n "checking for user specified OpenSSL directory... " >&6; }
@@ -5184,8 +5190,8 @@ fi
    if test "x$PKG_CONFIG" != "x"; then
 
 pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for crypto" >&5
-$as_echo_n "checking for crypto... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libcrypto >= 1.0.1" >&5
+$as_echo_n "checking for libcrypto >= 1.0.1... " >&6; }
 
 if test -n "$crypto_CFLAGS"; then
     pkg_cv_crypto_CFLAGS="$crypto_CFLAGS"
@@ -5225,7 +5231,7 @@ fi
 
 
 if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
 if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
@@ -5252,7 +5258,7 @@ Alternatively, you may set the environment variables crypto_CFLAGS
 and crypto_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." "$LINENO" 5
 elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
@@ -5558,11 +5564,14 @@ fi
 
 
 
+$as_echo "#define GCM 1" >>confdefs.h
+
+
 $as_echo "#define OPENSSL 1" >>confdefs.h
 
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
-   USE_OPENSSL=1
+   USE_EXTERNAL_CRYPTO=1
 
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if OPENSSL_cleanse is broken" >&5
@@ -5696,6 +5705,54 @@ fi
 $as_echo "#define OPENSSL_KDF 1" >>confdefs.h
 
    fi
+elif test "$enable_nss" = "yes"; then
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for user specified NSS directory" >&5
+$as_echo_n "checking for user specified NSS directory... " >&6; }
+
+# Check whether --with-nss-dir was given.
+if test "${with_nss_dir+set}" = set; then :
+  withval=$with_nss_dir; if test -d $with_nss_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_nss_dir/include/"
+         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
+         if test "x$LDFLAGS" = "x"; then
+           LDFLAGS="-L$with_nss_dir/lib"
+         else
+           LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
+         fi
+         LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
+$as_echo "$with_nss_dir" >&6; }
+       else
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
+$as_echo "invalid" >&6; }
+         { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Invalid NSS location: $with_nss_dir
+See \`config.log' for more details" "$LINENO" 5; }
+      fi
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+$as_echo "#define GCM 1" >>confdefs.h
+
+
+$as_echo "#define NSS 1" >>confdefs.h
+
+   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
+
+   # TODO(RLB): Use NSS for HMAC
+   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
+
+   # TODO(RLB): Use NSS for KDF
+
+   USE_EXTERNAL_CRYPTO=1
+
+   CRYPTO_LIBDIR=$with_nss_dir/lib
+
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"

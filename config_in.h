@@ -129,6 +129,12 @@
 /* Define this to use OpenSSL KDF for SRTP. */
 #undef OPENSSL_KDF
 
+/* Define this to use NSS crypto. */
+#undef NSS
+
+/* Define this to use AES-GCM.  Requires OPENSSL or NSS */
+#undef GCM
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
