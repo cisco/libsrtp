@@ -1,4 +1,4 @@
-/* config_in.h.  Generated from configure.in by autoheader.  */
+/* config_in.h.  Generated from configure.ac by autoheader.  */
 
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
@@ -57,7 +57,7 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
-/* Define to 1 if you have the `pcap' library (-lpcap) */
+/* Define to 1 if you have the `winpcap' library (-lwpcap) */
 #undef HAVE_PCAP
 
 /* Define to 1 if you have the `sigaction' function. */
@@ -123,8 +123,17 @@
 /* Define this to use OpenSSL crypto. */
 #undef OPENSSL
 
+/* Define this if OPENSSL_cleanse is broken. */
+#undef OPENSSL_CLEANSE_BROKEN
+
 /* Define this to use OpenSSL KDF for SRTP. */
 #undef OPENSSL_KDF
+
+/* Define this to use NSS crypto. */
+#undef NSS
+
+/* Define this to use AES-GCM.  Requires OPENSSL or NSS */
+#undef GCM
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

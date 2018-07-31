@@ -79,7 +79,7 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
 
 /* OpenSSL 1.1.0 made HMAC_CTX an opaque structure, which must be allocated
    using HMAC_CTX_new.  But this function doesn't exist in OpenSSL 1.0.x. */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || LIBRESSL_VERSION_NUMBER
     {
         /* allocate memory for auth and HMAC_CTX structures */
         uint8_t *pointer;
@@ -125,7 +125,7 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
 
     hmac_ctx = (HMAC_CTX *)a->state;
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || LIBRESSL_VERSION_NUMBER
     HMAC_CTX_cleanup(hmac_ctx);
 
     /* zeroize entire state*/

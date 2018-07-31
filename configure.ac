@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([libsrtp2], [2.2.0-pre], [https://github.com/cisco/libsrtp/issues])
+AC_INIT([libsrtp2], [2.3.0-pre], [https://github.com/cisco/libsrtp/issues])
 
 dnl Must come before AC_PROG_CC
 EMPTY_CFLAGS="no"
@@ -249,6 +249,13 @@ AC_ARG_ENABLE([openssl],
   [AS_HELP_STRING([--enable-openssl], [compile in OpenSSL crypto engine])],
   [], [enable_openssl=no])
 AC_MSG_RESULT([$enable_openssl])
+
+AC_MSG_CHECKING([whether to leverage NSS crypto])
+AC_ARG_ENABLE([nss],
+  [AS_HELP_STRING([--enable-nss], [compile in NSS crypto engine])],
+  [], [enable_nss=no])
+AC_MSG_RESULT([$enable_nss])
+
 if test "$enable_openssl" = "yes"; then
    AC_MSG_CHECKING([for user specified OpenSSL directory])
    AC_ARG_WITH([openssl-dir],
@@ -290,10 +297,36 @@ if test "$enable_openssl" = "yes"; then
    AC_SEARCH_LIBS([EVP_aes_128_gcm], [crypto],
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
 
+   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
-   AC_SUBST([USE_OPENSSL], [1])
+   AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
+
+   AC_MSG_CHECKING([if OPENSSL_cleanse is broken])
+   AC_RUN_IFELSE([AC_LANG_PROGRAM([
+     #include <stdio.h>
+     #include <openssl/crypto.h>
+   ], [
+     #define BUFFER_SIZE (16)
+     char buffer[[BUFFER_SIZE]];
+     int i;
+     for (i = 0; i < BUFFER_SIZE; i++) {
+       buffer[[i]] = i & 0xff;
+     }
+     OPENSSL_cleanse(buffer, BUFFER_SIZE);
+     for (i = 0; i < BUFFER_SIZE; i++) {
+       if (buffer[[i]]) {
+         printf("Buffer contents not zero at position %d (is %d)\n", i,
+             buffer[[i]]);
+         return 1;
+       }
+     }
+   ])], [openssl_cleanse_broken=no], [
+     openssl_cleanse_broken=yes
+     AC_DEFINE([OPENSSL_CLEANSE_BROKEN], [1], [Define this if OPENSSL_cleanse is broken.])
+   ])
+   AC_MSG_RESULT([$openssl_cleanse_broken])
 
    AC_MSG_CHECKING([whether to leverage OpenSSL KDF algorithm])
    AC_ARG_ENABLE([openssl-kdf],
@@ -305,6 +338,37 @@ if test "$enable_openssl" = "yes"; then
        [], [AC_MSG_FAILURE([can't find openssl KDF lib])])
      AC_DEFINE([OPENSSL_KDF], [1], [Define this to use OpenSSL KDF for SRTP.])
    fi
+elif test "$enable_nss" = "yes"; then
+   AC_MSG_CHECKING([for user specified NSS directory])
+   AC_ARG_WITH([nss-dir],
+      [AS_HELP_STRING([--with-nss-dir], [Location of NSS installation])],
+      [if test -d $with_nss_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_nss_dir/include/"
+         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
+         if test "x$LDFLAGS" = "x"; then
+           LDFLAGS="-L$with_nss_dir/lib"
+         else
+           LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
+         fi
+         LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+         AC_MSG_RESULT([$with_nss_dir])
+       else
+         AC_MSG_RESULT([invalid])
+         AC_MSG_FAILURE([Invalid NSS location: $with_nss_dir])
+      fi],
+      [AC_MSG_RESULT([no])])
+
+   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
+   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
+
+   # TODO(RLB): Use NSS for HMAC
+   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
+
+   # TODO(RLB): Use NSS for KDF
+
+   AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
+   AC_SUBST([CRYPTO_LIBDIR], [$with_nss_dir/lib])
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
