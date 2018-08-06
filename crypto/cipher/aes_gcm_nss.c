@@ -223,7 +223,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_iv(
     c->dir = direction;
 
     debug_print(srtp_mod_aes_gcm, "setting iv: %s",
-                v128_hex_string((v128_t *)iv));
+                srtp_octet_string_hex_string(iv, GCM_IV_LEN));
 
     memcpy(c->iv, iv, GCM_IV_LEN);
 
