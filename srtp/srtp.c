@@ -672,8 +672,6 @@ static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf)
  * default KDF is the only one implemented at present.
  */
 typedef struct {
-    uint8_t key[128];      /* XXX(RLB): For debug purposes */
-    int key_size;          /* XXX(RLB): For debug purposes */
     srtp_cipher_t *cipher; /* cipher used for key derivation  */
 } srtp_kdf_t;
 
@@ -708,10 +706,6 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
         return stat;
     }
 
-    // XXX(RLB)
-    memcpy(kdf->key, key, key_len);
-    kdf->key_size = key_len;
-
     return srtp_err_status_ok;
 }
 
@@ -737,11 +731,6 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf,
     status = srtp_cipher_encrypt(kdf->cipher, key, &length);
     if (status)
         return status;
-
-    // XXX(RLB)
-    debug_print(mod_srtp, "kdf with label: %02x", label);
-    debug_print(mod_srtp, "      from key: %s", srtp_octet_string_hex_string(kdf->key, kdf->key_size));
-    debug_print(mod_srtp, "   with result: %s", srtp_octet_string_hex_string(key, length));
 
     return srtp_err_status_ok;
 }
@@ -949,7 +938,6 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * * Generate encryption salt as (kdf(inner), kdf(outer))
      * * Re-init the main KDF from the outer part
      */
-
     if (session_keys->rtp_cipher->type->id == SRTP_AES_GCM_128_DOUBLE ||
         session_keys->rtp_cipher->type->id == SRTP_AES_GCM_256_DOUBLE) {
         int half_rtp_key_len = rtp_keylen / 2;
@@ -1309,8 +1297,6 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     debug_print(mod_srtp, "rtcp salt len: %d", rtcp_salt_len);
 
     /* generate encryption key  */
-    // TODO(RLB): Fork here to set the base key to the outer half of
-    // the key if we're using -double
     stat = srtp_kdf_generate(&kdf, label_rtcp_encryption, tmp_key,
                              rtcp_base_key_len);
     if (stat) {
@@ -2157,6 +2143,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      * variable-length tags.  Is there some more sane way to address
      * this?  Maybe this just gets swept up in the refactor of the
      * AEAD API.
+     *
+     * This comment should be removed after code review.
      */
     /*
     if (!((uint8_t *)enc_start <=
@@ -2180,6 +2168,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      * unpredictable tags.  We should just pass the whole payload
      * down to the cipher, and it either authenticates or it
      * doesn't.
+     *
+     * This comment should be removed after code review.
      */
     /*
     if (enc_octet_len < (unsigned int)tag_len) {

@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
         cipher_driver_test_throughput(c);
     }
 
-    // GCM ciphers don't do buffering; they're "one shot"
+    /* No buffering tests; GCM ciphers don't do buffering */
 
     status = srtp_cipher_dealloc(c);
     check_status(status);
@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
         cipher_driver_test_throughput(c);
     }
 
-    // GCM ciphers don't do buffering; they're "one shot"
+    /* No buffering tests; GCM ciphers don't do buffering */
 
     status = srtp_cipher_dealloc(c);
     check_status(status);
@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
         cipher_driver_test_throughput(c);
     }
 
-    // GCM ciphers don't do buffering; they're "one shot"
+    /* No buffering tests; GCM ciphers don't do buffering */
 
     status = srtp_cipher_dealloc(c);
     check_status(status);
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
         cipher_driver_test_throughput(c);
     }
 
-    // GCM ciphers don't do buffering; they're "one shot"
+    /* No buffering tests; GCM ciphers don't do buffering */
 
     status = srtp_cipher_dealloc(c);
     check_status(status);
