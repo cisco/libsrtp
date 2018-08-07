@@ -217,7 +217,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv(
     c->dir = direction;
 
     debug_print(srtp_mod_aes_gcm, "setting iv: %s",
-                v128_hex_string((v128_t *)iv));
+                srtp_octet_string_hex_string(iv, 12));
 
     if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
         return (srtp_err_status_init_fail);
