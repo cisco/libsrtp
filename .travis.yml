@@ -87,6 +87,26 @@ matrix:
         - make
         - make runtest
 
+    # osx build with nss
+    - os: osx
+      env:
+        - TEST="osx (nss)"
+      osx_image: xcode8.2
+      before_install:
+            - wget https://ftp.mozilla.org/pub/security/nss/releases/NSS_3_38_RTM/src/nss-3.38-with-nspr-4.19.tar.gz
+            - tar -xzvf nss-3.38-with-nspr-4.19.tar.gz
+            - pushd nss-3.38/nss
+            - USE_64=1 make nss_build_all
+            - pushd ../dist/$(<../dist/latest)
+            - export NSS_DIR=$(pwd)
+            - echo $NSS_DIR
+            - popd
+            - popd
+      script:
+        - EXTRA_CFLAGS=-Werror ./configure --enable-nss --with-nss-dir=$NSS_DIR
+        - make
+        - make runtest
+
     # code format check
     - os: linux
       env:
