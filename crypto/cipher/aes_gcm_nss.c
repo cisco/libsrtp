@@ -188,6 +188,11 @@ static srtp_err_status_t srtp_aes_gcm_nss_context_init(void *cv,
     debug_print(srtp_mod_aes_gcm, "key:  %s",
                 srtp_octet_string_hex_string(key, c->key_size));
 
+    if (c->key) {
+        PK11_FreeSymKey(c->key);
+        c->key = NULL;
+    }
+
     PK11SlotInfo *slot = PK11_GetBestSlot(CKM_AES_GCM, NULL);
     if (!slot) {
         return (srtp_err_status_cipher_fail);
