@@ -122,8 +122,10 @@ extern "C" {
 #define SRTP_AES_128_KEY_LEN 16
 #define SRTP_AES_192_KEY_LEN 24
 #define SRTP_AES_256_KEY_LEN 32
-#define SRTP_AES_128_DOUBLE_KEY_LEN (SRTP_AES_128_KEY_LEN + SRTP_AES_128_KEY_LEN)
-#define SRTP_AES_256_DOUBLE_KEY_LEN (SRTP_AES_256_KEY_LEN + SRTP_AES_256_KEY_LEN)
+#define SRTP_AES_128_DOUBLE_KEY_LEN                                            \
+    (SRTP_AES_128_KEY_LEN + SRTP_AES_128_KEY_LEN)
+#define SRTP_AES_256_DOUBLE_KEY_LEN                                            \
+    (SRTP_AES_256_KEY_LEN + SRTP_AES_256_KEY_LEN)
 
 #define SRTP_AES_ICM_128_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_128_KEY_LEN)
 #define SRTP_AES_ICM_192_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_192_KEY_LEN)
@@ -1244,7 +1246,7 @@ typedef enum {
     srtp_profile_aead_aes_128_gcm = 7,
     srtp_profile_aead_aes_256_gcm = 8,
     srtp_profile_aead_aes_128_gcm_double = 9,
-    srtp_profile_aead_aes_256_gcm_double =10,
+    srtp_profile_aead_aes_256_gcm_double = 10,
 } srtp_profile_t;
 
 /**

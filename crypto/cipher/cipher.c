@@ -327,7 +327,8 @@ srtp_err_status_t srtp_cipher_type_test(
         /* compare the resulting ciphertext with that in the test case */
         if (len != test_case->ciphertext_length_octets) {
             debug_print(srtp_mod_cipher, "bad ciphertext length: %d", len);
-            debug_print(srtp_mod_cipher, "             expected: %d", test_case->ciphertext_length_octets);
+            debug_print(srtp_mod_cipher, "             expected: %d",
+                        test_case->ciphertext_length_octets);
             srtp_cipher_dealloc(c);
             return srtp_err_status_algo_fail;
         }

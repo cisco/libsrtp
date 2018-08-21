@@ -209,15 +209,15 @@ int main(int argc, char *argv[])
         }
 
         for (num_cipher = 1; num_cipher < max_num_cipher; num_cipher *= 8) {
-            cipher_driver_test_array_throughput(&srtp_aes_gcm_128_double,
-                                                SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT,
-                                                num_cipher);
+            cipher_driver_test_array_throughput(
+                &srtp_aes_gcm_128_double, SRTP_AES_GCM_128_DOUBLE_KEY_LEN_WSALT,
+                num_cipher);
         }
 
         for (num_cipher = 1; num_cipher < max_num_cipher; num_cipher *= 8) {
-            cipher_driver_test_array_throughput(&srtp_aes_gcm_256_double,
-                                                SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT,
-                                                num_cipher);
+            cipher_driver_test_array_throughput(
+                &srtp_aes_gcm_256_double, SRTP_AES_GCM_256_DOUBLE_KEY_LEN_WSALT,
+                num_cipher);
         }
 #endif
     }

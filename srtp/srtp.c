@@ -770,7 +770,7 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher,
         break;
     case SRTP_AES_GCM_128_DOUBLE:
     case SRTP_AES_GCM_256_DOUBLE:
-        return key_length - 2*SRTP_AEAD_SALT_LEN;
+        return key_length - 2 * SRTP_AEAD_SALT_LEN;
         break;
     default:
         return key_length;
@@ -943,7 +943,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         int half_rtp_key_len = rtp_keylen / 2;
         int half_base_key_len = rtp_base_key_len / 2;
         int half_salt_len = rtp_salt_len / 2;
-        int half_kdf_len = (half_rtp_key_len > 30)? 46 : 30;
+        int half_kdf_len = (half_rtp_key_len > 30) ? 46 : 30;
 
         /*
          * Outside of this branch, KDFs are all based on half
@@ -978,10 +978,11 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
 
         srtp_kdf_t inner_kdf;
 #if defined(OPENSSL) && defined(OPENSSL_KDF)
-        stat = srtp_kdf_init(&inner_kdf, (const uint8_t *)tmp_key, half_base_key_len,
-                             half_salt_len);
+        stat = srtp_kdf_init(&inner_kdf, (const uint8_t *)tmp_key,
+                             half_base_key_len, half_salt_len);
 #else
-        stat = srtp_kdf_init(&inner_kdf, (const uint8_t *)tmp_key, half_kdf_len);
+        stat =
+            srtp_kdf_init(&inner_kdf, (const uint8_t *)tmp_key, half_kdf_len);
 #endif
         if (stat) {
             /* zeroize temp buffer */
@@ -1017,8 +1018,9 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
             octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
             return srtp_err_status_init_fail;
         }
-        stat = srtp_kdf_generate(&kdf, label_rtp_encryption, tmp_key + half_base_key_len,
-                                 half_base_key_len);
+        stat =
+            srtp_kdf_generate(&kdf, label_rtp_encryption,
+                              tmp_key + half_base_key_len, half_base_key_len);
         if (stat) {
             /* zeroize temp buffer */
             octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -1029,7 +1031,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
 
         /* Generate the encryption salt in inner and outer halves */
         if (rtp_salt_len > 0) {
-            debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt", NULL);
+            debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt",
+                        NULL);
 
             /* generate encryption salt, put after encryption key */
             stat = srtp_kdf_generate(&inner_kdf, label_rtp_salt,
@@ -1062,7 +1065,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         memset(tmp_key, 0x0, MAX_SRTP_KEY_LEN);
         memcpy(tmp_key, key, (rtp_base_key_len + rtp_salt_len));
 
-        /* initialize KDF state         */
+/* initialize KDF state         */
 #if defined(OPENSSL) && defined(OPENSSL_KDF)
         stat = srtp_kdf_init(&kdf, (const uint8_t *)tmp_key, rtp_base_key_len,
                              rtp_salt_len);
@@ -1091,7 +1094,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
          * to generate the salt value
          */
         if (rtp_salt_len > 0) {
-            debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt", NULL);
+            debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt",
+                        NULL);
 
             /* generate encryption salt, put after encryption key */
             stat = srtp_kdf_generate(&kdf, label_rtp_salt,
@@ -1175,10 +1179,10 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
                  *       [outer key | outer salt]
                  */
                 memset(tmp_xtn_hdr_key, 0x0, MAX_SRTP_KEY_LEN);
-                memcpy(tmp_xtn_hdr_key, key + half_base_key_len, half_base_key_len);
+                memcpy(tmp_xtn_hdr_key, key + half_base_key_len,
+                       half_base_key_len);
                 memcpy(tmp_xtn_hdr_key + half_base_key_len,
-                       key + rtp_base_key_len + half_salt_len,
-                       half_salt_len);
+                       key + rtp_base_key_len + half_salt_len, half_salt_len);
             } else {
                 memset(tmp_xtn_hdr_key, 0x0, MAX_SRTP_KEY_LEN);
                 memcpy(tmp_xtn_hdr_key, key,
@@ -1728,9 +1732,12 @@ static void srtp_calc_double_aead_iv(srtp_session_keys_t *session_keys,
      * Get the SALT value from the context
      */
     memcpy(salt_inner.v8, session_keys->salt, SRTP_AEAD_SALT_LEN);
-    memcpy(salt_outer.v8, session_keys->salt + SRTP_AEAD_SALT_LEN, SRTP_AEAD_SALT_LEN);
-    debug_print(mod_srtp, "RTP SALT (inner) = %s\n", v128_hex_string(&salt_inner));
-    debug_print(mod_srtp, "RTP SALT (outer) = %s\n", v128_hex_string(&salt_outer));
+    memcpy(salt_outer.v8, session_keys->salt + SRTP_AEAD_SALT_LEN,
+           SRTP_AEAD_SALT_LEN);
+    debug_print(mod_srtp, "RTP SALT (inner) = %s\n",
+                v128_hex_string(&salt_inner));
+    debug_print(mod_srtp, "RTP SALT (outer) = %s\n",
+                v128_hex_string(&salt_outer));
 
     /*
      * Finally, apply tyhe SALT to the input
@@ -1738,7 +1745,6 @@ static void srtp_calc_double_aead_iv(srtp_session_keys_t *session_keys,
     v128_xor(iv_inner, &in, &salt_inner);
     v128_xor(iv_outer, &in, &salt_outer);
 }
-
 
 srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
                                            uint8_t *hdr,
@@ -1753,8 +1759,10 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
     // Determine the authentication tag size
     if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
         stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
-        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128_DOUBLE ||
-        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256_DOUBLE) {
+        stream->session_keys[0].rtp_cipher->algorithm ==
+            SRTP_AES_GCM_128_DOUBLE ||
+        stream->session_keys[0].rtp_cipher->algorithm ==
+            SRTP_AES_GCM_256_DOUBLE) {
         tag_len = 0;
     } else {
         tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
@@ -1999,8 +2007,9 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         iv_outer.v32[0] = 0;
         iv_outer.v32[1] = hdr->ssrc;
         iv_outer.v64[1] = est;
-        status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
-                                    (uint8_t *)&iv_outer, srtp_direction_encrypt);
+        status =
+            srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
+                               (uint8_t *)&iv_outer, srtp_direction_encrypt);
     }
     if (status) {
         return srtp_err_status_cipher_fail;
@@ -2119,8 +2128,9 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 #else
         iv_outer.v64[1] = be64_to_cpu(est << 16);
 #endif
-        status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
-                                    (uint8_t *)&iv_outer, srtp_direction_encrypt);
+        status =
+            srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
+                               (uint8_t *)&iv_outer, srtp_direction_encrypt);
     }
     if (status) {
         return srtp_err_status_cipher_fail;

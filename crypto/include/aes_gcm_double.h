@@ -52,11 +52,11 @@
 #include "aes_gcm.h"
 
 #define MAX_OHB_LEN 4
-#define  GCM_DOUBLE_MAX_AUTH_TAG_LEN                                     \
+#define GCM_DOUBLE_MAX_AUTH_TAG_LEN                                            \
     (GCM_AUTH_TAG_LEN + MAX_OHB_LEN + GCM_AUTH_TAG_LEN)
 
-#define GCM_DOUBLE_MAX_AD_LEN         512
-#define GCM_DOUBLE_MAX_PLAINTEXT_LEN  2048
+#define GCM_DOUBLE_MAX_AD_LEN 512
+#define GCM_DOUBLE_MAX_PLAINTEXT_LEN 2048
 
 typedef struct {
     int key_size;

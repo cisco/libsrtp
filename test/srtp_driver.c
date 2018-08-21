@@ -479,8 +479,9 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        printf("testing srtp_protect and srtp_unprotect against "
-               "reference packet with encrypted extension headers (double GCM)\n");
+        printf(
+            "testing srtp_protect and srtp_unprotect against "
+            "reference packet with encrypted extension headers (double GCM)\n");
         if (srtp_validate_encrypted_extensions_headers_gcm_double() ==
             srtp_err_status_ok) {
             printf("passed\n\n");
