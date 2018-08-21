@@ -230,6 +230,11 @@ static srtp_err_status_t srtp_aes_icm_nss_context_init(void *cv,
                 srtp_octet_string_hex_string(key, c->key_size));
     debug_print(srtp_mod_aes_icm, "offset: %s", v128_hex_string(&c->offset));
 
+    if (c->key) {
+        PK11_FreeSymKey(c->key);
+        c->key = NULL;
+    }
+
     PK11SlotInfo *slot = PK11_GetBestSlot(CKM_AES_CTR, NULL);
     if (!slot) {
         return srtp_err_status_bad_param;
