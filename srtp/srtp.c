@@ -1056,6 +1056,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
                         srtp_octet_string_hex_string(tmp_key + rtp_base_key_len,
                                                      rtp_salt_len));
         }
+
+        srtp_kdf_clear(&inner_kdf);
     } else {
         /*
          * Make sure the key given to us is 'zero' appended.  GCM
