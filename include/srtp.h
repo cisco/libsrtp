@@ -1165,12 +1165,12 @@ void srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p);
 void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p);
 
 /**
- * @brief srtp_crypto_policy_set_aes_gcm_128_16_auth() sets a crypto
+ * @brief srtp_crypto_policy_set_aes_gcm_128_double() sets a crypto
  * policy structure to an AEAD encryption policy.
  *
  * @param p is a pointer to the policy structure to be set
  *
- * The function call srtp_crypto_policy_set_aes_gcm_128_16_auth(&p) sets
+ * The function call srtp_crypto_policy_set_aes_gcm_128_double(&p) sets
  * the srtp_crypto_policy_t at location p to use the SRTP default cipher
  * (AES-128 Galois Counter Mode) in "doubled" mode.  This
  * policy applies confidentiality and authentication to both the
@@ -1188,12 +1188,12 @@ void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p);
 void srtp_crypto_policy_set_aes_gcm_128_double(srtp_crypto_policy_t *p);
 
 /**
- * @brief srtp_crypto_policy_set_aes_gcm_256_16_auth() sets a crypto
+ * @brief srtp_crypto_policy_set_aes_gcm_256_double() sets a crypto
  * policy structure to an AEAD encryption policy
  *
  * @param p is a pointer to the policy structure to be set
  *
- * The function call srtp_crypto_policy_set_aes_gcm_256_16_auth(&p) sets
+ * The function call srtp_crypto_policy_set_aes_gcm_256_double(&p) sets
  * the srtp_crypto_policy_t at location p to use the SRTP default cipher
  * (AES-256 Galois Counter Mode) in "doubled" mode.  This
  * policy applies confidentiality and authentication to both the

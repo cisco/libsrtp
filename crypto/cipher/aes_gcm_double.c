@@ -95,9 +95,9 @@ static srtp_err_status_t srtp_aes_gcm_double_alloc(srtp_cipher_t **c,
     srtp_err_status_t err;
     srtp_aes_gcm_double_ctx_t *dbl;
 
-    debug_print(srtp_mod_aes_gcm, "allocating cipher with key length %d",
+    debug_print(srtp_mod_aes_gcm_double, "allocating cipher with key length %d",
                 key_size);
-    debug_print(srtp_mod_aes_gcm, "allocating cipher with tag length %d", tlen);
+    debug_print(srtp_mod_aes_gcm_double, "allocating cipher with tag length %d", tlen);
 
     /*
      * Verify the key_size is valid for one of: AES-128/256
@@ -116,7 +116,6 @@ static srtp_err_status_t srtp_aes_gcm_double_alloc(srtp_cipher_t **c,
     if (*c == NULL) {
         return (srtp_err_status_alloc_fail);
     }
-    memset(*c, 0x0, sizeof(srtp_cipher_t));
 
     dbl = (srtp_aes_gcm_double_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_gcm_double_ctx_t));
     if (dbl == NULL) {
@@ -124,7 +123,6 @@ static srtp_err_status_t srtp_aes_gcm_double_alloc(srtp_cipher_t **c,
         *c = NULL;
         return (srtp_err_status_alloc_fail);
     }
-    memset(dbl, 0x0, sizeof(srtp_cipher_t));
 
     /* configure the base state */
     (*c)->state = dbl;
@@ -161,7 +159,7 @@ static srtp_err_status_t srtp_aes_gcm_double_alloc(srtp_cipher_t **c,
 
     err = base_type->alloc(&dbl->outer, base_key_size_wsalt, GCM_AUTH_TAG_LEN);
     if (err != srtp_err_status_ok) {
-      debug_print(srtp_mod_aes_gcm_double, "error alloc inner: %d", err);
+      debug_print(srtp_mod_aes_gcm_double, "error alloc outer: %d", err);
       srtp_crypto_free(*c);
       *c = NULL;
       return err;
@@ -301,7 +299,7 @@ static srtp_err_status_t srtp_aes_gcm_double_set_aad(void *cv,
 {
     srtp_aes_gcm_double_ctx_t *c = (srtp_aes_gcm_double_ctx_t *)cv;
 
-    debug_print(srtp_mod_aes_gcm, "setting AAD: %s",
+    debug_print(srtp_mod_aes_gcm_double, "setting AAD: %s",
                 srtp_octet_string_hex_string(aad, aad_size));
 
     if (aad_size + c->aad_size > GCM_DOUBLE_MAX_AD_LEN) {
