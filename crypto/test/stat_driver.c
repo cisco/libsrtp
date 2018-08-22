@@ -56,12 +56,6 @@
 #include "cipher.h"
 #include "cipher_priv.h"
 
-typedef struct {
-    void *state;
-} random_source_t;
-
-srtp_err_status_t random_source_alloc(void);
-
 void err_check(srtp_err_status_t s)
 {
     if (s) {
