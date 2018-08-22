@@ -27,13 +27,15 @@ RANLIB	= @RANLIB@
 # not possible to pass this in from the outside; we have to specify
 # it for any subprocesses we call. No support for dynamic linked
 # tests on Windows.
-ifneq ($(OS),Windows_NT)
-	UNAME_S = $(shell uname -s)
-	ifeq ($(UNAME_S),Linux)
-		FIND_LIBRARIES = LD_LIBRARY_PATH=../$(CRYPTO_LIBDIR)
-	endif
-	ifeq ($(UNAME_S),Darwin)
-		FIND_LIBRARIES = DYLD_LIBRARY_PATH=../$(CRYPTO_LIBDIR)
+ifneq ($(strip $(CRYPTO_LIBDIR)),)
+	ifneq ($(OS),Windows_NT)
+		UNAME_S = $(shell uname -s)
+		ifeq ($(UNAME_S),Linux)
+			FIND_LIBRARIES = LD_LIBRARY_PATH=$(CRYPTO_LIBDIR)
+		endif
+		ifeq ($(UNAME_S),Darwin)
+			FIND_LIBRARIES = DYLD_LIBRARY_PATH=$(CRYPTO_LIBDIR)
+		endif
 	endif
 endif
 
