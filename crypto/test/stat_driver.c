@@ -54,6 +54,7 @@
 #include "srtp.h"
 
 #include "cipher.h"
+#include "cipher_priv.h"
 
 typedef struct {
     void *state;
@@ -107,8 +108,7 @@ int main(int argc, char *argv[])
     printf("poker   %d\n", stat_test_poker(buffer));
     printf("runs    %d\n", stat_test_runs(buffer));
 
-    for (i = 0; i < 2500; i++)
-        buffer[i] = rand();
+    srtp_cipher_rand_for_tests(buffer, 2500);
     printf("running stat_tests on rand(), expecting success\n");
     printf("monobit %d\n", stat_test_monobit(buffer));
     printf("poker   %d\n", stat_test_poker(buffer));
