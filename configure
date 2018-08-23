@@ -627,6 +627,8 @@ PCAP_LIB
 HAVE_PCAP
 HMAC_OBJS
 AES_ICM_OBJS
+nss_LIBS
+nss_CFLAGS
 CRYPTO_LIBDIR
 USE_EXTERNAL_CRYPTO
 crypto_LIBS
@@ -725,7 +727,9 @@ PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
 crypto_CFLAGS
-crypto_LIBS'
+crypto_LIBS
+nss_CFLAGS
+nss_LIBS'
 
 
 # Initialize some variables set by options.
@@ -1372,6 +1376,8 @@ Some influential environment variables:
   crypto_CFLAGS
               C compiler flags for crypto, overriding pkg-config
   crypto_LIBS linker flags for crypto, overriding pkg-config
+  nss_CFLAGS  C compiler flags for nss, overriding pkg-config
+  nss_LIBS    linker flags for nss, overriding pkg-config
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -5711,15 +5717,23 @@ $as_echo_n "checking for user specified NSS directory... " >&6; }
 
 # Check whether --with-nss-dir was given.
 if test "${with_nss_dir+set}" = set; then :
-  withval=$with_nss_dir; if test -d $with_nss_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_nss_dir/include/"
-         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
+  withval=$with_nss_dir; if test "x$PKG_CONFIG" != "x" && test -f $with_nss_dir/lib/pkgconfig/nss.pc; then
+         if test "x$PKG_CONFIG_PATH" = "x"; then
+           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig"
+         else
+           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
+         fi
+         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
+$as_echo "$with_nss_dir" >&6; }
+       elif test -d $with_nss_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_nss_dir/include"
+         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss"
          if test "x$LDFLAGS" = "x"; then
            LDFLAGS="-L$with_nss_dir/lib"
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
-         LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+         nss_skip_pkg_config=yes
          { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
 $as_echo "$with_nss_dir" >&6; }
        else
@@ -5729,12 +5743,111 @@ $as_echo "invalid" >&6; }
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "Invalid NSS location: $with_nss_dir
 See \`config.log' for more details" "$LINENO" 5; }
-      fi
+       fi
+       CRYPTO_LIBDIR=$with_nss_dir/lib
+
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 
+
+   if test "x$PKG_CONFIG" != "x" && test "$nss_skip_pkg_config" != "yes"; then
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nss" >&5
+$as_echo_n "checking for nss... " >&6; }
+
+if test -n "$nss_CFLAGS"; then
+    pkg_cv_nss_CFLAGS="$nss_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"nss\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "nss") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_nss_CFLAGS=`$PKG_CONFIG --cflags "nss" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$nss_LIBS"; then
+    pkg_cv_nss_LIBS="$nss_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"nss\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "nss") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_nss_LIBS=`$PKG_CONFIG --libs "nss" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        nss_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "nss" 2>&1`
+        else
+	        nss_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "nss" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$nss_PKG_ERRORS" >&5
+
+	as_fn_error $? "Package requirements (nss) were not met:
+
+$nss_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables nss_CFLAGS
+and nss_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
+elif test $pkg_failed = untried; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables nss_CFLAGS
+and nss_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
+else
+	nss_CFLAGS=$pkg_cv_nss_CFLAGS
+	nss_LIBS=$pkg_cv_nss_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+	CFLAGS="$CFLAGS $nss_CFLAGS"
+         LIBS="$nss_LIBS $LIBS"
+fi
+   else
+     LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+   fi
 
 
 $as_echo "#define GCM 1" >>confdefs.h
@@ -5750,8 +5863,6 @@ $as_echo "#define NSS 1" >>confdefs.h
    # TODO(RLB): Use NSS for KDF
 
    USE_EXTERNAL_CRYPTO=1
-
-   CRYPTO_LIBDIR=$with_nss_dir/lib
 
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"

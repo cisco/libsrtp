@@ -301,21 +301,37 @@ elif test "$enable_nss" = "yes"; then
    AC_MSG_CHECKING([for user specified NSS directory])
    AC_ARG_WITH([nss-dir],
       [AS_HELP_STRING([--with-nss-dir], [Location of NSS installation])],
-      [if test -d $with_nss_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_nss_dir/include/"
-         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss/"
+      [if test "x$PKG_CONFIG" != "x" && test -f $with_nss_dir/lib/pkgconfig/nss.pc; then
+         if test "x$PKG_CONFIG_PATH" = "x"; then
+           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig"
+         else
+           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
+         fi
+         AC_MSG_RESULT([$with_nss_dir])
+       elif test -d $with_nss_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_nss_dir/include"
+         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss"
          if test "x$LDFLAGS" = "x"; then
            LDFLAGS="-L$with_nss_dir/lib"
          else
            LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
          fi
-         LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+         nss_skip_pkg_config=yes
          AC_MSG_RESULT([$with_nss_dir])
        else
          AC_MSG_RESULT([invalid])
          AC_MSG_FAILURE([Invalid NSS location: $with_nss_dir])
-      fi],
+       fi
+       AC_SUBST([CRYPTO_LIBDIR], [$with_nss_dir/lib])],
       [AC_MSG_RESULT([no])])
+
+   if test "x$PKG_CONFIG" != "x" && test "$nss_skip_pkg_config" != "yes"; then
+     PKG_CHECK_MODULES([nss], [nss],
+       [CFLAGS="$CFLAGS $nss_CFLAGS"
+         LIBS="$nss_LIBS $LIBS"])
+   else
+     LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+   fi
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
@@ -327,7 +343,6 @@ elif test "$enable_nss" = "yes"; then
    # TODO(RLB): Use NSS for KDF
 
    AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
-   AC_SUBST([CRYPTO_LIBDIR], [$with_nss_dir/lib])
 else
    AES_ICM_OBJS="crypto/cipher/aes_icm.o crypto/cipher/aes.o"
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
