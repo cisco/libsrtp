@@ -330,7 +330,16 @@ elif test "$enable_nss" = "yes"; then
        [CFLAGS="$CFLAGS $nss_CFLAGS"
          LIBS="$nss_LIBS $LIBS"])
    else
-     LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+     AC_CHECK_HEADERS(
+       [nss.h],
+       [], [AC_MSG_FAILURE([can't find useable NSS headers])],
+       [AC_INCLUDES_DEFAULT])
+     AC_CHECK_LIB(
+       [nspr4], [PR_GetError],
+       [], [AC_MSG_WARN([can't find libnspr4])])
+     AC_CHECK_LIB(
+       [nss3], [NSS_NoDB_Init],
+       [], [AC_MSG_FAILURE([can't find useable libnss3])])
    fi
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])

@@ -5846,7 +5846,122 @@ $as_echo "yes" >&6; }
          LIBS="$nss_LIBS $LIBS"
 fi
    else
-     LIBS="-lnss3 -lnssutil3 -lnspr4 $LIBS"
+     for ac_header in nss.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "nss.h" "ac_cv_header_nss_h" "$ac_includes_default
+"
+if test "x$ac_cv_header_nss_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_NSS_H 1
+_ACEOF
+
+else
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "can't find useable NSS headers
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
+done
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PR_GetError in -lnspr4" >&5
+$as_echo_n "checking for PR_GetError in -lnspr4... " >&6; }
+if ${ac_cv_lib_nspr4_PR_GetError+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnspr4  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char PR_GetError ();
+int
+main ()
+{
+return PR_GetError ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_nspr4_PR_GetError=yes
+else
+  ac_cv_lib_nspr4_PR_GetError=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nspr4_PR_GetError" >&5
+$as_echo "$ac_cv_lib_nspr4_PR_GetError" >&6; }
+if test "x$ac_cv_lib_nspr4_PR_GetError" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBNSPR4 1
+_ACEOF
+
+  LIBS="-lnspr4 $LIBS"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find libnspr4" >&5
+$as_echo "$as_me: WARNING: can't find libnspr4" >&2;}
+fi
+
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for NSS_NoDB_Init in -lnss3" >&5
+$as_echo_n "checking for NSS_NoDB_Init in -lnss3... " >&6; }
+if ${ac_cv_lib_nss3_NSS_NoDB_Init+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnss3  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char NSS_NoDB_Init ();
+int
+main ()
+{
+return NSS_NoDB_Init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_nss3_NSS_NoDB_Init=yes
+else
+  ac_cv_lib_nss3_NSS_NoDB_Init=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nss3_NSS_NoDB_Init" >&5
+$as_echo "$ac_cv_lib_nss3_NSS_NoDB_Init" >&6; }
+if test "x$ac_cv_lib_nss3_NSS_NoDB_Init" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBNSS3 1
+_ACEOF
+
+  LIBS="-lnss3 $LIBS"
+
+else
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "can't find useable libnss3
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
    fi
 
 
