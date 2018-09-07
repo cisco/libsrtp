@@ -52,6 +52,22 @@ matrix:
         - make
         - make runtest
 
+    # linux build with nss
+    - os: linux
+      env:
+        - TEST="linux gcc (nss)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - libnss3-dev
+      script:
+        - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure --enable-nss
+        - make
+        - make runtest
+
     # default osx build with xcode (clang)
     - os: osx
       env:
@@ -59,6 +75,18 @@ matrix:
       osx_image: xcode8.2
       script:
         - EXTRA_CFLAGS=-Werror ./configure
+        - make
+        - make runtest
+
+    # osx build with nss
+    - os: osx
+      env:
+        - TEST="osx (nss)"
+      osx_image: xcode8.2
+      before_install:
+            - brew install nss
+      script:
+        - PKG_CONFIG_PATH=/usr/local/opt/nss/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-nss
         - make
         - make runtest
 
