@@ -199,7 +199,7 @@ void srtp_cipher_rand_for_tests(void *dest, uint32_t len)
 }
 
 /*
- * A trivial platform independent 64 bit random number.
+ * A trivial platform independent 32 bit random number.
  * For use in test only.
  */
 uint32_t srtp_cipher_rand_u32_for_tests(void)
