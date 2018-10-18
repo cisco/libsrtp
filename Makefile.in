@@ -116,8 +116,8 @@ SHAREDLIBSUFFIXNOVER = dll
 SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER)
 else ifeq (darwin,$(findstring darwin,@host@))
 SHAREDLIB_DIR = $(libdir)
-SHAREDLIB_LDFLAGS = -dynamiclib -twolevel_namespace -undefined dynamic_lookup \
-		-fno-common -headerpad_max_install_names -install_name $(libdir)/$@
+SHAREDLIB_LDFLAGS = -dynamiclib -twolevel_namespace -fno-common \
+		-install_name $(libdir)/$@
 SHAREDLIBSUFFIXNOVER = dylib
 SHAREDLIBSUFFIX = $(SHAREDLIBVERSION).$(SHAREDLIBSUFFIXNOVER)
 endif
