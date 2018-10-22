@@ -74,12 +74,23 @@ matrix:
         - make runtest
         - make runtest-valgrind
 
-    # default osx build with xcode (clang)
+    # default osx build
     - os: osx
       env:
         - TEST="osx"
       script:
         - EXTRA_CFLAGS=-Werror ./configure
+        - make
+        - make runtest
+
+    # osx build with openssl
+    - os: osx
+      env:
+        - TEST="osx openssl"
+      before_install:
+            - brew install openssl
+      script:
+        - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
 
