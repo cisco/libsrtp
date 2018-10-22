@@ -52,7 +52,6 @@
 #include "err.h" /* for srtp_debug */
 #include "alloc.h"
 #include "cipher_types.h"
-#include <nss.h>
 
 srtp_debug_module_t srtp_mod_aes_icm = {
     0,            /* debugging is off by default */
@@ -106,6 +105,7 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
                                                 int tlen)
 {
     srtp_aes_icm_ctx_t *icm;
+    NSSInitContext *nss;
 
     debug_print(srtp_mod_aes_icm, "allocating cipher with key length %d",
                 key_len);
@@ -119,19 +119,25 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
         return srtp_err_status_bad_param;
     }
 
-    /* Initialize NSS */
-    if (!NSS_IsInitialized() && NSS_NoDB_Init(NULL) != SECSuccess) {
+    /* Initialize NSS equiv of NSS_NoDB_Init(NULL) */
+    nss = NSS_InitContext("", "", "", "", NULL,
+                          NSS_INIT_READONLY | NSS_INIT_NOCERTDB |
+                              NSS_INIT_NOMODDB | NSS_INIT_FORCEOPEN |
+                              NSS_INIT_OPTIMIZESPACE);
+    if (!nss) {
         return (srtp_err_status_cipher_fail);
     }
 
     /* allocate memory a cipher of type aes_icm */
     *c = (srtp_cipher_t *)srtp_crypto_alloc(sizeof(srtp_cipher_t));
     if (*c == NULL) {
+        NSS_ShutdownContext(nss);
         return srtp_err_status_alloc_fail;
     }
 
     icm = (srtp_aes_icm_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_icm_ctx_t));
     if (icm == NULL) {
+        NSS_ShutdownContext(nss);
         srtp_crypto_free(*c);
         *c = NULL;
         return srtp_err_status_alloc_fail;
@@ -139,6 +145,7 @@ static srtp_err_status_t srtp_aes_icm_nss_alloc(srtp_cipher_t **c,
 
     icm->key = NULL;
     icm->ctx = NULL;
+    icm->nss = nss;
 
     /* set pointers */
     (*c)->state = icm;
@@ -186,6 +193,11 @@ static srtp_err_status_t srtp_aes_icm_nss_dealloc(srtp_cipher_t *c)
         if (ctx->ctx) {
             PK11_DestroyContext(ctx->ctx, PR_TRUE);
             ctx->ctx = NULL;
+        }
+
+        if (ctx->nss) {
+            NSS_ShutdownContext(ctx->nss);
+            ctx->nss = NULL;
         }
 
         /* zeroize everything */
