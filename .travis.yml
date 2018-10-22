@@ -77,8 +77,7 @@ matrix:
     # default osx build with xcode (clang)
     - os: osx
       env:
-        - TEST="osx XCode 8.2"
-      osx_image: xcode8.2
+        - TEST="osx"
       script:
         - EXTRA_CFLAGS=-Werror ./configure
         - make
@@ -87,8 +86,7 @@ matrix:
     # osx build with nss
     - os: osx
       env:
-        - TEST="osx (nss)"
-      osx_image: xcode8.2
+        - TEST="osx nss"
       before_install:
             - brew install nss
       script:
