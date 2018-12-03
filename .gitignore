@@ -46,3 +46,13 @@ test/rtp_decoder
 test/rtpw
 test/srtp_driver
 test/test_srtp
+
+# Visual C++ intermediary and output directories and files
+Debug Dll/*
+Release Dll/*
+Debug/*
+Release/*
+ipch/*
+*.sdf
+*.suo
+*.user

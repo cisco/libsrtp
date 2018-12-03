@@ -87,8 +87,10 @@ void srtp_err_report(srtp_err_reporting_level_t level, const char *format, ...)
         va_end(args);
     }
     if (srtp_err_report_handler != NULL) {
-        va_start(args, format);
         char msg[512];
+
+        va_start(args, format);
+
         if (vsnprintf(msg, sizeof(msg), format, args) > 0) {
             /* strip trailing \n, callback should not have one */
             size_t l = strlen(msg);
