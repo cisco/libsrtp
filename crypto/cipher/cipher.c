@@ -171,7 +171,7 @@ int srtp_cipher_get_key_length(const srtp_cipher_t *c)
  */
 void srtp_cipher_rand_for_tests(void *dest, uint32_t len)
 {
-#if 0 //defined(HAVE_RAND_S) 
+#if 0 // defined(HAVE_RAND_S) 
     uint8_t *dst = (uint8_t *)dest;
     while (len) {
         unsigned int val;

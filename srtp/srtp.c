@@ -696,9 +696,7 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
 
     {
         srtp_err_status_t stat;
-        stat = srtp_crypto_kernel_alloc_cipher(cipher_id,
-                                               &kdf->cipher,
-                                               key_len,
+        stat = srtp_crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, key_len,
                                                0);
         if (stat)
             return stat;
