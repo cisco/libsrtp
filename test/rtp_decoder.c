@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
     rtp_decoder_t dec;
-    srtp_policy_t policy = {0};
+    srtp_policy_t policy = { 0 };
     srtp_err_status_t status;
     int len;
     int expected_len;
