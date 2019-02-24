@@ -308,7 +308,7 @@ clean:
 	rm -rf *.pict *.jpg *.dat
 	rm -rf freed allocated tmp
 	$(MAKE) -C doc clean
-	$(MAKE) -C doc fuzzer
+	$(MAKE) -C fuzzer clean
 
 superclean: clean
 	rm -rf crypto/include/config.h config.log config.cache config.status \
