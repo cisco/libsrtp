@@ -28,7 +28,7 @@ fuzzer.o: fuzzer.c fuzzer.h testmem.h
 testmem.o: testmem.c
 	$(COMPILE) -O0 testmem.c -c -o testmem.o
 srtp-fuzzer: fuzzer.o mt19937.o testmem.o
-	$(COMPILECXX) $(LDFLAGS) fuzzer.o mt19937.o testmem.o libFuzzer.a $(CRYPTOLIB) $(LIBS) -o srtp-fuzzer
+	$(COMPILECXX) $(LDFLAGS) fuzzer.o mt19937.o testmem.o $(LIBFUZZER) $(CRYPTOLIB) $(LIBS) -o srtp-fuzzer
 
 clean:
 	rm -rf srtp-fuzzer *.o
