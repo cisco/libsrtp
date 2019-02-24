@@ -3,6 +3,9 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Define this to use CHACHA20-POLY1305. */
+#undef CHAPOLY
+
 /* Define if building for a CISC machine (e.g. Intel). */
 #undef CPU_CISC
 

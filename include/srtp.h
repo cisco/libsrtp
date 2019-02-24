@@ -113,6 +113,8 @@ extern "C" {
 #define SRTP_AES_192_KEY_LEN 24
 #define SRTP_AES_256_KEY_LEN 32
 
+#define SRTP_CHACHA20_POLY1305_KEY_LEN 32
+
 #define SRTP_AES_ICM_128_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_128_KEY_LEN)
 #define SRTP_AES_ICM_192_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_192_KEY_LEN)
 #define SRTP_AES_ICM_256_KEY_LEN_WSALT (SRTP_SALT_LEN + SRTP_AES_256_KEY_LEN)
@@ -123,6 +125,9 @@ extern "C" {
     (SRTP_AEAD_SALT_LEN + SRTP_AES_192_KEY_LEN)
 #define SRTP_AES_GCM_256_KEY_LEN_WSALT                                         \
     (SRTP_AEAD_SALT_LEN + SRTP_AES_256_KEY_LEN)
+
+#define SRTP_CHACHA20_POLY1305_KEY_LEN_WSALT                                   \
+    (SRTP_AEAD_SALT_LEN + SRTP_CHACHA20_POLY1305_KEY_LEN)
 
 /**
  *  @brief A srtp_cipher_type_id_t is an identifier for a particular cipher
@@ -1147,6 +1152,11 @@ void srtp_crypto_policy_set_aes_gcm_128_16_auth(srtp_crypto_policy_t *p);
  */
 void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p);
 
+void srtp_crypto_policy_set_chacha20_poly1305_8_auth(srtp_crypto_policy_t *p);
+void srtp_crypto_policy_set_chacha20_poly1305_8_only_auth(
+    srtp_crypto_policy_t *p);
+void srtp_crypto_policy_set_chacha20_poly1305_16_auth(srtp_crypto_policy_t *p);
+
 /**
  * @brief srtp_dealloc() deallocates storage for an SRTP session
  * context.
@@ -1180,6 +1190,8 @@ typedef enum {
     srtp_profile_null_sha1_32 = 6,
     srtp_profile_aead_aes_128_gcm = 7,
     srtp_profile_aead_aes_256_gcm = 8,
+
+    srtp_profile_aead_chacha20_poly1305 = 16, // TODO unregister
 } srtp_profile_t;
 
 /**

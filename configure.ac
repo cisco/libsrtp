@@ -256,10 +256,13 @@ if test "$enable_openssl" = "yes"; then
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
    AC_SEARCH_LIBS([EVP_aes_128_gcm], [crypto],
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
+   AC_SEARCH_LIBS([EVP_chacha20_poly1305], [crypto], [
+	AC_DEFINE([CHAPOLY], [1], [Define this to use CHACHA20-POLY1305.])
+	CHAPOLY_OBJ="crypto/cipher/chacha20_poly1305_ossl.o"])
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
-   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o $CHAPOLY_OBJ"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
 
@@ -344,8 +347,9 @@ elif test "$enable_nss" = "yes"; then
    fi
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([CHAPOLY], [1], [Define this to use CHACHA20-POLY1305.])
    AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
-   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
+   AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o crypto/cipher/chacha20_poly1305_nss.o"
 
    # TODO(RLB): Use NSS for HMAC
    HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"

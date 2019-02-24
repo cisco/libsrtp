@@ -1,6 +1,13 @@
 /*
+ * chacha20_poly1305.h
  *
- * Copyright(c) 2001-2017 Cisco Systems, Inc.
+ * Header for CHACHA20 POLY1305.
+ *
+ *
+ */
+/*
+ *
+ * Copyright (c) 2013-2017, Cisco Systems, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,55 +41,46 @@
  *
  */
 
-#ifndef CIHPER_TYPES_H
-#define CIHPER_TYPES_H
+#ifndef CHACHA20_POLY1305_H
+#define CHACHA20_POLY1305_H
 
 #include "cipher.h"
-#include "auth.h"
+#include "srtp.h"
+#include "datatypes.h"
 
-/*
- * cipher types that can be included in the kernel
- */
-
-extern const srtp_cipher_type_t srtp_null_cipher;
-extern const srtp_cipher_type_t srtp_aes_icm_128;
-extern const srtp_cipher_type_t srtp_aes_icm_256;
-#ifdef GCM
-extern const srtp_cipher_type_t srtp_aes_icm_192;
-extern const srtp_cipher_type_t srtp_aes_gcm_128;
-extern const srtp_cipher_type_t srtp_aes_gcm_256;
-#endif
-#ifdef CHAPOLY
-extern const srtp_cipher_type_t srtp_chacha20_poly1305;
-#endif
-/*
- * auth func types that can be included in the kernel
- */
-
-extern const srtp_auth_type_t srtp_null_auth;
-extern const srtp_auth_type_t srtp_hmac;
-
-/*
- * other generic debug modules that can be included in the kernel
- */
-
-extern srtp_debug_module_t srtp_mod_auth;
-extern srtp_debug_module_t srtp_mod_cipher;
-extern srtp_debug_module_t srtp_mod_stat;
-extern srtp_debug_module_t srtp_mod_alloc;
-
-/* debug modules for cipher types */
-extern srtp_debug_module_t srtp_mod_aes_icm;
 #ifdef OPENSSL
-extern srtp_debug_module_t srtp_mod_aes_gcm;
-extern srtp_debug_module_t srtp_mod_chacha20_poly1305;
-#endif
+
+#include <openssl/evp.h>
+
+typedef struct {
+    int key_size;
+    int tag_len;
+    EVP_CIPHER_CTX *ctx;
+    srtp_cipher_direction_t dir;
+} srtp_chacha20_poly1305_ctx_t;
+
+#endif /* OPENSSL */
+
 #ifdef NSS
-extern srtp_debug_module_t srtp_mod_aes_gcm;
-extern srtp_debug_module_t srtp_mod_chacha20_poly1305;
-#endif
 
-/* debug modules for auth types */
-extern srtp_debug_module_t srtp_mod_hmac;
+#include <nss.h>
+#include <pk11pub.h>
 
-#endif
+#define MAX_AD_SIZE 2048
+
+typedef struct {
+    int key_size;
+    int tag_size;
+    srtp_cipher_direction_t dir;
+    NSSInitContext *nss;
+    PK11SymKey *key;
+    uint8_t iv[12];
+    uint8_t aad[MAX_AD_SIZE];
+    int aad_size;
+    CK_NSS_AEAD_PARAMS params;
+    uint8_t tag[16];
+} srtp_chacha20_poly1305_ctx_t;
+
+#endif /* NSS */
+
+#endif /* CHACHA20_POLY1305_H */
