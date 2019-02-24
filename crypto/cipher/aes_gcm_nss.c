@@ -53,7 +53,6 @@
 #include "err.h" /* for srtp_debug */
 #include "crypto_types.h"
 #include "cipher_types.h"
-#include <nss.h>
 #include <secerr.h>
 #include <nspr.h>
 
@@ -82,6 +81,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_alloc(srtp_cipher_t **c,
                                                 int tlen)
 {
     srtp_aes_gcm_ctx_t *gcm;
+    NSSInitContext *nss;
 
     debug_print(srtp_mod_aes_gcm, "allocating cipher with key length %d",
                 key_len);
@@ -99,23 +99,31 @@ static srtp_err_status_t srtp_aes_gcm_nss_alloc(srtp_cipher_t **c,
         return (srtp_err_status_bad_param);
     }
 
-    /* Initialize NSS */
-    if (!NSS_IsInitialized() && NSS_NoDB_Init(NULL) != SECSuccess) {
+    /* Initialize NSS equiv of NSS_NoDB_Init(NULL) */
+    nss = NSS_InitContext("", "", "", "", NULL,
+                          NSS_INIT_READONLY | NSS_INIT_NOCERTDB |
+                              NSS_INIT_NOMODDB | NSS_INIT_FORCEOPEN |
+                              NSS_INIT_OPTIMIZESPACE);
+    if (!nss) {
         return (srtp_err_status_cipher_fail);
     }
 
     /* allocate memory a cipher of type aes_gcm */
     *c = (srtp_cipher_t *)srtp_crypto_alloc(sizeof(srtp_cipher_t));
     if (*c == NULL) {
+        NSS_ShutdownContext(nss);
         return (srtp_err_status_alloc_fail);
     }
 
     gcm = (srtp_aes_gcm_ctx_t *)srtp_crypto_alloc(sizeof(srtp_aes_gcm_ctx_t));
     if (gcm == NULL) {
+        NSS_ShutdownContext(nss);
         srtp_crypto_free(*c);
         *c = NULL;
         return (srtp_err_status_alloc_fail);
     }
+
+    gcm->nss = nss;
 
     /* set pointers */
     (*c)->state = gcm;
@@ -161,6 +169,11 @@ static srtp_err_status_t srtp_aes_gcm_nss_dealloc(srtp_cipher_t *c)
             PK11_FreeSymKey(ctx->key);
         }
 
+        if (ctx->nss) {
+            NSS_ShutdownContext(ctx->nss);
+            ctx->nss = NULL;
+        }
+
         /* zeroize the key material */
         octet_string_set_to_zero(ctx, sizeof(srtp_aes_gcm_ctx_t));
         srtp_crypto_free(ctx);
@@ -187,6 +200,11 @@ static srtp_err_status_t srtp_aes_gcm_nss_context_init(void *cv,
 
     debug_print(srtp_mod_aes_gcm, "key:  %s",
                 srtp_octet_string_hex_string(key, c->key_size));
+
+    if (c->key) {
+        PK11_FreeSymKey(c->key);
+        c->key = NULL;
+    }
 
     PK11SlotInfo *slot = PK11_GetBestSlot(CKM_AES_GCM, NULL);
     if (!slot) {
@@ -223,7 +241,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_iv(
     c->dir = direction;
 
     debug_print(srtp_mod_aes_gcm, "setting iv: %s",
-                v128_hex_string((v128_t *)iv));
+                srtp_octet_string_hex_string(iv, GCM_IV_LEN));
 
     memcpy(c->iv, iv, GCM_IV_LEN);
 

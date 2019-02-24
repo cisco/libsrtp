@@ -9,40 +9,44 @@ env:
 matrix:
   include:
 
-    # default linux build with gcc
+    # linux build
     - os: linux
       env:
-        - TEST="linux gcc"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-          - gcc-6
-      script:
-        - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure
-        - make
-        - make runtest
-
-    # linux build with openssl and gcc
-    - os: linux
-      env:
-        - TEST="linux gcc (openssl)"
+        - TEST="linux (gcc / valgrind)"
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-6
+            - valgrind
+      script:
+        - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure
+        - make
+        - make runtest
+        - make runtest-valgrind
+
+    # linux build with openssl
+    - os: linux
+      env:
+        - TEST="linux openssl (gcc / valgrind)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - valgrind
       script:
         - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
+        - make runtest-valgrind
 
     # linux build with openssl and clang
     - os: linux
       env:
-        - TEST="linux clang (openssl)"
+        - TEST="linux openssl (clang)"
       addons:
         apt:
           packages:
@@ -52,13 +56,52 @@ matrix:
         - make
         - make runtest
 
-    # default osx build with xcode (clang)
+    # linux build with nss
+    - os: linux
+      env:
+        - TEST="linux nss (gcc / valgrind)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - valgrind
+            - libnss3-dev
+      script:
+        - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure --enable-nss
+        - make
+        - make runtest
+        - make runtest-valgrind
+
+    # default osx build
     - os: osx
       env:
-        - TEST="osx XCode 8.2"
-      osx_image: xcode8.2
+        - TEST="osx"
       script:
         - EXTRA_CFLAGS=-Werror ./configure
+        - make
+        - make runtest
+
+    # osx build with openssl
+    - os: osx
+      env:
+        - TEST="osx openssl"
+      before_install:
+            - brew install openssl
+      script:
+        - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-openssl
+        - make
+        - make runtest
+
+    # osx build with nss
+    - os: osx
+      env:
+        - TEST="osx nss"
+      before_install:
+            - brew install nss
+      script:
+        - PKG_CONFIG_PATH=/usr/local/opt/nss/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-nss
         - make
         - make runtest
 
@@ -72,22 +115,6 @@ matrix:
             - clang-format-3.9
       script:
         - CLANG_FORMAT=clang-format-3.9 ./format.sh -d
-
-    # valgrind
-    - os: linux
-      env:
-        - TEST="valgrind (openssl)"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-6
-            - valgrind
-      script:
-        - CC=gcc-6 ./configure --enable-openssl
-        - make
-        - make runtest-valgrind
 
     # big-endian
     - os: linux

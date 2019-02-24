@@ -65,6 +65,7 @@ typedef struct {
 
 #ifdef NSS
 
+#include <nss.h>
 #include <pk11pub.h>
 
 typedef struct {
@@ -72,6 +73,7 @@ typedef struct {
     v128_t offset;
     int key_size;
     uint8_t iv[16];
+    NSSInitContext *nss;
     PK11SymKey *key;
     PK11Context *ctx;
 } srtp_aes_icm_ctx_t;

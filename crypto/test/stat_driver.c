@@ -54,12 +54,7 @@
 #include "srtp.h"
 
 #include "cipher.h"
-
-typedef struct {
-    void *state;
-} random_source_t;
-
-srtp_err_status_t random_source_alloc(void);
+#include "cipher_priv.h"
 
 void err_check(srtp_err_status_t s)
 {
@@ -107,8 +102,7 @@ int main(int argc, char *argv[])
     printf("poker   %d\n", stat_test_poker(buffer));
     printf("runs    %d\n", stat_test_runs(buffer));
 
-    for (i = 0; i < 2500; i++)
-        buffer[i] = rand();
+    srtp_cipher_rand_for_tests(buffer, 2500);
     printf("running stat_tests on rand(), expecting success\n");
     printf("monobit %d\n", stat_test_monobit(buffer));
     printf("poker   %d\n", stat_test_poker(buffer));
