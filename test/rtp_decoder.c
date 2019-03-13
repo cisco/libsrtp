@@ -365,11 +365,7 @@ int main(int argc, char *argv[])
             int pad;
             expected_len = policy.rtp.cipher_key_len * 4 / 3;
             len = base64_string_to_octet_string(key, &pad, input_key,
-                                                expected_len);
-            if (pad != 0) {
-                fprintf(stderr, "error: padding in base64 unexpected\n");
-                exit(1);
-            }
+                                                strlen(input_key));
         } else {
             expected_len = policy.rtp.cipher_key_len * 2;
             len = hex_string_to_octet_string(key, input_key, expected_len);
