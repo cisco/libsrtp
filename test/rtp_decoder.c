@@ -86,17 +86,31 @@
 
 struct srtp_crypto_suite {
     const char *can_name;
+    int gcm_on;
     int key_size;
     int tag_size;
 };
 
 static struct srtp_crypto_suite srtp_crypto_suites[] = {
-    {.can_name = "AES_CM_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4 },
 #if 0
-  {.can_name = "F8_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4},
+  {.can_name = "F8_128_HMAC_SHA1_32", .gcm_on = 0, .key_size = 128, .tag_size = 4},
 #endif
-    {.can_name = "AES_CM_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4 },
-    {.can_name = "AES_CM_128_HMAC_SHA1_80", .key_size = 128, .tag_size = 10 },
+    {.can_name = "AES_CM_128_HMAC_SHA1_32",
+     .gcm_on = 0,
+     .key_size = 128,
+     .tag_size = 4 },
+    {.can_name = "AES_CM_128_HMAC_SHA1_80",
+     .gcm_on = 0,
+     .key_size = 128,
+     .tag_size = 10 },
+    {.can_name = "AEAD_AES_128_GCM",
+     .gcm_on = 1,
+     .key_size = 128,
+     .tag_size = 16 },
+    {.can_name = "AEAD_AES_256_GCM",
+     .gcm_on = 1,
+     .key_size = 256,
+     .tag_size = 16 },
     {.can_name = NULL }
 };
 
@@ -207,6 +221,7 @@ int main(int argc, char *argv[])
             scs = *i_scsp;
             input_key = malloc(scs.key_size);
             sec_servs |= sec_serv_conf | sec_serv_auth;
+            gcm_on = scs.gcm_on;
             break;
         default:
             usage(argv[0]);
@@ -266,12 +281,12 @@ int main(int argc, char *argv[])
 #ifdef OPENSSL
                 switch (scs.key_size) {
                 case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
                     break;
                 case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
                     break;
                 }
 #else
