@@ -579,7 +579,7 @@ void usage(char *string)
 {
     fprintf(
         stderr,
-        "usage: %s [-d <debug>]* [[-k][-b] <key> [-a][-e]]\n"
+        "usage: %s [-d <debug>]* [[-k][-b] <key> [-a][-t][-e]]\n"
         "or     %s -l\n"
         "where  -a use message authentication\n"
         "       -e <key size> use encryption (use 128 or 256 for key size)\n"
