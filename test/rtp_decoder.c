@@ -130,6 +130,28 @@ static struct srtp_crypto_suite srtp_crypto_suites[] = {
     {.can_name = NULL }
 };
 
+void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
+                                  const char *msg,
+                                  void *data)
+{
+    char level_char = '?';
+    switch (level) {
+    case srtp_log_level_error:
+        level_char = 'e';
+        break;
+    case srtp_log_level_warning:
+        level_char = 'w';
+        break;
+    case srtp_log_level_info:
+        level_char = 'i';
+        break;
+    case srtp_log_level_debug:
+        level_char = 'd';
+        break;
+    }
+    fprintf(stderr, "SRTP-LOG [%c]: %s\n", level_char, msg);
+}
+
 int main(int argc, char *argv[])
 {
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -165,6 +187,12 @@ int main(int argc, char *argv[])
         fprintf(stderr,
                 "error: srtp initialization failed with error code %d\n",
                 status);
+        exit(1);
+    }
+
+    status = srtp_install_log_handler(rtp_decoder_srtp_log_handler, NULL);
+    if (status) {
+        fprintf(stderr, "error: install log handler failed\n");
         exit(1);
     }
 
@@ -205,7 +233,7 @@ int main(int argc, char *argv[])
             sec_servs |= sec_serv_auth;
             break;
         case 'd':
-            status = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
+            status = srtp_set_debug_module(optarg_s, 1);
             if (status) {
                 fprintf(stderr, "error: set debug module (%s) failed\n",
                         optarg_s);
@@ -267,7 +295,7 @@ int main(int argc, char *argv[])
     }
 
     if (do_list_mods) {
-        status = srtp_crypto_kernel_list_debug_modules();
+        status = srtp_list_debug_modules();
         if (status) {
             fprintf(stderr, "error: list of debug modules failed\n");
             exit(1);
