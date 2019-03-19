@@ -86,19 +86,71 @@
 
 struct srtp_crypto_suite {
     const char *can_name;
+    int gcm_on;
     int key_size;
     int tag_size;
 };
 
 static struct srtp_crypto_suite srtp_crypto_suites[] = {
-    {.can_name = "AES_CM_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4 },
 #if 0
-  {.can_name = "F8_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4},
+  {.can_name = "F8_128_HMAC_SHA1_32", .gcm_on = 0, .key_size = 128, .tag_size = 4},
 #endif
-    {.can_name = "AES_CM_128_HMAC_SHA1_32", .key_size = 128, .tag_size = 4 },
-    {.can_name = "AES_CM_128_HMAC_SHA1_80", .key_size = 128, .tag_size = 10 },
+    {.can_name = "AES_CM_128_HMAC_SHA1_32",
+     .gcm_on = 0,
+     .key_size = 128,
+     .tag_size = 4 },
+    {.can_name = "AES_CM_128_HMAC_SHA1_80",
+     .gcm_on = 0,
+     .key_size = 128,
+     .tag_size = 10 },
+    {.can_name = "AES_192_CM_HMAC_SHA1_32",
+     .gcm_on = 0,
+     .key_size = 192,
+     .tag_size = 4 },
+    {.can_name = "AES_192_CM_HMAC_SHA1_80",
+     .gcm_on = 0,
+     .key_size = 192,
+     .tag_size = 10 },
+    {.can_name = "AES_256_CM_HMAC_SHA1_32",
+     .gcm_on = 0,
+     .key_size = 256,
+     .tag_size = 4 },
+    {.can_name = "AES_256_CM_HMAC_SHA1_80",
+     .gcm_on = 0,
+     .key_size = 256,
+     .tag_size = 10 },
+    {.can_name = "AEAD_AES_128_GCM",
+     .gcm_on = 1,
+     .key_size = 128,
+     .tag_size = 16 },
+    {.can_name = "AEAD_AES_256_GCM",
+     .gcm_on = 1,
+     .key_size = 256,
+     .tag_size = 16 },
     {.can_name = NULL }
 };
+
+void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
+                                  const char *msg,
+                                  void *data)
+{
+    char level_char = '?';
+    switch (level) {
+    case srtp_log_level_error:
+        level_char = 'e';
+        break;
+    case srtp_log_level_warning:
+        level_char = 'w';
+        break;
+    case srtp_log_level_info:
+        level_char = 'i';
+        break;
+    case srtp_log_level_debug:
+        level_char = 'd';
+        break;
+    }
+    fprintf(stderr, "SRTP-LOG [%c]: %s\n", level_char, msg);
+}
 
 int main(int argc, char *argv[])
 {
@@ -112,7 +164,7 @@ int main(int argc, char *argv[])
     int c;
     struct srtp_crypto_suite scs, *i_scsp;
     scs.key_size = 128;
-    scs.tag_size = 8;
+    scs.tag_size = 0;
     int gcm_on = 0;
     char *input_key = NULL;
     int b64_input = 0;
@@ -138,6 +190,12 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    status = srtp_install_log_handler(rtp_decoder_srtp_log_handler, NULL);
+    if (status) {
+        fprintf(stderr, "error: install log handler failed\n");
+        exit(1);
+    }
+
     /* check args */
     while (1) {
         c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:");
@@ -153,10 +211,12 @@ int main(int argc, char *argv[])
             break;
         case 'e':
             scs.key_size = atoi(optarg_s);
-            if (scs.key_size != 128 && scs.key_size != 256) {
-                fprintf(stderr,
-                        "error: encryption key size must be 128 or 256 (%d)\n",
-                        scs.key_size);
+            if (scs.key_size != 128 && scs.key_size != 192 &&
+                scs.key_size != 256) {
+                fprintf(
+                    stderr,
+                    "error: encryption key size must be 128, 192 or 256 (%d)\n",
+                    scs.key_size);
                 exit(1);
             }
             input_key = malloc(scs.key_size);
@@ -173,7 +233,7 @@ int main(int argc, char *argv[])
             sec_servs |= sec_serv_auth;
             break;
         case 'd':
-            status = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
+            status = srtp_set_debug_module(optarg_s, 1);
             if (status) {
                 fprintf(stderr, "error: set debug module (%s) failed\n",
                         optarg_s);
@@ -207,20 +267,35 @@ int main(int argc, char *argv[])
             scs = *i_scsp;
             input_key = malloc(scs.key_size);
             sec_servs |= sec_serv_conf | sec_serv_auth;
+            gcm_on = scs.gcm_on;
             break;
         default:
             usage(argv[0]);
         }
     }
 
+    if (scs.tag_size == 0) {
+        if (gcm_on) {
+            scs.tag_size = 16;
+        } else {
+            scs.tag_size = 10;
+        }
+    }
+
     if (gcm_on && scs.tag_size != 8 && scs.tag_size != 16) {
         fprintf(stderr, "error: GCM tag size must be 8 or 16 (%d)\n",
                 scs.tag_size);
-        // exit(1);
+        exit(1);
+    }
+
+    if (!gcm_on && scs.tag_size != 4 && scs.tag_size != 10) {
+        fprintf(stderr, "error: non GCM tag size must be 4 or 10 (%d)\n",
+                scs.tag_size);
+        exit(1);
     }
 
     if (do_list_mods) {
-        status = srtp_crypto_kernel_list_debug_modules();
+        status = srtp_list_debug_modules();
         if (status) {
             fprintf(stderr, "error: list of debug modules failed\n");
             exit(1);
@@ -266,12 +341,24 @@ int main(int argc, char *argv[])
 #ifdef OPENSSL
                 switch (scs.key_size) {
                 case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+                    if (scs.tag_size == 16) {
+                        srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                        srtp_crypto_policy_set_aes_gcm_128_16_auth(
+                            &policy.rtcp);
+                    } else {
+                        srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+                        srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+                    }
                     break;
                 case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+                    if (scs.tag_size == 16) {
+                        srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
+                        srtp_crypto_policy_set_aes_gcm_256_16_auth(
+                            &policy.rtcp);
+                    } else {
+                        srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
+                        srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+                    }
                     break;
                 }
 #else
@@ -282,12 +369,51 @@ int main(int argc, char *argv[])
             } else {
                 switch (scs.key_size) {
                 case 128:
-                    srtp_crypto_policy_set_rtp_default(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+                    if (scs.key_size == 4) {
+                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(
+                            &policy.rtp);
+                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
+                            &policy.rtcp);
+                    } else {
+                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
+                            &policy.rtp);
+                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
+                            &policy.rtcp);
+                    }
+                    break;
+                case 192:
+#ifdef OPENSSL
+                    if (scs.key_size == 4) {
+                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(
+                            &policy.rtp);
+                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
+                            &policy.rtcp);
+                    } else {
+                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
+                            &policy.rtp);
+                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
+                            &policy.rtcp);
+                    }
+#else
+                    fprintf(stderr,
+                            "error: AES 192 mode only supported when using the "
+                            "OpenSSL crypto engine.\n");
+                    return 0;
+
+#endif
                     break;
                 case 256:
-                    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+                    if (scs.key_size == 4) {
+                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(
+                            &policy.rtp);
+                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
+                            &policy.rtcp);
+                    } else {
+                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
+                            &policy.rtp);
+                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
+                            &policy.rtcp);
+                    }
                     break;
                 }
             }
@@ -302,11 +428,26 @@ int main(int argc, char *argv[])
                 switch (scs.key_size) {
                 case 128:
                     srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+                    srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
+                        &policy.rtcp);
+                    break;
+                case 192:
+#ifdef OPENSSL
+                    srtp_crypto_policy_set_aes_cm_192_null_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
+                        &policy.rtcp);
+#else
+                    fprintf(stderr,
+                            "error: AES 192 mode only supported when using the "
+                            "OpenSSL crypto engine.\n");
+                    return 0;
+
+#endif
                     break;
                 case 256:
                     srtp_crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+                    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
+                        &policy.rtcp);
                     break;
                 }
             }
@@ -365,11 +506,7 @@ int main(int argc, char *argv[])
             int pad;
             expected_len = policy.rtp.cipher_key_len * 4 / 3;
             len = base64_string_to_octet_string(key, &pad, input_key,
-                                                expected_len);
-            if (pad != 0) {
-                fprintf(stderr, "error: padding in base64 unexpected\n");
-                exit(1);
-            }
+                                                strlen(input_key));
         } else {
             expected_len = policy.rtp.cipher_key_len * 2;
             len = hex_string_to_octet_string(key, input_key, expected_len);
@@ -442,7 +579,7 @@ void usage(char *string)
 {
     fprintf(
         stderr,
-        "usage: %s [-d <debug>]* [[-k][-b] <key> [-a][-e]]\n"
+        "usage: %s [-d <debug>]* [[-k][-b] <key> [-a][-t][-e]]\n"
         "or     %s -l\n"
         "where  -a use message authentication\n"
         "       -e <key size> use encryption (use 128 or 256 for key size)\n"
