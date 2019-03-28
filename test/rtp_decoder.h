@@ -102,4 +102,8 @@ srtp_err_status_t rtp_decoder_init_srtp(rtp_decoder_t decoder,
 
 int rtp_decoder_deinit_srtp(rtp_decoder_t decoder);
 
+void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
+                                  const char *msg,
+                                  void *data);
+
 #endif /* RTP_DECODER_H */
