@@ -2,7 +2,9 @@ EXPORTS
 srtp_init
 srtp_shutdown
 srtp_protect
+srtp_protect_mki
 srtp_unprotect
+srtp_unprotect_mki
 srtp_create
 srtp_add_stream
 srtp_remove_stream
@@ -31,8 +33,12 @@ srtp_profile_get_master_key_length
 srtp_profile_get_master_salt_length
 srtp_append_salt_to_key
 srtp_protect_rtcp
+srtp_protect_rtcp_mki
 srtp_unprotect_rtcp
+srtp_unprotect_rtcp_mki
+srtp_set_stream_roc
 srtp_set_user_data
+srtp_get_stream_roc
 srtp_get_user_data
 srtp_install_event_handler
 srtp_get_version_string
