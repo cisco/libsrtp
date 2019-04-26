@@ -615,7 +615,10 @@ srtp_err_status_t rtp_decoder_init_srtp(rtp_decoder_t decoder,
 
 int rtp_decoder_deinit_srtp(rtp_decoder_t decoder)
 {
-    return srtp_dealloc(decoder->srtp_ctx);
+    if (decoder->srtp_ctx) {
+        return srtp_dealloc(decoder->srtp_ctx);
+    }
+    return 0;
 }
 
 int rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy)
