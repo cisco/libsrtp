@@ -6,6 +6,15 @@ This is an advanced fuzzer for libSRTP (https://github.com/cisco/libsrtp). It im
 
 Feel free to contact me for business enquiries.
 
+## Building
+
+From the repository's root directory:
+
+```sh
+CC=clang CXX=clang++ CXXFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O3" CFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O3" LDFLAGS="-fsanitize=fuzzer-no-link,address,undefined" ./configure
+LIBFUZZER="-fsanitize=fuzzer" make srtp-fuzzer
+```
+
 ## Features
 
 ### Portable PRNG
