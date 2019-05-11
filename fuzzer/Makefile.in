@@ -10,9 +10,9 @@ CXX	= @CXX@
 INCDIR	= -Iinclude -I$(srcdir)/include -I$(top_srcdir)/include -I$(top_srcdir)/crypto/include/
 DEFS	= @DEFS@
 CPPFLAGS= @CPPFLAGS@ -g
+CXXFLAGS= @CXXFLAGS@ -g
 CFLAGS	= @CFLAGS@ -g
 LIBS	= @LIBS@
-LDFLAGS	= @LDFLAGS@ -L. -L..
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
 COMPILECXX = $(CXX) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CXXFLAGS)
 CRYPTOLIB = -lsrtp2
@@ -28,7 +28,7 @@ fuzzer.o: fuzzer.c fuzzer.h testmem.h
 testmem.o: testmem.c
 	$(COMPILE) -O0 testmem.c -c -o testmem.o
 srtp-fuzzer: fuzzer.o mt19937.o testmem.o
-	$(COMPILECXX) $(LDFLAGS) fuzzer.o mt19937.o testmem.o $(LIBFUZZER) $(CRYPTOLIB) $(LIBS) -o srtp-fuzzer
+	$(COMPILECXX) -L. -L.. fuzzer.o mt19937.o testmem.o $(LIBFUZZER) $(CRYPTOLIB) $(LIBS) -o srtp-fuzzer
 
 clean:
 	rm -rf srtp-fuzzer *.o
