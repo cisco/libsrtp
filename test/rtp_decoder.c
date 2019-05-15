@@ -558,14 +558,17 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    rtp_decoder_init(dec, policy);
+    if (rtp_decoder_init(dec, policy)) {
+        fprintf(stderr, "error: init failed\n");
+        exit(1);
+    }
 
     pcap_loop(pcap_handle, 0, rtp_decoder_handle_pkt, (u_char *)dec);
 
     fprintf(stderr, "SRTP packets decoded: %d\n", dec->srtp_cnt);
     fprintf(stderr, "Packet decode errors: %d\n", dec->error_cnt);
 
-    rtp_decoder_deinit_srtp(dec);
+    rtp_decoder_deinit(dec);
     rtp_decoder_dealloc(dec);
 
     status = srtp_shutdown();
@@ -609,14 +612,7 @@ void rtp_decoder_dealloc(rtp_decoder_t rtp_ctx)
     free(rtp_ctx);
 }
 
-srtp_err_status_t rtp_decoder_init_srtp(rtp_decoder_t decoder,
-                                        unsigned int ssrc)
-{
-    decoder->policy.ssrc.value = htonl(ssrc);
-    return srtp_create(&decoder->srtp_ctx, &decoder->policy);
-}
-
-int rtp_decoder_deinit_srtp(rtp_decoder_t decoder)
+int rtp_decoder_deinit(rtp_decoder_t decoder)
 {
     if (decoder->srtp_ctx) {
         return srtp_dealloc(decoder->srtp_ctx);
@@ -634,7 +630,11 @@ int rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy)
     dcdr->error_cnt = 0;
     dcdr->srtp_cnt = 0;
     dcdr->policy = policy;
-    dcdr->policy.ssrc.type = ssrc_specific;
+    dcdr->policy.ssrc.type = ssrc_any_inbound;
+
+    if (srtp_create(&dcdr->srtp_ctx, &dcdr->policy)) {
+        return 1;
+    }
     return 0;
 }
 
@@ -689,13 +689,8 @@ void rtp_decoder_handle_pkt(u_char *arg,
     if (message.header.version != 2) {
         return;
     }
-    if (dcdr->srtp_ctx == NULL) {
-        status = rtp_decoder_init_srtp(dcdr, dcdr->message.header.ssrc);
-        if (status) {
-            exit(1);
-        }
-    }
-    status = srtp_unprotect_rtcp(dcdr->srtp_ctx, &message, &octets_recvd);
+
+    status = srtp_unprotect(dcdr->srtp_ctx, &message, &octets_recvd);
     if (status) {
         dcdr->error_cnt++;
         return;

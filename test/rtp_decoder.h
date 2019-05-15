@@ -98,10 +98,7 @@ void rtp_decoder_dealloc(rtp_decoder_t rtp_ctx);
 
 int rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy);
 
-srtp_err_status_t rtp_decoder_init_srtp(rtp_decoder_t decoder,
-                                        unsigned int ssrc);
-
-int rtp_decoder_deinit_srtp(rtp_decoder_t decoder);
+int rtp_decoder_deinit(rtp_decoder_t decoder);
 
 void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
                                   const char *msg,
