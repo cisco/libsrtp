@@ -562,6 +562,9 @@ int main(int argc, char *argv[])
 
     pcap_loop(pcap_handle, 0, rtp_decoder_handle_pkt, (u_char *)dec);
 
+    fprintf(stderr, "SRTP packets decoded: %d\n", dec->srtp_cnt);
+    fprintf(stderr, "Packet decode errors: %d\n", dec->error_cnt);
+
     rtp_decoder_deinit_srtp(dec);
     rtp_decoder_dealloc(dec);
 
@@ -628,6 +631,8 @@ int rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy)
     dcdr->start_tv.tv_usec = 0;
     dcdr->start_tv.tv_sec = 0;
     dcdr->frame_nr = -1;
+    dcdr->error_cnt = 0;
+    dcdr->srtp_cnt = 0;
     dcdr->policy = policy;
     dcdr->policy.ssrc.type = ssrc_specific;
     return 0;
@@ -656,6 +661,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
                             const u_char *bytes)
 {
     rtp_decoder_t dcdr = (rtp_decoder_t)arg;
+    rtp_msg_t message;
     int pktsize;
     struct timeval delta;
     int octets_recvd;
@@ -671,7 +677,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
     }
     const void *rtp_packet = bytes + dcdr->rtp_offset;
 
-    memcpy((void *)&dcdr->message, rtp_packet, hdr->caplen - dcdr->rtp_offset);
+    memcpy((void *)&message, rtp_packet, hdr->caplen - dcdr->rtp_offset);
     pktsize = hdr->caplen - dcdr->rtp_offset;
     octets_recvd = pktsize;
 
@@ -680,7 +686,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
     }
 
     /* verify rtp header */
-    if (dcdr->message.header.version != 2) {
+    if (message.header.version != 2) {
         return;
     }
     if (dcdr->srtp_ctx == NULL) {
@@ -689,14 +695,16 @@ void rtp_decoder_handle_pkt(u_char *arg,
             exit(1);
         }
     }
-    status = srtp_unprotect(dcdr->srtp_ctx, &dcdr->message, &octets_recvd);
+    status = srtp_unprotect_rtcp(dcdr->srtp_ctx, &message, &octets_recvd);
     if (status) {
+        dcdr->error_cnt++;
         return;
     }
+    dcdr->srtp_cnt++;
     timersub(&hdr->ts, &dcdr->start_tv, &delta);
     fprintf(stdout, "%02ld:%02ld.%06ld\n", delta.tv_sec / 60, delta.tv_sec % 60,
             (long)delta.tv_usec);
-    hexdump(&dcdr->message, octets_recvd);
+    hexdump(&message, octets_recvd);
 }
 
 void rtp_print_error(srtp_err_status_t status, char *message)

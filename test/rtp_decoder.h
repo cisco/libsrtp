@@ -58,7 +58,8 @@ typedef struct rtp_decoder_ctx_t {
     int rtp_offset;
     struct timeval start_tv;
     int frame_nr;
-    rtp_msg_t message;
+    int error_cnt;
+    int srtp_cnt;
 } rtp_decoder_ctx_t;
 
 typedef struct rtp_decoder_ctx_t *rtp_decoder_t;
