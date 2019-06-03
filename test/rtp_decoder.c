@@ -369,7 +369,7 @@ int main(int argc, char *argv[])
             } else {
                 switch (scs.key_size) {
                 case 128:
-                    if (scs.key_size == 4) {
+                    if (scs.tag_size == 4) {
                         srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(
                             &policy.rtp);
                         srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
@@ -383,7 +383,7 @@ int main(int argc, char *argv[])
                     break;
                 case 192:
 #ifdef OPENSSL
-                    if (scs.key_size == 4) {
+                    if (scs.tag_size == 4) {
                         srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(
                             &policy.rtp);
                         srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
@@ -403,7 +403,7 @@ int main(int argc, char *argv[])
 #endif
                     break;
                 case 256:
-                    if (scs.key_size == 4) {
+                    if (scs.tag_size == 4) {
                         srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(
                             &policy.rtp);
                         srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
