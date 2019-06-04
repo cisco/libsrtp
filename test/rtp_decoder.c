@@ -718,8 +718,8 @@ void rtp_decoder_handle_pkt(u_char *arg,
         rtp = 1;
         if (octets_recvd >= 2) {
             /* rfc5761 */
-            u_char pt = *(bytes + dcdr->rtp_offset + 1) & 0x7f;
-            rtp = 64 <= pt && pt >= 95;
+            u_char payload_type = *(bytes + dcdr->rtp_offset + 1) & 0x7f;
+            rtp = payload_type < 64 || payload_type > 95;
         }
     }
 
