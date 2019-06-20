@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: false
 language: c
 
@@ -139,6 +139,18 @@ matrix:
         - sudo docker kill mipsX
         - file test/srtp_driver
         - make runtest
+
+    # linux build of fuzzer
+    - os: linux
+      env:
+        - TEST="fuzzer (build only)"
+      addons:
+        apt:
+          packages:
+            - clang
+      script:
+        - CC=clang CXX=clang++ CXXFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O3" CFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O3" LDFLAGS="-fsanitize=fuzzer-no-link,address,undefined" ./configure
+        - LIBFUZZER="-fsanitize=fuzzer" make srtp-fuzzer
 
     # coverity scan
     - os: linux
