@@ -192,6 +192,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_context_init(void *cv,
         break;
     }
 
+    EVP_CIPHER_CTX_reset(c->ctx);
     if (!EVP_CipherInit_ex(c->ctx, evp, NULL, key, NULL, 0)) {
         return (srtp_err_status_init_fail);
     }
