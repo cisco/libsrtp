@@ -173,6 +173,7 @@ int main(int argc, char *argv[])
     char filter_exp[MAX_FILTER] = "";
     rtp_decoder_t dec;
     srtp_policy_t policy = { { 0 } };
+    rtp_decoder_mode_t mode = mode_rtp;
     srtp_err_status_t status;
     int len;
     int expected_len;
@@ -198,7 +199,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:");
+        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:m:");
         if (c == -1) {
             break;
         }
@@ -268,6 +269,18 @@ int main(int argc, char *argv[])
             input_key = malloc(scs.key_size);
             sec_servs |= sec_serv_conf | sec_serv_auth;
             gcm_on = scs.gcm_on;
+            break;
+        case 'm':
+            if (strcasecmp("rtp", optarg_s) == 0) {
+                mode = mode_rtp;
+            } else if (strcasecmp("rtcp", optarg_s) == 0) {
+                mode = mode_rtcp;
+            } else if (strcasecmp("rtcp-mux", optarg_s) == 0) {
+                mode = mode_rtcp_mux;
+            } else {
+                fprintf(stderr, "Unknown/unsupported mode %s\n", optarg_s);
+                exit(1);
+            }
             break;
         default:
             usage(argv[0]);
@@ -369,7 +382,7 @@ int main(int argc, char *argv[])
             } else {
                 switch (scs.key_size) {
                 case 128:
-                    if (scs.key_size == 4) {
+                    if (scs.tag_size == 4) {
                         srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(
                             &policy.rtp);
                         srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
@@ -383,7 +396,7 @@ int main(int argc, char *argv[])
                     break;
                 case 192:
 #ifdef OPENSSL
-                    if (scs.key_size == 4) {
+                    if (scs.tag_size == 4) {
                         srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(
                             &policy.rtp);
                         srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
@@ -403,7 +416,7 @@ int main(int argc, char *argv[])
 #endif
                     break;
                 case 256:
-                    if (scs.key_size == 4) {
+                    if (scs.tag_size == 4) {
                         srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(
                             &policy.rtp);
                         srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
@@ -531,7 +544,7 @@ int main(int argc, char *argv[])
 
     } else {
         fprintf(stderr,
-                "error: neither encryption or authentication were selected");
+                "error: neither encryption or authentication were selected\n");
         exit(1);
     }
 
@@ -558,11 +571,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    rtp_decoder_init(dec, policy);
+    if (rtp_decoder_init(dec, policy, mode)) {
+        fprintf(stderr, "error: init failed\n");
+        exit(1);
+    }
 
     pcap_loop(pcap_handle, 0, rtp_decoder_handle_pkt, (u_char *)dec);
 
-    rtp_decoder_deinit_srtp(dec);
+    if (dec->mode == mode_rtp || dec->mode == mode_rtcp_mux) {
+        fprintf(stderr, "RTP packets decoded: %d\n", dec->rtp_cnt);
+    }
+    if (dec->mode == mode_rtcp || dec->mode == mode_rtcp_mux) {
+        fprintf(stderr, "RTCP packets decoded: %d\n", dec->rtcp_cnt);
+    }
+    fprintf(stderr, "Packet decode errors: %d\n", dec->error_cnt);
+
+    rtp_decoder_deinit(dec);
     rtp_decoder_dealloc(dec);
 
     status = srtp_shutdown();
@@ -579,7 +603,8 @@ void usage(char *string)
 {
     fprintf(
         stderr,
-        "usage: %s [-d <debug>]* [[-k][-b] <key> [-a][-t][-e]]\n"
+        "usage: %s [-d <debug>]* [[-k][-b] <key>] [-a][-t][-e] [-s "
+        "<srtp-crypto-suite>] [-m <mode>]\n"
         "or     %s -l\n"
         "where  -a use message authentication\n"
         "       -e <key size> use encryption (use 128 or 256 for key size)\n"
@@ -591,7 +616,8 @@ void usage(char *string)
         "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
         "       -d <debug> turn on debugging for module <debug>\n"
         "       -s \"<srtp-crypto-suite>\" to set both key and tag size based\n"
-        "          on RFC4568-style crypto suite specification\n",
+        "          on RFC4568-style crypto suite specification\n"
+        "       -m <mode> set the mode to be one of [rtp]|rtcp|rtcp-mux\n",
         string, string);
     exit(1);
 }
@@ -606,27 +632,33 @@ void rtp_decoder_dealloc(rtp_decoder_t rtp_ctx)
     free(rtp_ctx);
 }
 
-srtp_err_status_t rtp_decoder_init_srtp(rtp_decoder_t decoder,
-                                        unsigned int ssrc)
+int rtp_decoder_deinit(rtp_decoder_t decoder)
 {
-    decoder->policy.ssrc.value = htonl(ssrc);
-    return srtp_create(&decoder->srtp_ctx, &decoder->policy);
+    if (decoder->srtp_ctx) {
+        return srtp_dealloc(decoder->srtp_ctx);
+    }
+    return 0;
 }
 
-int rtp_decoder_deinit_srtp(rtp_decoder_t decoder)
-{
-    return srtp_dealloc(decoder->srtp_ctx);
-}
-
-int rtp_decoder_init(rtp_decoder_t dcdr, srtp_policy_t policy)
+int rtp_decoder_init(rtp_decoder_t dcdr,
+                     srtp_policy_t policy,
+                     rtp_decoder_mode_t mode)
 {
     dcdr->rtp_offset = DEFAULT_RTP_OFFSET;
     dcdr->srtp_ctx = NULL;
     dcdr->start_tv.tv_usec = 0;
     dcdr->start_tv.tv_sec = 0;
     dcdr->frame_nr = -1;
+    dcdr->error_cnt = 0;
+    dcdr->rtp_cnt = 0;
+    dcdr->rtcp_cnt = 0;
+    dcdr->mode = mode;
     dcdr->policy = policy;
-    dcdr->policy.ssrc.type = ssrc_specific;
+    dcdr->policy.ssrc.type = ssrc_any_inbound;
+
+    if (srtp_create(&dcdr->srtp_ctx, &dcdr->policy)) {
+        return 1;
+    }
     return 0;
 }
 
@@ -653,6 +685,8 @@ void rtp_decoder_handle_pkt(u_char *arg,
                             const u_char *bytes)
 {
     rtp_decoder_t dcdr = (rtp_decoder_t)arg;
+    rtp_msg_t message;
+    int rtp;
     int pktsize;
     struct timeval delta;
     int octets_recvd;
@@ -668,7 +702,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
     }
     const void *rtp_packet = bytes + dcdr->rtp_offset;
 
-    memcpy((void *)&dcdr->message, rtp_packet, hdr->caplen - dcdr->rtp_offset);
+    memcpy((void *)&message, rtp_packet, hdr->caplen - dcdr->rtp_offset);
     pktsize = hdr->caplen - dcdr->rtp_offset;
     octets_recvd = pktsize;
 
@@ -676,24 +710,43 @@ void rtp_decoder_handle_pkt(u_char *arg,
         return;
     }
 
-    /* verify rtp header */
-    if (dcdr->message.header.version != 2) {
-        return;
-    }
-    if (dcdr->srtp_ctx == NULL) {
-        status = rtp_decoder_init_srtp(dcdr, dcdr->message.header.ssrc);
-        if (status) {
-            exit(1);
+    if (dcdr->mode == mode_rtp) {
+        rtp = 1;
+    } else if (dcdr->mode == mode_rtcp) {
+        rtp = 0;
+    } else {
+        rtp = 1;
+        if (octets_recvd >= 2) {
+            /* rfc5761 */
+            u_char payload_type = *(bytes + dcdr->rtp_offset + 1) & 0x7f;
+            rtp = payload_type < 64 || payload_type > 95;
         }
     }
-    status = srtp_unprotect(dcdr->srtp_ctx, &dcdr->message, &octets_recvd);
-    if (status) {
-        return;
+
+    if (rtp) {
+        /* verify rtp header */
+        if (message.header.version != 2) {
+            return;
+        }
+
+        status = srtp_unprotect(dcdr->srtp_ctx, &message, &octets_recvd);
+        if (status) {
+            dcdr->error_cnt++;
+            return;
+        }
+        dcdr->rtp_cnt++;
+    } else {
+        status = srtp_unprotect_rtcp(dcdr->srtp_ctx, &message, &octets_recvd);
+        if (status) {
+            dcdr->error_cnt++;
+            return;
+        }
+        dcdr->rtcp_cnt++;
     }
     timersub(&hdr->ts, &dcdr->start_tv, &delta);
     fprintf(stdout, "%02ld:%02ld.%06ld\n", delta.tv_sec / 60, delta.tv_sec % 60,
             (long)delta.tv_usec);
-    hexdump(&dcdr->message, octets_recvd);
+    hexdump(&message, octets_recvd);
 }
 
 void rtp_print_error(srtp_err_status_t status, char *message)
