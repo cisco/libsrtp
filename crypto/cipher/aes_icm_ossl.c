@@ -248,6 +248,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init(void *cv,
         break;
     }
 
+    EVP_CIPHER_CTX_init(c->ctx);
     if (!EVP_EncryptInit_ex(c->ctx, evp, NULL, key, NULL)) {
         return srtp_err_status_fail;
     } else {
