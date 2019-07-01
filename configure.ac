@@ -11,6 +11,7 @@ fi
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_CXX
 AC_ARG_VAR(
   [EXTRA_CFLAGS],
   [C compiler flags appended to the regular C compiler flags instead of overriding them])
@@ -410,7 +411,7 @@ AS_IF([test "x$EXTRA_CFLAGS" != "x"],
 
 AC_CONFIG_HEADER([crypto/include/config.h:config_in.h])
 
-AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile libsrtp2.pc])
+AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile fuzzer/Makefile libsrtp2.pc])
 AC_OUTPUT
 
 # This is needed when building outside the source dir.

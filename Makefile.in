@@ -68,10 +68,14 @@ runtest-valgrind: test
 # makefile variables
 
 CC	= @CC@
+CXX	= @CXX@
 INCDIR	= -Icrypto/include -I$(srcdir)/include -I$(srcdir)/crypto/include
 DEFS	= @DEFS@
 CPPFLAGS= @CPPFLAGS@
 CFLAGS	= @CFLAGS@
+CXXFLAGS= @CXXFLAGS@
+srtp-fuzzer: CFLAGS += -g
+srtp-fuzzer: CXXFLAGS += -g
 LIBS	= @LIBS@
 LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
@@ -262,6 +266,11 @@ tags:
 libsrtp2doc:
 	$(MAKE) -C doc
 
+# fuzzer
+
+srtp-fuzzer: libsrtp2.a
+	$(MAKE) -C fuzzer
+
 .PHONY: clean superclean distclean install
 
 install:
@@ -300,6 +309,7 @@ clean:
 	rm -rf *.pict *.jpg *.dat
 	rm -rf freed allocated tmp
 	$(MAKE) -C doc clean
+	$(MAKE) -C fuzzer clean
 
 superclean: clean
 	rm -rf crypto/include/config.h config.log config.cache config.status \

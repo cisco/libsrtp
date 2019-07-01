@@ -114,4 +114,8 @@ void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
                                   const char *msg,
                                   void *data);
 
+void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
+                                  const char *msg,
+                                  void *data);
+
 #endif /* RTP_DECODER_H */
