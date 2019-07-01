@@ -168,3 +168,14 @@ matrix:
           branch_pattern: master
       script:
         - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+    # windows build
+    - os: windows
+      env:
+        - TEST="windows"
+
+      script:
+        - export PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin":$PATH
+        - mkdir build && cd build
+        - cmake -G "Visual Studio 15 2017" ..
+        - msbuild.exe srtp2.sln -p:Configuration=Release
