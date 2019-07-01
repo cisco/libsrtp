@@ -82,13 +82,14 @@ srtp_debug_module_t mod_srtp = {
 static srtp_err_status_t srtp_validate_rtp_header(void *rtp_hdr,
                                                   int *pkt_octet_len)
 {
+    srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
+    int rtp_header_len;
+
     if (*pkt_octet_len < octets_in_rtp_header)
         return srtp_err_status_bad_param;
 
-    srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
-
     /* Check RTP header length */
-    int rtp_header_len = octets_in_rtp_header + 4 * hdr->cc;
+    rtp_header_len = octets_in_rtp_header + 4 * hdr->cc;
     if (hdr->x == 1)
         rtp_header_len += octets_in_rtp_extn_hdr;
 
@@ -678,6 +679,8 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
                                        int key_len)
 {
     srtp_cipher_type_id_t cipher_id;
+    srtp_err_status_t stat;
+
     switch (key_len) {
     case SRTP_AES_ICM_256_KEY_LEN_WSALT:
         cipher_id = SRTP_AES_ICM_256;
@@ -693,7 +696,6 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
         break;
     }
 
-    srtp_err_status_t stat;
     stat = srtp_crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, key_len, 0);
     if (stat)
         return stat;
@@ -4551,9 +4553,9 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
                                                     uint32_t mki_index,
                                                     uint32_t *length)
 {
-    *length = 0;
-
     srtp_session_keys_t *session_key;
+
+    *length = 0;
 
     if (use_mki) {
         if (mki_index >= stream->num_master_keys) {

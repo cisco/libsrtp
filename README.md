@@ -31,7 +31,7 @@ because it does its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
-<a name="contact"></a>
+<a name="contact-us"></a>
 # Contact Us
 
 - [libsrtp@lists.packetizer.com](mailto:libsrtp@lists.packetizer.com) general mailing list for news / announcements / discussions. This is an open list, see
@@ -46,7 +46,7 @@ because it does its work behind the scenes.
 ## Contents
 
 - [Introduction to libSRTP](#introduction-to-libsrtp)
-  - [Contact Us](#contact)
+- [Contact Us](#contact-us)
   - [Contents](#contents)
 - [License and Disclaimer](#license-and-disclaimer)
 - [libSRTP Overview](#libsrtp-overview)
@@ -55,6 +55,7 @@ because it does its work behind the scenes.
   - [Implementation Notes](#implementation-notes)
 - [Installing and Building libSRTP](#installing-and-building-libsrtp)
   - [Changing Build Configuration](#changing-build-configuration)
+  - [Using Visual Studio](#using-visual-studio)
 - [Applications](#applications)
   - [Example Code](#example-code)
 - [Credits](#credits)
@@ -311,6 +312,26 @@ For example, on macOS:
 brew install automake pkgconfig
 # Edit configure.in
 autoremake -ivf
+```
+
+--------------------------------------------------------------------------------
+<a name="using-visual-studio"></a>
+## Using Visual Studio
+
+On Windows one can use Visual Studio via CMake. CMake can be downloaded here:
+https://cmake.org/ . To create Visual Studio build files, for example run the
+following commands:
+
+```
+# Create build subdirectory
+mkdir build
+cd build
+
+# Make project files
+cmake .. -G "Visual Studio 15 2017"
+
+# Or for 64 bit project files
+cmake .. -G "Visual Studio 15 2017 Win64"
 ```
 
 --------------------------------------------------------------------------------
