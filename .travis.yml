@@ -25,6 +25,10 @@ matrix:
         - make
         - make runtest
         - make runtest-valgrind
+        - mkdir build && cd build
+        - cmake ..
+        - make
+        - make test
 
     # linux build with openssl
     - os: linux
@@ -42,6 +46,10 @@ matrix:
         - make
         - make runtest
         - make runtest-valgrind
+        - mkdir build && cd build
+        - cmake -DENABLE_OPENSSL=ON ..
+        - make
+        - make test
 
     # linux build with openssl and clang
     - os: linux
@@ -82,6 +90,10 @@ matrix:
         - EXTRA_CFLAGS=-Werror ./configure
         - make
         - make runtest
+        - mkdir build && cd build
+        - cmake ..
+        - make
+        - make test
 
     # osx build with openssl
     - os: osx
@@ -93,6 +105,10 @@ matrix:
         - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
+        - mkdir build && cd build
+        - cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DENABLE_OPENSSL=ON ..
+        - make
+        - make test
 
     # osx build with nss
     - os: osx
@@ -178,4 +194,5 @@ matrix:
         - export PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin":$PATH
         - mkdir build && cd build
         - cmake -G "Visual Studio 15 2017" ..
-        - msbuild.exe srtp2.sln -p:Configuration=Release
+        - msbuild.exe libsrtp2.sln -p:Configuration=Release
+        - msbuild.exe RUN_TESTS.vcxproj -p:Configuration=Release

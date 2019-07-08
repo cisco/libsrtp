@@ -44,14 +44,14 @@
  */
 
 /*
- * Test specific.
- */
-#include "cutest.h"
-
-/*
  * libSRTP specific.
  */
 #include "../srtp/srtp.c" // Get access to static functions
+
+/*
+ * Test specific.
+ */
+#include "cutest.h"
 
 /*
  * Standard library.
