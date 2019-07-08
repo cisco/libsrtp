@@ -30,6 +30,10 @@
 /* Define to use X86 inlined assembly code */
 #define HAVE_X86 1
 
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+ significant byte first (like Motorola and SPARC, unlike Intel). */
+#cmakedefine WORDS_BIGENDIAN 1
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #cmakedefine HAVE_ARPA_INET_H 1
 

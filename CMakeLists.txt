@@ -5,9 +5,12 @@ project(libsrtp2 LANGUAGES C)
 set(PACKAGE_VERSION 2.3.0)
 set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${PACKAGE_VERSION}")
 
+include(TestBigEndian)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckTypeSize)
+
+test_big_endian(WORDS_BIGENDIAN)
 
 check_include_file(arpa/inet.h HAVE_ARPA_INET_H)
 check_include_file(byteswap.h HAVE_BYTESWAP_H)
