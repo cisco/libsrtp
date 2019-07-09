@@ -25,6 +25,7 @@ matrix:
         - make
         - make runtest
         - make runtest-valgrind
+        - make distclean
         - mkdir build && cd build
         - cmake ..
         - make
@@ -46,6 +47,7 @@ matrix:
         - make
         - make runtest
         - make runtest-valgrind
+        - make distclean
         - mkdir build && cd build
         - cmake -DENABLE_OPENSSL=ON ..
         - make
@@ -90,6 +92,7 @@ matrix:
         - EXTRA_CFLAGS=-Werror ./configure
         - make
         - make runtest
+        - make distclean
         - mkdir build && cd build
         - cmake ..
         - make
@@ -105,6 +108,7 @@ matrix:
         - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
+        - make distclean
         - mkdir build && cd build
         - cmake -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl -DENABLE_OPENSSL=ON ..
         - make

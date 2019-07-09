@@ -51,7 +51,10 @@ endif()
 set(OPENSSL ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
 set(GCM ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
 
-configure_file(config_in_cmake.h ${CMAKE_CURRENT_SOURCE_DIR}/crypto/include/config.h)
+set(CONFIG_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CONFIG_FILE_DIR})
+
+configure_file(config_in_cmake.h ${CONFIG_FILE_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
 set(SOURCES_C
@@ -117,7 +120,6 @@ set(SOURCES_H
   crypto/include/auth.h
   crypto/include/cipher.h
   crypto/include/cipher_types.h
-  crypto/include/config.h
   crypto/include/crypto_kernel.h
   crypto/include/crypto_types.h
   crypto/include/datatypes.h
@@ -134,6 +136,7 @@ set(SOURCES_H
   include/srtp.h
   include/srtp_priv.h
   include/ut_sim.h
+  ${CONFIG_FILE_DIR}/config.h
 )
 
 source_group("src" FILES ${SOURCES_C})
