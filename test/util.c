@@ -42,6 +42,7 @@
  *
  */
 
+#include "config.h"
 #include "util.h"
 
 #include <string.h>
