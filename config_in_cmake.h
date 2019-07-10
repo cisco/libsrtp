@@ -103,3 +103,8 @@
 /* The size of `unsigned long long', as computed by sizeof. */
 @SIZEOF_UNSIGNED_LONG_LONG_CODE@
 
+/* Define to nothing, since the MSVC compiler doesn't support it.  */
+#cmakedefine HAVE_INLINE 1
+#ifndef HAVE_INLINE
+#define inline
+#endif

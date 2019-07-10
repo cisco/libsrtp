@@ -9,6 +9,7 @@ include(TestBigEndian)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckTypeSize)
+include(CheckCSourceCompiles)
 
 test_big_endian(WORDS_BIGENDIAN)
 
@@ -37,6 +38,8 @@ check_type_size(uint64_t UINT64_T)
 check_type_size(int32_t INT32_T)
 check_type_size("unsigned long" SIZEOF_UNSIGNED_LONG)
 check_type_size("unsigned long long" SIZEOF_UNSIGNED_LONG_LONG)
+
+check_c_source_compiles("inline void func(); void func() { } int main() { func(); return 0; }" HAVE_INLINE)
 
 set(ENABLE_DEBUG_LOGGING OFF CACHE BOOL "Enable debug logging in all modules")
 set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
