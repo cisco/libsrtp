@@ -138,16 +138,16 @@ can also be linked together to form an entire session policy. A linked
 list of `srtp_policy_t` structures is equivalent to a session policy.
 In such a policy, we refer to a single `srtp_policy_t` as an *element*.
 
-An `srtp_policy_t` strucutre contains two `crypto_policy_t` structures
+An `srtp_policy_t` structure contains two `srtp_crypto_policy_t` structures
 that describe the cryptograhic policies for RTP and RTCP, as well as
 the SRTP master key and the SSRC value. The SSRC describes what to
-protect (e.g. which stream), and the `crypto_policy_t` structures
+protect (e.g. which stream), and the `srtp_crypto_policy_t` structures
 describe how to protect it. The key is contained in a policy element
 because it simplifies the interface to the library. In many cases, it
 is desirable to use the same cryptographic policies across all of the
 streams in a session, but to use a distinct key for each stream. A
-`crypto_policy_t` structure can be initialized by using either the
-`crypto_policy_set_rtp_default()` or `crypto_policy_set_rtcp_default()`
+`srtp_crypto_policy_t` structure can be initialized by using either the
+`srtp_crypto_policy_set_rtp_default()` or `srtp_crypto_policy_set_rtcp_default()`
 functions, which set a crypto policy structure to the default policies
 for RTP and RTCP protection, respectively.
 
@@ -446,8 +446,8 @@ srtp_init();
 memset(&policy, 0x0, sizeof(srtp_policy_t));
 
 // set policy to describe a policy for an SRTP stream
-crypto_policy_set_rtp_default(&policy.rtp);
-crypto_policy_set_rtcp_default(&policy.rtcp);
+srtp_crypto_policy_set_rtp_default(&policy.rtp);
+srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
 policy.ssrc = ssrc;
 policy.key  = key;
 policy.next = NULL;
