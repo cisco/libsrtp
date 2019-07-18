@@ -171,19 +171,6 @@ int srtp_cipher_get_key_length(const srtp_cipher_t *c)
  */
 void srtp_cipher_rand_for_tests(void *dest, uint32_t len)
 {
-#if defined(HAVE_RAND_S)
-    uint8_t *dst = (uint8_t *)dest;
-    while (len) {
-        unsigned int val;
-        errno_t err = rand_s(&val);
-
-        if (err != 0)
-            return srtp_err_status_fail;
-
-        *dst++ = val & 0xff;
-        len--;
-    }
-#else
     /* Generic C-library (rand()) version */
     /* This is a random source of last resort */
     uint8_t *dst = (uint8_t *)dest;
@@ -195,7 +182,6 @@ void srtp_cipher_rand_for_tests(void *dest, uint32_t len)
         *dst++ = val & 0xff;
         len--;
     }
-#endif
 }
 
 /*
