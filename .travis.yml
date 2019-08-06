@@ -52,6 +52,11 @@ matrix:
         - cmake -DENABLE_OPENSSL=ON ..
         - make
         - make test
+        - cd ..
+        - mkdir build_shared && cd build_shared
+        - cmake -DENABLE_OPENSSL=ON -DBUILD_SHARED_LIBS=ON ..
+        - make
+        - make test
 
     # linux build with openssl and clang
     - os: linux
@@ -198,5 +203,10 @@ matrix:
         - export PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin":$PATH
         - mkdir build && cd build
         - cmake -G "Visual Studio 15 2017" ..
+        - msbuild.exe libsrtp2.sln -p:Configuration=Release
+        - msbuild.exe RUN_TESTS.vcxproj -p:Configuration=Release
+        - cd ..
+        - mkdir build_shared && cd build_shared
+        - cmake -G "Visual Studio 15 2017" -DBUILD_SHARED_LIBS=ON ..
         - msbuild.exe libsrtp2.sln -p:Configuration=Release
         - msbuild.exe RUN_TESTS.vcxproj -p:Configuration=Release

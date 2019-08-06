@@ -49,6 +49,7 @@ set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
 set(TEST_APPS ON CACHE BOOL "Build test applications")
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
 if(ENABLE_OPENSSL)
   find_package(OpenSSL REQUIRED)
@@ -145,6 +146,12 @@ set(SOURCES_H
   ${CONFIG_FILE_DIR}/config.h
 )
 
+if(BUILD_SHARED_LIBS AND WIN32)
+  list(APPEND SOURCES_C
+    srtp.def
+  )
+endif()
+
 source_group("src" FILES ${SOURCES_C})
 source_group("src\\Ciphers" FILES ${CIPHERS_SOURCES_C})
 source_group("src\\Hashes" FILES ${HASHES_SOURCES_C})
@@ -153,7 +160,7 @@ source_group("src\\Math" FILES ${MATH_SOURCES_C})
 source_group("src\\Replay" FILES ${REPLAY_SOURCES_C})
 source_group("include" FILES ${SOURCES_H})
 
-add_library(srtp2 STATIC
+add_library(srtp2
   ${SOURCES_C}
   ${CIPHERS_SOURCES_C}
   ${HASHES_SOURCES_C}
@@ -180,9 +187,11 @@ install(FILES include/srtp.h crypto/include/auth.h
 if(TEST_APPS)
   enable_testing()
 
+if(NOT (BUILD_SHARED_LIBS AND WIN32))
   add_executable(test_srtp test/test_srtp.c)
   target_link_libraries(test_srtp srtp2)
   add_test(test_srtp test_srtp)
+endif()
 
   add_executable(srtp_driver test/srtp_driver.c
     test/util.c test/getopt_s.c)
