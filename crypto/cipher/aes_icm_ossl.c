@@ -309,7 +309,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_encrypt(void *cv,
     }
     *enc_len = len;
 
-    if (!EVP_EncryptFinal_ex(c->ctx, buf, &len)) {
+    if (!EVP_EncryptFinal_ex(c->ctx, buf + len, &len)) {
         return srtp_err_status_cipher_fail;
     }
     *enc_len += len;
