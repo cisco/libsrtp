@@ -962,7 +962,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * to generate the salt value
      */
     if (rtp_salt_len > 0) {
-        debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt", NULL);
+        debug_print0(mod_srtp, "found rtp_salt_len > 0, generating salt");
 
         /* generate encryption salt, put after encryption key */
         stat = srtp_kdf_generate(&kdf, label_rtp_salt,
@@ -1154,8 +1154,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * to generate the salt value
      */
     if (rtcp_salt_len > 0) {
-        debug_print(mod_srtp, "found rtcp_salt_len > 0, generating rtcp salt",
-                    NULL);
+        debug_print0(mod_srtp, "found rtcp_salt_len > 0, generating rtcp salt");
 
         /* generate encryption salt, put after encryption key */
         stat = srtp_kdf_generate(&kdf, label_rtcp_salt,
@@ -1701,7 +1700,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     unsigned int mki_size = 0;
     uint8_t *mki_location = NULL;
 
-    debug_print(mod_srtp, "function srtp_protect_aead", NULL);
+    debug_print0(mod_srtp, "function srtp_protect_aead");
 
     /*
      * update the key usage limit, and check it to make sure that we
@@ -1862,7 +1861,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     unsigned int aad_len;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
 
-    debug_print(mod_srtp, "function srtp_unprotect_aead", NULL);
+    debug_print0(mod_srtp, "function srtp_unprotect_aead");
 
 #ifdef NO_64BIT_MATH
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
@@ -2063,7 +2062,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     uint8_t *mki_location = NULL;
     int advance_packet_index = 0;
 
-    debug_print(mod_srtp, "function srtp_protect", NULL);
+    debug_print0(mod_srtp, "function srtp_protect");
 
     /* we assume the hdr is 32-bit aligned to start */
 
@@ -2393,7 +2392,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     uint32_t roc_to_set = 0;
     uint16_t seq_to_set = 0;
 
-    debug_print(mod_srtp, "function srtp_unprotect", NULL);
+    debug_print0(mod_srtp, "function srtp_unprotect");
 
     /* we assume the hdr is 32-bit aligned to start */
 
