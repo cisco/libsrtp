@@ -1670,7 +1670,7 @@ static srtp_err_status_t srtp_get_est_pkt_index(srtp_hdr_t *hdr,
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(*est),
                  low32(*est));
 #else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", *est);
+    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, *est);
 #endif
     return result;
 }
@@ -1759,7 +1759,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
 #endif
 
     /*
@@ -1867,7 +1867,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
 #endif
 
     /* get tag length from stream */
@@ -2233,7 +2233,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
 #endif
 
     /*
@@ -2339,7 +2339,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             return status;
 
         /* run auth func over ROC, put result into auth_tag */
-        debug_print(mod_srtp, "estimated packet index: %016llx", est);
+        debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
         status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est, 4,
                                    auth_tag);
         debug_print(mod_srtp, "srtp auth tag:    %s",
@@ -2461,7 +2461,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
 #endif
 
     /* Determine if MKI is being used and what session keys should be used */
