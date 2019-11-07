@@ -105,6 +105,7 @@ matrix:
 
     # osx build with openssl
     - os: osx
+      osx_image: xcode11.2
       env:
         - TEST="osx openssl"
       before_install:
@@ -121,10 +122,9 @@ matrix:
 
     # osx build with nss
     - os: osx
+      osx_image: xcode11.2
       env:
         - TEST="osx nss"
-      before_install:
-            - brew install nss
       script:
         - PKG_CONFIG_PATH=/usr/local/opt/nss/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-nss
         - make
