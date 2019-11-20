@@ -83,6 +83,7 @@
 
 #define MAX_KEY_LEN 96
 #define MAX_FILTER 256
+#define MAX_FILE 255
 
 struct srtp_crypto_suite {
     const char *can_name;
@@ -171,6 +172,8 @@ int main(int argc, char *argv[])
     char key[MAX_KEY_LEN];
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
+    char pcap_file[MAX_FILE] = "-";
+    int rtp_packet_offset = DEFAULT_RTP_OFFSET;
     rtp_decoder_t dec;
     srtp_policy_t policy = { { 0 } };
     rtp_decoder_mode_t mode = mode_rtp;
@@ -199,7 +202,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:m:");
+        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:m:p:o:");
         if (c == -1) {
             break;
         }
@@ -281,6 +284,18 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unknown/unsupported mode %s\n", optarg_s);
                 exit(1);
             }
+            break;
+        case 'p':
+            if (strlen(optarg_s) > MAX_FILE) {
+                fprintf(stderr,
+                        "error: pcap file path bigger than %d characters\n",
+                        MAX_FILE);
+                exit(1);
+            }
+            strcpy(pcap_file, optarg_s);
+            break;
+        case 'o':
+            rtp_packet_offset = atoi(optarg_s);
             break;
         default:
             usage(argv[0]);
@@ -507,7 +522,7 @@ int main(int argc, char *argv[])
         policy.rtp.auth_tag_len = scs.tag_size;
 
         if (gcm_on && scs.tag_size != 8) {
-            fprintf(stderr, "setted tag len %d\n", scs.tag_size);
+            fprintf(stderr, "set tag len %d\n", scs.tag_size);
             policy.rtp.auth_tag_len = scs.tag_size;
         }
 
@@ -538,9 +553,12 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
+        int key_octets = (scs.key_size / 8);
+        int salt_octets = policy.rtp.cipher_key_len - key_octets;
         fprintf(stderr, "set master key/salt to %s/",
-                octet_string_hex_string(key, 16));
-        fprintf(stderr, "%s\n", octet_string_hex_string(key + 16, 14));
+                octet_string_hex_string(key, key_octets));
+        fprintf(stderr, "%s\n",
+                octet_string_hex_string(key + key_octets, salt_octets));
 
     } else {
         fprintf(stderr,
@@ -548,7 +566,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    pcap_handle = pcap_open_offline("-", errbuf);
+    pcap_handle = pcap_open_offline(pcap_file, errbuf);
 
     if (!pcap_handle) {
         fprintf(stderr, "libpcap failed to open file '%s'\n", errbuf);
@@ -571,7 +589,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    if (rtp_decoder_init(dec, policy, mode)) {
+    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset)) {
         fprintf(stderr, "error: init failed\n");
         exit(1);
     }
@@ -617,7 +635,9 @@ void usage(char *string)
         "       -d <debug> turn on debugging for module <debug>\n"
         "       -s \"<srtp-crypto-suite>\" to set both key and tag size based\n"
         "          on RFC4568-style crypto suite specification\n"
-        "       -m <mode> set the mode to be one of [rtp]|rtcp|rtcp-mux\n",
+        "       -m <mode> set the mode to be one of [rtp]|rtcp|rtcp-mux\n"
+        "       -p <pcap file> path to pcap file (defaults to stdin)\n"
+        "       -o byte offset of RTP packet in capture (defaults to 42)\n",
         string, string);
     exit(1);
 }
@@ -642,9 +662,10 @@ int rtp_decoder_deinit(rtp_decoder_t decoder)
 
 int rtp_decoder_init(rtp_decoder_t dcdr,
                      srtp_policy_t policy,
-                     rtp_decoder_mode_t mode)
+                     rtp_decoder_mode_t mode,
+                     int rtp_packet_offset)
 {
-    dcdr->rtp_offset = DEFAULT_RTP_OFFSET;
+    dcdr->rtp_offset = rtp_packet_offset;
     dcdr->srtp_ctx = NULL;
     dcdr->start_tv.tv_usec = 0;
     dcdr->start_tv.tv_sec = 0;

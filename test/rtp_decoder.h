@@ -106,7 +106,8 @@ void rtp_decoder_dealloc(rtp_decoder_t rtp_ctx);
 
 int rtp_decoder_init(rtp_decoder_t dcdr,
                      srtp_policy_t policy,
-                     rtp_decoder_mode_t mode);
+                     rtp_decoder_mode_t mode,
+                     int rtp_packet_offset);
 
 int rtp_decoder_deinit(rtp_decoder_t decoder);
 
