@@ -13,6 +13,12 @@ include(CheckCSourceCompiles)
 
 test_big_endian(WORDS_BIGENDIAN)
 
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+  set (HAVE_X86 TRUE)
+else ()
+  set (HAVE_X86 FALSE)
+endif ()
+
 check_include_file(arpa/inet.h HAVE_ARPA_INET_H)
 check_include_file(byteswap.h HAVE_BYTESWAP_H)
 check_include_file(inttypes.h HAVE_INTTYPES_H)

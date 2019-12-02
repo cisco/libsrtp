@@ -233,3 +233,27 @@ matrix:
           STRIP=$TOOLCHAIN/bin/aarch64-linux-android-strip
           ./configure --host aarch64-linux-android
         - make
+
+    # ios build with openssl
+    - os: osx
+      osx_image: xcode11.2
+      env:
+        - TEST="ios"
+      script:
+        - wget -q https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake
+        - mkdir build && cd build
+        - cmake -DCMAKE_TOOLCHAIN_FILE=../ios.toolchain.cmake  -DPLATFORM=OS64 ..
+        - make
+        - cd ..
+        - CFLAGS="-arch arm64 --sysroot=$(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=8.0 -fembed-bitcode"
+          LDFLAGS="-arch arm64 --sysroot=$(xcrun --sdk iphoneos --show-sdk-path) -miphoneos-version-min=8.0 -fembed-bitcode"
+          AR="$(xcrun --find --sdk iphoneos ar)"
+          AS="$(xcrun --find --sdk iphoneos as)"
+          CC="$(xcrun --find --sdk iphoneos clang)"
+          CXX="$(xcrun --find --sdk iphoneos clang++)"
+          LD="$(xcrun --find --sdk iphoneos ld)"
+          RANLIB="$(xcrun --find --sdk iphoneos ranlib)"
+          STRIP="$(xcrun --find --sdk iphoneos strip)"
+          ./configure --host arm-apple-darwin
+        - make
+        - make shared_library
