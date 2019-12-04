@@ -1071,9 +1071,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
          * to generate the salt value
          */
         if (rtp_xtn_hdr_salt_len > 0) {
-            debug_print(mod_srtp,
-                        "found rtp_xtn_hdr_salt_len > 0, generating salt",
-                        NULL);
+            debug_print0(mod_srtp,
+                         "found rtp_xtn_hdr_salt_len > 0, generating salt");
 
             /* generate encryption salt, put after encryption key */
             stat = srtp_kdf_generate(xtn_hdr_kdf, label_rtp_header_salt,

@@ -347,7 +347,7 @@ srtp_err_status_t srtp_cipher_type_test(
         /*
          * test the decrypt function
          */
-        debug_print(srtp_mod_cipher, "testing decryption", NULL);
+        debug_print0(srtp_mod_cipher, "testing decryption");
 
         /* re-initialize cipher for decryption */
         status = srtp_cipher_init(c, test_case->key);
