@@ -261,8 +261,7 @@ void srtp_sha1_update(srtp_sha1_ctx_t *ctx,
 
             /* process a whole block */
 
-            debug_print(srtp_mod_sha1, "(update) running srtp_sha1_core()",
-                        NULL);
+            debug_print0(srtp_mod_sha1, "(update) running srtp_sha1_core()");
 
             srtp_sha1_core(ctx->M, ctx->H);
 
@@ -394,8 +393,7 @@ void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t *output)
     debug_print0(srtp_mod_sha1, "(final) running srtp_sha1_core()");
 
     if (ctx->octets_in_buffer >= 56) {
-        debug_print(srtp_mod_sha1, "(final) running srtp_sha1_core() again",
-                    NULL);
+        debug_print0(srtp_mod_sha1, "(final) running srtp_sha1_core() again");
 
         /* we need to do one final run of the compression algo */
 
