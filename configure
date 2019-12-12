@@ -714,6 +714,7 @@ enable_nss
 with_openssl_dir
 enable_openssl_kdf
 with_nss_dir
+enable_pcap
 enable_log_stdout
 with_log_file
 '
@@ -1365,6 +1366,7 @@ Optional Features:
   --enable-openssl        compile in OpenSSL crypto engine
   --enable-nss            compile in NSS crypto engine
   --enable-openssl-kdf    Use OpenSSL KDF algorithm
+  --disable-pcap          Build without `pcap' library (-lpcap)
   --enable-log-stdout     redirecting logging to stdout
 
 Optional Packages:
@@ -6303,7 +6305,14 @@ fi
 
 
 PCAP_LIB=""
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_create in -lpcap" >&5
+# Check whether --enable-pcap was given.
+if test "${enable_pcap+set}" = set; then :
+  enableval=$enable_pcap;
+fi
+
+if test "x$enable_pcap" != "xno"; then :
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_create in -lpcap" >&5
 $as_echo_n "checking for pcap_create in -lpcap... " >&6; }
 if ${ac_cv_lib_pcap_pcap_create+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6344,12 +6353,12 @@ if test "x$ac_cv_lib_pcap_pcap_create" = xyes; then :
 
 $as_echo "#define HAVE_PCAP 1" >>confdefs.h
 
-   HAVE_PCAP=1
+     HAVE_PCAP=1
 
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_create in -lwpcap" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pcap_create in -lwpcap" >&5
 $as_echo_n "checking for pcap_create in -lwpcap... " >&6; }
 if ${ac_cv_lib_wpcap_pcap_create+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6390,10 +6399,12 @@ if test "x$ac_cv_lib_wpcap_pcap_create" = xyes; then :
 
 $as_echo "#define HAVE_PCAP 1" >>confdefs.h
 
-   HAVE_PCAP=1
+     HAVE_PCAP=1
 
 fi
 
+
+fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to redirect logging to stdout" >&5
