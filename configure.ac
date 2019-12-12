@@ -363,15 +363,18 @@ AC_SUBST([HMAC_OBJS])
 dnl Checking for PCAP
 
 PCAP_LIB=""
-AC_CHECK_LIB([pcap], [pcap_create],
-  [PCAP_LIB="-lpcap"
-   AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `pcap' library (-lpcap)])
-   AC_SUBST([HAVE_PCAP], [1])])
-   
-AC_CHECK_LIB([wpcap], [pcap_create],
-  [PCAP_LIB="-lwpcap"
-   AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `winpcap' library (-lwpcap)])
-   AC_SUBST([HAVE_PCAP], [1])])
+AC_ARG_ENABLE([pcap], AS_HELP_STRING([--disable-pcap], [Build without `pcap' library (-lpcap)]))
+AS_IF([test "x$enable_pcap" != "xno"], [
+  AC_CHECK_LIB([pcap], [pcap_create],
+    [PCAP_LIB="-lpcap"
+     AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `pcap' library (-lpcap)])
+     AC_SUBST([HAVE_PCAP], [1])])
+
+  AC_CHECK_LIB([wpcap], [pcap_create],
+    [PCAP_LIB="-lwpcap"
+     AC_DEFINE([HAVE_PCAP], [1], [Define to 1 if you have the `winpcap' library (-lwpcap)])
+     AC_SUBST([HAVE_PCAP], [1])])
+])
 AC_SUBST([PCAP_LIB])
    
 AC_MSG_CHECKING([whether to redirect logging to stdout])
