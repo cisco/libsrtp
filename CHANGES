@@ -1,6 +1,8 @@
 Changelog
 
-2.3.0-pre (This version)
+2.4.0-pre (This version)
+
+2.3.0
 
 Major changes
 
@@ -9,7 +11,6 @@ A fuzzer was added to the project based on libFuzzer. This is run as part of Goo
 CMake support was added as an alternative build system. This was primarily added to replace the Visual Studio project files currently checked in but has been extend to support building on all platforms. Initial PR #449 and #455 but has been support has been continuously improved. 
 
 NSS support for crypto backend was added. This is can be used as an alternative to openssl. Initial PR #413 but there has been numerous improvements.
-
 
 PR #474 - Add flag to disable pcap dependency when build test apps.
 
