@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(libsrtp2 LANGUAGES C)
 
-set(PACKAGE_VERSION 2.3.0)
+set(PACKAGE_VERSION 2.4.0)
 set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${PACKAGE_VERSION}")
 
 include(TestBigEndian)
