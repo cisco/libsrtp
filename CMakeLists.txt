@@ -187,7 +187,7 @@ endif()
 install(TARGETS srtp2 DESTINATION lib)
 install(FILES include/srtp.h crypto/include/auth.h
   crypto/include/cipher.h
-  crypto/include/cipher_types.h
+  crypto/include/crypto_types.h
   DESTINATION include/srtp2)
 
 if(TEST_APPS)
