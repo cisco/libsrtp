@@ -220,35 +220,24 @@ if test "$enable_openssl" = "yes"; then
    AC_MSG_CHECKING([for user specified OpenSSL directory])
    AC_ARG_WITH([openssl-dir],
       [AS_HELP_STRING([--with-openssl-dir], [Location of OpenSSL installation])],
-      [if test "x$PKG_CONFIG" != "x" && test -f $with_openssl_dir/lib/pkgconfig/libcrypto.pc; then
-         if test "x$PKG_CONFIG_PATH" = "x"; then
-           export PKG_CONFIG_PATH="$with_openssl_dir/lib/pkgconfig"
-         else
-           export PKG_CONFIG_PATH="$with_openssl_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-         AC_MSG_RESULT([$with_openssl_dir])
-       elif test -d $with_openssl_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_openssl_dir/include"
-         if test "x$LDFLAGS" = "x"; then
-           LDFLAGS="-L$with_openssl_dir/lib"
-         else
-           LDFLAGS="$LDFLAGS -L$with_openssl_dir/lib"
-         fi
-         AC_MSG_RESULT([$with_openssl_dir])
-       else
-         AC_MSG_RESULT([invalid])
-         AC_MSG_FAILURE([Invalid OpenSSL location: $with_openssl_dir])
-       fi],
-      [AC_MSG_RESULT([no])])
+      [AS_IF(
+         [test "x$(find "$with_openssl_dir/lib/." ! -name . -prune \( -type f -o -type l \) -name '*crypto.*' -print 2> /dev/null)" != "x"],
+         [crypto_CFLAGS="-I$with_openssl_dir/include"
+          crypto_LIBS="-L$with_openssl_dir/lib -lcrypto"
+          AC_MSG_RESULT([$with_openssl_dir])],
+         [AC_MSG_RESULT([invalid])
+          AC_MSG_FAILURE([Could not find a crypto library in "$with_openssl_dir/lib"])])],
+      [with_openssl_dir="no"
+       AC_MSG_RESULT([no])])
 
-   if test "x$PKG_CONFIG" != "x"; then
-     PKG_CHECK_MODULES([crypto], [libcrypto >= 1.0.1],
-       [CFLAGS="$CFLAGS $crypto_CFLAGS"
-        LIBS="$crypto_LIBS $LIBS"])
-   else
-     AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([can't find libdl])])
-     AC_CHECK_LIB([z], [inflate], [], [AC_MSG_WARN([can't find libz])])
-   fi
+   AS_IF([test "$with_openssl_dir" = "no" && test "x$PKG_CONFIG" != "x"],
+     [PKG_CHECK_MODULES([crypto], [libcrypto >= 1.0.1])],
+     [AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([Can't find potential OpenSSL dependecny: libdl])])
+      AC_CHECK_LIB([z], [inflate], [], [AC_MSG_WARN([Can't find potential OpenSSL dependency: libz])])])
+
+   AS_IF([test "x$crypto_LIBS" != "x"],
+     [CFLAGS="$CFLAGS $crypto_CFLAGS"
+      LIBS="$crypto_LIBS $LIBS"])
 
    AC_SEARCH_LIBS([EVP_EncryptInit], [crypto],
      [], [AC_MSG_FAILURE([can't find openssl >= 1.0.1 crypto lib])])
