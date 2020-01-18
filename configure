@@ -5479,38 +5479,27 @@ $as_echo_n "checking for user specified OpenSSL directory... " >&6; }
 
 # Check whether --with-openssl-dir was given.
 if test "${with_openssl_dir+set}" = set; then :
-  withval=$with_openssl_dir; if test "x$PKG_CONFIG" != "x" && test -f $with_openssl_dir/lib/pkgconfig/libcrypto.pc; then
-         if test "x$PKG_CONFIG_PATH" = "x"; then
-           export PKG_CONFIG_PATH="$with_openssl_dir/lib/pkgconfig"
-         else
-           export PKG_CONFIG_PATH="$with_openssl_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_openssl_dir" >&5
+  withval=$with_openssl_dir; if test "x$(find "$with_openssl_dir/lib/." ! -name . -prune \( -type f -o -type l \) -name '*crypto.*' -print 2> /dev/null)" != "x"; then :
+  crypto_CFLAGS="-I$with_openssl_dir/include"
+          crypto_LIBS="-L$with_openssl_dir/lib -lcrypto"
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_openssl_dir" >&5
 $as_echo "$with_openssl_dir" >&6; }
-       elif test -d $with_openssl_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_openssl_dir/include"
-         if test "x$LDFLAGS" = "x"; then
-           LDFLAGS="-L$with_openssl_dir/lib"
-         else
-           LDFLAGS="$LDFLAGS -L$with_openssl_dir/lib"
-         fi
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_openssl_dir" >&5
-$as_echo "$with_openssl_dir" >&6; }
-       else
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
-$as_echo "invalid" >&6; }
-         { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "Invalid OpenSSL location: $with_openssl_dir
-See \`config.log' for more details" "$LINENO" 5; }
-       fi
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
+$as_echo "invalid" >&6; }
+          { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Could not find a crypto library in \"$with_openssl_dir/lib\"
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+else
+  with_openssl_dir="no"
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 
 
-   if test "x$PKG_CONFIG" != "x"; then
+   if test "$with_openssl_dir" = "no" && test "x$PKG_CONFIG" != "x"; then :
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for crypto" >&5
@@ -5600,11 +5589,10 @@ else
 	crypto_LIBS=$pkg_cv_crypto_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	CFLAGS="$CFLAGS $crypto_CFLAGS"
-        LIBS="$crypto_LIBS $LIBS"
+
 fi
-   else
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
 $as_echo_n "checking for dlopen in -ldl... " >&6; }
 if ${ac_cv_lib_dl_dlopen+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -5648,11 +5636,11 @@ _ACEOF
   LIBS="-ldl $LIBS"
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find libdl" >&5
-$as_echo "$as_me: WARNING: can't find libdl" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Can't find potential OpenSSL dependecny: libdl" >&5
+$as_echo "$as_me: WARNING: Can't find potential OpenSSL dependecny: libdl" >&2;}
 fi
 
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflate in -lz" >&5
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inflate in -lz" >&5
 $as_echo_n "checking for inflate in -lz... " >&6; }
 if ${ac_cv_lib_z_inflate+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -5696,11 +5684,16 @@ _ACEOF
   LIBS="-lz $LIBS"
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find libz" >&5
-$as_echo "$as_me: WARNING: can't find libz" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Can't find potential OpenSSL dependency: libz" >&5
+$as_echo "$as_me: WARNING: Can't find potential OpenSSL dependency: libz" >&2;}
 fi
 
-   fi
+fi
+
+   if test "x$crypto_LIBS" != "x"; then :
+  CFLAGS="$CFLAGS $crypto_CFLAGS"
+      LIBS="$crypto_LIBS $LIBS"
+fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing EVP_EncryptInit" >&5
 $as_echo_n "checking for library containing EVP_EncryptInit... " >&6; }
