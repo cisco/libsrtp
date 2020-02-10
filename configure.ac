@@ -291,46 +291,34 @@ elif test "$enable_nss" = "yes"; then
    AC_MSG_CHECKING([for user specified NSS directory])
    AC_ARG_WITH([nss-dir],
       [AS_HELP_STRING([--with-nss-dir], [Location of NSS installation])],
-      [if test "x$PKG_CONFIG" != "x" && test -f $with_nss_dir/lib/pkgconfig/nss.pc; then
-         if test "x$PKG_CONFIG_PATH" = "x"; then
-           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig"
-         else
-           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-         AC_MSG_RESULT([$with_nss_dir])
-       elif test -d $with_nss_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_nss_dir/include"
-         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss"
-         if test "x$LDFLAGS" = "x"; then
-           LDFLAGS="-L$with_nss_dir/lib"
-         else
-           LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
-         fi
-         nss_skip_pkg_config=yes
-         AC_MSG_RESULT([$with_nss_dir])
-       else
-         AC_MSG_RESULT([invalid])
-         AC_MSG_FAILURE([Invalid NSS location: $with_nss_dir])
-       fi
-       AC_SUBST([CRYPTO_LIBDIR], [$with_nss_dir/lib])],
-      [AC_MSG_RESULT([no])])
+      [AS_IF(
+         [test "x$(find "$with_nss_dir/lib/." ! -name . -prune \( -type f -o -type l \) -name '*nss3.*' -print 2> /dev/null)" != "x"],
+         [nss_CFLAGS="-I$with_nss_dir/include -I$with_nss_dir/../public/nss"
+          nss_LIBS="-L$with_nss_dir/lib -lnss3 -lnspr4"
+          AC_SUBST([CRYPTO_LIBDIR], [$with_nss_dir/lib])
+          AC_MSG_RESULT([$with_nss_dir])],
+         [AC_MSG_RESULT([invalid])
+          AC_MSG_FAILURE([Could not find a NSS library in "$with_nss_dir/lib"])])],
+      [with_nss_dir="no"
+       AC_MSG_RESULT([no])])
 
-   if test "x$PKG_CONFIG" != "x" && test "$nss_skip_pkg_config" != "yes"; then
-     PKG_CHECK_MODULES([nss], [nss],
-       [CFLAGS="$CFLAGS $nss_CFLAGS"
-         LIBS="$nss_LIBS $LIBS"])
-   else
-     AC_CHECK_HEADERS(
-       [nss.h],
-       [], [AC_MSG_FAILURE([can't find useable NSS headers])],
-       [AC_INCLUDES_DEFAULT])
-     AC_CHECK_LIB(
-       [nspr4], [PR_GetError],
-       [], [AC_MSG_WARN([can't find libnspr4])])
-     AC_CHECK_LIB(
-       [nss3], [NSS_NoDB_Init],
-       [], [AC_MSG_FAILURE([can't find useable libnss3])])
-   fi
+   AS_IF(
+     [test "$with_nss_dir" = "no" && test "x$PKG_CONFIG" != "x"],
+     [PKG_CHECK_MODULES([nss], [nss])])
+
+   AS_IF([test "x$nss_LIBS" != "x"],
+     [CFLAGS="$CFLAGS $nss_CFLAGS"
+      LIBS="$nss_LIBS $LIBS"])
+
+   AC_CHECK_HEADERS(
+     [nss.h],
+     [], [AC_MSG_FAILURE([can't find useable NSS headers])],
+     [AC_INCLUDES_DEFAULT])
+
+   AC_SEARCH_LIBS([PR_GetError], [nspr4],
+     [], [AC_MSG_WARN([can't find useable libnsrp4])])
+   AC_SEARCH_LIBS([NSS_NoDB_Init], [nss3],
+     [], [AC_MSG_FAILURE([can't find useable libnss3])])
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
