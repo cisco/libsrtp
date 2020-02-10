@@ -45,12 +45,6 @@
 /* Define to 1 if you have the `dl' library (-ldl). */
 #undef HAVE_LIBDL
 
-/* Define to 1 if you have the `nspr4' library (-lnspr4). */
-#undef HAVE_LIBNSPR4
-
-/* Define to 1 if you have the `nss3' library (-lnss3). */
-#undef HAVE_LIBNSS3
-
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #undef HAVE_LIBSOCKET
 

@@ -6027,42 +6027,29 @@ $as_echo_n "checking for user specified NSS directory... " >&6; }
 
 # Check whether --with-nss-dir was given.
 if test "${with_nss_dir+set}" = set; then :
-  withval=$with_nss_dir; if test "x$PKG_CONFIG" != "x" && test -f $with_nss_dir/lib/pkgconfig/nss.pc; then
-         if test "x$PKG_CONFIG_PATH" = "x"; then
-           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig"
-         else
-           export PKG_CONFIG_PATH="$with_nss_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
-         fi
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
-$as_echo "$with_nss_dir" >&6; }
-       elif test -d $with_nss_dir/lib; then
-         CFLAGS="$CFLAGS -I$with_nss_dir/include"
-         CFLAGS="$CFLAGS -I$with_nss_dir/../public/nss"
-         if test "x$LDFLAGS" = "x"; then
-           LDFLAGS="-L$with_nss_dir/lib"
-         else
-           LDFLAGS="$LDFLAGS -L$with_nss_dir/lib"
-         fi
-         nss_skip_pkg_config=yes
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
-$as_echo "$with_nss_dir" >&6; }
-       else
-         { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
-$as_echo "invalid" >&6; }
-         { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "Invalid NSS location: $with_nss_dir
-See \`config.log' for more details" "$LINENO" 5; }
-       fi
-       CRYPTO_LIBDIR=$with_nss_dir/lib
+  withval=$with_nss_dir; if test "x$(find "$with_nss_dir/lib/." ! -name . -prune \( -type f -o -type l \) -name '*nss3.*' -print 2> /dev/null)" != "x"; then :
+  nss_CFLAGS="-I$with_nss_dir/include -I$with_nss_dir/../public/nss"
+          nss_LIBS="-L$with_nss_dir/lib -lnss3 -lnspr4"
+          CRYPTO_LIBDIR=$with_nss_dir/lib
 
+          { $as_echo "$as_me:${as_lineno-$LINENO}: result: $with_nss_dir" >&5
+$as_echo "$with_nss_dir" >&6; }
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: invalid" >&5
+$as_echo "invalid" >&6; }
+          { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "Could not find a NSS library in \"$with_nss_dir/lib\"
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+else
+  with_nss_dir="no"
+       { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
 
 
-   if test "x$PKG_CONFIG" != "x" && test "$nss_skip_pkg_config" != "yes"; then
+   if test "$with_nss_dir" = "no" && test "x$PKG_CONFIG" != "x"; then :
 
 pkg_failed=no
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nss" >&5
@@ -6152,11 +6139,16 @@ else
 	nss_LIBS=$pkg_cv_nss_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	CFLAGS="$CFLAGS $nss_CFLAGS"
-         LIBS="$nss_LIBS $LIBS"
+
 fi
-   else
-     for ac_header in nss.h
+fi
+
+   if test "x$nss_LIBS" != "x"; then :
+  CFLAGS="$CFLAGS $nss_CFLAGS"
+      LIBS="$nss_LIBS $LIBS"
+fi
+
+   for ac_header in nss.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "nss.h" "ac_cv_header_nss_h" "$ac_includes_default
 "
@@ -6174,13 +6166,13 @@ fi
 
 done
 
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for PR_GetError in -lnspr4" >&5
-$as_echo_n "checking for PR_GetError in -lnspr4... " >&6; }
-if ${ac_cv_lib_nspr4_PR_GetError+:} false; then :
+
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing PR_GetError" >&5
+$as_echo_n "checking for library containing PR_GetError... " >&6; }
+if ${ac_cv_search_PR_GetError+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnspr4  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6199,36 +6191,47 @@ return PR_GetError ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_nspr4_PR_GetError=yes
-else
-  ac_cv_lib_nspr4_PR_GetError=no
+for ac_lib in '' nspr4; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_PR_GetError=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
+    conftest$ac_exeext
+  if ${ac_cv_search_PR_GetError+:} false; then :
+  break
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nspr4_PR_GetError" >&5
-$as_echo "$ac_cv_lib_nspr4_PR_GetError" >&6; }
-if test "x$ac_cv_lib_nspr4_PR_GetError" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBNSPR4 1
-_ACEOF
-
-  LIBS="-lnspr4 $LIBS"
+done
+if ${ac_cv_search_PR_GetError+:} false; then :
 
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find libnspr4" >&5
-$as_echo "$as_me: WARNING: can't find libnspr4" >&2;}
+  ac_cv_search_PR_GetError=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_PR_GetError" >&5
+$as_echo "$ac_cv_search_PR_GetError" >&6; }
+ac_res=$ac_cv_search_PR_GetError
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: can't find useable libnsrp4" >&5
+$as_echo "$as_me: WARNING: can't find useable libnsrp4" >&2;}
 fi
 
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for NSS_NoDB_Init in -lnss3" >&5
-$as_echo_n "checking for NSS_NoDB_Init in -lnss3... " >&6; }
-if ${ac_cv_lib_nss3_NSS_NoDB_Init+:} false; then :
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing NSS_NoDB_Init" >&5
+$as_echo_n "checking for library containing NSS_NoDB_Init... " >&6; }
+if ${ac_cv_search_NSS_NoDB_Init+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lnss3  $LIBS"
+  ac_func_search_save_LIBS=$LIBS
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -6247,23 +6250,35 @@ return NSS_NoDB_Init ();
   return 0;
 }
 _ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_nss3_NSS_NoDB_Init=yes
-else
-  ac_cv_lib_nss3_NSS_NoDB_Init=no
+for ac_lib in '' nss3; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_NSS_NoDB_Init=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
+    conftest$ac_exeext
+  if ${ac_cv_search_NSS_NoDB_Init+:} false; then :
+  break
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nss3_NSS_NoDB_Init" >&5
-$as_echo "$ac_cv_lib_nss3_NSS_NoDB_Init" >&6; }
-if test "x$ac_cv_lib_nss3_NSS_NoDB_Init" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBNSS3 1
-_ACEOF
+done
+if ${ac_cv_search_NSS_NoDB_Init+:} false; then :
 
-  LIBS="-lnss3 $LIBS"
+else
+  ac_cv_search_NSS_NoDB_Init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_NSS_NoDB_Init" >&5
+$as_echo "$ac_cv_search_NSS_NoDB_Init" >&6; }
+ac_res=$ac_cv_search_NSS_NoDB_Init
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
@@ -6272,7 +6287,6 @@ as_fn_error $? "can't find useable libnss3
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
-   fi
 
 
 $as_echo "#define GCM 1" >>confdefs.h
