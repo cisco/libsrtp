@@ -387,7 +387,7 @@ can use the following bash function to format the output of
 
 ~~~.txt
 function randhex() {
-   cat /dev/random | od --read-bytes=32 --width=32 -x | awk '{ print $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 }'
+   cat /dev/random | od --read-bytes=32 --width=32 -x | head -1 | cut -d\  -f2-16 | tr -d " "
 }
 ~~~
 
