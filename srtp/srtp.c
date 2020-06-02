@@ -1423,7 +1423,7 @@ static srtp_err_status_t srtp_process_header_encryption(
                 xtn_hdr_data++;
             }
         }
-    } else if ((ntohs(xtn_hdr->profile_specific) & 0x1fff) == 0x100) {
+    } else if ((ntohs(xtn_hdr->profile_specific) & 0xfff0) == 0x1000) {
         /* RFC 5285, section 4.3. Two-Byte Header */
         while (xtn_hdr_data + 1 < xtn_hdr_end) {
             uint8_t xid = *xtn_hdr_data;
