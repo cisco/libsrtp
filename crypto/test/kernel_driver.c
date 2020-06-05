@@ -50,6 +50,26 @@
 #include "getopt_s.h"
 #include "crypto_kernel.h"
 
+void log_handler(srtp_log_level_t level, const char *msg, void *data)
+{
+    char level_char = '?';
+    switch (level) {
+    case srtp_log_level_error:
+        level_char = 'e';
+        break;
+    case srtp_log_level_warning:
+        level_char = 'w';
+        break;
+    case srtp_log_level_info:
+        level_char = 'i';
+        break;
+    case srtp_log_level_debug:
+        level_char = 'd';
+        break;
+    }
+    printf("SRTP-LOG [%c]: %s\n", level_char, msg);
+}
+
 void usage(char *prog_name)
 {
     printf("usage: %s [ -v ][ -d debug_module ]*\n", prog_name);
@@ -65,10 +85,12 @@ int main(int argc, char *argv[])
     if (argc == 1)
         usage(argv[0]);
 
+    status = srtp_install_log_handler(log_handler, NULL);
+
     /* initialize kernel - we need to do this before anything else */
     status = srtp_crypto_kernel_init();
     if (status) {
-        printf("error: srtp_crypto_kernel init failed\n");
+        printf("error: srtp_crypto_kernel init failed %d\n", status);
         exit(1);
     }
     printf("srtp_crypto_kernel successfully initalized\n");

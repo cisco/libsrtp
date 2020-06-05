@@ -52,7 +52,9 @@ extern const srtp_cipher_type_t srtp_aes_icm_192;
 extern const srtp_cipher_type_t srtp_aes_gcm_128;
 extern const srtp_cipher_type_t srtp_aes_gcm_256;
 #endif
-
+#ifdef CHAPOLY
+extern const srtp_cipher_type_t srtp_chacha20_poly1305;
+#endif
 /*
  * auth func types that can be included in the kernel
  */
@@ -73,9 +75,11 @@ extern srtp_debug_module_t srtp_mod_alloc;
 extern srtp_debug_module_t srtp_mod_aes_icm;
 #ifdef OPENSSL
 extern srtp_debug_module_t srtp_mod_aes_gcm;
+extern srtp_debug_module_t srtp_mod_chacha20_poly1305;
 #endif
 #ifdef NSS
 extern srtp_debug_module_t srtp_mod_aes_gcm;
+extern srtp_debug_module_t srtp_mod_chacha20_poly1305;
 #endif
 
 /* debug modules for auth types */

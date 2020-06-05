@@ -55,6 +55,10 @@
 #include "aes_gcm.h" /* for AES GCM mode */
 #endif
 
+#ifdef CHAPOLY
+#include "chacha20_poly1305.h"
+#endif
+
 #ifdef OPENSSL_KDF
 #include <openssl/kdf.h>
 #include "aes_icm_ext.h"
@@ -82,13 +86,14 @@ srtp_debug_module_t mod_srtp = {
 static srtp_err_status_t srtp_validate_rtp_header(void *rtp_hdr,
                                                   int *pkt_octet_len)
 {
+    srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
+    int rtp_header_len;
+
     if (*pkt_octet_len < octets_in_rtp_header)
         return srtp_err_status_bad_param;
 
-    srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
-
     /* Check RTP header length */
-    int rtp_header_len = octets_in_rtp_header + 4 * hdr->cc;
+    rtp_header_len = octets_in_rtp_header + 4 * hdr->cc;
     if (hdr->x == 1)
         rtp_header_len += octets_in_rtp_extn_hdr;
 
@@ -408,6 +413,7 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
             enc_xtn_hdr_cipher_type = SRTP_AES_ICM_256;
             enc_xtn_hdr_cipher_key_len = SRTP_AES_ICM_256_KEY_LEN_WSALT;
             break;
+        case SRTP_CHACHA20_POLY1305: // TODO ???
         default:
             enc_xtn_hdr_cipher_type = p->rtp.cipher_type;
             enc_xtn_hdr_cipher_key_len = p->rtp.cipher_key_len;
@@ -678,6 +684,8 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
                                        int key_len)
 {
     srtp_cipher_type_id_t cipher_id;
+    srtp_err_status_t stat;
+
     switch (key_len) {
     case SRTP_AES_ICM_256_KEY_LEN_WSALT:
         cipher_id = SRTP_AES_ICM_256;
@@ -693,7 +701,6 @@ static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
         break;
     }
 
-    srtp_err_status_t stat;
     stat = srtp_crypto_kernel_alloc_cipher(cipher_id, &kdf->cipher, key_len, 0);
     if (stat)
         return stat;
@@ -765,6 +772,9 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher,
         return key_length - SRTP_AEAD_SALT_LEN;
         break;
     case SRTP_AES_GCM_256:
+        return key_length - SRTP_AEAD_SALT_LEN;
+        break;
+    case SRTP_CHACHA20_POLY1305:
         return key_length - SRTP_AEAD_SALT_LEN;
         break;
     default:
@@ -960,7 +970,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * to generate the salt value
      */
     if (rtp_salt_len > 0) {
-        debug_print(mod_srtp, "found rtp_salt_len > 0, generating salt", NULL);
+        debug_print0(mod_srtp, "found rtp_salt_len > 0, generating salt");
 
         /* generate encryption salt, put after encryption key */
         stat = srtp_kdf_generate(&kdf, label_rtp_salt,
@@ -1019,6 +1029,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
                      */
                     rtp_xtn_hdr_salt_len = rtp_salt_len;
                     break;
+                case SRTP_CHACHA20_POLY1305: // TODO ???
                 default:
                     /* zeroize temp buffer */
                     octet_string_set_to_zero(tmp_key, MAX_SRTP_KEY_LEN);
@@ -1069,9 +1080,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
          * to generate the salt value
          */
         if (rtp_xtn_hdr_salt_len > 0) {
-            debug_print(mod_srtp,
-                        "found rtp_xtn_hdr_salt_len > 0, generating salt",
-                        NULL);
+            debug_print0(mod_srtp,
+                         "found rtp_xtn_hdr_salt_len > 0, generating salt");
 
             /* generate encryption salt, put after encryption key */
             stat = srtp_kdf_generate(xtn_hdr_kdf, label_rtp_header_salt,
@@ -1152,8 +1162,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * to generate the salt value
      */
     if (rtcp_salt_len > 0) {
-        debug_print(mod_srtp, "found rtcp_salt_len > 0, generating rtcp salt",
-                    NULL);
+        debug_print0(mod_srtp, "found rtcp_salt_len > 0, generating rtcp salt");
 
         /* generate encryption salt, put after encryption key */
         stat = srtp_kdf_generate(&kdf, label_rtcp_salt,
@@ -1423,7 +1432,7 @@ static srtp_err_status_t srtp_process_header_encryption(
                 xtn_hdr_data++;
             }
         }
-    } else if ((ntohs(xtn_hdr->profile_specific) & 0x1fff) == 0x100) {
+    } else if ((ntohs(xtn_hdr->profile_specific) & 0xfff0) == 0x1000) {
         /* RFC 5285, section 4.3. Two-Byte Header */
         while (xtn_hdr_data + 1 < xtn_hdr_end) {
             uint8_t xid = *xtn_hdr_data;
@@ -1545,7 +1554,9 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
 
     // Determine the authentication tag size
     if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        stream->session_keys[0].rtp_cipher->algorithm ==
+            SRTP_CHACHA20_POLY1305) {
         tag_len = 0;
     } else {
         tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
@@ -1669,7 +1680,7 @@ static srtp_err_status_t srtp_get_est_pkt_index(srtp_hdr_t *hdr,
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(*est),
                  low32(*est));
 #else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", *est);
+    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, *est);
 #endif
     return result;
 }
@@ -1699,7 +1710,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     unsigned int mki_size = 0;
     uint8_t *mki_location = NULL;
 
-    debug_print(mod_srtp, "function srtp_protect_aead", NULL);
+    debug_print0(mod_srtp, "function srtp_protect_aead");
 
     /*
      * update the key usage limit, and check it to make sure that we
@@ -1758,7 +1769,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
 #endif
 
     /*
@@ -1860,13 +1871,13 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     unsigned int aad_len;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
 
-    debug_print(mod_srtp, "function srtp_unprotect_aead", NULL);
+    debug_print0(mod_srtp, "function srtp_unprotect_aead");
 
 #ifdef NO_64BIT_MATH
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
 #endif
 
     /* get tag length from stream */
@@ -2061,7 +2072,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     uint8_t *mki_location = NULL;
     int advance_packet_index = 0;
 
-    debug_print(mod_srtp, "function srtp_protect", NULL);
+    debug_print0(mod_srtp, "function srtp_protect");
 
     /* we assume the hdr is 32-bit aligned to start */
 
@@ -2133,7 +2144,8 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
      * the request to our AEAD handler.
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        session_keys->rtp_cipher->algorithm == SRTP_CHACHA20_POLY1305) {
         return srtp_protect_aead(ctx, stream, rtp_hdr,
                                  (unsigned int *)pkt_octet_len, session_keys,
                                  use_mki);
@@ -2232,7 +2244,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
 #endif
 
     /*
@@ -2338,7 +2350,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             return status;
 
         /* run auth func over ROC, put result into auth_tag */
-        debug_print(mod_srtp, "estimated packet index: %016llx", est);
+        debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
         status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est, 4,
                                    auth_tag);
         debug_print(mod_srtp, "srtp auth tag:    %s",
@@ -2391,7 +2403,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     uint32_t roc_to_set = 0;
     uint16_t seq_to_set = 0;
 
-    debug_print(mod_srtp, "function srtp_unprotect", NULL);
+    debug_print0(mod_srtp, "function srtp_unprotect");
 
     /* we assume the hdr is 32-bit aligned to start */
 
@@ -2460,7 +2472,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
                  low32(est));
 #else
-    debug_print(mod_srtp, "estimated u_packet index: %016llx", est);
+    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
 #endif
 
     /* Determine if MKI is being used and what session keys should be used */
@@ -2480,7 +2492,8 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
      * the request to our AEAD handler.
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        session_keys->rtp_cipher->algorithm == SRTP_CHACHA20_POLY1305) {
         return srtp_unprotect_aead(ctx, stream, delta, est, srtp_hdr,
                                    (unsigned int *)pkt_octet_len, session_keys,
                                    mki_size);
@@ -2616,7 +2629,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         if (status)
             return srtp_err_status_auth_fail;
 
-        if (octet_string_is_eq(tmp_tag, auth_tag, tag_len))
+        if (srtp_octet_string_is_eq(tmp_tag, auth_tag, tag_len))
             return srtp_err_status_auth_fail;
     }
 
@@ -3287,7 +3300,6 @@ void srtp_crypto_policy_set_aes_cm_256_null_auth(srtp_crypto_policy_t *p)
     p->sec_serv = sec_serv_conf;
 }
 
-#ifdef GCM
 void srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(srtp_crypto_policy_t *p)
 {
     /*
@@ -3404,6 +3416,39 @@ void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p)
     p->cipher_type = SRTP_AES_GCM_256;
     p->cipher_key_len = SRTP_AES_GCM_256_KEY_LEN_WSALT;
     p->auth_type = SRTP_NULL_AUTH; /* GCM handles the auth for us */
+    p->auth_key_len = 0;
+    p->auth_tag_len = 16; /* 16 octet tag length */
+    p->sec_serv = sec_serv_conf_and_auth;
+}
+
+#ifdef CHAPOLY
+
+void srtp_crypto_policy_set_chacha20_poly1305_8_auth(srtp_crypto_policy_t *p)
+{
+    p->cipher_type = SRTP_CHACHA20_POLY1305;
+    p->cipher_key_len = SRTP_CHACHA20_POLY1305_KEY_LEN_WSALT;
+    p->auth_type = SRTP_NULL_AUTH; /* handles the auth for us */
+    p->auth_key_len = 0;
+    p->auth_tag_len = 8; /* 8 octet tag length */
+    p->sec_serv = sec_serv_conf_and_auth;
+}
+
+void srtp_crypto_policy_set_chacha20_poly1305_8_only_auth(
+    srtp_crypto_policy_t *p)
+{
+    p->cipher_type = SRTP_CHACHA20_POLY1305;
+    p->cipher_key_len = SRTP_CHACHA20_POLY1305_KEY_LEN_WSALT;
+    p->auth_type = SRTP_NULL_AUTH; /* handles the auth for us */
+    p->auth_key_len = 0;
+    p->auth_tag_len = 8;         /* 8 octet tag length */
+    p->sec_serv = sec_serv_auth; /* This only applies to RTCP */
+}
+
+void srtp_crypto_policy_set_chacha20_poly1305_16_auth(srtp_crypto_policy_t *p)
+{
+    p->cipher_type = SRTP_CHACHA20_POLY1305;
+    p->cipher_key_len = SRTP_CHACHA20_POLY1305_KEY_LEN_WSALT;
+    p->auth_type = SRTP_NULL_AUTH; /* handles the auth for us */
     p->auth_key_len = 0;
     p->auth_tag_len = 16; /* 16 octet tag length */
     p->sec_serv = sec_serv_conf_and_auth;
@@ -3940,7 +3985,8 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
      * the request to our AEAD handler.
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        session_keys->rtp_cipher->algorithm == SRTP_CHACHA20_POLY1305) {
         return srtp_protect_rtcp_aead(ctx, stream, rtcp_hdr,
                                       (unsigned int *)pkt_octet_len,
                                       session_keys, use_mki);
@@ -4196,7 +4242,8 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
      * the request to our AEAD handler.
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256 ||
+        session_keys->rtp_cipher->algorithm == SRTP_CHACHA20_POLY1305) {
         return srtp_unprotect_rtcp_aead(ctx, stream, srtcp_hdr,
                                         (unsigned int *)pkt_octet_len,
                                         session_keys, mki_size);
@@ -4314,7 +4361,7 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     /* compare the tag just computed with the one in the packet */
     debug_print(mod_srtp, "srtcp tag from packet:    %s",
                 srtp_octet_string_hex_string(auth_tag, tag_len));
-    if (octet_string_is_eq(tmp_tag, auth_tag, tag_len))
+    if (srtp_octet_string_is_eq(tmp_tag, auth_tag, tag_len))
         return srtp_err_status_auth_fail;
 
     /*
@@ -4444,6 +4491,11 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
         srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
         break;
 #endif
+#ifdef CHAPOLY
+    case srtp_profile_aead_chacha20_poly1305:
+        srtp_crypto_policy_set_chacha20_poly1305_16_auth(policy);
+        break;
+#endif
     /* the following profiles are not (yet) supported */
     case srtp_profile_null_sha1_32:
     default:
@@ -4476,6 +4528,11 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(
         break;
     case srtp_profile_aead_aes_256_gcm:
         srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
+        break;
+#endif
+#ifdef CHAPOLY
+    case srtp_profile_aead_chacha20_poly1305:
+        srtp_crypto_policy_set_chacha20_poly1305_16_auth(policy);
         break;
 #endif
     /* the following profiles are not (yet) supported */
@@ -4512,6 +4569,9 @@ unsigned int srtp_profile_get_master_key_length(srtp_profile_t profile)
         break;
     case srtp_profile_aead_aes_256_gcm:
         return SRTP_AES_256_KEY_LEN;
+        break;
+    case srtp_profile_aead_chacha20_poly1305:
+        return SRTP_CHACHA20_POLY1305_KEY_LEN;
         break;
     /* the following profiles are not (yet) supported */
     case srtp_profile_null_sha1_32:
@@ -4551,9 +4611,9 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
                                                     uint32_t mki_index,
                                                     uint32_t *length)
 {
-    *length = 0;
-
     srtp_session_keys_t *session_key;
+
+    *length = 0;
 
     if (use_mki) {
         if (mki_index >= stream->num_master_keys) {

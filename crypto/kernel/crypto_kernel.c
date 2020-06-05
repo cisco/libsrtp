@@ -151,6 +151,13 @@ srtp_err_status_t srtp_crypto_kernel_init()
         return status;
     }
 #endif
+#ifdef CHAPOLY
+    status = srtp_crypto_kernel_load_cipher_type(&srtp_chacha20_poly1305,
+                                                 SRTP_CHACHA20_POLY1305);
+    if (status) {
+        return status;
+    }
+#endif
 
     /* load auth func types */
     status = srtp_crypto_kernel_load_auth_type(&srtp_null_auth, SRTP_NULL_AUTH);

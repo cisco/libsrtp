@@ -43,11 +43,17 @@ case $(uname -s) in
         ;;
     *Linux*)
         EXE=""
-        export LD_LIBRARY_PATH=$CRYPTO_LIBDIR
+        if [ -n "$CRYPTO_LIBDIR" ]
+        then
+            export LD_LIBRARY_PATH="$CRYPTO_LIBDIR"
+        fi
         ;;
     *Darwin*)
         EXE=""
-        export DYLD_LIBRARY_PATH=$CRYPTO_LIBDIR
+        if [ -n "$CRYPTO_LIBDIR" ]
+        then
+            export DYLD_LIBRARY_PATH="$CRYPTO_LIBDIR"
+        fi
         ;;
 esac
 

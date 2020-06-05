@@ -218,7 +218,7 @@ void srtp_ekt_write_data(srtp_ekt_stream_t ekt,
 
     /* if the pointer ekt is NULL, then EKT is not in effect */
     if (!ekt) {
-        debug_print(mod_srtp, "EKT not in use", NULL);
+        debug_print0(mod_srtp, "EKT not in use");
         return;
     }
 

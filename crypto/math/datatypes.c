@@ -79,7 +79,7 @@ int octet_get_weight(uint8_t octet)
 
 /* the value MAX_PRINT_STRING_LEN is defined in datatypes.h */
 
-char bit_string[MAX_PRINT_STRING_LEN];
+static char bit_string[MAX_PRINT_STRING_LEN];
 
 uint8_t srtp_nibble_to_hex_char(uint8_t nibble)
 {
@@ -410,7 +410,7 @@ void bitvector_left_shift(bitvector_t *x, int shift)
         x->word[i] = 0;
 }
 
-int octet_string_is_eq(uint8_t *a, uint8_t *b, int len)
+int srtp_octet_string_is_eq(uint8_t *a, uint8_t *b, int len)
 {
     uint8_t *end = b + len;
     uint8_t accumulator = 0;

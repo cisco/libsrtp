@@ -98,6 +98,13 @@
 #define SRTP_AES_GCM_256 7
 
 /*
+ * CHACHA20-POLY1305
+ *
+ * This cipher uses a 32-octet key.
+ */
+#define SRTP_CHACHA20_POLY1305 8
+
+/*
  * The null authentication function performs no authentication.
  *
  * The NULL_AUTH function does nothing, and can be selected to indicate

@@ -171,19 +171,6 @@ int srtp_cipher_get_key_length(const srtp_cipher_t *c)
  */
 void srtp_cipher_rand_for_tests(void *dest, uint32_t len)
 {
-#if defined(HAVE_RAND_S)
-    uint8_t *dst = (uint8_t *)dest;
-    while (len) {
-        unsigned int val;
-        errno_t err = rand_s(&val);
-
-        if (err != 0)
-            return srtp_err_status_fail;
-
-        *dst++ = val & 0xff;
-        len--;
-    }
-#else
     /* Generic C-library (rand()) version */
     /* This is a random source of last resort */
     uint8_t *dst = (uint8_t *)dest;
@@ -195,7 +182,6 @@ void srtp_cipher_rand_for_tests(void *dest, uint32_t len)
         *dst++ = val & 0xff;
         len--;
     }
-#endif
 }
 
 /*
@@ -257,7 +243,7 @@ srtp_err_status_t srtp_cipher_type_test(
         /*
          * test the encrypt function
          */
-        debug_print(srtp_mod_cipher, "testing encryption", NULL);
+        debug_print0(srtp_mod_cipher, "testing encryption");
 
         /* initialize cipher */
         status = srtp_cipher_init(c, test_case->key);
@@ -288,7 +274,8 @@ srtp_err_status_t srtp_cipher_type_test(
         }
 
         if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
+            c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_CHACHA20_POLY1305) {
             debug_print(srtp_mod_cipher, "IV:    %s",
                         srtp_octet_string_hex_string(test_case->idx, 12));
 
@@ -315,7 +302,8 @@ srtp_err_status_t srtp_cipher_type_test(
         }
 
         if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
+            c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_CHACHA20_POLY1305) {
             /*
              * Get the GCM tag
              */
@@ -361,7 +349,7 @@ srtp_err_status_t srtp_cipher_type_test(
         /*
          * test the decrypt function
          */
-        debug_print(srtp_mod_cipher, "testing decryption", NULL);
+        debug_print0(srtp_mod_cipher, "testing decryption");
 
         /* re-initialize cipher for decryption */
         status = srtp_cipher_init(c, test_case->key);
@@ -392,7 +380,8 @@ srtp_err_status_t srtp_cipher_type_test(
         }
 
         if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
+            c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_CHACHA20_POLY1305) {
             /*
              * Set the AAD
              */
@@ -514,7 +503,8 @@ srtp_err_status_t srtp_cipher_type_test(
         }
 
         if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
+            c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_CHACHA20_POLY1305) {
             /*
              * Set the AAD
              */
@@ -537,7 +527,8 @@ srtp_err_status_t srtp_cipher_type_test(
             return status;
         }
         if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
+            c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_CHACHA20_POLY1305) {
             /*
              * Get the GCM tag
              */
@@ -567,7 +558,8 @@ srtp_err_status_t srtp_cipher_type_test(
             return status;
         }
         if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
+            c->algorithm == SRTP_AES_GCM_256 ||
+            c->algorithm == SRTP_CHACHA20_POLY1305) {
             /*
              * Set the AAD
              */
