@@ -671,7 +671,7 @@ void handle_signal(int signum)
 
 int setup_signal_handler(char *name)
 {
-#if HAVE_SIGACTION
+#ifdef HAVE_SIGACTION
     struct sigaction act;
     memset(&act, 0, sizeof(act));
 
