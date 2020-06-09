@@ -336,6 +336,36 @@ cmake .. -G "Visual Studio 15 2017 Win64"
 ```
 
 --------------------------------------------------------------------------------
+<a name="using-meson"></a>
+## Using Meson
+
+On all platforms including Windows, one can build using [Meson](https://mesonbuild.org).
+Steps to download Meson are here: https://mesonbuild.com/Getting-meson.html
+
+To build with Meson, you can do something like:
+
+```
+# Setup the build subdirectory
+meson setup --prefix=/path/to/prefix builddir
+
+# Build the project
+meson compile -C builddir
+
+# Run tests
+meson test -C builddir
+
+# Optionally, install
+meson install -C builddir
+```
+
+To build with Visual Studio, run the above commands from inside a Visual Studio
+command prompt, or run `vcvarsall.bat` with the appropriate arguments inside
+a Command Prompt.
+
+Note that you can also replace the above commands with the appropriate `ninja`
+targets: `ninja -C build`, `ninja -C build test`, `ninja -C build install`.
+
+--------------------------------------------------------------------------------
 
 <a name="applications"></a>
 # Applications
