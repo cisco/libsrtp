@@ -96,7 +96,7 @@
 
 #ifndef HAVE_USLEEP
 #ifdef HAVE_WINDOWS_H
-#define usleep(us) Sleep((us) / 1000)
+#define usleep(us) Sleep(((DWORD)us) / 1000)
 #else
 #define usleep(us) sleep((us) / 1000000)
 #endif
