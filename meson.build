@@ -88,8 +88,8 @@ foreach type : ['unsigned long', 'unsigned long long']
   endif
 endforeach
 
-if not cc.compiles('inline void func(); void func() { } int main() { func(); return 0; }')
-  if cc.compiles('__inline void func(); void func() { } int main() { func(); return 0; }')
+if not cc.compiles('inline void func(); void func() { } int main() { func(); return 0; }', name: 'inline keyword check')
+  if cc.compiles('__inline void func(); void func() { } int main() { func(); return 0; }', name: '__inline keyword check')
     cdata.set('inline', '__inline')
   else
     cdata.set('inline', '')
