@@ -33,7 +33,14 @@ foreach t : test_apps
 endforeach
 
 # rtpw test needs to be run using shell scripts
-if find_program('sh', 'bash', required: false).found()
+can_run_rtpw = find_program('sh', 'bash', required: false).found()
+
+# Meson only passes the exe_wrapper to shell scripts starting 0.55
+if meson.is_cross_build() and meson.version().version_compare('<0.55')
+  can_run_rtpw = false
+endif
+
+if can_run_rtpw
   words_txt = files('words.txt')
 
   rtpw_test_sh = find_program('rtpw_test.sh', required: false)
