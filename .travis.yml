@@ -20,6 +20,9 @@ matrix:
           packages:
             - gcc-6
             - valgrind
+      install:
+        - pyenv global 3.7.1
+        - pip3 install meson ninja
       script:
         - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure
         - make
@@ -30,6 +33,10 @@ matrix:
         - cmake ..
         - make
         - make test
+        - cd ..
+        - CC=gcc-6 meson setup --werror builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # linux build with openssl
     - os: linux
@@ -42,6 +49,9 @@ matrix:
           packages:
             - gcc-6
             - valgrind
+      install:
+        - pyenv global 3.7.1
+        - pip3 install meson ninja
       script:
         - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
@@ -57,6 +67,10 @@ matrix:
         - cmake -DENABLE_OPENSSL=ON -DBUILD_SHARED_LIBS=ON ..
         - make
         - make test
+        - cd ..
+        - meson setup --werror -Dcrypto-library=openssl builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # linux build with openssl and clang
     - os: linux
@@ -66,10 +80,16 @@ matrix:
         apt:
           packages:
             - clang
+      install:
+        - pyenv global 3.7.1
+        - pip3 install meson ninja
       script:
         - CC=clang EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
         - make runtest
+        - CC=clang meson setup --werror -Dcrypto-library=openssl builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # linux build with nss
     - os: linux
@@ -83,16 +103,24 @@ matrix:
             - gcc-6
             - valgrind
             - libnss3-dev
+      install:
+        - pyenv global 3.7.1
+        - pip3 install meson ninja
       script:
         - CC=gcc-6 EXTRA_CFLAGS=-Werror ./configure --enable-nss
         - make
         - make runtest
         - make runtest-valgrind
+        - CC=gcc-6 meson setup --werror -Dcrypto-library=nss builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # default osx build
     - os: osx
       env:
         - TEST="osx"
+      before_install:
+        - pip3 install meson ninja
       script:
         - EXTRA_CFLAGS=-Werror ./configure
         - make
@@ -102,6 +130,10 @@ matrix:
         - cmake ..
         - make
         - make test
+        - cd ..
+        - meson setup --werror builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # osx build with openssl
     - os: osx
@@ -109,7 +141,8 @@ matrix:
       env:
         - TEST="osx openssl"
       before_install:
-            - brew install openssl@1.1
+        - pip3 install meson ninja
+        - brew install openssl@1.1
       script:
         - PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-openssl
         - make
@@ -119,16 +152,25 @@ matrix:
         - cmake -DOPENSSL_ROOT_DIR=$(brew --prefix openssl@1.1) -DENABLE_OPENSSL=ON ..
         - make
         - make test
+        - cd ..
+        - PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig meson setup --werror -Dcrypto-library=openssl builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # osx build with nss
     - os: osx
       osx_image: xcode11.2
       env:
         - TEST="osx nss"
+      before_install:
+        - pip3 install meson ninja
       script:
         - PKG_CONFIG_PATH=$(brew --prefix nss)/lib/pkgconfig EXTRA_CFLAGS=-Werror ./configure --enable-nss
         - make
         - make runtest
+        - PKG_CONFIG_PATH=$(brew --prefix nss)/lib/pkgconfig meson setup --werror -Dcrypto-library=nss builddir
+        - meson compile -C builddir
+        - meson test -v -C builddir
 
     # code format check
     - os: linux
@@ -157,13 +199,36 @@ matrix:
         - sudo docker run --volume $(pwd):/src --workdir /src --name mipsX --tty --detach ubuntu:16.04 tail
         - sudo docker exec --tty mipsX apt-get update
         - sudo docker exec --tty mipsX apt-get install build-essential -y
-        - sudo docker exec --tty mipsX apt-get install gcc-mips-linux-gnu -y
+        - sudo docker exec --tty mipsX apt-get install qemu-user-static qemu-system-mips gcc-mips-linux-gnu python3-pip -y
+        - sudo docker exec --tty mipsX pip3 install meson ninja
       script:
         - sudo docker exec --tty mipsX bash -c 'EXTRA_CFLAGS=-static CC=mips-linux-gnu-gcc ./configure --host=mips-linux-gnu'
         - sudo docker exec --tty mipsX make
-        - sudo docker kill mipsX
         - file test/srtp_driver
         - make runtest
+        - |
+          cat > mips-cross-file.txt <<EOF
+          [host_machine]
+          system = 'linux'
+          cpu_family = 'mips'
+          cpu = 'mips'
+          endian = 'big'
+
+          [properties]
+          c_args = ['-static', '-static-libgcc']
+          c_link_args = ['-static', '-static-libgcc']
+
+          [binaries]
+          ar          = 'mips-linux-gnu-gcc-ar'
+          c           = 'mips-linux-gnu-gcc'
+          ranlib      = 'mips-linux-gnu-gcc-ranlib'
+          exe_wrapper = 'qemu-mips-static'
+          pkgconfig   = 'false'
+          EOF
+        - sudo docker exec --tty mipsX meson setup --cross-file mips-cross-file.txt -Ddefault_library=static -Db_staticpic=false builddir
+        - sudo docker exec --tty mipsX meson compile -C builddir
+        - sudo docker exec --tty mipsX meson test -v --timeout-multiplier 10 -C builddir
+        - sudo docker kill mipsX
 
     # linux build of fuzzer
     - os: linux
@@ -196,8 +261,12 @@ matrix:
 
     # windows build
     - os: windows
+      before_install:
+        - choco install python --version 3.8.0
+        - pip3 install meson ninja
       env:
         - TEST="windows"
+        - PATH=/c/Python38:/c/Python38/Scripts:$PATH
       script:
         - export PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin":$PATH
         - mkdir build && cd build
@@ -209,11 +278,42 @@ matrix:
         - cmake -G "Visual Studio 15 2017" -DBUILD_SHARED_LIBS=ON ..
         - msbuild.exe libsrtp2.sln -p:Configuration=Release
         - msbuild.exe RUN_TESTS.vcxproj -p:Configuration=Release
+        # Test mingw build
+        - cd ..
+        - meson setup builddir-gcc
+        - meson compile -C builddir-gcc
+        - meson test -v -C builddir-gcc
+        # Test MSVC 64-bit build
+        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' x86_amd64 \& set CC=cl \& meson setup --werror builddir-msvc \& meson compile -C builddir-msvc \& meson test -v -C builddir-msvc
+        # Test MSVC 64-bit UWP build. This is a cross build because we cannot run UWP binaries natively.
+        - |
+          cat > uwp-cross-file.txt <<EOF
+          [host_machine]
+          system = 'windows'
+          cpu_family = 'x86_64'
+          cpu = 'x86_64'
+          endian = 'little'
+
+          [properties]
+          c_args = ['-DWINAPI_FAMILY=WINAPI_FAMILY_APP']
+          c_link_args = ['-APPCONTAINER', 'WindowsApp.lib']
+          needs_exe_wrapper = true
+
+          [binaries]
+          ar        = 'lib'
+          c         = 'cl'
+          cpp       = 'cl'
+          pkgconfig = 'false'
+          EOF
+        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' x86_amd64 uwp \& meson setup --werror --cross-file uwp-cross-file.txt builddir-uwp \& meson compile -C builddir-uwp
 
     # android build
     - os: linux
       env:
         - TEST="android"
+      install:
+        - pyenv global 3.7.1
+        - pip3 install meson ninja
       script:
         - wget -q https://dl.google.com/android/repository/android-ndk-r20b-linux-x86_64.zip
         - unzip -qq android-ndk-r20b-linux-x86_64.zip
@@ -224,7 +324,7 @@ matrix:
         - make
         - cd ..
         - TOOLCHAIN=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64
-          AR=$TOOLCHAIN/bin/aarch64-linux-android-ar
+        - AR=$TOOLCHAIN/bin/aarch64-linux-android-ar
           AS=$TOOLCHAIN/bin/aarch64-linux-android-as
           CC=$TOOLCHAIN/bin/aarch64-linux-android21-clang
           CXX=$TOOLCHAIN/bin/aarch64-linux-android21-clang++
@@ -233,12 +333,35 @@ matrix:
           STRIP=$TOOLCHAIN/bin/aarch64-linux-android-strip
           ./configure --host aarch64-linux-android
         - make
+        - |
+          cat > android-cross-file.txt <<EOF
+          [host_machine]
+          system = 'android'
+          cpu_family = 'aarch64'
+          cpu = 'aarch64'
+          endian = 'little'
 
-    # ios build with openssl
+          [properties]
+          sys_root = '$ANDROID_NDK/sysroot'
+
+          [binaries]
+          ar        = '$TOOLCHAIN/bin/aarch64-linux-android-ar'
+          c         = '$TOOLCHAIN/bin/aarch64-linux-android21-clang'
+          cpp       = '$TOOLCHAIN/bin/aarch64-linux-android21-clang++'
+          ranlib    = '$TOOLCHAIN/bin/aarch64-linux-android-ranlib'
+          strip     = '$TOOLCHAIN/bin/aarch64-linux-android-strip'
+          pkgconfig = 'false'
+          EOF
+        - meson setup --werror --cross-file android-cross-file.txt builddir
+        - meson compile -C builddir
+
+    # ios build
     - os: osx
       osx_image: xcode11.2
       env:
         - TEST="ios"
+      before_install:
+        - pip3 install meson ninja
       script:
         - wget -q https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake
         - mkdir build && cd build
@@ -257,3 +380,25 @@ matrix:
           ./configure --host arm-apple-darwin
         - make
         - make shared_library
+        - |
+          cat > ios-cross-file.txt <<EOF
+          [host_machine]
+          system = 'darwin'
+          cpu_family = 'aarch64'
+          cpu = 'aarch64'
+          endian = 'little'
+
+          [properties]
+          c_args =      ['-arch', 'arm64', '--sysroot=$(xcrun --sdk iphoneos --show-sdk-path)', '-miphoneos-version-min=8.0']
+          c_link_args = ['-arch', 'arm64', '--sysroot=$(xcrun --sdk iphoneos --show-sdk-path)', '-miphoneos-version-min=8.0']
+
+          [binaries]
+          ar        = '$(xcrun --find --sdk iphoneos ar)'
+          c         = '$(xcrun --find --sdk iphoneos clang)'
+          cpp       = '$(xcrun --find --sdk iphoneos clang++)'
+          ranlib    = '$(xcrun --find --sdk iphoneos ranlib)'
+          strip     = '$(xcrun --find --sdk iphoneos strip)'
+          pkgconfig = 'false'
+          EOF
+        - meson setup --werror -Db_bitcode=true --cross-file ios-cross-file.txt builddir
+        - meson compile -C builddir
