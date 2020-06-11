@@ -1,7 +1,9 @@
 # test suite
 
-# TODO: add test setup for valgrind: run test_srtp -v + srtp_driver -v
-# through valgrind --leak-check=full
+# XXX: Makefile only runs test_srtp and srtp_driver with valgrind
+add_test_setup('valgrind',
+  exe_wrapper: ['valgrind', '--leak-check=full'],
+  timeout_multiplier: 10)
 
 test_apps = [
   ['srtp_driver', {'extra_sources': 'util.c', 'run_args': '-v'}],
@@ -9,7 +11,7 @@ test_apps = [
   ['roc_driver', {'run_args': '-v'}],
   ['rdbx_driver', {'run_args': '-v'}],
   ['dtls_srtp_driver',  {'extra_sources': 'util.c'}],
-  ['test_srtp'],
+  ['test_srtp', {'run_args': '-v'}],
   ['rtpw', {'extra_sources': ['rtp.c', 'util.c', '../crypto/math/datatypes.c'], 'define_test': false}],
 ]
 
