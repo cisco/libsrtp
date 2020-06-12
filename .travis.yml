@@ -263,7 +263,8 @@ matrix:
     - os: windows
       before_install:
         - choco install python --version 3.8.0
-        - pip3 install meson ninja
+        - choco install ninja
+        - pip3 install meson
       env:
         - TEST="windows"
         - PATH=/c/Python38:/c/Python38/Scripts:$PATH
