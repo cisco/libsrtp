@@ -76,7 +76,13 @@ foreach type : ['int8_t', 'uint8_t', 'int16_t', 'uint16_t', 'int32_t', 'uint32_t
   cdata.set('HAVE_' + type.to_upper().underscorify(), true)
 endforeach
 
-if not cc.has_type('size_t', prefix: '#include <sys/types.h>')
+size_t_prefix = '''
+#ifdef _WIN32
+#include <crtdefs.h>
+#endif
+#include <sys/types.h>
+'''
+if not cc.has_type('size_t', prefix: size_t_prefix)
   cdata.set('size_t', 'unsigned int')
 endif
 

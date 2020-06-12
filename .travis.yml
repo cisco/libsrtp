@@ -284,10 +284,12 @@ matrix:
         - meson compile -C builddir-gcc
         - meson test -v -C builddir-gcc
         # Test MSVC 64-bit build
-        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' x86_amd64 \& set CC=cl \& meson setup --werror builddir-msvc \& meson compile -C builddir-msvc \& meson test -v -C builddir-msvc
+        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' amd64 \& set CC=cl \& meson setup --werror builddir-msvc-amd64 \& meson compile -C builddir-msvc-amd64 \& meson test -v -C builddir-msvc-amd64
+        # Test MSVC 32-bit build
+        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' x86 \& set CC=cl \& meson setup --werror builddir-msvc-x86 \& meson compile -C builddir-msvc-x86 \& meson test -v -C builddir-msvc-x86
         # Test MSVC 64-bit UWP build. This is a cross build because we cannot run UWP binaries natively.
         - |
-          cat > uwp-cross-file.txt <<EOF
+          cat > uwp-amd64-cross-file.txt <<EOF
           [host_machine]
           system = 'windows'
           cpu_family = 'x86_64'
@@ -305,7 +307,7 @@ matrix:
           cpp       = 'cl'
           pkgconfig = 'false'
           EOF
-        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' x86_amd64 uwp \& meson setup --werror --cross-file uwp-cross-file.txt builddir-uwp \& meson compile -C builddir-uwp
+        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' amd64 uwp \& meson setup --werror --cross-file uwp-amd64-cross-file.txt builddir-uwp-amd64 \& meson compile -C builddir-uwp-amd64
 
     # android build
     - os: linux
