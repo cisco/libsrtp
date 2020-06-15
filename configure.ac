@@ -282,11 +282,11 @@ if test "$enable_openssl" = "yes"; then
          return 1;
        }
      }
-   ])], [openssl_cleanse_broken=no], [
-     openssl_cleanse_broken=yes
+   ])], [openssl_cleanse_broken=no], [openssl_cleanse_broken=yes], [openssl_cleanse_broken=maybe])
+   AC_MSG_RESULT([$openssl_cleanse_broken])
+   AS_IF([test "x$openssl_cleanse_broken" != "xno"], [
      AC_DEFINE([OPENSSL_CLEANSE_BROKEN], [1], [Define this if OPENSSL_cleanse is broken.])
    ])
-   AC_MSG_RESULT([$openssl_cleanse_broken])
 
    AC_MSG_CHECKING([whether to leverage OpenSSL KDF algorithm])
    AC_ARG_ENABLE([openssl-kdf],
