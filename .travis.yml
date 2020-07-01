@@ -1,5 +1,4 @@
 dist: xenial
-sudo: false
 language: c
 
 env:
@@ -185,7 +184,6 @@ matrix:
 
     # big-endian
     - os: linux
-      sudo: true
       env:
         - TEST="big-endian"
       services:
