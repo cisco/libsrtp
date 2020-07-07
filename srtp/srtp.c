@@ -2604,6 +2604,8 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         /* now compute auth function over packet */
         status = srtp_auth_update(session_keys->rtp_auth, (uint8_t *)auth_start,
                                   *pkt_octet_len - tag_len - mki_size);
+        if (status)
+            return status;
 
         /* run auth func over ROC, then write tmp tag */
         status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est, 4,
@@ -4057,6 +4059,8 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
 
     /* initialize auth func context */
     srtp_auth_start(session_keys->rtcp_auth);
+    if (status)
+        return status;
 
     /*
      * run auth func over packet (including trailer), and write the
@@ -4299,6 +4303,8 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
 
     /* initialize auth func context */
     srtp_auth_start(session_keys->rtcp_auth);
+    if (status)
+        return status;
 
     /* run auth func over packet, put result into tmp_tag */
     status = srtp_auth_compute(session_keys->rtcp_auth, (uint8_t *)auth_start,
