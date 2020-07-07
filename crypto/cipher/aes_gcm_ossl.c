@@ -251,21 +251,26 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
                 srtp_octet_string_hex_string(aad, aad_len));
 
     /*
-     * Set dummy tag, OpenSSL requires the Tag to be set before
-     * processing AAD
+     * EVP_CTRL_GCM_SET_TAG can only be used when decrypting
      */
+    if (c->dir == srtp_direction_decrypt) {
+        /*
+         * Set dummy tag, OpenSSL requires the Tag to be set before
+         * processing AAD
+         */
 
-    /*
-     * OpenSSL never write to address pointed by the last parameter of
-     * EVP_CIPHER_CTX_ctrl while EVP_CTRL_GCM_SET_TAG (in reality,
-     * OpenSSL copy its content to the context), so we can make
-     * aad read-only in this function and all its wrappers.
-     */
-    unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
-    memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
-    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
-                             &dummy_tag)) {
-        return (srtp_err_status_algo_fail);
+        /*
+         * OpenSSL never write to address pointed by the last parameter of
+         * EVP_CIPHER_CTX_ctrl while EVP_CTRL_GCM_SET_TAG (in reality,
+         * OpenSSL copy its content to the context), so we can make
+         * aad read-only in this function and all its wrappers.
+         */
+        unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
+        memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
+        if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
+                                 &dummy_tag)) {
+            return (srtp_err_status_algo_fail);
+        }
     }
 
     rv = EVP_Cipher(c->ctx, NULL, aad, aad_len);
