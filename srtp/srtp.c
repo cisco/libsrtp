@@ -4058,7 +4058,7 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
     }
 
     /* initialize auth func context */
-    srtp_auth_start(session_keys->rtcp_auth);
+    status = srtp_auth_start(session_keys->rtcp_auth);
     if (status)
         return status;
 
@@ -4302,7 +4302,7 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
         return srtp_err_status_cipher_fail;
 
     /* initialize auth func context */
-    srtp_auth_start(session_keys->rtcp_auth);
+    status = srtp_auth_start(session_keys->rtcp_auth);
     if (status)
         return status;
 
