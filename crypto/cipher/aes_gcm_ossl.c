@@ -263,7 +263,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
      */
     unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
     memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
-    EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len, &dummy_tag);
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
+                             &dummy_tag)) {
+        return (srtp_err_status_algo_fail);
+    }
 
     rv = EVP_Cipher(c->ctx, NULL, aad, aad_len);
     if (rv != aad_len) {
@@ -322,7 +325,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag(void *cv,
     /*
      * Retreive the tag
      */
-    EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_GET_TAG, c->tag_len, buf);
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_GET_TAG, c->tag_len, buf)) {
+        return (srtp_err_status_algo_fail);
+    }
 
     /*
      * Increase encryption length by desired tag size
@@ -352,8 +357,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
     /*
      * Set the tag before decrypting
      */
-    EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
-                        buf + (*enc_len - c->tag_len));
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
+                             buf + (*enc_len - c->tag_len))) {
+        return (srtp_err_status_auth_fail);
+    }
     EVP_Cipher(c->ctx, buf, buf, *enc_len - c->tag_len);
 
     /*
