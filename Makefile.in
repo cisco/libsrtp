@@ -319,10 +319,22 @@ superclean: clean
 
 distclean: superclean
 
-distname = libsrtp-$(shell cat VERSION)
+distversion = $(shell cat VERSION)
+distname = libsrtp-$(distversion)
+
+mesonprojver = $(shell sed -n -e "s/project.*version\s*:\s'\([0-9.]\+\)'.*/\1/p" meson.build)
 
 distribution: runtest superclean
 	if ! [ -f VERSION ]; then exit 1; fi
+	@# Check that the project version set in meson matches the release version
+	@if [ $(distversion) != $(mesonprojver) ]; then \
+		echo "==================================================="; \
+		echo "Meson project version is $(mesonprojver) which is incorrect."; \
+		echo "Please edit meson.build and change the 'version:'"; \
+		echo "field in the project() call to $(distversion)"; \
+		echo "==================================================="; \
+		exit 1; \
+	fi
 	if [ -f ../$(distname).tgz ]; then               \
 		   mv ../$(distname).tgz ../$(distname).tgz.bak; \
 		fi

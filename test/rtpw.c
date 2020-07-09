@@ -96,7 +96,7 @@
 
 #ifndef HAVE_USLEEP
 #ifdef HAVE_WINDOWS_H
-#define usleep(us) Sleep((us) / 1000)
+#define usleep(us) Sleep(((DWORD)us) / 1000)
 #else
 #define usleep(us) sleep((us) / 1000000)
 #endif
@@ -671,7 +671,7 @@ void handle_signal(int signum)
 
 int setup_signal_handler(char *name)
 {
-#if HAVE_SIGACTION
+#ifdef HAVE_SIGACTION
     struct sigaction act;
     memset(&act, 0, sizeof(act));
 

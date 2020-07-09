@@ -1796,7 +1796,7 @@ static inline void aes_inv_final_round(v128_t *state, const v128_t *round_key)
     v128_xor_eq(state, round_key);
 }
 
-#elif CPU_RISC
+#elif defined(CPU_RISC)
 
 static inline void aes_round(v128_t *state, const v128_t *round_key)
 {
