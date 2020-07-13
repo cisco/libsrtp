@@ -98,7 +98,7 @@ if test "$EMPTY_CFLAGS" = "yes"; then
   done
 
   OOPT=""
-  for f in -O4 -O3; do
+  for f in -O3; do
     if test "x$OOPT" = "x"; then
       AC_MSG_CHECKING([whether ${CC-c} accepts $f])
       save_cflags="$CFLAGS"
