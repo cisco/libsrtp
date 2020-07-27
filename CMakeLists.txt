@@ -176,6 +176,8 @@ add_library(srtp2
   ${SOURCES_H}
 )
 
+set_target_properties(srtp2 PROPERTIES VERSION ${PACKAGE_VERSION})
+
 target_include_directories(srtp2 PUBLIC crypto/include include)
 if(ENABLE_OPENSSL)
   target_link_libraries(srtp2 OpenSSL::Crypto)
