@@ -171,6 +171,19 @@ matrix:
         - meson compile -C builddir
         - meson test -v -C builddir
 
+    # osx build for Apple Silicon
+    - os: osx
+      osx_image: xcode12u
+      env:
+        - TEST="osx Apple Silicon"
+      script:
+        - mkdir build && cd build
+        - cmake "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"  ..
+        - make
+        - lipo -info srtp_driver
+        - make test
+
+
     # code format check
     - os: linux
       env:
