@@ -287,47 +287,47 @@ matrix:
         # Test MSVC 32-bit build
         - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' x86 \& set CC=cl \& meson setup --werror builddir-msvc-x86 \& meson compile -C builddir-msvc-x86 \& meson test -v -C builddir-msvc-x86
         # Test MSVC 64-bit UWP build. This is a cross build because we cannot run UWP binaries natively.
-        - |
-          cat > uwp-amd64-cross-file.txt <<EOF
-          [host_machine]
-          system = 'windows'
-          cpu_family = 'x86_64'
-          cpu = 'x86_64'
-          endian = 'little'
-
-          [properties]
-          c_args = ['-DWINAPI_FAMILY=WINAPI_FAMILY_APP']
-          c_link_args = ['-APPCONTAINER', 'WindowsApp.lib']
-          needs_exe_wrapper = true
-
-          [binaries]
-          ar        = 'lib'
-          c         = 'cl'
-          cpp       = 'cl'
-          pkgconfig = 'false'
-          EOF
-        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' amd64 uwp \& meson setup --werror --cross-file uwp-amd64-cross-file.txt builddir-uwp-amd64 \& meson compile -C builddir-uwp-amd64
+        #- |
+        #  cat > uwp-amd64-cross-file.txt <<EOF
+        #  [host_machine]
+        #  system = 'windows'
+        #  cpu_family = 'x86_64'
+        #  cpu = 'x86_64'
+        #  endian = 'little'
+        #
+        #  [properties]
+        #  c_args = ['-DWINAPI_FAMILY=WINAPI_FAMILY_APP']
+        #  c_link_args = ['-APPCONTAINER', 'WindowsApp.lib']
+        #  needs_exe_wrapper = true
+        #
+        #  [binaries]
+        #  ar        = 'lib'
+        #  c         = 'cl'
+        #  cpp       = 'cl'
+        #  pkgconfig = 'false'
+        #  EOF
+        #- cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' amd64 uwp \& meson setup --werror --cross-file uwp-amd64-cross-file.txt builddir-uwp-amd64 \& meson compile -C builddir-uwp-amd64
         # Test MSVC ARM64 UWP build. This is a cross build.
-        - |
-          cat > uwp-arm64-cross-file.txt <<EOF
-          [host_machine]
-          system = 'windows'
-          cpu_family = 'aarch64'
-          cpu = 'aarch64'
-          endian = 'little'
-
-          [properties]
-          c_args = ['-DWINAPI_FAMILY=WINAPI_FAMILY_APP']
-          c_link_args = ['-APPCONTAINER', 'WindowsApp.lib']
-          needs_exe_wrapper = true
-
-          [binaries]
-          ar        = 'lib'
-          c         = 'cl'
-          cpp       = 'cl'
-          pkgconfig = 'false'
-          EOF
-        - cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' amd64_arm64 uwp \& meson setup --werror --cross-file uwp-arm64-cross-file.txt builddir-uwp-arm64 \& meson compile -C builddir-uwp-arm64
+        #- |
+        #  cat > uwp-arm64-cross-file.txt <<EOF
+        #  [host_machine]
+        #  system = 'windows'
+        #  cpu_family = 'aarch64'
+        #  cpu = 'aarch64'
+        #  endian = 'little'
+        #
+        #  [properties]
+        #  c_args = ['-DWINAPI_FAMILY=WINAPI_FAMILY_APP']
+        #  c_link_args = ['-APPCONTAINER', 'WindowsApp.lib']
+        #  needs_exe_wrapper = true
+        #
+        #  [binaries]
+        #  ar        = 'lib'
+        #  c         = 'cl'
+        #  cpp       = 'cl'
+        #  pkgconfig = 'false'
+        #  EOF
+        #- cmd.exe //C 'C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat' amd64_arm64 uwp \& meson setup --werror --cross-file uwp-arm64-cross-file.txt builddir-uwp-arm64 \& meson compile -C builddir-uwp-arm64
 
     # android build
     - os: linux
