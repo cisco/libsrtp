@@ -13,10 +13,10 @@ and the library is in libsrtp2.a (after compilation).
 This document describes libSRTP, the Open Source Secure RTP library
 from Cisco Systems, Inc. RTP is the Real-time Transport Protocol, an
 IETF standard for the transport of real-time data such as telephony,
-audio, and video, defined by [RFC 3550](https://www.ietf.org/rfc/rfc3550.txt).
+audio, and video, defined by [RFC 3550](https://tools.ietf.org/html/rfc3550).
 Secure RTP (SRTP) is an RTP profile for providing confidentiality to RTP data
 and authentication to the RTP header and payload. SRTP is an IETF Standard,
-defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt), and was developed
+defined in [RFC 3711](https://tools.ietf.org/html/rfc3711), and was developed
 in the IETF Audio/Video Transport (AVT) Working Group. This library supports
 all of the mandatory features of SRTP, but not all of the optional features. See
 the [Supported Features](#supported-features) section for more detailed information.
@@ -197,7 +197,7 @@ in which a key is used for both inbound and outbound data.
 ## Supported Features
 
 This library supports all of the mandatory-to-implement features of
-SRTP (as defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt)). Some of these
+SRTP (as defined in [RFC 3711](https://tools.ietf.org/html/rfc3711)). Some of these
 features can be selected (or de-selected) at run time by setting an
 appropriate policy; this is done using the structure `srtp_policy_t`.
 Some other behaviors of the protocol can be adapted by defining an
@@ -214,7 +214,7 @@ supported. This includes
 The user should be aware that it is possible to misuse this libary,
 and that the result may be that the security level it provides is
 inadequate. If you are implementing a feature using this library, you
-will want to read the Security Considerations section of [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt).
+will want to read the Security Considerations section of [RFC 3711](https://tools.ietf.org/html/rfc3711#section-9).
 In addition, it is important that you read and understand the
 terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
 
@@ -527,13 +527,13 @@ Copyright 2001-2005 by David A. McGrew, Cisco Systems, Inc.
 SRTP and ICM References
 September, 2005
 
-Secure RTP is defined in [RFC 3711](https://www.ietf.org/rfc/rfc3711.txt).
-The counter mode definition is in Section 4.1.1.
+Secure RTP is defined in [RFC 3711](https://tools.ietf.org/html/rfc3711).
+The counter mode definition is in [Section 4.1.1](https://tools.ietf.org/html/rfc3711#section-4.1.1).
 
 SHA-1 is defined in [FIPS PUB 180-4](http://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf).
 
-HMAC is defined in [RFC 2104](https://www.ietf.org/rfc/rfc2104.txt)
+HMAC is defined in [RFC 2104](https://tools.ietf.org/html/rfc2104)
 and HMAC-SHA1 test vectors are available
-in [RFC 2202](https://www.ietf.org/rfc/rfc2202.txt).
+in [RFC 2202](https://tools.ietf.org/html/rfc2202#section-3).
 
-AES-GCM usage in SRTP is defined in [RFC 7714](https://www.ietf.org/html/rfc7714)
+AES-GCM usage in SRTP is defined in [RFC 7714](https://tools.ietf.org/html/rfc7714)
