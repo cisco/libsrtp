@@ -2184,12 +2184,11 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
         }
         /* If no header extension is present cyrptex has no effect */
         if (stream->use_cryptex && hdr->x) {
-            enc_start = (uint32_t *)hdr + uint32s_in_rtp_header;
-            if (hdr->cc) {
-                /* Move CSRCS so it is contiguos with extension header block */
-                memmove(enc_start + 1, enc_start, hdr->cc * 4);
-            }
-            enc_start++;
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Move CSRCS so it is contiguos with extension header block */
+            for (unsigned char i = 0; i < hdr->cc; ++i)
+                csrcs[i + 1] = csrcs[i];
+            enc_start = csrcs + 1;
         } else {
             enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
             if (hdr->x == 1) {
@@ -2343,10 +2342,10 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             return srtp_err_status_cipher_fail;
 
         if (stream->use_cryptex && xtn_hdr) {
-            if (hdr->cc) {
-                /* Restore CSRCS to its original position */
-                memmove(enc_start - 1, enc_start, hdr->cc * 4);
-            }
+            uint32_t* csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Restore CSRCS to its original position */
+            for (unsigned char i = 0; i < hdr->cc; ++i)
+                csrcs[i] = csrcs[i+1];
             /* Restore extension header and change profiles by crytex values*/
             xtn_hdr->length = htons(xtn_hdr_length);
             if (xtn_profile_specific == 0xbede) {
@@ -2658,12 +2657,11 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
 
         /* Check if the profile is the one for cryptex */
         if (xtn_profile_specific == 0xc0de || xtn_profile_specific == 0xc2de) {
-            enc_start = (uint32_t *)hdr + uint32s_in_rtp_header;
-            if (hdr->cc) {
-                /* Move CSRCS so it is contiguos with extension header block */
-                memmove(enc_start + 1, enc_start, hdr->cc * 4);
-            }
-            enc_start++;
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Move CSRCS so it is contiguos with extension header block */
+            for (unsigned char i = 0; i < hdr->cc; ++i)
+                csrcs[i + 1] = csrcs[i];
+            enc_start = csrcs + 1;
             use_cryptex = 1;
         } else {
             enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
@@ -2714,10 +2712,10 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
             return srtp_err_status_cipher_fail;
   
         if (use_cryptex) {
-            if (hdr->cc) {
-                /* Restore CSRCS to its original position */
-                memmove(enc_start - 1, enc_start, hdr->cc * 4);
-            }
+            int32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Restore CSRCS to its original position */
+            for (unsigned char i = 0; i < hdr->cc; ++i)
+                csrcs[i] = csrcs[i + 1];
             /* Restore extension header and change profiles by crytex values*/
             xtn_hdr->length = htons(xtn_hdr_length);
             if (xtn_profile_specific == 0xc0de) {
