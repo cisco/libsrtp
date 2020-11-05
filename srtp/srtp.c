@@ -2019,7 +2019,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     }
 
     if (use_cryptex) {
-        int32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+        uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
         /* Restore CSRCS to its original position */
         for (unsigned char i = 0; i < hdr->cc; ++i)
             csrcs[i] = csrcs[i + 1];
@@ -2786,7 +2786,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
             return srtp_err_status_cipher_fail;
   
         if (use_cryptex) {
-            int32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
             /* Restore CSRCS to its original position */
             for (unsigned char i = 0; i < hdr->cc; ++i)
                 csrcs[i] = csrcs[i + 1];
