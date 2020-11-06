@@ -1742,7 +1742,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         xtn_hdr_length = ntohs(xtn_hdr->length);
         xtn_profile_specific = ntohs(xtn_hdr->profile_specific);
     }
-    /* If no header extension is present cyrptex has no effect */
+    /* If no header extension is present cryptex has no effect */
     if (stream->use_cryptex && hdr->x) {
         uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
         /* Move CSRCS so it is contiguos with extension header block */
@@ -2256,7 +2256,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             xtn_hdr_length = ntohs(xtn_hdr->length);
             xtn_profile_specific = ntohs(xtn_hdr->profile_specific);
         }
-        /* If no header extension is present cyrptex has no effect */
+        /* If no header extension is present cryptex has no effect */
         if (stream->use_cryptex && hdr->x) {
             uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
             /* Move CSRCS so it is contiguos with extension header block */
