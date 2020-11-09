@@ -3445,6 +3445,7 @@ const srtp_policy_t default_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3474,6 +3475,7 @@ const srtp_policy_t aes_only_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3503,6 +3505,7 @@ const srtp_policy_t hmac_only_policy = {
     0,    /* retransmission not allowed                       */
     NULL, /* no encrypted extension headers                   */
     0,    /* list of encrypted extension headers is empty     */
+    0,
     NULL
 };
 
@@ -3535,6 +3538,7 @@ const srtp_policy_t aes128_gcm_8_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3566,6 +3570,7 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3597,6 +3602,7 @@ const srtp_policy_t aes256_gcm_8_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3628,6 +3634,7 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 #endif
@@ -3658,6 +3665,7 @@ const srtp_policy_t null_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3727,6 +3735,7 @@ const srtp_policy_t aes_256_hmac_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3774,6 +3783,7 @@ const srtp_policy_t hmac_only_with_ekt_policy = {
     0,                /* retransmission not allowed                   */
     NULL,             /* no encrypted extension headers               */
     0,                /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
 
@@ -3801,6 +3811,7 @@ const srtp_policy_t *policy_array[] = {
     &null_policy,
     &aes_256_hmac_policy,
     &hmac_only_with_ekt_policy,
+    0,
     NULL
 };
 // clang-format on
@@ -3833,5 +3844,6 @@ const srtp_policy_t wildcard_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    0,
     NULL
 };
