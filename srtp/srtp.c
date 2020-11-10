@@ -1299,8 +1299,8 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 
 void srtp_event_reporter(srtp_event_data_t *data)
 {
-    srtp_err_report(srtp_err_level_warning,
-                    "srtp: in stream 0x%x: ", data->ssrc);
+    srtp_err_report(srtp_err_level_warning, "srtp: in stream 0x%x: ",
+		    data->ssrc);
 
     switch (data->event) {
     case event_ssrc_collision:
@@ -1731,7 +1731,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
      * extension, if present; otherwise, it starts after the last csrc,
      * if any are present
      */
-    
+
     /* Cryptex can only encrypt CSRCS if header extension is present*/
     if (stream->use_cryptex && hdr->cc && !hdr->x) {
         return srtp_err_status_parse_err;
@@ -2416,10 +2416,10 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             return srtp_err_status_cipher_fail;
 
         if (stream->use_cryptex && xtn_hdr) {
-            uint32_t* csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
             /* Restore CSRCS to its original position */
             for (unsigned char i = 0; i < hdr->cc; ++i)
-                csrcs[i] = csrcs[i+1];
+                csrcs[i] = csrcs[i + 1];
             /* Restore extension header and change profiles by crytex values*/
             xtn_hdr->length = htons(xtn_hdr_length);
             if (xtn_profile_specific == 0xbede) {
@@ -2784,7 +2784,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
                                      (uint8_t *)enc_start, &enc_octet_len);
         if (status)
             return srtp_err_status_cipher_fail;
-  
+
         if (use_cryptex) {
             uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
             /* Restore CSRCS to its original position */
