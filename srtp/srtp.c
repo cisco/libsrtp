@@ -1300,7 +1300,7 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 void srtp_event_reporter(srtp_event_data_t *data)
 {
     srtp_err_report(srtp_err_level_warning, "srtp: in stream 0x%x: ",
-		    data->ssrc);
+                    data->ssrc);
 
     switch (data->event) {
     case event_ssrc_collision:
