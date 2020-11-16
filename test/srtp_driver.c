@@ -1816,8 +1816,9 @@ srtp_err_status_t srtp_validate()
  */
 srtp_err_status_t srtp_validate_cryptex()
 {
+    // clang-format off
     /* Plaintext packet with 1-byte header extension */
-    const char* srtp_1bytehdrext_ref =
+    const char *srtp_1bytehdrext_ref =
         "900f1235"
         "decafbad"
         "cafebabe"
@@ -1829,7 +1830,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "abababab";
     
     /* AES-CTR/HMAC-SHA1 Ciphertext packet with 1-byte header extension */
-    const char* srtp_1bytehdrext_cryptex =
+    const char *srtp_1bytehdrext_cryptex =
         "900f1235"
         "decafbad"
         "cafebabe"
@@ -1844,7 +1845,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "34a5";
     
     /* Plaintext packet with 2-byte header extension */
-    const char* srtp_2bytehdrext_ref =
+    const char *srtp_2bytehdrext_ref =
         "900f1236"
         "decafbad"
         "cafebabe"
@@ -1856,7 +1857,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "abababab";
     
     /* AES-CTR/HMAC-SHA1 Ciphertext packet with 2-byte header extension */
-    const char* srtp_2bytehdrext_cryptex = 
+    const char *srtp_2bytehdrext_cryptex = 
         "900f1236"
         "decafbad"
         "cafebabe"
@@ -1871,7 +1872,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "94a5";
         
     /* Plaintext packet with 1-byte header extension and CSRC fields. */
-    const char* srtp_1bytehdrext_cc_ref =
+    const char *srtp_1bytehdrext_cc_ref =
         "920f1238"
         "decafbad"
         "cafebabe"
@@ -1884,7 +1885,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_1bytehdrext_cc_cryptex =
+    const char *srtp_1bytehdrext_cc_cryptex =
         "920f1238"
         "decafbad"
         "cafebabe"
@@ -1901,7 +1902,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "bee0";
     
     /* Plaintext packet with 2-byte header extension and CSRC fields. */
-    const char* srtp_2bytehdrext_cc_ref =
+    const char *srtp_2bytehdrext_cc_ref =
         "920f1239"
         "decafbad"
         "cafebabe"
@@ -1914,7 +1915,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_2bytehdrext_cc_cryptex =
+    const char *srtp_2bytehdrext_cc_cryptex =
         "920f1239" 
         "decafbad"
         "cafebabe"
@@ -1931,7 +1932,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "3133";
     
     /* Plaintext packet with empty 1-byte header extension and CSRC fields. */
-    const char* srtp_1byte_empty_hdrext_cc_ref =
+    const char *srtp_1byte_empty_hdrext_cc_ref =
         "920f123a"
         "decafbad"
         "cafebabe"
@@ -1943,7 +1944,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_1byte_empty_hdrext_cc_cryptex =
+    const char *srtp_1byte_empty_hdrext_cc_cryptex =
         "920f123a"
         "decafbad"
         "cafebabe"
@@ -1959,7 +1960,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "a14c";
     
     /* Plaintext packet with empty 2-byte header extension and CSRC fields. */
-    const char* srtp_2byte_empty_hdrext_cc_ref =
+    const char *srtp_2byte_empty_hdrext_cc_ref =
         "920f123b"
         "decafbad"
         "cafebabe"
@@ -1971,7 +1972,7 @@ srtp_err_status_t srtp_validate_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_2byte_empty_hdrext_cc_cryptex =
+    const char *srtp_2byte_empty_hdrext_cc_cryptex =
         "920f123b"
         "decafbad"
         "cafebabe"
@@ -1985,14 +1986,22 @@ srtp_err_status_t srtp_validate_cryptex()
         "88b170e0"
         "cd31e125"
         "eabe";
-    
+
+    // clang-format on
+
     struct test_vectors_t vectors[6] = {
-        {"Plaintext packet with 1-byte header extension", srtp_1bytehdrext_ref, srtp_1bytehdrext_cryptex},
-        {"Plaintext packet with 2-byte header extension", srtp_2bytehdrext_ref, srtp_2bytehdrext_cryptex},
-        {"Plaintext packet with 1-byte header extension and CSRC fields", srtp_1bytehdrext_cc_ref, srtp_1bytehdrext_cc_cryptex},
-        {"Plaintext packet with 2-byte header extension and CSRC fields", srtp_2bytehdrext_cc_ref, srtp_2bytehdrext_cc_cryptex},
-        {"Plaintext packet with empty 1-byte header extension and CSRC fields", srtp_1byte_empty_hdrext_cc_ref, srtp_1byte_empty_hdrext_cc_cryptex},
-        {"Plaintext packet with empty 2-byte header extension and CSRC fields", srtp_2byte_empty_hdrext_cc_ref, srtp_2byte_empty_hdrext_cc_cryptex},
+        { "Plaintext packet with 1-byte header extension", srtp_1bytehdrext_ref,
+          srtp_1bytehdrext_cryptex },
+        { "Plaintext packet with 2-byte header extension", srtp_2bytehdrext_ref,
+          srtp_2bytehdrext_cryptex },
+        { "Plaintext packet with 1-byte header extension and CSRC fields",
+          srtp_1bytehdrext_cc_ref, srtp_1bytehdrext_cc_cryptex },
+        { "Plaintext packet with 2-byte header extension and CSRC fields",
+          srtp_2bytehdrext_cc_ref, srtp_2bytehdrext_cc_cryptex },
+        { "Plaintext packet with empty 1-byte header extension and CSRC fields",
+          srtp_1byte_empty_hdrext_cc_ref, srtp_1byte_empty_hdrext_cc_cryptex },
+        { "Plaintext packet with empty 2-byte header extension and CSRC fields",
+          srtp_2byte_empty_hdrext_cc_ref, srtp_2byte_empty_hdrext_cc_cryptex },
     };
 
     srtp_t srtp_snd, srtp_recv;
@@ -2279,7 +2288,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
     };
     
     /* Plaintext packet with 1-byte header extension */
-    const char* srtp_1bytehdrext_ref =
+    const char *srtp_1bytehdrext_ref =
         "900f1235"
         "decafbad"
         "cafebabe"
@@ -2291,7 +2300,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab";
     
     /* GCM Ciphertext packet with 1-byte header extension */
-    const char* srtp_1bytehdrext_cryptex_gcm =
+    const char *srtp_1bytehdrext_cryptex_gcm =
         "900f1235"
         "decafbad"
         "cafebabe"
@@ -2307,7 +2316,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "9fa0fbeb";
     
     /* Plaintext packet with 2-byte header extension */
-    const char* srtp_2bytehdrext_ref =
+    const char *srtp_2bytehdrext_ref =
         "900f1236"
         "decafbad"
         "cafebabe"
@@ -2319,7 +2328,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab";
 
     /* GCM Ciphertext packet with 2-byte header extension */
-    const char* srtp_2bytehdrext_cryptex_gcm =
+    const char *srtp_2bytehdrext_cryptex_gcm =
         "900f1236"
         "decafbad"
         "cafebabe"
@@ -2335,7 +2344,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "b394235f";
 
     /* Plaintext packet with 1-byte header extension and CSRC fields. */
-    const char* srtp_1bytehdrext_cc_ref =
+    const char *srtp_1bytehdrext_cc_ref =
         "920f1238"
         "decafbad"
         "cafebabe"
@@ -2348,7 +2357,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab"
         "abababab";
  
-    const char* srtp_1bytehdrext_cc_cryptex_gcm =
+    const char *srtp_1bytehdrext_cc_cryptex_gcm =
     "920f1238decafbad"
         "cafebabe"
         "63bbccc4"
@@ -2366,7 +2375,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
     
 
     /* Plaintext packet with 2-byte header extension and CSRC fields. */
-    const char* srtp_2bytehdrext_cc_ref =
+    const char *srtp_2bytehdrext_cc_ref =
         "920f1239"
         "decafbad"
         "cafebabe"
@@ -2379,7 +2388,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_2bytehdrext_cc_cryptex_gcm =
+    const char *srtp_2bytehdrext_cc_cryptex_gcm =
         "920f1239"
         "decafbad"
         "cafebabe"
@@ -2397,7 +2406,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "d80fea83";
     
     /* Plaintext packet with empty 1-byte header extension and CSRC fields. */
-    const char* srtp_1byte_empty_hdrext_cc_ref =
+    const char *srtp_1byte_empty_hdrext_cc_ref =
         "920f123a"
         "decafbad"
         "cafebabe"
@@ -2409,7 +2418,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_1byte_empty_hdrext_cc_cryptex_gcm =
+    const char *srtp_1byte_empty_hdrext_cc_cryptex_gcm =
         "920f123a"
         "decafbad"
         "cafebabe"
@@ -2426,7 +2435,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "e120c1da";
     
     /* Plaintext packet with empty 2-byte header extension and CSRC fields. */
-    const char* srtp_2byte_empty_hdrext_cc_ref =
+    const char *srtp_2byte_empty_hdrext_cc_ref =
         "920f123b"
         "decafbad"
         "cafebabe"
@@ -2438,7 +2447,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab"
         "abababab";
     
-    const char* srtp_2byte_empty_hdrext_cc_cryptex_gcm =
+    const char *srtp_2byte_empty_hdrext_cc_cryptex_gcm =
         "920f123b"
         "decafbad"
         "cafebabe"
@@ -2454,14 +2463,22 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "13512dc9"
         "8b5207d8";
     // clang-format on
-    
+
     struct test_vectors_t vectors[6] = {
-        {"Plaintext packet with 1-byte header extension", srtp_1bytehdrext_ref, srtp_1bytehdrext_cryptex_gcm},
-        {"Plaintext packet with 2-byte header extension", srtp_2bytehdrext_ref, srtp_2bytehdrext_cryptex_gcm},
-        {"Plaintext packet with 1-byte header extension and CSRC fields", srtp_1bytehdrext_cc_ref, srtp_1bytehdrext_cc_cryptex_gcm},
-        {"Plaintext packet with 2-byte header extension and CSRC fields", srtp_2bytehdrext_cc_ref, srtp_2bytehdrext_cc_cryptex_gcm},
-        {"Plaintext packet with empty 1-byte header extension and CSRC fields", srtp_1byte_empty_hdrext_cc_ref, srtp_1byte_empty_hdrext_cc_cryptex_gcm},
-        {"Plaintext packet with empty 2-byte header extension and CSRC fields", srtp_2byte_empty_hdrext_cc_ref, srtp_2byte_empty_hdrext_cc_cryptex_gcm},
+        { "Plaintext packet with 1-byte header extension", srtp_1bytehdrext_ref,
+          srtp_1bytehdrext_cryptex_gcm },
+        { "Plaintext packet with 2-byte header extension", srtp_2bytehdrext_ref,
+          srtp_2bytehdrext_cryptex_gcm },
+        { "Plaintext packet with 1-byte header extension and CSRC fields",
+          srtp_1bytehdrext_cc_ref, srtp_1bytehdrext_cc_cryptex_gcm },
+        { "Plaintext packet with 2-byte header extension and CSRC fields",
+          srtp_2bytehdrext_cc_ref, srtp_2bytehdrext_cc_cryptex_gcm },
+        { "Plaintext packet with empty 1-byte header extension and CSRC fields",
+          srtp_1byte_empty_hdrext_cc_ref,
+          srtp_1byte_empty_hdrext_cc_cryptex_gcm },
+        { "Plaintext packet with empty 2-byte header extension and CSRC fields",
+          srtp_2byte_empty_hdrext_cc_ref,
+          srtp_2byte_empty_hdrext_cc_cryptex_gcm },
     };
 
     srtp_t srtp_snd, srtp_recv;
