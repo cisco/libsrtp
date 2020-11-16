@@ -127,9 +127,9 @@ double mips_estimate(int num_trials, int *ignore);
 #define TEST_MKI_ID_SIZE 4
 
 typedef struct test_vectors_t {
-    const char* name;
-    const char* plaintext;
-    const char* ciphertext;
+    const char *name;
+    const char *plaintext;
+    const char *ciphertext;
 } test_vectors_t;
 
 extern uint8_t test_key[46];
@@ -431,8 +431,8 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
-    
-       /*
+
+        /*
          * run validation test against the reference packets - note
          * that this test only covers the default policy
          */
@@ -454,7 +454,7 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
-        
+
         printf("testing srtp_protect and srtp_unprotect against "
                "reference cryptex packet using GCM\n");
         if (srtp_validate_gcm_cryptex() == srtp_err_status_ok) {
@@ -2021,59 +2021,65 @@ srtp_err_status_t srtp_validate_cryptex()
         return status;
     }
 
-    for (int i=0; i<6; ++i) {
-    uint8_t packet[1400];
-    uint8_t reference[1400];
-    uint8_t ciphertext[1400];
-    
-    /* Initialize reference test vectors */
-    ref_len = hex_string_to_octet_string((char*)reference, vectors[i].plaintext, sizeof(reference)) / 2;
-    enc_len = hex_string_to_octet_string((char*)ciphertext, vectors[i].ciphertext, sizeof(ciphertext)) / 2;
-    
-    /* Initialize test packet */
-    len = ref_len;
-    memcpy(packet, reference, len);
-    printf("%s\n",vectors[i].name);
-    /*
-     * protect plaintext, then compare with ciphertext
-     */
-    debug_print(mod_driver, "test vector: %s\n", vectors[i].name );
-    
-    status = srtp_protect(srtp_snd, packet, &len);
-    if (status || (len != enc_len)) {
-        return srtp_err_status_fail;
-    }
+    for (int i = 0; i < 6; ++i) {
+        uint8_t packet[1400];
+        uint8_t reference[1400];
+        uint8_t ciphertext[1400];
 
-    debug_print(mod_driver, "ciphertext:\n  %s",
-             octet_string_hex_string(packet, len));
-    debug_print(mod_driver, "ciphertext reference:\n  %s",
-            octet_string_hex_string(ciphertext, len));
+        /* Initialize reference test vectors */
+        ref_len =
+            hex_string_to_octet_string((char *)reference, vectors[i].plaintext,
+                                       sizeof(reference)) /
+            2;
+        enc_len = hex_string_to_octet_string((char *)ciphertext,
+                                             vectors[i].ciphertext,
+                                             sizeof(ciphertext)) /
+                  2;
 
-    if (srtp_octet_string_is_eq(packet, ciphertext, len)) {
-        return srtp_err_status_fail;
-    }
+        /* Initialize test packet */
+        len = ref_len;
+        memcpy(packet, reference, len);
+        printf("%s\n", vectors[i].name);
+        /*
+         * protect plaintext, then compare with ciphertext
+         */
+        debug_print(mod_driver, "test vector: %s\n", vectors[i].name);
 
-    /*
-     * create a receiver session context comparable to the one created
-     * above - we need to do this so that the replay checking doesn't
-     * complain
-     */
-    status = srtp_create(&srtp_recv, &policy);
-    if (status) {
-        return status;
-    }
+        status = srtp_protect(srtp_snd, packet, &len);
+        if (status || (len != enc_len)) {
+            return srtp_err_status_fail;
+        }
 
-    /*
-     * unprotect ciphertext, then compare with plaintext
-     */
-    status = srtp_unprotect(srtp_recv, packet, &len);
-    if (status || (len != ref_len)) {
-        return status;
-    }
+        debug_print(mod_driver, "ciphertext:\n  %s",
+                    octet_string_hex_string(packet, len));
+        debug_print(mod_driver, "ciphertext reference:\n  %s",
+                    octet_string_hex_string(ciphertext, len));
 
-    if (srtp_octet_string_is_eq(packet, reference, len)) {
-        return srtp_err_status_fail;
-    }
+        if (srtp_octet_string_is_eq(packet, ciphertext, len)) {
+            return srtp_err_status_fail;
+        }
+
+        /*
+         * create a receiver session context comparable to the one created
+         * above - we need to do this so that the replay checking doesn't
+         * complain
+         */
+        status = srtp_create(&srtp_recv, &policy);
+        if (status) {
+            return status;
+        }
+
+        /*
+         * unprotect ciphertext, then compare with plaintext
+         */
+        status = srtp_unprotect(srtp_recv, packet, &len);
+        if (status || (len != ref_len)) {
+            return status;
+        }
+
+        if (srtp_octet_string_is_eq(packet, reference, len)) {
+            return srtp_err_status_fail;
+        }
     }
 
     status = srtp_dealloc(srtp_snd);
@@ -2484,23 +2490,29 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         return status;
     }
 
-    for (int i=0; i<6; ++i) {
+    for (int i = 0; i < 6; ++i) {
         uint8_t packet[1400];
         uint8_t reference[1400];
         uint8_t ciphertext[1400];
 
         /* Initialize reference test vectors */
-        ref_len = hex_string_to_octet_string((char*)reference, vectors[i].plaintext, sizeof(reference)) / 2;
-        enc_len = hex_string_to_octet_string((char*)ciphertext, vectors[i].ciphertext, sizeof(ciphertext)) / 2;
+        ref_len =
+            hex_string_to_octet_string((char *)reference, vectors[i].plaintext,
+                                       sizeof(reference)) /
+            2;
+        enc_len = hex_string_to_octet_string((char *)ciphertext,
+                                             vectors[i].ciphertext,
+                                             sizeof(ciphertext)) /
+                  2;
 
         /* Initialize test packet */
         len = ref_len;
         memcpy(packet, reference, len);
-        printf("%s\n",vectors[i].name);
+        printf("%s\n", vectors[i].name);
         /*
          * protect plaintext, then compare with ciphertext
          */
-        debug_print(mod_driver, "test vector: %s\n", vectors[i].name );
+        debug_print(mod_driver, "test vector: %s\n", vectors[i].name);
 
         status = srtp_protect(srtp_snd, packet, &len);
         if (status || (len != enc_len)) {
@@ -2508,9 +2520,9 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         }
 
         debug_print(mod_driver, "ciphertext:\n  %s",
-                 octet_string_hex_string(packet, len));
+                    octet_string_hex_string(packet, len));
         debug_print(mod_driver, "ciphertext reference:\n  %s",
-                octet_string_hex_string(ciphertext, len));
+                    octet_string_hex_string(ciphertext, len));
 
         if (srtp_octet_string_is_eq(packet, ciphertext, len)) {
             return srtp_err_status_fail;
@@ -2552,7 +2564,6 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
     return srtp_err_status_ok;
 }
 
-    
 #endif
 
 /*
