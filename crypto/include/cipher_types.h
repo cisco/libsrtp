@@ -74,6 +74,9 @@ extern srtp_debug_module_t srtp_mod_aes_icm;
 #ifdef OPENSSL
 extern srtp_debug_module_t srtp_mod_aes_gcm;
 #endif
+#ifdef MBEDTLS
+extern srtp_debug_module_t srtp_mod_aes_gcm;
+#endif
 #ifdef NSS
 extern srtp_debug_module_t srtp_mod_aes_gcm;
 #endif
