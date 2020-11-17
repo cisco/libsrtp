@@ -54,7 +54,7 @@ set(ENABLE_DEBUG_LOGGING OFF CACHE BOOL "Enable debug logging in all modules")
 set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
-set(ENABLE_MBEDTLS ON CACHE BOOL "Enable MbedTLS crypto engine")
+set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
 set(TEST_APPS ON CACHE BOOL "Build test applications")
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
