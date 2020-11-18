@@ -2311,7 +2311,8 @@ srtp_err_status_t srtp_validate_aes_256()
 srtp_err_status_t srtp_create_big_policy(srtp_policy_t **list)
 {
     extern const srtp_policy_t *policy_array[];
-    srtp_policy_t *p, *tmp;
+    srtp_policy_t *p = NULL;
+    srtp_policy_t *tmp;
     int i = 0;
     uint32_t ssrc = 0;
 
