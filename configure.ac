@@ -242,9 +242,14 @@ if test "$enable_openssl" = "yes"; then
       [AC_MSG_RESULT([no])])
 
    if test "x$PKG_CONFIG" != "x"; then
-     PKG_CHECK_MODULES([crypto], [libcrypto >= 1.0.1],
+     PKG_CHECK_MODULES([crypto], [libcrypto >= 1.0.2i],
        [CFLAGS="$CFLAGS $crypto_CFLAGS"
-        LIBS="$crypto_LIBS $LIBS"])
+        LIBS="$crypto_LIBS $LIBS"
+        openssl_cleanse_broken=no],
+       [PKG_CHECK_MODULES([crypto], [libcrypto >= 1.0.1],
+         [CFLAGS="$CFLAGS $crypto_CFLAGS"
+          LIBS="$crypto_LIBS $LIBS"
+          openssl_cleanse_broken=maybe])])
    else
      AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([can't find libdl])])
      AC_CHECK_LIB([z], [inflate], [], [AC_MSG_WARN([can't find libz])])
@@ -263,30 +268,32 @@ if test "$enable_openssl" = "yes"; then
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
 
-   AC_MSG_CHECKING([if OPENSSL_cleanse is broken])
-   AC_RUN_IFELSE([AC_LANG_PROGRAM([
-     #include <stdio.h>
-     #include <openssl/crypto.h>
-   ], [
-     #define BUFFER_SIZE (16)
-     char buffer[[BUFFER_SIZE]];
-     int i;
-     for (i = 0; i < BUFFER_SIZE; i++) {
-       buffer[[i]] = i & 0xff;
-     }
-     OPENSSL_cleanse(buffer, BUFFER_SIZE);
-     for (i = 0; i < BUFFER_SIZE; i++) {
-       if (buffer[[i]]) {
-         printf("Buffer contents not zero at position %d (is %d)\n", i,
-             buffer[[i]]);
-         return 1;
+   AS_IF([test "x$openssl_cleanse_broken" != "xno"], [
+     AC_MSG_CHECKING([if OPENSSL_cleanse is broken])
+     AC_RUN_IFELSE([AC_LANG_PROGRAM([
+       #include <stdio.h>
+       #include <openssl/crypto.h>
+     ], [
+       #define BUFFER_SIZE (16)
+       char buffer[[BUFFER_SIZE]];
+       int i;
+       for (i = 0; i < BUFFER_SIZE; i++) {
+         buffer[[i]] = i & 0xff;
        }
-     }
-   ])], [openssl_cleanse_broken=no], [
-     openssl_cleanse_broken=yes
-     AC_DEFINE([OPENSSL_CLEANSE_BROKEN], [1], [Define this if OPENSSL_cleanse is broken.])
+       OPENSSL_cleanse(buffer, BUFFER_SIZE);
+       for (i = 0; i < BUFFER_SIZE; i++) {
+         if (buffer[[i]]) {
+           printf("Buffer contents not zero at position %d (is %d)\n", i,
+               buffer[[i]]);
+           return 1;
+         }
+       }
+     ])], [openssl_cleanse_broken=no], [openssl_cleanse_broken=yes], [openssl_cleanse_broken=maybe])
+     AC_MSG_RESULT([$openssl_cleanse_broken])
+     AS_IF([test "x$openssl_cleanse_broken" != "xno"], [
+       AC_DEFINE([OPENSSL_CLEANSE_BROKEN], [1], [Define this if OPENSSL_cleanse is broken.])
+     ])
    ])
-   AC_MSG_RESULT([$openssl_cleanse_broken])
 
    AC_MSG_CHECKING([whether to leverage OpenSSL KDF algorithm])
    AC_ARG_ENABLE([openssl-kdf],
