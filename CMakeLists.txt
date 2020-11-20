@@ -184,6 +184,7 @@ if(ENABLE_OPENSSL)
 endif()
 if(WIN32)
   target_link_libraries(srtp2 ws2_32)
+  target_compile_definitions(srtp2 PUBLIC _CRT_SECURE_NO_WARNINGS)
 endif()
 
 install(TARGETS srtp2 DESTINATION lib)
