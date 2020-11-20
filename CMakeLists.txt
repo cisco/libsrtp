@@ -13,7 +13,7 @@ include(CheckCSourceCompiles)
 
 test_big_endian(WORDS_BIGENDIAN)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+if (NOT APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
   set (HAVE_X86 TRUE)
 else ()
   set (HAVE_X86 FALSE)
