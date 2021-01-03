@@ -114,6 +114,24 @@ matrix:
         - meson compile -C builddir
         - meson test -v -C builddir
 
+    # linux build with mbedtls
+    - os: linux
+      env:
+        - TEST="linux mbedtls (gcc)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - libmbedtls-dev
+      script:
+        - mkdir build && cd build
+        - cmake -DENABLE_MBEDTLS=ON ..
+        - make
+        - make test
+        - cd ..
+
     # default osx build
     - os: osx
       env:
