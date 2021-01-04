@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.2)
 
 project(libsrtp2 LANGUAGES C)
 
@@ -55,6 +55,7 @@ set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
 set(TEST_APPS ON CACHE BOOL "Build test applications")
+set(BUILD_WITH_SANITIZERS OFF CACHE BOOL "Adds sanitizer flags to compiler")
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
 if(ENABLE_OPENSSL)
@@ -69,6 +70,15 @@ include_directories(${CONFIG_FILE_DIR})
 
 configure_file(config_in_cmake.h ${CONFIG_FILE_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
+
+if(BUILD_WITH_SANITIZERS)
+  message(STATUS "Using sanitizers: leak,address,undefined")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer -fsanitize=leak,address,undefined")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=leak,address,undefined")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=leak,address,undefined")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=leak,address,undefined")
+  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=leak,address,undefined")
+endif()
 
 set(SOURCES_C
   srtp/ekt.c
@@ -196,14 +206,35 @@ install(FILES include/srtp.h crypto/include/auth.h
 if(TEST_APPS)
   enable_testing()
 
-if(NOT (BUILD_SHARED_LIBS AND WIN32))
-  add_executable(test_srtp test/test_srtp.c)
-  target_link_libraries(test_srtp srtp2)
-  add_test(test_srtp test_srtp)
-endif()
+  add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
+  target_link_libraries(cipher_driver srtp2)
+  add_test(cipher_driver cipher_driver -v)
+
+  add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
+  target_link_libraries(kernel_driver srtp2)
+  add_test(kernel_driver roc_driver -v)
+
+  add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
+  target_link_libraries(rdbx_driver srtp2)
+  add_test(rdbx_driver rdbx_driver -v)
+
+  add_executable(replay_driver test/replay_driver.c)
+  target_link_libraries(replay_driver srtp2)
+  add_test(replay_driver replay_driver -v)
+
+  add_executable(roc_driver test/roc_driver.c)
+  target_link_libraries(roc_driver srtp2)
+  add_test(roc_driver roc_driver -v)
 
   add_executable(srtp_driver test/srtp_driver.c
     test/util.c test/getopt_s.c)
   target_link_libraries(srtp_driver srtp2)
   add_test(srtp_driver srtp_driver -v)
+
+  if(NOT (BUILD_SHARED_LIBS AND WIN32))
+    add_executable(test_srtp test/test_srtp.c)
+    target_link_libraries(test_srtp srtp2)
+    add_test(test_srtp test_srtp)
+  endif()
+
 endif()

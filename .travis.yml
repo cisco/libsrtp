@@ -11,7 +11,7 @@ matrix:
     # linux build
     - os: linux
       env:
-        - TEST="linux (gcc / valgrind)"
+        - TEST="linux (gcc)"
       addons:
         apt:
           sources:
@@ -29,9 +29,9 @@ matrix:
         - make runtest-valgrind
         - make distclean
         - mkdir build && cd build
-        - cmake ..
+        - cmake -DBUILD_WITH_SANITIZERS=TRUE ..
         - make
-        - make test
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
         - cd ..
         - CC=gcc-6 meson setup --werror builddir
         - meson compile -C builddir
@@ -40,7 +40,7 @@ matrix:
     # linux build with openssl
     - os: linux
       env:
-        - TEST="linux openssl (gcc / valgrind)"
+        - TEST="linux openssl (gcc)"
       addons:
         apt:
           sources:
@@ -58,9 +58,9 @@ matrix:
         - make runtest-valgrind
         - make distclean
         - mkdir build && cd build
-        - cmake -DENABLE_OPENSSL=ON ..
+        - cmake -DENABLE_OPENSSL=ON -DBUILD_WITH_SANITIZERS=TRUE ..
         - make
-        - make test
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
         - cd ..
         - mkdir build_shared && cd build_shared
         - cmake -DENABLE_OPENSSL=ON -DBUILD_SHARED_LIBS=ON ..
