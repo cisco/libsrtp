@@ -4,7 +4,8 @@ project(libsrtp2 LANGUAGES C)
 
 set(PACKAGE_VERSION 2.4.0)
 set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${PACKAGE_VERSION}")
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_MODULE_PATH}")
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 include(TestBigEndian)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -55,6 +56,7 @@ set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
 set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
+set(ENABLE_NSS OFF CACHE BOOL "Enable NSS crypto engine")
 set(TEST_APPS ON CACHE BOOL "Build test applications")
 set(BUILD_WITH_SANITIZERS OFF CACHE BOOL "Adds sanitizer flags to compiler")
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
@@ -65,16 +67,20 @@ endif()
 
 if(ENABLE_OPENSSL)
   find_package(OpenSSL REQUIRED)
-  include_directories(${OPENSSL_INCLUDE_DIR})
   set(OPENSSL ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
   set(GCM ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
 endif()
 
 if(ENABLE_MBEDTLS)
   find_package(MbedTLS REQUIRED)
-  include_directories(${MBEDTLS_INCLUDE_DIRS})
   set(MBEDTLS ${ENABLE_MBEDTLS} CACHE BOOL INTERNAL)
   set(GCM ${ENABLE_MBEDTLS} CACHE BOOL INTERNAL)
+endif()
+
+if(ENABLE_NSS)
+  find_package(NSS REQUIRED)
+  set(NSS ${ENABLE_NSS} CACHE BOOL INTERNAL)
+  set(GCM ${ENABLE_NSS} CACHE BOOL INTERNAL)
 endif()
 
 set(CONFIG_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -112,6 +118,11 @@ elseif(ENABLE_MBEDTLS)
     crypto/cipher/aes_icm_mbedtls.c
     crypto/cipher/aes_gcm_mbedtls.c
   )
+elseif(ENABLE_NSS)
+  list(APPEND CIPHERS_SOURCES_C
+    crypto/cipher/aes_icm_nss.c
+    crypto/cipher/aes_gcm_nss.c
+  )
 else()
   list(APPEND  CIPHERS_SOURCES_C
     crypto/cipher/aes.c
@@ -131,6 +142,11 @@ if(ENABLE_OPENSSL)
 elseif(ENABLE_MBEDTLS)
   list(APPEND HASHES_SOURCES_C
     crypto/hash/hmac_mbedtls.c
+  )
+elseif(ENABLE_NSS)
+  list(APPEND HASHES_SOURCES_C
+    crypto/hash/hmac.c
+    crypto/hash/sha1.c
   )
 else()
   list(APPEND  HASHES_SOURCES_C
@@ -207,14 +223,18 @@ add_library(srtp2
   ${SOURCES_H}
 )
 
-set_target_properties(srtp2 PROPERTIES VERSION ${PACKAGE_VERSION})
+set_target_properties(srtp2 PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
 target_include_directories(srtp2 PUBLIC crypto/include include)
 if(ENABLE_OPENSSL)
+  target_include_directories(srtp2 PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(srtp2 OpenSSL::Crypto)
-endif()
-if(ENABLE_MBEDTLS)
+elseif(ENABLE_MBEDTLS)
+  target_include_directories(srtp2 PRIVATE ${MBEDTLS_INCLUDE_DIRS})
   target_link_libraries(srtp2 ${MBEDTLS_LIBRARIES})
+elseif(ENABLE_NSS)
+  target_include_directories(srtp2 PRIVATE ${NSS_INCLUDE_DIRS})
+  target_link_libraries(srtp2 ${NSS_LIBRARIES})
 endif()
 if(WIN32)
   target_link_libraries(srtp2 ws2_32)
@@ -259,6 +279,13 @@ if(TEST_APPS)
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
     add_executable(test_srtp test/test_srtp.c)
+    if(ENABLE_OPENSSL)
+      target_include_directories(test_srtp PRIVATE ${OPENSSL_INCLUDE_DIR})
+    elseif(ENABLE_MBEDTLS)
+      target_include_directories(test_srtp PRIVATE ${MBEDTLS_INCLUDE_DIRS})
+    elseif(ENABLE_NSS)
+      target_include_directories(test_srtp PRIVATE ${NSS_INCLUDE_DIRS})
+    endif()
     target_link_libraries(test_srtp srtp2)
     add_test(test_srtp test_srtp)
   endif()

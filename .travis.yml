@@ -110,6 +110,11 @@ matrix:
         - make
         - make runtest
         - make runtest-valgrind
+        - mkdir build && cd build
+        - cmake -DENABLE_NSS=ON -DBUILD_WITH_SANITIZERS=TRUE ..
+        - make
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
+        - cd ..
         - CC=gcc-6 meson setup --werror -Dcrypto-library=nss builddir
         - meson compile -C builddir
         - meson test -v -C builddir
