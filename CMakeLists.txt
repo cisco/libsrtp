@@ -89,6 +89,8 @@ set(SOURCES_C
 
 set(CIPHERS_SOURCES_C
   crypto/cipher/cipher.c
+  crypto/cipher/cipher_test_cases.c
+  crypto/cipher/cipher_test_cases.h
   crypto/cipher/null_cipher.c
 )
 
@@ -110,8 +112,10 @@ else()
 endif()
 
 set(HASHES_SOURCES_C
-    crypto/hash/auth.c
-    crypto/hash/null_auth.c
+  crypto/hash/auth.c
+  crypto/hash/auth_test_cases.c
+  crypto/hash/auth_test_cases.h
+  crypto/hash/null_auth.c
 )
 
 if(ENABLE_OPENSSL)
