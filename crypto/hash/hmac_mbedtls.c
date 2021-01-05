@@ -48,7 +48,7 @@
 #include "auth.h"
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
-#include "mbedtls/md.h"
+#include <mbedtls/md.h>
 
 #define SHA1_DIGEST_SIZE 20
 
