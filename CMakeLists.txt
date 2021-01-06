@@ -206,25 +206,27 @@ install(FILES include/srtp.h crypto/include/auth.h
 if(TEST_APPS)
   enable_testing()
 
-  add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
-  target_link_libraries(cipher_driver srtp2)
-  add_test(cipher_driver cipher_driver -v)
+  if(NOT (BUILD_SHARED_LIBS AND WIN32))
+      add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
+      target_link_libraries(cipher_driver srtp2)
+      add_test(cipher_driver cipher_driver -v)
 
-  add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
-  target_link_libraries(kernel_driver srtp2)
-  add_test(kernel_driver roc_driver -v)
+      add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
+      target_link_libraries(kernel_driver srtp2)
+      add_test(kernel_driver roc_driver -v)
 
-  add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
-  target_link_libraries(rdbx_driver srtp2)
-  add_test(rdbx_driver rdbx_driver -v)
+      add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
+      target_link_libraries(rdbx_driver srtp2)
+      add_test(rdbx_driver rdbx_driver -v)
 
-  add_executable(replay_driver test/replay_driver.c)
-  target_link_libraries(replay_driver srtp2)
-  add_test(replay_driver replay_driver -v)
+      add_executable(replay_driver test/replay_driver.c)
+      target_link_libraries(replay_driver srtp2)
+      add_test(replay_driver replay_driver -v)
 
-  add_executable(roc_driver test/roc_driver.c)
-  target_link_libraries(roc_driver srtp2)
-  add_test(roc_driver roc_driver -v)
+      add_executable(roc_driver test/roc_driver.c)
+      target_link_libraries(roc_driver srtp2)
+      add_test(roc_driver roc_driver -v)
+  endif()
 
   add_executable(srtp_driver test/srtp_driver.c
     test/util.c test/getopt_s.c)
