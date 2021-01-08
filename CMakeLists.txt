@@ -13,7 +13,7 @@ include(CheckCSourceCompiles)
 
 test_big_endian(WORDS_BIGENDIAN)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
+if (NOT APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
   set (HAVE_X86 TRUE)
 else ()
   set (HAVE_X86 FALSE)
@@ -208,6 +208,7 @@ if(ENABLE_MBEDTLS)
 endif()
 if(WIN32)
   target_link_libraries(srtp2 ws2_32)
+  target_compile_definitions(srtp2 PUBLIC _CRT_SECURE_NO_WARNINGS)
 endif()
 
 install(TARGETS srtp2 DESTINATION lib)
