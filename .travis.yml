@@ -236,9 +236,9 @@ matrix:
           exe_wrapper = 'qemu-mips-static'
           pkgconfig   = 'false'
           EOF
-        - sudo docker exec --tty mipsX meson setup --cross-file mips-cross-file.txt -Ddefault_library=static -Db_staticpic=false builddir
-        - sudo docker exec --tty mipsX meson compile -C builddir
-        - sudo docker exec --tty mipsX meson test -v --timeout-multiplier 10 -C builddir
+        #- sudo docker exec --tty mipsX meson setup --cross-file mips-cross-file.txt -Ddefault_library=static -Db_staticpic=false builddir
+        #- sudo docker exec --tty mipsX meson compile -C builddir
+        #- sudo docker exec --tty mipsX meson test -v --timeout-multiplier 10 -C builddir
         - sudo docker kill mipsX
 
     # linux build of fuzzer
