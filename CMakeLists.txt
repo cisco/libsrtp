@@ -4,7 +4,7 @@ project(libsrtp2 LANGUAGES C)
 
 set(PACKAGE_VERSION 2.4.0)
 set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${PACKAGE_VERSION}")
-
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_MODULE_PATH}")
 include(TestBigEndian)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
@@ -54,15 +54,27 @@ set(ENABLE_DEBUG_LOGGING OFF CACHE BOOL "Enable debug logging in all modules")
 set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
+set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
 set(TEST_APPS ON CACHE BOOL "Build test applications")
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
+
+if(ENABLE_OPENSSL AND ENABLE_MBEDTLS)
+  message(FATAL_ERROR "ssl conflict. can not enable openssl and mbedtls simultaneously.")
+endif()
 
 if(ENABLE_OPENSSL)
   find_package(OpenSSL REQUIRED)
   include_directories(${OPENSSL_INCLUDE_DIR})
+  set(OPENSSL ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
+  set(GCM ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
 endif()
-set(OPENSSL ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
-set(GCM ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
+
+if(ENABLE_MBEDTLS)
+  find_package(MbedTLS REQUIRED)
+  include_directories(${MBEDTLS_INCLUDE_DIRS})
+  set(MBEDTLS ${ENABLE_MBEDTLS} CACHE BOOL INTERNAL)
+  set(GCM ${ENABLE_MBEDTLS} CACHE BOOL INTERNAL)
+endif()
 
 set(CONFIG_FILE_DIR ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CONFIG_FILE_DIR})
@@ -85,6 +97,11 @@ if(ENABLE_OPENSSL)
     crypto/cipher/aes_icm_ossl.c
     crypto/cipher/aes_gcm_ossl.c
   )
+elseif(ENABLE_MBEDTLS)
+  list(APPEND CIPHERS_SOURCES_C
+    crypto/cipher/aes_icm_mbedtls.c
+    crypto/cipher/aes_gcm_mbedtls.c
+  )
 else()
   list(APPEND  CIPHERS_SOURCES_C
     crypto/cipher/aes.c
@@ -100,6 +117,10 @@ set(HASHES_SOURCES_C
 if(ENABLE_OPENSSL)
   list(APPEND HASHES_SOURCES_C
     crypto/hash/hmac_ossl.c
+  )
+elseif(ENABLE_MBEDTLS)
+  list(APPEND HASHES_SOURCES_C
+    crypto/hash/hmac_mbedtls.c
   )
 else()
   list(APPEND  HASHES_SOURCES_C
@@ -181,6 +202,9 @@ set_target_properties(srtp2 PROPERTIES VERSION ${PACKAGE_VERSION})
 target_include_directories(srtp2 PUBLIC crypto/include include)
 if(ENABLE_OPENSSL)
   target_link_libraries(srtp2 OpenSSL::Crypto)
+endif()
+if(ENABLE_MBEDTLS)
+  target_link_libraries(srtp2 ${MBEDTLS_LIBRARIES})
 endif()
 if(WIN32)
   target_link_libraries(srtp2 ws2_32)
