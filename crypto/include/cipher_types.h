@@ -71,17 +71,11 @@ extern srtp_debug_module_t srtp_mod_alloc;
 
 /* debug modules for cipher types */
 extern srtp_debug_module_t srtp_mod_aes_icm;
-#ifdef OPENSSL
-extern srtp_debug_module_t srtp_mod_aes_gcm;
-#endif
-#ifdef MBEDTLS
-extern srtp_debug_module_t srtp_mod_aes_gcm;
-#endif
-#ifdef NSS
+
+#if (defined(OPENSSL) || defined(MBEDTLS) || defined(NSS))
 extern srtp_debug_module_t srtp_mod_aes_gcm;
 #endif
 
 /* debug modules for auth types */
 extern srtp_debug_module_t srtp_mod_hmac;
-
 #endif
