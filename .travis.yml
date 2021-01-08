@@ -127,9 +127,9 @@ matrix:
             - libmbedtls-dev
       script:
         - mkdir build && cd build
-        - cmake -DENABLE_MBEDTLS=ON ..
+        - cmake -DENABLE_MBEDTLS=ON -DBUILD_WITH_SANITIZERS=TRUE ..
         - make
-        - make test
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
         - cd ..
 
     # default osx build
