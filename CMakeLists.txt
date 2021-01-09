@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.2)
 
-project(libsrtp2 LANGUAGES C)
+project(libsrtp2 VERSION 2.4.0 LANGUAGES C)
 
-set(PACKAGE_VERSION 2.4.0)
-set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${PACKAGE_VERSION}")
+set(PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
+set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_VERSION}")
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(TestBigEndian)
@@ -124,15 +125,15 @@ elseif(ENABLE_NSS)
     crypto/cipher/aes_gcm_nss.c
   )
 else()
-  list(APPEND  CIPHERS_SOURCES_C
+  list(APPEND CIPHERS_SOURCES_C
     crypto/cipher/aes.c
     crypto/cipher/aes_icm.c
   )
 endif()
 
 set(HASHES_SOURCES_C
-    crypto/hash/auth.c
-    crypto/hash/null_auth.c
+  crypto/hash/auth.c
+  crypto/hash/null_auth.c
 )
 
 if(ENABLE_OPENSSL)
@@ -149,7 +150,7 @@ elseif(ENABLE_NSS)
     crypto/hash/sha1.c
   )
 else()
-  list(APPEND  HASHES_SOURCES_C
+  list(APPEND HASHES_SOURCES_C
     crypto/hash/hmac.c
     crypto/hash/sha1.c
   )
@@ -251,25 +252,25 @@ if(TEST_APPS)
   enable_testing()
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
-      add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
-      target_link_libraries(cipher_driver srtp2)
-      add_test(cipher_driver cipher_driver -v)
+    add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
+    target_link_libraries(cipher_driver srtp2)
+    add_test(cipher_driver cipher_driver -v)
 
-      add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
-      target_link_libraries(kernel_driver srtp2)
-      add_test(kernel_driver roc_driver -v)
+    add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
+    target_link_libraries(kernel_driver srtp2)
+    add_test(kernel_driver roc_driver -v)
 
-      add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
-      target_link_libraries(rdbx_driver srtp2)
-      add_test(rdbx_driver rdbx_driver -v)
+    add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
+    target_link_libraries(rdbx_driver srtp2)
+    add_test(rdbx_driver rdbx_driver -v)
 
-      add_executable(replay_driver test/replay_driver.c)
-      target_link_libraries(replay_driver srtp2)
-      add_test(replay_driver replay_driver -v)
+    add_executable(replay_driver test/replay_driver.c)
+    target_link_libraries(replay_driver srtp2)
+    add_test(replay_driver replay_driver -v)
 
-      add_executable(roc_driver test/roc_driver.c)
-      target_link_libraries(roc_driver srtp2)
-      add_test(roc_driver roc_driver -v)
+    add_executable(roc_driver test/roc_driver.c)
+    target_link_libraries(roc_driver srtp2)
+    add_test(roc_driver roc_driver -v)
   endif()
 
   add_executable(srtp_driver test/srtp_driver.c
@@ -289,5 +290,4 @@ if(TEST_APPS)
     target_link_libraries(test_srtp srtp2)
     add_test(test_srtp test_srtp)
   endif()
-
 endif()
