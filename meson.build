@@ -171,7 +171,6 @@ sources = files(
 
 ciphers_sources = files(
   'crypto/cipher/cipher.c',
-  'crypto/cipher/cipher_test_cases.c',
   'crypto/cipher/null_cipher.c',
   )
 
@@ -194,7 +193,6 @@ endif
 
 hashes_sources = files(
   'crypto/hash/auth.c',
-  'crypto/hash/auth_test_cases.c',
   'crypto/hash/null_auth.c',
   )
 
