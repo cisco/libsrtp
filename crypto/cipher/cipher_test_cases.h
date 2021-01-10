@@ -34,15 +34,20 @@
  *
  */
 
+#ifndef CHIPHER_TEST_CASES_H
+#define CHIPHER_TEST_CASES_H
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "cipher.h"
 
-const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0;
-const srtp_cipher_test_case_t srtp_aes_icm_192_test_case_0;
-const srtp_cipher_test_case_t srtp_aes_icm_256_test_case_0;
+extern const srtp_cipher_test_case_t srtp_aes_icm_128_test_case_0;
+extern const srtp_cipher_test_case_t srtp_aes_icm_192_test_case_0;
+extern const srtp_cipher_test_case_t srtp_aes_icm_256_test_case_0;
 
-const srtp_cipher_test_case_t srtp_aes_gcm_128_test_case_0;
-const srtp_cipher_test_case_t srtp_aes_gcm_256_test_case_0;
+extern const srtp_cipher_test_case_t srtp_aes_gcm_128_test_case_0;
+extern const srtp_cipher_test_case_t srtp_aes_gcm_256_test_case_0;
+
+#endif

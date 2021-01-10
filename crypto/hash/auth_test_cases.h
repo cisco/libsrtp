@@ -34,10 +34,15 @@
  *
  */
 
+#ifndef AUTH_TEST_CASES_H
+#define AUTH_TEST_CASES_H
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "auth.h"
 
-const srtp_auth_test_case_t srtp_hmac_test_case_0;
+extern const srtp_auth_test_case_t srtp_hmac_test_case_0;
+
+#endif
