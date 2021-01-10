@@ -135,11 +135,9 @@ endif
 	$(COMPILE) $(LDFLAGS) $< -o $@ $(SRTPLIB) $(LIBS)
 
 ciphers = crypto/cipher/cipher.o crypto/cipher/null_cipher.o      \
-	  crypto/cipher/cipher_test_cases.o                       \
-	  $(AES_ICM_OBJS)
+		  $(AES_ICM_OBJS)
 
 hashes  = crypto/hash/null_auth.o  crypto/hash/auth.o            \
-	  crypto/hash/auth_test_cases.o                          \
 	  $(HMAC_OBJS)
 
 replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
