@@ -92,7 +92,8 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
         return srtp_err_status_alloc_fail;
     }
 
-    hmac = (srtp_hmac_nss_ctx_t *)srtp_crypto_alloc(sizeof(srtp_hmac_nss_ctx_t));
+    hmac =
+        (srtp_hmac_nss_ctx_t *)srtp_crypto_alloc(sizeof(srtp_hmac_nss_ctx_t));
     if (hmac == NULL) {
         NSS_ShutdownContext(nss);
         srtp_crypto_free(*a);
@@ -184,7 +185,7 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
 
     SECItem key_item = { siBuffer, (unsigned char *)key, key_len };
     sym_key = PK11_ImportSymKey(slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap,
-                            CKA_SIGN, &key_item, NULL);
+                                CKA_SIGN, &key_item, NULL);
     PK11_FreeSlot(slot);
 
     if (!sym_key) {
@@ -246,7 +247,8 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
         return srtp_err_status_auth_fail;
     }
 
-    if (PK11_DigestFinal(hmac->ctx, hash_value, &len, SHA1_DIGEST_SIZE) != SECSuccess) {
+    if (PK11_DigestFinal(hmac->ctx, hash_value, &len, SHA1_DIGEST_SIZE) !=
+        SECSuccess) {
         return srtp_err_status_auth_fail;
     }
 
