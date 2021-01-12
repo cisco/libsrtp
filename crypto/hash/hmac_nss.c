@@ -89,6 +89,7 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
 
     *a = (srtp_auth_t *)srtp_crypto_alloc(sizeof(srtp_auth_t));
     if (*a == NULL) {
+        NSS_ShutdownContext(nss);
         return srtp_err_status_alloc_fail;
     }
 
