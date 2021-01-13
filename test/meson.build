@@ -10,7 +10,6 @@ test_apps = [
   ['replay_driver', {'run_args': '-v'}],
   ['roc_driver', {'run_args': '-v'}],
   ['rdbx_driver', {'run_args': '-v'}],
-  ['dtls_srtp_driver',  {'extra_sources': 'util.c'}],
   ['test_srtp', {'run_args': '-v'}],
   ['rtpw', {'extra_sources': ['rtp.c', 'util.c', '../crypto/math/datatypes.c'], 'define_test': false}],
 ]
