@@ -142,7 +142,7 @@ hashes  = crypto/hash/null_auth.o  crypto/hash/auth.o            \
 	  $(HMAC_OBJS)
 
 replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
-		  crypto/replay/ut_sim.o
+	  crypto/replay/ut_sim.o
 
 math    = crypto/math/datatypes.o crypto/math/stat.o
 
@@ -151,7 +151,7 @@ ust     = crypto/ust/ust.o
 err     = crypto/kernel/err.o
 
 kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
-		  crypto/kernel/key.o $(err) # $(ust)
+	  crypto/kernel/key.o $(err) # $(ust)
 
 cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
@@ -179,11 +179,12 @@ libsrtp2.so: $(srtpobj) $(cryptobj)
 # test applications
 ifneq (1, $(USE_EXTERNAL_CRYPTO))
 AES_CALC = crypto/test/aes_calc$(EXE)
+SHA1_DRIVER = crypto/test/sha1_driver$(EXE)
 endif
 
 crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 	crypto/test/datatypes_driver$(EXE) crypto/test/kernel_driver$(EXE) \
-	crypto/test/sha1_driver$(EXE) crypto/test/stat_driver$(EXE) \
+	$(SHA1_DRIVER) crypto/test/stat_driver$(EXE) \
 	crypto/test/env$(EXE)
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \

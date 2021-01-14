@@ -203,10 +203,8 @@ if use_openssl
     'crypto/hash/hmac_ossl.c',
   )
 elif use_nss
-  # TODO(RLB): Use NSS for HMAC
   hashes_sources += files(
-    'crypto/hash/hmac.c',
-    'crypto/hash/sha1.c',
+    'crypto/hash/hmac_nss.c',
   )
 else
   hashes_sources += files(
