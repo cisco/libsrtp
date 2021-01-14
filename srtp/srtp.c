@@ -4420,10 +4420,6 @@ void *srtp_get_user_data(srtp_t ctx)
     return ctx->user_data;
 }
 
-/*
- * dtls keying for srtp
- */
-
 srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
     srtp_crypto_policy_t *policy,
     srtp_profile_t profile)

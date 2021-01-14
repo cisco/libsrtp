@@ -39,7 +39,6 @@ crypto/test/kernel_driver
 crypto/test/sha1_driver
 crypto/test/stat_driver
 tables/aes_tables
-test/dtls_srtp_driver
 test/rdbx_driver
 test/replay_driver
 test/roc_driver

@@ -4691,7 +4691,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   done
 
   OOPT=""
-  for f in -O4 -O3; do
+  for f in -O3; do
     if test "x$OOPT" = "x"; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether ${CC-c} accepts $f" >&5
 $as_echo_n "checking whether ${CC-c} accepts $f... " >&6; }
@@ -6456,9 +6456,7 @@ $as_echo "#define GCM 1" >>confdefs.h
 $as_echo "#define NSS 1" >>confdefs.h
 
    AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
-
-   # TODO(RLB): Use NSS for HMAC
-   HMAC_OBJS="crypto/hash/hmac.o crypto/hash/sha1.o"
+   HMAC_OBJS="crypto/hash/hmac_nss.o"
 
    # TODO(RLB): Use NSS for KDF
 

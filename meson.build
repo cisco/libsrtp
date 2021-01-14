@@ -171,6 +171,7 @@ sources = files(
 
 ciphers_sources = files(
   'crypto/cipher/cipher.c',
+  'crypto/cipher/cipher_test_cases.c',
   'crypto/cipher/null_cipher.c',
   )
 
@@ -193,6 +194,7 @@ endif
 
 hashes_sources = files(
   'crypto/hash/auth.c',
+  'crypto/hash/auth_test_cases.c',
   'crypto/hash/null_auth.c',
   )
 
@@ -201,10 +203,8 @@ if use_openssl
     'crypto/hash/hmac_ossl.c',
   )
 elif use_nss
-  # TODO(RLB): Use NSS for HMAC
   hashes_sources += files(
-    'crypto/hash/hmac.c',
-    'crypto/hash/sha1.c',
+    'crypto/hash/hmac_nss.c',
   )
 else
   hashes_sources += files(

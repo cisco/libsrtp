@@ -1,14 +1,6 @@
 /*
- * hmac.c
  *
- * implementation of hmac srtp_auth_type_t
- *
- * David A. McGrew
- * Cisco Systems, Inc.
- */
-/*
- *
- * Copyright(c) 2001-2017 Cisco Systems, Inc.
+ * Copyright(c) 2013-2017, Cisco Systems, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -46,54 +38,77 @@
 #include <config.h>
 #endif
 
-#include "hmac.h"
+#include "auth.h"
 #include "alloc.h"
-#include "cipher_types.h"
+#include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
+#include <nss.h>
+#include <pk11pub.h>
+
+#define SHA1_DIGEST_SIZE 20
 
 /* the debug module for authentiation */
 
 srtp_debug_module_t srtp_mod_hmac = {
-    0,           /* debugging is off by default */
-    "hmac sha-1" /* printable name for module   */
+    0,               /* debugging is off by default */
+    "hmac sha-1 nss" /* printable name for module   */
 };
+
+typedef struct {
+    NSSInitContext *nss;
+    PK11SymKey *key;
+    PK11Context *ctx;
+} srtp_hmac_nss_ctx_t;
 
 static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
                                          int key_len,
                                          int out_len)
 {
     extern const srtp_auth_type_t srtp_hmac;
-    uint8_t *pointer;
+    srtp_hmac_nss_ctx_t *hmac;
+    NSSInitContext *nss;
 
     debug_print(srtp_mod_hmac, "allocating auth func with key length %d",
                 key_len);
     debug_print(srtp_mod_hmac, "                          tag length %d",
                 out_len);
 
-    /*
-     * check key length - note that we don't support keys larger
-     * than 20 bytes yet
-     */
-    if (key_len > 20) {
-        return srtp_err_status_bad_param;
-    }
-
     /* check output length - should be less than 20 bytes */
-    if (out_len > 20) {
+    if (out_len > SHA1_DIGEST_SIZE) {
         return srtp_err_status_bad_param;
     }
 
-    /* allocate memory for auth and srtp_hmac_ctx_t structures */
-    pointer = (uint8_t *)srtp_crypto_alloc(sizeof(srtp_hmac_ctx_t) +
-                                           sizeof(srtp_auth_t));
-    if (pointer == NULL) {
+    /* Initialize NSS equiv of NSS_NoDB_Init(NULL) */
+    nss = NSS_InitContext("", "", "", "", NULL,
+                          NSS_INIT_READONLY | NSS_INIT_NOCERTDB |
+                              NSS_INIT_NOMODDB | NSS_INIT_FORCEOPEN |
+                              NSS_INIT_OPTIMIZESPACE);
+    if (!nss) {
+        return srtp_err_status_auth_fail;
+    }
+
+    *a = (srtp_auth_t *)srtp_crypto_alloc(sizeof(srtp_auth_t));
+    if (*a == NULL) {
+        NSS_ShutdownContext(nss);
         return srtp_err_status_alloc_fail;
     }
 
+    hmac =
+        (srtp_hmac_nss_ctx_t *)srtp_crypto_alloc(sizeof(srtp_hmac_nss_ctx_t));
+    if (hmac == NULL) {
+        NSS_ShutdownContext(nss);
+        srtp_crypto_free(*a);
+        *a = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+
+    hmac->nss = nss;
+    hmac->key = NULL;
+    hmac->ctx = NULL;
+
     /* set pointers */
-    *a = (srtp_auth_t *)pointer;
+    (*a)->state = hmac;
     (*a)->type = &srtp_hmac;
-    (*a)->state = pointer + sizeof(srtp_auth_t);
     (*a)->out_len = out_len;
     (*a)->key_len = key_len;
     (*a)->prefix_len = 0;
@@ -103,8 +118,30 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
 
 static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
 {
-    /* zeroize entire state*/
-    octet_string_set_to_zero(a, sizeof(srtp_hmac_ctx_t) + sizeof(srtp_auth_t));
+    srtp_hmac_nss_ctx_t *hmac;
+
+    hmac = (srtp_hmac_nss_ctx_t *)a->state;
+    if (hmac) {
+        /* free any PK11 values that have been created */
+        if (hmac->key) {
+            PK11_FreeSymKey(hmac->key);
+            hmac->key = NULL;
+        }
+
+        if (hmac->ctx) {
+            PK11_DestroyContext(hmac->ctx, PR_TRUE);
+            hmac->ctx = NULL;
+        }
+
+        if (hmac->nss) {
+            NSS_ShutdownContext(hmac->nss);
+            hmac->nss = NULL;
+        }
+
+        /* zeroize everything */
+        octet_string_set_to_zero(hmac, sizeof(srtp_hmac_nss_ctx_t));
+        srtp_crypto_free(hmac);
+    }
 
     /* free memory */
     srtp_crypto_free(a);
@@ -112,54 +149,60 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
     return srtp_err_status_ok;
 }
 
+static srtp_err_status_t srtp_hmac_start(void *statev)
+{
+    srtp_hmac_nss_ctx_t *hmac;
+    hmac = (srtp_hmac_nss_ctx_t *)statev;
+
+    if (PK11_DigestBegin(hmac->ctx) != SECSuccess) {
+        return srtp_err_status_auth_fail;
+    }
+    return srtp_err_status_ok;
+}
+
 static srtp_err_status_t srtp_hmac_init(void *statev,
                                         const uint8_t *key,
                                         int key_len)
 {
-    srtp_hmac_ctx_t *state = (srtp_hmac_ctx_t *)statev;
-    int i;
-    uint8_t ipad[64];
+    srtp_hmac_nss_ctx_t *hmac;
+    hmac = (srtp_hmac_nss_ctx_t *)statev;
+    PK11SymKey *sym_key;
+    PK11Context *ctx;
 
-    /*
-     * check key length - note that we don't support keys larger
-     * than 20 bytes yet
-     */
-    if (key_len > 20) {
+    if (hmac->ctx) {
+        PK11_DestroyContext(hmac->ctx, PR_TRUE);
+        hmac->ctx = NULL;
+    }
+
+    if (hmac->key) {
+        PK11_FreeSymKey(hmac->key);
+        hmac->key = NULL;
+    }
+
+    PK11SlotInfo *slot = PK11_GetBestSlot(CKM_SHA_1_HMAC, NULL);
+    if (!slot) {
         return srtp_err_status_bad_param;
     }
 
-    /*
-     * set values of ipad and opad by exoring the key into the
-     * appropriate constant values
-     */
-    for (i = 0; i < key_len; i++) {
-        ipad[i] = key[i] ^ 0x36;
-        state->opad[i] = key[i] ^ 0x5c;
-    }
-    /* set the rest of ipad, opad to constant values */
-    for (; i < 64; i++) {
-        ipad[i] = 0x36;
-        ((uint8_t *)state->opad)[i] = 0x5c;
+    SECItem key_item = { siBuffer, (unsigned char *)key, key_len };
+    sym_key = PK11_ImportSymKey(slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap,
+                                CKA_SIGN, &key_item, NULL);
+    PK11_FreeSlot(slot);
+
+    if (!sym_key) {
+        return srtp_err_status_auth_fail;
     }
 
-    debug_print(srtp_mod_hmac, "ipad: %s",
-                srtp_octet_string_hex_string(ipad, 64));
+    SECItem param_item = { siBuffer, NULL, 0 };
+    ctx = PK11_CreateContextBySymKey(CKM_SHA_1_HMAC, CKA_SIGN, sym_key,
+                                     &param_item);
+    if (!ctx) {
+        PK11_FreeSymKey(sym_key);
+        return srtp_err_status_auth_fail;
+    }
 
-    /* initialize sha1 context */
-    srtp_sha1_init(&state->init_ctx);
-
-    /* hash ipad ^ key */
-    srtp_sha1_update(&state->init_ctx, ipad, 64);
-    memcpy(&state->ctx, &state->init_ctx, sizeof(srtp_sha1_ctx_t));
-
-    return srtp_err_status_ok;
-}
-
-static srtp_err_status_t srtp_hmac_start(void *statev)
-{
-    srtp_hmac_ctx_t *state = (srtp_hmac_ctx_t *)statev;
-
-    memcpy(&state->ctx, &state->init_ctx, sizeof(srtp_sha1_ctx_t));
+    hmac->key = sym_key;
+    hmac->ctx = ctx;
 
     return srtp_err_status_ok;
 }
@@ -168,13 +211,15 @@ static srtp_err_status_t srtp_hmac_update(void *statev,
                                           const uint8_t *message,
                                           int msg_octets)
 {
-    srtp_hmac_ctx_t *state = (srtp_hmac_ctx_t *)statev;
+    srtp_hmac_nss_ctx_t *hmac;
+    hmac = (srtp_hmac_nss_ctx_t *)statev;
 
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
-    /* hash message into sha1 context */
-    srtp_sha1_update(&state->ctx, message, msg_octets);
+    if (PK11_DigestOp(hmac->ctx, message, msg_octets) != SECSuccess) {
+        return srtp_err_status_auth_fail;
+    }
 
     return srtp_err_status_ok;
 }
@@ -185,46 +230,39 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
                                            int tag_len,
                                            uint8_t *result)
 {
-    srtp_hmac_ctx_t *state = (srtp_hmac_ctx_t *)statev;
-    uint32_t hash_value[5];
-    uint32_t H[5];
+    srtp_hmac_nss_ctx_t *hmac;
+    hmac = (srtp_hmac_nss_ctx_t *)statev;
+    uint8_t hash_value[SHA1_DIGEST_SIZE];
     int i;
+    unsigned int len;
+
+    debug_print(srtp_mod_hmac, "input: %s",
+                srtp_octet_string_hex_string(message, msg_octets));
 
     /* check tag length, return error if we can't provide the value expected */
-    if (tag_len > 20) {
+    if (tag_len > SHA1_DIGEST_SIZE) {
         return srtp_err_status_bad_param;
     }
 
-    /* hash message, copy output into H */
-    srtp_hmac_update(state, message, msg_octets);
-    srtp_sha1_final(&state->ctx, H);
+    if (PK11_DigestOp(hmac->ctx, message, msg_octets) != SECSuccess) {
+        return srtp_err_status_auth_fail;
+    }
 
-    /*
-     * note that we don't need to debug_print() the input, since the
-     * function hmac_update() already did that for us
-     */
-    debug_print(srtp_mod_hmac, "intermediate state: %s",
-                srtp_octet_string_hex_string((uint8_t *)H, 20));
+    if (PK11_DigestFinal(hmac->ctx, hash_value, &len, SHA1_DIGEST_SIZE) !=
+        SECSuccess) {
+        return srtp_err_status_auth_fail;
+    }
 
-    /* re-initialize hash context */
-    srtp_sha1_init(&state->ctx);
-
-    /* hash opad ^ key  */
-    srtp_sha1_update(&state->ctx, (uint8_t *)state->opad, 64);
-
-    /* hash the result of the inner hash */
-    srtp_sha1_update(&state->ctx, (uint8_t *)H, 20);
-
-    /* the result is returned in the array hash_value[] */
-    srtp_sha1_final(&state->ctx, hash_value);
+    if (len < tag_len)
+        return srtp_err_status_auth_fail;
 
     /* copy hash_value to *result */
     for (i = 0; i < tag_len; i++) {
-        result[i] = ((uint8_t *)hash_value)[i];
+        result[i] = hash_value[i];
     }
 
     debug_print(srtp_mod_hmac, "output: %s",
-                srtp_octet_string_hex_string((uint8_t *)hash_value, tag_len));
+                srtp_octet_string_hex_string(hash_value, tag_len));
 
     return srtp_err_status_ok;
 }
