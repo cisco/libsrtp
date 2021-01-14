@@ -150,8 +150,7 @@ elseif(ENABLE_MBEDTLS)
   )
 elseif(ENABLE_NSS)
   list(APPEND HASHES_SOURCES_C
-    crypto/hash/hmac.c
-    crypto/hash/sha1.c
+    crypto/hash/hmac_nss.c
   )
 else()
   list(APPEND HASHES_SOURCES_C
