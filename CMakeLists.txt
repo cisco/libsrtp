@@ -66,6 +66,12 @@ if(ENABLE_OPENSSL AND ENABLE_MBEDTLS)
   message(FATAL_ERROR "ssl conflict. can not enable openssl and mbedtls simultaneously.")
 endif()
 
+if(ENABLE_OPENSSL OR ENABLE_MBEDTLS OR ENABLE_NSS)
+  set (USE_EXTERNAL_CRYPTO TRUE)
+else()
+  set (USE_EXTERNAL_CRYPTO FALSE)
+endif()
+
 if(ENABLE_OPENSSL)
   find_package(OpenSSL REQUIRED)
   set(OPENSSL ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
@@ -255,13 +261,40 @@ if(TEST_APPS)
   enable_testing()
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
+    if(NOT USE_EXTERNAL_CRYPTO)
+      add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
+      target_include_directories(aes_calc PRIVATE test)
+      target_link_libraries(aes_calc srtp2)
+      add_test(aes_calc_128 aes_calc 000102030405060708090a0b0c0d0e0f
+                                     00112233445566778899aabbccddeeff
+                                     69c4e0d86a7b0430d8cdb78070b4c55a)
+      add_test(aes_calc_256 aes_calc 000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+                                     00112233445566778899aabbccddeeff
+                                     8ea2b7ca516745bfeafc49904b496089)
+
+      add_executable(sha1_driver crypto/test/sha1_driver.c test/util.c)
+      target_include_directories(sha1_driver PRIVATE test)
+      target_link_libraries(sha1_driver srtp2)
+      add_test(sha1_driver sha1_driver -v)
+    endif()
+
+    add_executable(datatypes_driver crypto/test/datatypes_driver.c test/util.c)
+    target_include_directories(datatypes_driver PRIVATE test)
+    target_link_libraries(datatypes_driver srtp2)
+    add_test(datatypes_driver datatypes_driver -v)
+
     add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
     target_link_libraries(cipher_driver srtp2)
     add_test(cipher_driver cipher_driver -v)
 
+    add_executable(stat_driver crypto/test/stat_driver.c test/util.c)
+    target_include_directories(stat_driver PRIVATE test)
+    target_link_libraries(stat_driver srtp2)
+    add_test(stat_driver stat_driver -v)
+
     add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
     target_link_libraries(kernel_driver srtp2)
-    add_test(kernel_driver roc_driver -v)
+    add_test(kernel_driver kernel_driver -v)
 
     add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
     target_link_libraries(rdbx_driver srtp2)
@@ -292,5 +325,19 @@ if(TEST_APPS)
     endif()
     target_link_libraries(test_srtp srtp2)
     add_test(test_srtp test_srtp)
+  endif()
+
+  find_program(BASH_PROGRAM bash)
+  if(BASH_PROGRAM)
+    add_executable(rtpw test/rtpw.c test/rtp.c test/util.c test/getopt_s.c)
+    target_link_libraries(rtpw srtp2)
+    add_test(NAME rtpw_test
+             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test/rtpw_test.sh -w ${CMAKE_CURRENT_SOURCE_DIR}/test/words.txt
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
+    if(GCM)
+      add_test(NAME rtpw_test_gcm
+               COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test/rtpw_test_gcm.sh -w ${CMAKE_CURRENT_SOURCE_DIR}/test/words.txt
+               WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test)
+    endif()
   endif()
 endif()
