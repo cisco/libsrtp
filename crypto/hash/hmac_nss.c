@@ -42,6 +42,9 @@
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
+
+#define NSS_PKCS11_2_0_COMPAT 1
+
 #include <nss.h>
 #include <pk11pub.h>
 
