@@ -79,6 +79,8 @@ typedef struct {
 
 #ifdef NSS
 
+#define NSS_PKCS11_2_0_COMPAT 1
+
 #include <nss.h>
 #include <pk11pub.h>
 
