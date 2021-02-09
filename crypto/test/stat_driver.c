@@ -174,6 +174,8 @@ int main(int argc, char *argv[])
         }
     }
 
+    err_check(srtp_cipher_dealloc(c));
+
 #ifdef GCM
     {
         printf("running stat_tests on AES-128-GCM, expecting success\n");
@@ -208,6 +210,8 @@ int main(int argc, char *argv[])
             }
         }
 
+        err_check(srtp_cipher_dealloc(c));
+
         printf("running stat_tests on AES-256-GCM, expecting success\n");
         /* set buffer to cipher output */
         for (i = 0; i < 2500; i++) {
@@ -239,14 +243,14 @@ int main(int argc, char *argv[])
                 num_fail++;
             }
         }
+
+        err_check(srtp_cipher_dealloc(c));
     }
 #endif
 
     printf("%d failures in %d tests\n", num_fail, num_trials);
     printf("(nota bene: a small fraction of stat_test failures does not \n"
            "indicate that the random source is invalid)\n");
-
-    err_check(srtp_cipher_dealloc(c));
 
     return 0;
 }

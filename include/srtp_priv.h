@@ -55,7 +55,6 @@
 #include "cipher.h"
 #include "auth.h"
 #include "aes.h"
-#include "key.h"
 #include "crypto_kernel.h"
 
 #ifdef __cplusplus

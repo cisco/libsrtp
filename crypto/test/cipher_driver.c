@@ -51,12 +51,7 @@
 #include "getopt_s.h"
 #include "cipher.h"
 #include "cipher_priv.h"
-#ifdef GCM
-#include "aes_icm_ext.h"
-#include "aes_gcm.h"
-#else
-#include "aes_icm.h"
-#endif
+#include "datatypes.h"
 
 #define PRINT_DEBUG 0
 
