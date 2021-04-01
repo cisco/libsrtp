@@ -4076,7 +4076,6 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
     uint8_t *auth_tag = NULL;       /* location of auth_tag within packet     */
     uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
-    uint8_t tag_copy[SRTP_MAX_TAG_LEN];
     srtp_err_status_t status;
     unsigned int auth_len;
     int tag_len;
