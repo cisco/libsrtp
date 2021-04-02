@@ -46,3 +46,7 @@ test/rtp_decoder
 test/rtpw
 test/srtp_driver
 test/test_srtp
+
+# rust things
+libsrtp_rs/Cargo.lock
+libsrtp_rs/target

@@ -67,6 +67,13 @@
 #include <winsock2.h>
 #endif
 
+#ifdef RUST
+#include <libsrtp_rs/libsrtp_rs.h>
+void call_rust() {
+  rust_noop();
+}
+#endif
+
 /* the debug module for srtp */
 srtp_debug_module_t mod_srtp = {
     0,     /* debugging is off by default */

@@ -27,6 +27,9 @@
 /* Define this to use AES-GCM. */
 #cmakedefine GCM 1
 
+/* Define this to use Rust */
+#cmakedefine RUST 1
+
 /* Define if building for a CISC machine (e.g. Intel). */
 #define CPU_CISC 1
 
