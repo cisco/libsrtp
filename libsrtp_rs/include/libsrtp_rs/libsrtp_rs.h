@@ -1,0 +1,1 @@
+void rust_noop();

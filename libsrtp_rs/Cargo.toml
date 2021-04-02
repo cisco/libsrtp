@@ -1,0 +1,13 @@
+[package]
+name = "libsrtp_rs"
+version = "0.1.0"
+authors = ["Richard Barnes <rlb@ipv.sx>"]
+edition = "2018"
+
+[dependencies]
+
+[build-dependencies]
+cbindgen = "0.18.0"
+
+[lib]
+crate-type=["staticlib"]
