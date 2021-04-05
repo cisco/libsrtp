@@ -172,45 +172,6 @@ void v128_copy_octet_string(v128_t *x, const uint8_t s[16])
 #endif
 }
 
-#ifndef DATATYPES_USE_MACROS /* little functions are not macros */
-
-void v128_set_to_zero(v128_t *x)
-{
-    _v128_set_to_zero(x);
-}
-
-void v128_copy(v128_t *x, const v128_t *y)
-{
-    _v128_copy(x, y);
-}
-
-void v128_xor(v128_t *z, v128_t *x, v128_t *y)
-{
-    _v128_xor(z, x, y);
-}
-
-int v128_xor_eq(v128_t *x, const v128_t *y)
-{
-    return _v128_xor_eq(x, y);
-}
-
-int v128_get_bit(const v128_t *x, int i)
-{
-    return _v128_get_bit(x, i);
-}
-
-void v128_set_bit(v128_t *x, int i)
-{
-    _v128_set_bit(x, i);
-}
-
-void v128_clear_bit(v128_t *x, int i)
-{
-    _v128_clear_bit(x, i);
-}
-
-#endif /* DATATYPES_USE_MACROS */
-
 void v128_right_shift(v128_t *x, int shift)
 {
     const int base_index = shift >> 5;
@@ -272,20 +233,6 @@ void v128_left_shift(v128_t *x, int shift)
 }
 
 /* functions manipulating bitvector_t */
-
-#ifndef DATATYPES_USE_MACROS /* little functions are not macros */
-
-int bitvector_get_bit(const bitvector_t *v, int bit_index)
-{
-    return _bitvector_get_bit(v, bit_index);
-}
-
-void bitvector_set_bit(bitvector_t *v, int bit_index)
-{
-    _bitvector_set_bit(v, bit_index);
-}
-
-#endif /* DATATYPES_USE_MACROS */
 
 int bitvector_alloc(bitvector_t *v, unsigned long length)
 {

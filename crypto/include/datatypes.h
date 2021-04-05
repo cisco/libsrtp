@@ -66,9 +66,6 @@
 extern "C" {
 #endif
 
-/* if DATATYPES_USE_MACROS is defined, then little functions are macros */
-#define DATATYPES_USE_MACROS
-
 typedef union {
     uint8_t v8[2];
     uint16_t value;
@@ -131,20 +128,16 @@ void v128_right_shift(v128_t *x, int shift_index);
 /*
  * the following macros define the data manipulation functions
  *
- * If DATATYPES_USE_MACROS is defined, then these macros are used
- * directly (and function call overhead is avoided).  Otherwise,
- * the macros are used through the functions defined in datatypes.c
- * (and the compiler provides better warnings).
  */
 
-#define _v128_set_to_zero(x)                                                   \
+#define v128_set_to_zero(x)                                                   \
     ((x)->v32[0] = 0, (x)->v32[1] = 0, (x)->v32[2] = 0, (x)->v32[3] = 0)
 
-#define _v128_copy(x, y)                                                       \
+#define v128_copy(x, y)                                                       \
     ((x)->v32[0] = (y)->v32[0], (x)->v32[1] = (y)->v32[1],                     \
      (x)->v32[2] = (y)->v32[2], (x)->v32[3] = (y)->v32[3])
 
-#define _v128_xor(z, x, y)                                                     \
+#define v128_xor(z, x, y)                                                     \
     ((z)->v32[0] = (x)->v32[0] ^ (y)->v32[0],                                  \
      (z)->v32[1] = (x)->v32[1] ^ (y)->v32[1],                                  \
      (z)->v32[2] = (x)->v32[2] ^ (y)->v32[2],                                  \
@@ -152,11 +145,11 @@ void v128_right_shift(v128_t *x, int shift_index);
 
 /* ok for NO_64BIT_MATH if it can compare uint64_t's (even as structures) */
 #ifdef NO_64BIT_MATH
-#define _v128_xor_eq(z, x)                                                     \
+#define v128_xor_eq(z, x)                                                     \
     ((z)->v32[0] ^= (x)->v32[0], (z)->v32[1] ^= (x)->v32[1],                   \
      (z)->v32[2] ^= (x)->v32[2], (z)->v32[3] ^= (x)->v32[3])
 #else
-#define _v128_xor_eq(z, x)                                                     \
+#define v128_xor_eq(z, x)                                                     \
     ((z)->v64[0] ^= (x)->v64[0], (z)->v64[1] ^= (x)->v64[1])
 #endif
 
@@ -169,42 +162,13 @@ void v128_right_shift(v128_t *x, int shift_index);
    really care which bit is which.  AES does care which bit is which, but
    doesn't use the 128-bit get/set or 128-bit shifts  */
 
-#define _v128_get_bit(x, bit) (((((x)->v32[(bit) >> 5]) >> ((bit)&31)) & 1))
+#define v128_get_bit(x, bit) (((((x)->v32[(bit) >> 5]) >> ((bit)&31)) & 1))
 
-#define _v128_set_bit(x, bit)                                                  \
+#define v128_set_bit(x, bit)                                                  \
     ((((x)->v32[(bit) >> 5]) |= ((uint32_t)1 << ((bit)&31))))
 
-#define _v128_clear_bit(x, bit)                                                \
+#define v128_clear_bit(x, bit)                                                \
     ((((x)->v32[(bit) >> 5]) &= ~((uint32_t)1 << ((bit)&31))))
-
-#define _v128_set_bit_to(x, bit, value)                                        \
-    ((value) ? _v128_set_bit(x, bit) : _v128_clear_bit(x, bit))
-
-#ifdef DATATYPES_USE_MACROS /* little functions are really macros */
-
-#define v128_set_to_zero(z) _v128_set_to_zero(z)
-#define v128_copy(z, x) _v128_copy(z, x)
-#define v128_xor(z, x, y) _v128_xor(z, x, y)
-#define v128_xor_eq(x, y) _v128_xor_eq(x, y)
-#define v128_get_bit(x, i) _v128_get_bit(x, i)
-#define v128_set_bit(x, i) _v128_set_bit(x, i)
-#define v128_clear_bit(x, i) _v128_clear_bit(x, i)
-
-#else
-
-void v128_set_to_zero(v128_t *x);
-
-void v128_copy(v128_t *x, const v128_t *y);
-
-void v128_xor(v128_t *z, v128_t *x, v128_t *y);
-
-int v128_get_bit(const v128_t *x, int i);
-
-void v128_set_bit(v128_t *x, int i);
-
-void v128_clear_bit(v128_t *x, int i);
-
-#endif /* DATATYPES_USE_MACROS */
 
 /*
  * srtp_octet_string_is_eq(a, b, len) returns 1 if the length len strings
@@ -297,29 +261,13 @@ typedef struct {
     uint32_t *word;
 } bitvector_t;
 
-#define _bitvector_get_bit(v, bit_index)                                       \
+#define bitvector_get_bit(v, bit_index)                                       \
     (((((v)->word[((bit_index) >> 5)]) >> ((bit_index)&31)) & 1))
 
-#define _bitvector_set_bit(v, bit_index)                                       \
+#define bitvector_set_bit(v, bit_index)                                       \
     ((((v)->word[((bit_index) >> 5)] |= ((uint32_t)1 << ((bit_index)&31)))))
 
-#define _bitvector_get_length(v) (((v)->length))
-
-#ifdef DATATYPES_USE_MACROS /* little functions are really macros */
-
-#define bitvector_get_bit(v, bit_index) _bitvector_get_bit(v, bit_index)
-#define bitvector_set_bit(v, bit_index) _bitvector_set_bit(v, bit_index)
-#define bitvector_get_length(v) _bitvector_get_length(v)
-
-#else
-
-int bitvector_get_bit(const bitvector_t *v, int bit_index);
-
-void bitvector_set_bit(bitvector_t *v, int bit_index);
-
-unsigned long bitvector_get_length(const bitvector_t *v);
-
-#endif
+#define bitvector_get_length(v) (((v)->length))
 
 int bitvector_alloc(bitvector_t *v, unsigned long length);
 
