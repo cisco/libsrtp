@@ -277,7 +277,7 @@ void v128_left_shift(v128_t *x, int shift)
 
 int bitvector_get_bit(const bitvector_t *v, int bit_index)
 {
-    return /bitvector_get_bit(v, bit_index);
+    return _bitvector_get_bit(v, bit_index);
 }
 
 void bitvector_set_bit(bitvector_t *v, int bit_index)
