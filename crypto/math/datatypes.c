@@ -189,26 +189,6 @@ void v128_xor(v128_t *z, v128_t *x, v128_t *y)
     _v128_xor(z, x, y);
 }
 
-void v128_and(v128_t *z, v128_t *x, v128_t *y)
-{
-    _v128_and(z, x, y);
-}
-
-void v128_or(v128_t *z, v128_t *x, v128_t *y)
-{
-    _v128_or(z, x, y);
-}
-
-void v128_complement(v128_t *x)
-{
-    _v128_complement(x);
-}
-
-int v128_is_eq(const v128_t *x, const v128_t *y)
-{
-    return _v128_is_eq(x, y);
-}
-
 int v128_xor_eq(v128_t *x, const v128_t *y)
 {
     return _v128_xor_eq(x, y);
@@ -227,11 +207,6 @@ void v128_set_bit(v128_t *x, int i)
 void v128_clear_bit(v128_t *x, int i)
 {
     _v128_clear_bit(x, i);
-}
-
-void v128_set_bit_to(v128_t *x, int i, int y)
-{
-    _v128_set_bit_to(x, i, y);
 }
 
 #endif /* DATATYPES_USE_MACROS */
@@ -302,17 +277,12 @@ void v128_left_shift(v128_t *x, int shift)
 
 int bitvector_get_bit(const bitvector_t *v, int bit_index)
 {
-    return _bitvector_get_bit(v, bit_index);
+    return /bitvector_get_bit(v, bit_index);
 }
 
 void bitvector_set_bit(bitvector_t *v, int bit_index)
 {
     _bitvector_set_bit(v, bit_index);
-}
-
-void bitvector_clear_bit(bitvector_t *v, int bit_index)
-{
-    _bitvector_clear_bit(v, bit_index);
 }
 
 #endif /* DATATYPES_USE_MACROS */
@@ -359,27 +329,6 @@ void bitvector_set_to_zero(bitvector_t *x)
 {
     /* C99 guarantees that memset(0) will set the value 0 for uint32_t */
     memset(x->word, 0, x->length >> 3);
-}
-
-char *bitvector_bit_string(bitvector_t *x, char *buf, int len)
-{
-    int j, i;
-    uint32_t mask;
-
-    for (j = i = 0; j < (int)(x->length >> 5) && i < len - 1; j++) {
-        for (mask = 0x80000000; mask > 0; mask >>= 1) {
-            if (x->word[j] & mask)
-                buf[i] = '1';
-            else
-                buf[i] = '0';
-            ++i;
-            if (i >= len - 1)
-                break;
-        }
-    }
-    buf[i] = 0; /* null terminate string */
-
-    return buf;
 }
 
 void bitvector_left_shift(bitvector_t *x, int shift)

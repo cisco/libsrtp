@@ -272,10 +272,9 @@ srtp_err_status_t srtp_crypto_kernel_shutdown()
     return srtp_err_status_ok;
 }
 
-static inline srtp_err_status_t srtp_crypto_kernel_do_load_cipher_type(
+srtp_err_status_t srtp_crypto_kernel_load_cipher_type(
     const srtp_cipher_type_t *new_ct,
-    srtp_cipher_type_id_t id,
-    int replace)
+    srtp_cipher_type_id_t id)
 {
     srtp_kernel_cipher_type_t *ctype;
     srtp_kernel_cipher_type_t *new_ctype = NULL;
@@ -299,18 +298,7 @@ static inline srtp_err_status_t srtp_crypto_kernel_do_load_cipher_type(
     /* walk down list, checking if this type is in the list already  */
     ctype = crypto_kernel.cipher_type_list;
     while (ctype != NULL) {
-        if (id == ctype->id) {
-            if (!replace) {
-                return srtp_err_status_bad_param;
-            }
-            status =
-                srtp_cipher_type_test(new_ct, ctype->cipher_type->test_data);
-            if (status) {
-                return status;
-            }
-            new_ctype = ctype;
-            break;
-        } else if (new_ct == ctype->cipher_type) {
+        if (id == ctype->id || new_ct == ctype->cipher_type) {
             return srtp_err_status_bad_param;
         }
         ctype = ctype->next;
@@ -337,23 +325,9 @@ static inline srtp_err_status_t srtp_crypto_kernel_do_load_cipher_type(
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_crypto_kernel_load_cipher_type(
-    const srtp_cipher_type_t *new_ct,
-    srtp_cipher_type_id_t id)
-{
-    return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, 0);
-}
-
-srtp_err_status_t srtp_replace_cipher_type(const srtp_cipher_type_t *new_ct,
-                                           srtp_cipher_type_id_t id)
-{
-    return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, 1);
-}
-
-srtp_err_status_t srtp_crypto_kernel_do_load_auth_type(
+srtp_err_status_t srtp_crypto_kernel_load_auth_type(
     const srtp_auth_type_t *new_at,
-    srtp_auth_type_id_t id,
-    int replace)
+    srtp_auth_type_id_t id)
 {
     srtp_kernel_auth_type_t *atype;
     srtp_kernel_auth_type_t *new_atype = NULL;
@@ -377,17 +351,7 @@ srtp_err_status_t srtp_crypto_kernel_do_load_auth_type(
     /* walk down list, checking if this type is in the list already  */
     atype = crypto_kernel.auth_type_list;
     while (atype != NULL) {
-        if (id == atype->id) {
-            if (!replace) {
-                return srtp_err_status_bad_param;
-            }
-            status = srtp_auth_type_test(new_at, atype->auth_type->test_data);
-            if (status) {
-                return status;
-            }
-            new_atype = atype;
-            break;
-        } else if (new_at == atype->auth_type) {
+        if (id == atype->id || new_at == atype->auth_type) {
             return srtp_err_status_bad_param;
         }
         atype = atype->next;
@@ -412,19 +376,6 @@ srtp_err_status_t srtp_crypto_kernel_do_load_auth_type(
     new_atype->id = id;
 
     return srtp_err_status_ok;
-}
-
-srtp_err_status_t srtp_crypto_kernel_load_auth_type(
-    const srtp_auth_type_t *new_at,
-    srtp_auth_type_id_t id)
-{
-    return srtp_crypto_kernel_do_load_auth_type(new_at, id, 0);
-}
-
-srtp_err_status_t srtp_replace_auth_type(const srtp_auth_type_t *new_at,
-                                         srtp_auth_type_id_t id)
-{
-    return srtp_crypto_kernel_do_load_auth_type(new_at, id, 1);
 }
 
 const srtp_cipher_type_t *srtp_crypto_kernel_get_cipher_type(

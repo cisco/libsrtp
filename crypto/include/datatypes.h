@@ -150,26 +150,7 @@ void v128_right_shift(v128_t *x, int shift_index);
      (z)->v32[2] = (x)->v32[2] ^ (y)->v32[2],                                  \
      (z)->v32[3] = (x)->v32[3] ^ (y)->v32[3])
 
-#define _v128_and(z, x, y)                                                     \
-    ((z)->v32[0] = (x)->v32[0] & (y)->v32[0],                                  \
-     (z)->v32[1] = (x)->v32[1] & (y)->v32[1],                                  \
-     (z)->v32[2] = (x)->v32[2] & (y)->v32[2],                                  \
-     (z)->v32[3] = (x)->v32[3] & (y)->v32[3])
-
-#define _v128_or(z, x, y)                                                      \
-    ((z)->v32[0] = (x)->v32[0] | (y)->v32[0],                                  \
-     (z)->v32[1] = (x)->v32[1] | (y)->v32[1],                                  \
-     (z)->v32[2] = (x)->v32[2] | (y)->v32[2],                                  \
-     (z)->v32[3] = (x)->v32[3] | (y)->v32[3])
-
-#define _v128_complement(x)                                                    \
-    ((x)->v32[0] = ~(x)->v32[0], (x)->v32[1] = ~(x)->v32[1],                   \
-     (x)->v32[2] = ~(x)->v32[2], (x)->v32[3] = ~(x)->v32[3])
-
 /* ok for NO_64BIT_MATH if it can compare uint64_t's (even as structures) */
-#define _v128_is_eq(x, y)                                                      \
-    (((x)->v64[0] == (y)->v64[0]) && ((x)->v64[1] == (y)->v64[1]))
-
 #ifdef NO_64BIT_MATH
 #define _v128_xor_eq(z, x)                                                     \
     ((z)->v32[0] ^= (x)->v32[0], (z)->v32[1] ^= (x)->v32[1],                   \
@@ -204,39 +185,24 @@ void v128_right_shift(v128_t *x, int shift_index);
 #define v128_set_to_zero(z) _v128_set_to_zero(z)
 #define v128_copy(z, x) _v128_copy(z, x)
 #define v128_xor(z, x, y) _v128_xor(z, x, y)
-#define v128_and(z, x, y) _v128_and(z, x, y)
-#define v128_or(z, x, y) _v128_or(z, x, y)
-#define v128_complement(x) _v128_complement(x)
-#define v128_is_eq(x, y) _v128_is_eq(x, y)
 #define v128_xor_eq(x, y) _v128_xor_eq(x, y)
 #define v128_get_bit(x, i) _v128_get_bit(x, i)
 #define v128_set_bit(x, i) _v128_set_bit(x, i)
 #define v128_clear_bit(x, i) _v128_clear_bit(x, i)
-#define v128_set_bit_to(x, i, y) _v128_set_bit_to(x, i, y)
 
 #else
 
 void v128_set_to_zero(v128_t *x);
 
-int v128_is_eq(const v128_t *x, const v128_t *y);
-
 void v128_copy(v128_t *x, const v128_t *y);
 
 void v128_xor(v128_t *z, v128_t *x, v128_t *y);
-
-void v128_and(v128_t *z, v128_t *x, v128_t *y);
-
-void v128_or(v128_t *z, v128_t *x, v128_t *y);
-
-void v128_complement(v128_t *x);
 
 int v128_get_bit(const v128_t *x, int i);
 
 void v128_set_bit(v128_t *x, int i);
 
 void v128_clear_bit(v128_t *x, int i);
-
-void v128_set_bit_to(v128_t *x, int i, int y);
 
 #endif /* DATATYPES_USE_MACROS */
 
@@ -337,16 +303,12 @@ typedef struct {
 #define _bitvector_set_bit(v, bit_index)                                       \
     ((((v)->word[((bit_index) >> 5)] |= ((uint32_t)1 << ((bit_index)&31)))))
 
-#define _bitvector_clear_bit(v, bit_index)                                     \
-    ((((v)->word[((bit_index) >> 5)] &= ~((uint32_t)1 << ((bit_index)&31)))))
-
 #define _bitvector_get_length(v) (((v)->length))
 
 #ifdef DATATYPES_USE_MACROS /* little functions are really macros */
 
 #define bitvector_get_bit(v, bit_index) _bitvector_get_bit(v, bit_index)
 #define bitvector_set_bit(v, bit_index) _bitvector_set_bit(v, bit_index)
-#define bitvector_clear_bit(v, bit_index) _bitvector_clear_bit(v, bit_index)
 #define bitvector_get_length(v) _bitvector_get_length(v)
 
 #else
@@ -354,8 +316,6 @@ typedef struct {
 int bitvector_get_bit(const bitvector_t *v, int bit_index);
 
 void bitvector_set_bit(bitvector_t *v, int bit_index);
-
-void bitvector_clear_bit(bitvector_t *v, int bit_index);
 
 unsigned long bitvector_get_length(const bitvector_t *v);
 
@@ -368,8 +328,6 @@ void bitvector_dealloc(bitvector_t *v);
 void bitvector_set_to_zero(bitvector_t *x);
 
 void bitvector_left_shift(bitvector_t *x, int index);
-
-char *bitvector_bit_string(bitvector_t *x, char *buf, int len);
 
 #ifdef __cplusplus
 }

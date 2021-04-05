@@ -255,27 +255,3 @@ void srtp_ekt_write_data(srtp_ekt_stream_t ekt,
     /* increase packet length appropriately */
     *packet_len += EKT_OCTETS_AFTER_EMK + emk_len;
 }
-
-/*
- * The function call srtcp_ekt_trailer(ekt, auth_len, auth_tag   )
- *
- * If the pointer ekt is NULL, then the other inputs are unaffected.
- *
- * auth_tag is a pointer to the pointer to the location of the
- * authentication tag in the packet.  If EKT is in effect, then the
- * auth_tag pointer is set to the location
- */
-
-void srtcp_ekt_trailer(srtp_ekt_stream_t ekt,
-                       unsigned *auth_len,
-                       void **auth_tag,
-                       void *tag_copy)
-{
-    /*
-     * if there is no EKT policy, then the other inputs are unaffected
-     */
-    if (!ekt)
-        return;
-
-    /* copy auth_tag into temporary location */
-}
