@@ -83,22 +83,6 @@ void srtp_sha1_update(srtp_sha1_ctx_t *ctx,
 
 void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t output[5]);
 
-/*
- * The srtp_sha1_core function is INTERNAL to SHA-1, but it is declared
- * here because it is also used by the cipher SEAL 3.0 in its key
- * setup algorithm.
- */
-
-/*
- *  srtp_sha1_core(M, H) computes the core sha1 compression function, where M is
- *  the next part of the message and H is the intermediate state {H0,
- *  H1, ...}
- *
- *  this function does not do any of the padding required in the
- *  complete sha1 function
- */
-void srtp_sha1_core(const uint32_t M[16], uint32_t hash_value[5]);
-
 #ifdef __cplusplus
 }
 #endif
