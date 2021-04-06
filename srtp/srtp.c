@@ -278,6 +278,15 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
     return srtp_err_status_ok;
 }
 
+static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *p)
+{
+  if (p != NULL && p->deprecated_ekt != NULL) {
+    return srtp_err_status_bad_param;
+  }
+
+  return srtp_err_status_ok;
+}
+
 srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
                                     const srtp_policy_t *p)
 {
@@ -285,6 +294,11 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     srtp_err_status_t stat;
     unsigned int i = 0;
     srtp_session_keys_t *session_keys = NULL;
+
+    stat = srtp_valid_policy(p);
+    if (stat != srtp_err_status_ok) {
+      return stat;
+    }
 
     /*
      * This function allocates the stream context, rtp and rtcp ciphers
@@ -1204,6 +1218,11 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
                                    const srtp_policy_t *p)
 {
     srtp_err_status_t err;
+
+    err = srtp_valid_policy(p);
+    if (err != srtp_err_status_ok) {
+      return err;
+    }
 
     debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)", p->ssrc.value);
 
@@ -2812,6 +2831,11 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
     srtp_err_status_t status;
     srtp_stream_t tmp;
 
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+      return status;
+    }
+
     /* sanity check arguments */
     if ((session == NULL) || (policy == NULL) ||
         (!srtp_validate_policy_master_keys(policy)))
@@ -2873,6 +2897,11 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
 { /* SRTP policy (list)     */
     srtp_err_status_t stat;
     srtp_ctx_t *ctx;
+
+    stat = srtp_valid_policy(policy);
+    if (stat != srtp_err_status_ok) {
+      return stat;
+    }
 
     /* sanity check arguments */
     if (session == NULL)
@@ -2944,6 +2973,11 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy)
 {
     srtp_err_status_t stat;
 
+    stat = srtp_valid_policy(policy);
+    if (stat != srtp_err_status_ok) {
+      return stat;
+    }
+
     /* sanity check arguments */
     if ((session == NULL) || (policy == NULL) ||
         (!srtp_validate_policy_master_keys(policy))) {
@@ -2968,6 +3002,11 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     srtp_err_status_t status;
     srtp_stream_t new_stream_template;
     srtp_stream_t new_stream_list = NULL;
+
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+      return status;
+    }
 
     if (session->stream_template == NULL) {
         return srtp_err_status_bad_param;
@@ -3067,6 +3106,11 @@ static srtp_err_status_t update_stream(srtp_t session,
     srtp_rdb_t old_rtcp_rdb;
     srtp_stream_t stream;
 
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+      return status;
+    }
+
     stream = srtp_get_stream(session, htonl(policy->ssrc.value));
     if (stream == NULL) {
         return srtp_err_status_bad_param;
@@ -3102,6 +3146,11 @@ srtp_err_status_t srtp_update_stream(srtp_t session,
                                      const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
+
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+      return status;
+    }
 
     /* sanity check arguments */
     if ((session == NULL) || (policy == NULL) ||

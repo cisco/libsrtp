@@ -181,11 +181,12 @@ void log_handler(srtp_log_level_t level, const char *msg, void *data)
 }
 
 /*
- * The policy_array is a null-terminated array of policy structs. it
- * is declared at the end of this file
+ * The policy_array and invalid_policy_array are null-terminated arrays of
+ * policy structs. They is declared at the end of this file.
  */
 
 extern const srtp_policy_t *policy_array[];
+extern const srtp_policy_t *invalid_policy_array[];
 
 /* the wildcard_policy is declared below; it has a wildcard ssrc */
 
@@ -302,6 +303,7 @@ int main(int argc, char *argv[])
     if (do_validation) {
         const srtp_policy_t **policy = policy_array;
         srtp_policy_t *big_policy;
+        srtp_t srtp_sender;
 
         /* loop over policy array, testing srtp and srtcp for each policy */
         while (*policy != NULL) {
@@ -361,6 +363,21 @@ int main(int argc, char *argv[])
                 printf("failed\n");
                 exit(1);
             }
+            policy++;
+        }
+
+        /* loop over invalid policy array, testing that an SRTP context cannot
+         * be created with the policy */
+        policy = invalid_policy_array;
+        while (*policy != NULL) {
+            printf("testing srtp_create fails with invalid policy\n");
+            if (srtp_create(&srtp_sender, *policy) != srtp_err_status_ok) {
+                printf("passed\n\n");
+            } else {
+                printf("failed\n");
+                exit(1);
+            }
+
             policy++;
         }
 
@@ -589,6 +606,7 @@ int main(int argc, char *argv[])
         policy.ssrc.type = ssrc_specific;
         policy.ssrc.value = 0xdecafbad;
         policy.key = test_key;
+        policy.deprecated_ekt = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
         policy.next = NULL;
@@ -927,12 +945,10 @@ double srtp_rejections_per_second(int msg_len_octets,
 
 void err_check(srtp_err_status_t s)
 {
-    if (s == srtp_err_status_ok) {
-        return;
-    } else {
+    if (s != srtp_err_status_ok) {
         fprintf(stderr, "error: unexpected srtp failure (code %d)\n", s);
+        exit(1);
     }
-    exit(1);
 }
 
 srtp_err_status_t srtp_test_call_protect(srtp_t srtp_sender,
@@ -1682,6 +1698,7 @@ srtp_err_status_t srtp_validate()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -1849,6 +1866,7 @@ srtp_err_status_t srtp_validate_gcm()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_gcm;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2005,6 +2023,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_ext_headers;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.enc_xtn_hdr = headers;
@@ -2125,6 +2144,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_ext_headers;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.enc_xtn_hdr = headers;
@@ -2240,6 +2260,7 @@ srtp_err_status_t srtp_validate_aes_256()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = aes_256_test_key;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2367,6 +2388,7 @@ srtp_err_status_t srtp_test_empty_payload()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2442,6 +2464,7 @@ srtp_err_status_t srtp_test_empty_payload_gcm()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2566,6 +2589,7 @@ srtp_err_status_t srtp_test_remove_stream()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2624,6 +2648,7 @@ srtp_err_status_t srtp_test_update()
     memset(&policy, 0, sizeof(policy));
     srtp_crypto_policy_set_rtp_default(&policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2787,6 +2812,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     memset(&policy, 0, sizeof(policy));
     srtp_crypto_policy_set_rtp_default(&policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
@@ -2796,6 +2822,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     memset(&policy_mki, 0, sizeof(policy_mki));
     srtp_crypto_policy_set_rtp_default(&policy_mki.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy_mki.rtcp);
+    policy_mki.deprecated_ekt = NULL;
     policy_mki.window_size = 128;
     policy_mki.allow_repeat_tx = 0;
     policy_mki.next = NULL;
@@ -2808,6 +2835,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     memset(&policy_aes_gcm, 0, sizeof(policy_aes_gcm));
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm.rtp);
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm.rtcp);
+    policy_aes_gcm.deprecated_ekt = NULL;
     policy_aes_gcm.window_size = 128;
     policy_aes_gcm.allow_repeat_tx = 0;
     policy_aes_gcm.next = NULL;
@@ -2817,6 +2845,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     memset(&policy_aes_gcm_mki, 0, sizeof(policy_aes_gcm_mki));
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm_mki.rtp);
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm_mki.rtcp);
+    policy_aes_gcm_mki.deprecated_ekt = NULL;
     policy_aes_gcm_mki.window_size = 128;
     policy_aes_gcm_mki.allow_repeat_tx = 0;
     policy_aes_gcm_mki.next = NULL;
@@ -3427,6 +3456,7 @@ const srtp_policy_t default_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3455,6 +3485,7 @@ const srtp_policy_t aes_only_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3483,6 +3514,7 @@ const srtp_policy_t hmac_only_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* Number of Master keys associated with the policy */
+    NULL, /* indicates that EKT is not in use                 */
     128,  /* replay window size                               */
     0,    /* retransmission not allowed                       */
     NULL, /* no encrypted extension headers                   */
@@ -3514,6 +3546,7 @@ const srtp_policy_t aes128_gcm_8_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3544,6 +3577,7 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3574,6 +3608,7 @@ const srtp_policy_t aes256_gcm_8_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3604,6 +3639,7 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3633,6 +3669,7 @@ const srtp_policy_t null_policy = {
     NULL,
     (srtp_master_key_t **)test_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
@@ -3701,10 +3738,42 @@ const srtp_policy_t aes_256_hmac_policy = {
     NULL,
     (srtp_master_key_t **)test_256_keys,
     2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
+    NULL
+};
+
+char ekt_test_policy = 'x';
+
+const srtp_policy_t hmac_only_with_ekt_policy = {
+    { ssrc_any_outbound, 0 }, /* SSRC */
+    {
+        SRTP_NULL_CIPHER, /* cipher type                 */
+        0,                /* cipher key length in octets */
+        SRTP_HMAC_SHA1,   /* authentication func type    */
+        20,               /* auth key length in octets   */
+        4,                /* auth tag length in octets   */
+        sec_serv_auth     /* security services flag      */
+    },
+    {
+        SRTP_NULL_CIPHER, /* cipher type                 */
+        0,                /* cipher key length in octets */
+        SRTP_HMAC_SHA1,   /* authentication func type    */
+        20,               /* auth key length in octets   */
+        4,                /* auth tag length in octets   */
+        sec_serv_auth     /* security services flag      */
+    },
+    NULL,
+    (srtp_master_key_t **)test_keys,
+    2,                /* indicates the number of Master keys          */
+    &ekt_test_policy, /* requests deprecated EKT functionality        */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -3735,6 +3804,13 @@ const srtp_policy_t *policy_array[] = {
 };
 // clang-format on
 
+// clang-format off
+const srtp_policy_t *invalid_policy_array[] = {
+    &hmac_only_with_ekt_policy,
+    NULL
+};
+// clang-format on
+
 const srtp_policy_t wildcard_policy = {
     { ssrc_any_outbound, 0 }, /* SSRC */
     {
@@ -3758,6 +3834,7 @@ const srtp_policy_t wildcard_policy = {
     test_key,
     NULL,
     0,
+    NULL,
     128,  /* replay window size                           */
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
