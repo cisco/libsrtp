@@ -184,7 +184,6 @@ set(KERNEL_SOURCES_C
 
 set(MATH_SOURCES_C
   crypto/math/datatypes.c
-  crypto/math/stat.c
 )
 
 set(REPLAY_SOURCES_C
@@ -212,7 +211,6 @@ set(SOURCES_H
   crypto/include/rdb.h
   crypto/include/rdbx.h
   crypto/include/sha1.h
-  crypto/include/stat.h
   include/srtp.h
   include/srtp_priv.h
   include/ut_sim.h
@@ -296,11 +294,6 @@ if(TEST_APPS)
     add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
     target_link_libraries(cipher_driver srtp2)
     add_test(cipher_driver cipher_driver -v)
-
-    add_executable(stat_driver crypto/test/stat_driver.c test/util.c)
-    target_include_directories(stat_driver PRIVATE test)
-    target_link_libraries(stat_driver srtp2)
-    add_test(stat_driver stat_driver -v)
 
     add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
     target_link_libraries(kernel_driver srtp2)

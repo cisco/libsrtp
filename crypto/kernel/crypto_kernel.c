@@ -101,10 +101,6 @@ srtp_err_status_t srtp_crypto_kernel_init()
     if (status) {
         return status;
     }
-    status = srtp_crypto_kernel_load_debug_module(&srtp_mod_stat);
-    if (status) {
-        return status;
-    }
     status = srtp_crypto_kernel_load_debug_module(&srtp_mod_alloc);
     if (status) {
         return status;

@@ -222,7 +222,6 @@ kernel_sources = files(
 
 math_sources = files(
   'crypto/math/datatypes.c',
-  'crypto/math/stat.c',
 )
 
 replay_sources = files(
