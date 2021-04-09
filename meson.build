@@ -227,7 +227,6 @@ math_sources = files(
 replay_sources = files(
   'crypto/replay/rdb.c',
   'crypto/replay/rdbx.c',
-  'crypto/replay/ut_sim.c',
 )
 
 public_headers = files(

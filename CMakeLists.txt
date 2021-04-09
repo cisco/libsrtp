@@ -189,7 +189,6 @@ set(MATH_SOURCES_C
 set(REPLAY_SOURCES_C
   crypto/replay/rdb.c
   crypto/replay/rdbx.c
-  crypto/replay/ut_sim.c
 )
 
 set(SOURCES_H
@@ -213,7 +212,6 @@ set(SOURCES_H
   crypto/include/sha1.h
   include/srtp.h
   include/srtp_priv.h
-  include/ut_sim.h
   ${CONFIG_FILE_DIR}/config.h
 )
 
@@ -299,15 +297,15 @@ if(TEST_APPS)
     target_link_libraries(kernel_driver srtp2)
     add_test(kernel_driver kernel_driver -v)
 
-    add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c)
+    add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c test/ut_sim.c)
     target_link_libraries(rdbx_driver srtp2)
     add_test(rdbx_driver rdbx_driver -v)
 
-    add_executable(replay_driver test/replay_driver.c)
+    add_executable(replay_driver test/replay_driver.c test/ut_sim.c)
     target_link_libraries(replay_driver srtp2)
     add_test(replay_driver replay_driver -v)
 
-    add_executable(roc_driver test/roc_driver.c)
+    add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
     target_link_libraries(roc_driver srtp2)
     add_test(roc_driver roc_driver -v)
   endif()

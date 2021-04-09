@@ -90,7 +90,6 @@ ifneq (1, $(USE_EXTERNAL_CRYPTO))
 endif
 	$(FIND_LIBRARIES) test/cipher_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) test/datatypes_driver$(EXE) -v >/dev/null
-	$(FIND_LIBRARIES) test/stat_driver$(EXE) >/dev/null
 	$(FIND_LIBRARIES) test/kernel_driver$(EXE) -v >/dev/null
 	@echo "crypto test applications passed."
 

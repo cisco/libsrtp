@@ -141,10 +141,9 @@ hashes  = crypto/hash/null_auth.o  crypto/hash/auth.o            \
 	  crypto/hash/auth_test_cases.o                          \
 	  $(HMAC_OBJS)
 
-replay  = crypto/replay/rdb.o crypto/replay/rdbx.o               \
-	  crypto/replay/ut_sim.o
+replay  = crypto/replay/rdb.o crypto/replay/rdbx.o
 
-math    = crypto/math/datatypes.o crypto/math/stat.o
+math    = crypto/math/datatypes.o
 
 ust     = crypto/ust/ust.o
 
@@ -221,7 +220,13 @@ crypto/test/sha1_driver$(EXE): crypto/test/sha1_driver.c test/util.c
 test/srtp_driver$(EXE): test/srtp_driver.c test/util.c test/getopt_s.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
-test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c
+test/rdbx_driver$(EXE): test/rdbx_driver.c test/getopt_s.c test/ut_sim.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/roc_driver$(EXE): test/roc_driver.c test/ut_sim.c
+	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/replay_driver$(EXE): test/replay_driver.c test/ut_sim.c
 	$(COMPILE) $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c
