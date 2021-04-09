@@ -67,49 +67,11 @@ extern "C" {
 #endif
 
 typedef union {
-    uint8_t v8[2];
-    uint16_t value;
-} v16_t;
-
-typedef union {
-    uint8_t v8[4];
-    uint16_t v16[2];
-    uint32_t value;
-} v32_t;
-
-typedef union {
-    uint8_t v8[8];
-    uint16_t v16[4];
-    uint32_t v32[2];
-    uint64_t value;
-} v64_t;
-
-typedef union {
     uint8_t v8[16];
     uint16_t v16[8];
     uint32_t v32[4];
     uint64_t v64[2];
 } v128_t;
-
-typedef union {
-    uint8_t v8[32];
-    uint16_t v16[16];
-    uint32_t v32[8];
-    uint64_t v64[4];
-} v256_t;
-
-/* some useful and simple math functions */
-
-#define pow_2(X) ((unsigned int)1 << (X)) /* 2^X     */
-
-#define pow_minus_one(X) ((X) ? -1 : 1) /* (-1)^X  */
-
-/*
- * octet_get_weight(x) returns the hamming weight (number of bits equal to
- * one) in the octet x
- */
-
-int octet_get_weight(uint8_t octet);
 
 #define MAX_PRINT_STRING_LEN 1024
 
