@@ -102,13 +102,6 @@ int main(void)
 
     printf("----------------------------------------------\n");
     v128_set_to_zero(&x);
-    v128_set_bit(&x, 0);
-    for (i = 0; i < 128; i++) {
-        printf("%s\n", v128_bit_string(&x));
-        v128_right_shift(&x, 1);
-    }
-    printf("----------------------------------------------\n");
-    v128_set_to_zero(&x);
     v128_set_bit(&x, 127);
     for (i = 0; i < 128; i++) {
         printf("%s\n", v128_bit_string(&x));

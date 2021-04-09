@@ -153,40 +153,6 @@ void v128_copy_octet_string(v128_t *x, const uint8_t s[16])
 #endif
 }
 
-void v128_right_shift(v128_t *x, int shift)
-{
-    const int base_index = shift >> 5;
-    const int bit_index = shift & 31;
-    int i, from;
-    uint32_t b;
-
-    if (shift > 127) {
-        v128_set_to_zero(x);
-        return;
-    }
-
-    if (bit_index == 0) {
-        /* copy each word from left size to right side */
-        x->v32[4 - 1] = x->v32[4 - 1 - base_index];
-        for (i = 4 - 1; i > base_index; i--)
-            x->v32[i - 1] = x->v32[i - 1 - base_index];
-
-    } else {
-        /* set each word to the "or" of the two bit-shifted words */
-        for (i = 4; i > base_index; i--) {
-            from = i - 1 - base_index;
-            b = x->v32[from] << bit_index;
-            if (from > 0)
-                b |= x->v32[from - 1] >> (32 - bit_index);
-            x->v32[i - 1] = b;
-        }
-    }
-
-    /* now wrap up the final portion */
-    for (i = 0; i < base_index; i++)
-        x->v32[i] = 0;
-}
-
 void v128_left_shift(v128_t *x, int shift)
 {
     int i;
@@ -319,49 +285,3 @@ void octet_string_set_to_zero(void *s, size_t len)
     srtp_cleanse(s, len);
 #endif
 }
-
-#ifdef TESTAPP_SOURCE
-
-static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                               "abcdefghijklmnopqrstuvwxyz0123456789+/";
-
-static int base64_block_to_octet_triple(char *out, char *in)
-{
-    unsigned char sextets[4] = { 0 };
-    int j = 0;
-    int i;
-
-    for (i = 0; i < 4; i++) {
-        char *p = strchr(b64chars, in[i]);
-        if (p != NULL)
-            sextets[i] = p - b64chars;
-        else
-            j++;
-    }
-
-    out[0] = (sextets[0] << 2) | (sextets[1] >> 4);
-    if (j < 2)
-        out[1] = (sextets[1] << 4) | (sextets[2] >> 2);
-    if (j < 1)
-        out[2] = (sextets[2] << 6) | sextets[3];
-    return j;
-}
-
-int base64_string_to_octet_string(char *out, int *pad, char *in, int len)
-{
-    int k = 0;
-    int i = 0;
-    int j = 0;
-    if (len % 4 != 0)
-        return 0;
-
-    while (i < len && j == 0) {
-        j = base64_block_to_octet_triple(out + k, in + i);
-        k += 3;
-        i += 4;
-    }
-    *pad = j;
-    return i;
-}
-
-#endif
