@@ -280,11 +280,11 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
 
 static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *p)
 {
-  if (p != NULL && p->deprecated_ekt != NULL) {
-    return srtp_err_status_bad_param;
-  }
+    if (p != NULL && p->deprecated_ekt != NULL) {
+        return srtp_err_status_bad_param;
+    }
 
-  return srtp_err_status_ok;
+    return srtp_err_status_ok;
 }
 
 srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
