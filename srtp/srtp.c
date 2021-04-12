@@ -297,7 +297,7 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 
     stat = srtp_valid_policy(p);
     if (stat != srtp_err_status_ok) {
-      return stat;
+        return stat;
     }
 
     /*
@@ -1221,7 +1221,7 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 
     err = srtp_valid_policy(p);
     if (err != srtp_err_status_ok) {
-      return err;
+        return err;
     }
 
     debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)", p->ssrc.value);
@@ -2833,7 +2833,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
 
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
-      return status;
+        return status;
     }
 
     /* sanity check arguments */
@@ -2900,7 +2900,7 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
 
     stat = srtp_valid_policy(policy);
     if (stat != srtp_err_status_ok) {
-      return stat;
+        return stat;
     }
 
     /* sanity check arguments */
@@ -2975,7 +2975,7 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy)
 
     stat = srtp_valid_policy(policy);
     if (stat != srtp_err_status_ok) {
-      return stat;
+        return stat;
     }
 
     /* sanity check arguments */
@@ -3005,7 +3005,7 @@ static srtp_err_status_t update_template_streams(srtp_t session,
 
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
-      return status;
+        return status;
     }
 
     if (session->stream_template == NULL) {
@@ -3108,7 +3108,7 @@ static srtp_err_status_t update_stream(srtp_t session,
 
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
-      return status;
+        return status;
     }
 
     stream = srtp_get_stream(session, htonl(policy->ssrc.value));
@@ -3149,7 +3149,7 @@ srtp_err_status_t srtp_update_stream(srtp_t session,
 
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
-      return status;
+        return status;
     }
 
     /* sanity check arguments */
