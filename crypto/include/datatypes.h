@@ -221,10 +221,10 @@ typedef struct {
     uint32_t *word;
 } bitvector_t;
 
-#define bitvector_get_bit(v, bit_index)                                       \
+#define bitvector_get_bit(v, bit_index)                                        \
     (((((v)->word[((bit_index) >> 5)]) >> ((bit_index)&31)) & 1))
 
-#define bitvector_set_bit(v, bit_index)                                       \
+#define bitvector_set_bit(v, bit_index)                                        \
     ((((v)->word[((bit_index) >> 5)] |= ((uint32_t)1 << ((bit_index)&31)))))
 
 #define bitvector_get_length(v) (((v)->length))
