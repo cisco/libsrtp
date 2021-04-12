@@ -90,14 +90,14 @@ void v128_left_shift(v128_t *x, int shift_index);
  *
  */
 
-#define v128_set_to_zero(x)                                                   \
+#define v128_set_to_zero(x)                                                    \
     ((x)->v32[0] = 0, (x)->v32[1] = 0, (x)->v32[2] = 0, (x)->v32[3] = 0)
 
-#define v128_copy(x, y)                                                       \
+#define v128_copy(x, y)                                                        \
     ((x)->v32[0] = (y)->v32[0], (x)->v32[1] = (y)->v32[1],                     \
      (x)->v32[2] = (y)->v32[2], (x)->v32[3] = (y)->v32[3])
 
-#define v128_xor(z, x, y)                                                     \
+#define v128_xor(z, x, y)                                                      \
     ((z)->v32[0] = (x)->v32[0] ^ (y)->v32[0],                                  \
      (z)->v32[1] = (x)->v32[1] ^ (y)->v32[1],                                  \
      (z)->v32[2] = (x)->v32[2] ^ (y)->v32[2],                                  \
@@ -105,11 +105,11 @@ void v128_left_shift(v128_t *x, int shift_index);
 
 /* ok for NO_64BIT_MATH if it can compare uint64_t's (even as structures) */
 #ifdef NO_64BIT_MATH
-#define v128_xor_eq(z, x)                                                     \
+#define v128_xor_eq(z, x)                                                      \
     ((z)->v32[0] ^= (x)->v32[0], (z)->v32[1] ^= (x)->v32[1],                   \
      (z)->v32[2] ^= (x)->v32[2], (z)->v32[3] ^= (x)->v32[3])
 #else
-#define v128_xor_eq(z, x)                                                     \
+#define v128_xor_eq(z, x)                                                      \
     ((z)->v64[0] ^= (x)->v64[0], (z)->v64[1] ^= (x)->v64[1])
 #endif
 
@@ -124,10 +124,10 @@ void v128_left_shift(v128_t *x, int shift_index);
 
 #define v128_get_bit(x, bit) (((((x)->v32[(bit) >> 5]) >> ((bit)&31)) & 1))
 
-#define v128_set_bit(x, bit)                                                  \
+#define v128_set_bit(x, bit)                                                   \
     ((((x)->v32[(bit) >> 5]) |= ((uint32_t)1 << ((bit)&31))))
 
-#define v128_clear_bit(x, bit)                                                \
+#define v128_clear_bit(x, bit)                                                 \
     ((((x)->v32[(bit) >> 5]) &= ~((uint32_t)1 << ((bit)&31))))
 
 /*
