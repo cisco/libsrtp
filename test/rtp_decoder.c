@@ -511,7 +511,6 @@ int main(int argc, char *argv[])
         }
 
         policy.key = (uint8_t *)key;
-        policy.ekt = NULL;
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;

@@ -165,7 +165,6 @@ if get_option('optimization') not in ['0', 'g', 's']
 endif
 
 sources = files(
-  'srtp/ekt.c',
   'srtp/srtp.c',
   )
 
