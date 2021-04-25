@@ -234,7 +234,7 @@ matrix:
         - sudo docker exec --tty mipsX apt-get update
         - sudo docker exec --tty mipsX apt-get install build-essential -y
         - sudo docker exec --tty mipsX apt-get install qemu-user-static qemu-system-mips gcc-mips-linux-gnu python3-pip -y
-        - sudo docker exec --tty mipsX pip3 install meson ninja
+        - sudo docker exec --tty mipsX pip3 install meson==0.56.2 ninja
       script:
         - sudo docker exec --tty mipsX bash -c 'EXTRA_CFLAGS=-static CC=mips-linux-gnu-gcc ./configure --host=mips-linux-gnu'
         - sudo docker exec --tty mipsX make

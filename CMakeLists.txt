@@ -116,7 +116,6 @@ if(BUILD_WITH_SANITIZERS AND NOT WIN32)
 endif()
 
 set(SOURCES_C
-  srtp/ekt.c
   srtp/srtp.c
 )
 

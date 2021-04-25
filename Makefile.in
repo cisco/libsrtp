@@ -156,7 +156,7 @@ cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
 # libsrtp2.a (implements srtp processing)
 
-srtpobj = srtp/srtp.o srtp/ekt.o
+srtpobj = srtp/srtp.o
 
 libsrtp2.a: $(srtpobj) $(cryptobj) $(gdoi)
 	$(AR) cr libsrtp2.a $^

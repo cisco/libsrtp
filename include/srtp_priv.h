@@ -146,7 +146,6 @@ typedef struct srtp_stream_ctx_t_ {
     srtp_sec_serv_t rtcp_services;
     direction_t direction;
     int allow_repeat_tx;
-    srtp_ekt_stream_t ekt;
     int *enc_xtn_hdr;
     int enc_xtn_hdr_count;
     uint32_t pending_roc;
