@@ -49,6 +49,7 @@
 
 #include "aes.h"
 #include "cipher.h"
+#include "crypto_priv.h"
 
 typedef struct {
     v128_t counter;                       /* holds the counter value          */

@@ -1448,6 +1448,8 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
     char *direction[3] = { "unknown", "outbound", "inbound" };
     srtp_stream_t stream;
     srtp_session_keys_t *session_keys = NULL;
+    const srtp_cipher_type_t *rtp_cipher_type;
+    const srtp_cipher_type_t *rtcp_cipher_type;
 
     /* sanity checking */
     if (srtp == NULL) {
@@ -1458,6 +1460,8 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
     if (srtp->stream_template != NULL) {
         stream = srtp->stream_template;
         session_keys = &stream->session_keys[0];
+        rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+        rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
         printf("# SSRC:          any %s\r\n"
                "# rtp cipher:    %s\r\n"
                "# rtp auth:      %s\r\n"
@@ -1468,10 +1472,10 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
                "# window size:   %lu\r\n"
                "# tx rtx allowed:%s\r\n",
                direction[stream->direction],
-               session_keys->rtp_cipher->type->description,
+               srtp_cipher_type_get_description(rtp_cipher_type),
                session_keys->rtp_auth->type->description,
                serv_descr[stream->rtp_services],
-               session_keys->rtcp_cipher->type->description,
+               srtp_cipher_type_get_description(rtcp_cipher_type),
                session_keys->rtcp_auth->type->description,
                serv_descr[stream->rtcp_services],
                srtp_rdbx_get_window_size(&stream->rtp_rdbx),
@@ -1500,6 +1504,8 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
         }
         session_keys = &stream->session_keys[0];
 
+        rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+        rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
         printf("# SSRC:          0x%08x\r\n"
                "# rtp cipher:    %s\r\n"
                "# rtp auth:      %s\r\n"
@@ -1509,10 +1515,11 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
                "# rtcp services: %s\r\n"
                "# window size:   %lu\r\n"
                "# tx rtx allowed:%s\r\n",
-               stream->ssrc, session_keys->rtp_cipher->type->description,
+               stream->ssrc,
+               srtp_cipher_type_get_description(rtp_cipher_type),
                session_keys->rtp_auth->type->description,
                serv_descr[stream->rtp_services],
-               session_keys->rtcp_cipher->type->description,
+               srtp_cipher_type_get_description(rtcp_cipher_type),
                session_keys->rtcp_auth->type->description,
                serv_descr[stream->rtcp_services],
                srtp_rdbx_get_window_size(&stream->rtp_rdbx),

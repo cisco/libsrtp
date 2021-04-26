@@ -53,6 +53,7 @@
 #include "err.h" /* for srtp_debug */
 #include "alloc.h"
 #include "cipher_types.h"
+#include "crypto_priv.h"
 
 static srtp_err_status_t srtp_null_cipher_alloc(srtp_cipher_t **c,
                                                 int key_len,

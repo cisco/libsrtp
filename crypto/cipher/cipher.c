@@ -51,6 +51,7 @@
 #include "cipher.h"
 #include "cipher_priv.h"
 #include "crypto_types.h"
+#include "crypto_priv.h"
 #include "err.h"   /* for srtp_debug */
 #include "alloc.h" /* for crypto_alloc(), crypto_free()  */
 
@@ -164,6 +165,27 @@ int srtp_cipher_get_key_length(const srtp_cipher_t *c)
 {
     return c->key_len;
 }
+
+const srtp_cipher_type_t *srtp_cipher_get_type(const srtp_cipher_t *c) {
+    return c->type;
+}
+
+int srtp_cipher_get_algorithm(const srtp_cipher_t *ct) {
+    return ct->algorithm;
+}
+
+srtp_cipher_type_id_t srtp_cipher_type_get_id(const srtp_cipher_type_t *ct) {
+    return ct->id;
+}
+
+const char *srtp_cipher_type_get_description(const srtp_cipher_type_t *ct) {
+    return ct->description;
+}
+
+const srtp_cipher_test_case_t *srtp_cipher_type_get_test_data(const srtp_cipher_type_t *ct) {
+    return ct->test_data;
+}
+
 
 /*
  * A trivial platform independent random source.

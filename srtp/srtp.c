@@ -756,7 +756,7 @@ static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf)
 static inline int base_key_length(const srtp_cipher_type_t *cipher,
                                   int key_length)
 {
-    switch (cipher->id) {
+    switch (srtp_cipher_type_get_id(cipher)) {
     case SRTP_AES_ICM_128:
     case SRTP_AES_ICM_192:
     case SRTP_AES_ICM_256:
@@ -875,12 +875,16 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     int rtcp_base_key_len, rtcp_salt_len;
     srtp_session_keys_t *session_keys = NULL;
     unsigned char *key = master_key->key;
+    const srtp_cipher_type_t *rtp_cipher_type;
+    const srtp_cipher_type_t *rtcp_cipher_type;
 
     /* If RTP or RTCP have a key length > AES-128, assume matching kdf. */
     /* TODO: kdf algorithm, master key length, and master salt length should
      * be part of srtp_policy_t.
     */
     session_keys = &srtp->session_keys[current_mki_index];
+    rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+    rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
 
 /* initialize key limit to maximum value */
 #ifdef NO_64BIT_MATH
@@ -908,8 +912,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
 
     rtp_keylen = srtp_cipher_get_key_length(session_keys->rtp_cipher);
     rtcp_keylen = srtp_cipher_get_key_length(session_keys->rtcp_cipher);
-    rtp_base_key_len =
-        base_key_length(session_keys->rtp_cipher->type, rtp_keylen);
+
+    rtp_base_key_len = base_key_length(rtp_cipher_type, rtp_keylen);
     rtp_salt_len = rtp_keylen - rtp_base_key_len;
 
     if (rtp_keylen > kdf_keylen) {
@@ -997,9 +1001,12 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         int rtp_xtn_hdr_salt_len;
         srtp_kdf_t tmp_kdf;
         srtp_kdf_t *xtn_hdr_kdf;
+        const srtp_cipher_type_t *rtp_xtn_hdr_cipher_type;
 
-        if (session_keys->rtp_xtn_hdr_cipher->type !=
-            session_keys->rtp_cipher->type) {
+       rtp_xtn_hdr_cipher_type = srtp_cipher_get_type(session_keys->rtp_xtn_hdr_cipher);
+       rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+
+        if (rtp_xtn_hdr_cipher_type != rtp_cipher_type) {
             /*
              * With GCM ciphers, the header extensions are still encrypted using
              * the corresponding ICM cipher.
@@ -1009,11 +1016,11 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
             rtp_xtn_hdr_keylen =
                 srtp_cipher_get_key_length(session_keys->rtp_xtn_hdr_cipher);
             rtp_xtn_hdr_base_key_len = base_key_length(
-                session_keys->rtp_xtn_hdr_cipher->type, rtp_xtn_hdr_keylen);
+                rtp_xtn_hdr_cipher_type, rtp_xtn_hdr_keylen);
             rtp_xtn_hdr_salt_len =
                 rtp_xtn_hdr_keylen - rtp_xtn_hdr_base_key_len;
             if (rtp_xtn_hdr_salt_len > rtp_salt_len) {
-                switch (session_keys->rtp_cipher->type->id) {
+                switch (srtp_cipher_type_get_id(rtp_cipher_type)) {
                 case SRTP_AES_GCM_128:
                 case SRTP_AES_GCM_256:
                     /*
@@ -1135,8 +1142,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * ...now initialize SRTCP keys
      */
 
-    rtcp_base_key_len =
-        base_key_length(session_keys->rtcp_cipher->type, rtcp_keylen);
+    rtcp_base_key_len = base_key_length(rtcp_cipher_type, rtcp_keylen);
     rtcp_salt_len = rtcp_keylen - rtcp_base_key_len;
     debug_print(mod_srtp, "rtcp salt len: %d", rtcp_salt_len);
 
@@ -1538,10 +1544,11 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
     unsigned int mki_start_location = 0;
     unsigned int tag_len = 0;
     unsigned int i = 0;
+    int rtp_algorithm = srtp_cipher_get_algorithm(stream->session_keys[0].rtp_cipher);
 
     // Determine the authentication tag size
-    if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+    if (rtp_algorithm == SRTP_AES_GCM_128 ||
+        rtp_algorithm == SRTP_AES_GCM_256) {
         tag_len = 0;
     } else {
         tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
@@ -2128,8 +2135,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
      * the request to our AEAD handler.
      */
-    if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+    switch (srtp_cipher_get_algorithm(session_keys->rtp_cipher)) {
+        case SRTP_AES_GCM_128:
+        case SRTP_AES_GCM_256:
         return srtp_protect_aead(ctx, stream, rtp_hdr,
                                  (unsigned int *)pkt_octet_len, session_keys,
                                  use_mki);
@@ -2234,9 +2242,11 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     /*
      * if we're using rindael counter mode, set nonce and seq
      */
-    if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM_128 ||
-        session_keys->rtp_cipher->type->id == SRTP_AES_ICM_192 ||
-        session_keys->rtp_cipher->type->id == SRTP_AES_ICM_256) {
+    const srtp_cipher_type_t *rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+    const srtp_cipher_type_id_t rtp_cipher_id = srtp_cipher_type_get_id(rtp_cipher_type);
+    if (rtp_cipher_id == SRTP_AES_ICM_128 ||
+        rtp_cipher_id == SRTP_AES_ICM_192 ||
+        rtp_cipher_id == SRTP_AES_ICM_256) {
         v128_t iv;
 
         iv.v32[0] = 0;
@@ -2475,8 +2485,9 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
      * the request to our AEAD handler.
      */
-    if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+    switch (srtp_cipher_get_algorithm(session_keys->rtp_cipher)) {
+        case SRTP_AES_GCM_128:
+        case SRTP_AES_GCM_256:
         return srtp_unprotect_aead(ctx, stream, delta, est, srtp_hdr,
                                    (unsigned int *)pkt_octet_len, session_keys,
                                    mki_size);
@@ -2489,9 +2500,11 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
      * set the cipher's IV properly, depending on whatever cipher we
      * happen to be using
      */
-    if (session_keys->rtp_cipher->type->id == SRTP_AES_ICM_128 ||
-        session_keys->rtp_cipher->type->id == SRTP_AES_ICM_192 ||
-        session_keys->rtp_cipher->type->id == SRTP_AES_ICM_256) {
+    const srtp_cipher_type_t *rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+    const srtp_cipher_type_id_t rtp_cipher_id = srtp_cipher_type_get_id(rtp_cipher_type);
+    if (rtp_cipher_id == SRTP_AES_ICM_128 ||
+        rtp_cipher_id == SRTP_AES_ICM_192 ||
+        rtp_cipher_id == SRTP_AES_ICM_256) {
         /* aes counter mode */
         iv.v32[0] = 0;
         iv.v32[1] = hdr->ssrc; /* still in network order */
@@ -3964,8 +3977,9 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
      * the request to our AEAD handler.
      */
-    if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+    int rtp_algorithm = srtp_cipher_get_algorithm(session_keys->rtp_cipher);
+    if (rtp_algorithm == SRTP_AES_GCM_128 ||
+        rtp_algorithm == SRTP_AES_GCM_256) {
         return srtp_protect_rtcp_aead(ctx, stream, rtcp_hdr,
                                       (unsigned int *)pkt_octet_len,
                                       session_keys, use_mki);
@@ -4026,9 +4040,11 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
     /*
      * if we're using rindael counter mode, set nonce and seq
      */
-    if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_128 ||
-        session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_192 ||
-        session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_256) {
+    const srtp_cipher_type_t *rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
+    const srtp_cipher_type_id_t rtcp_cipher_id = srtp_cipher_type_get_id(rtcp_cipher_type);
+    if (rtcp_cipher_id == SRTP_AES_ICM_128 ||
+        rtcp_cipher_id == SRTP_AES_ICM_192 ||
+        rtcp_cipher_id == SRTP_AES_ICM_256) {
         v128_t iv;
 
         iv.v32[0] = 0;
@@ -4200,8 +4216,9 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
      * the request to our AEAD handler.
      */
-    if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+    int rtp_algorithm = srtp_cipher_get_algorithm(session_keys->rtp_cipher);
+    if (rtp_algorithm == SRTP_AES_GCM_128 ||
+        rtp_algorithm == SRTP_AES_GCM_256) {
         return srtp_unprotect_rtcp_aead(ctx, stream, srtcp_hdr,
                                         (unsigned int *)pkt_octet_len,
                                         session_keys, mki_size);
@@ -4264,9 +4281,11 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     /*
      * if we're using aes counter mode, set nonce and seq
      */
-    if (session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_128 ||
-        session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_192 ||
-        session_keys->rtcp_cipher->type->id == SRTP_AES_ICM_256) {
+    const srtp_cipher_type_t *rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
+    const srtp_cipher_type_id_t rtcp_cipher_id = srtp_cipher_type_get_id(rtcp_cipher_type);
+    if (rtcp_cipher_id == SRTP_AES_ICM_128 ||
+        rtcp_cipher_id == SRTP_AES_ICM_192 ||
+        rtcp_cipher_id == SRTP_AES_ICM_256) {
         v128_t iv;
 
         iv.v32[0] = 0;

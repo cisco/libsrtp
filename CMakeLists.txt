@@ -201,6 +201,7 @@ set(SOURCES_H
   crypto/include/cipher_types.h
   crypto/include/crypto_kernel.h
   crypto/include/crypto_types.h
+  crypto/include/crypto_priv.h
   crypto/include/datatypes.h
   crypto/include/err.h
   crypto/include/hmac.h

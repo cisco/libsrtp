@@ -318,8 +318,10 @@ void cipher_driver_test_throughput(srtp_cipher_t *c)
     int max_enc_len = 2048; /* should be a power of two */
     int num_trials = 1000000;
 
-    printf("timing %s throughput, key length %d:\n", c->type->description,
-           c->key_len);
+    const srtp_cipher_type_t *ct = srtp_cipher_get_type(c);
+    const char* description = srtp_cipher_type_get_description(ct);
+    printf("timing %s throughput, key length %d:\n", description,
+           srtp_cipher_get_key_length(c));
     fflush(stdout);
     for (i = min_enc_len; i <= max_enc_len; i = i * 2)
         printf("msg len: %d\tgigabits per second: %f\n", i,
@@ -330,7 +332,8 @@ srtp_err_status_t cipher_driver_self_test(srtp_cipher_type_t *ct)
 {
     srtp_err_status_t status;
 
-    printf("running cipher self-test for %s...", ct->description);
+    const char* description = srtp_cipher_type_get_description(ct);
+    printf("running cipher self-test for %s...", description);
     status = srtp_cipher_type_self_test(ct);
     if (status) {
         printf("failed with error code %d\n", status);
@@ -357,7 +360,9 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34 };
     srtp_err_status_t status;
 
-    printf("testing output buffering for cipher %s...", c->type->description);
+    const srtp_cipher_type_t *ct = srtp_cipher_get_type(c);
+    const char* description = srtp_cipher_type_get_description(ct);
+    printf("testing output buffering for cipher %s...", description);
 
     for (i = 0; i < num_trials; i++) {
         /* set buffers to zero */
@@ -475,10 +480,6 @@ srtp_err_status_t cipher_array_alloc_init(srtp_cipher_t ***ca,
         if (status)
             return status;
 
-        /*     printf("%dth cipher is at %p\n", i, *cipher_array); */
-        /*     printf("%dth cipher description: %s\n", i,  */
-        /* 	   (*cipher_array)->type->description); */
-
         /* advance cipher array pointer */
         cipher_array++;
     }
@@ -567,8 +568,11 @@ void cipher_array_test_throughput(srtp_cipher_t *ca[], int num_cipher)
     int max_enc_len = 2048; /* should be a power of two */
     int num_trials = 1000000;
 
+    const srtp_cipher_type_t *ct = srtp_cipher_get_type(ca[0]);
+    const char* description = srtp_cipher_type_get_description(ct);
+    int key_len = srtp_cipher_get_key_length(ca[0]);
     printf("timing %s throughput with key length %d, array size %d:\n",
-           (ca[0])->type->description, (ca[0])->key_len, num_cipher);
+           description, key_len, num_cipher);
     fflush(stdout);
     for (i = min_enc_len; i <= max_enc_len; i = i * 4)
         printf("msg len: %d\tgigabits per second: %f\n", i,

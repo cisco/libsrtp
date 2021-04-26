@@ -181,7 +181,7 @@ srtp_err_status_t srtp_crypto_kernel_status()
     /* for each cipher type, describe and test */
     while (ctype != NULL) {
         srtp_err_report(srtp_err_level_info, "cipher: %s\n",
-                        ctype->cipher_type->description);
+                        srtp_cipher_type_get_description(ctype->cipher_type));
         srtp_err_report(srtp_err_level_info, "  self-test: ");
         status = srtp_cipher_type_self_test(ctype->cipher_type);
         if (status) {
@@ -243,7 +243,7 @@ srtp_err_status_t srtp_crypto_kernel_shutdown()
         srtp_kernel_cipher_type_t *ctype = crypto_kernel.cipher_type_list;
         crypto_kernel.cipher_type_list = ctype->next;
         debug_print(srtp_mod_crypto_kernel, "freeing memory for cipher %s",
-                    ctype->cipher_type->description);
+                    srtp_cipher_type_get_description(ctype->cipher_type));
         srtp_crypto_free(ctype);
     }
 
@@ -286,7 +286,7 @@ static inline srtp_err_status_t srtp_crypto_kernel_do_load_cipher_type(
         return srtp_err_status_bad_param;
     }
 
-    if (new_ct->id != id) {
+    if (srtp_cipher_type_get_id(new_ct) != id) {
         return srtp_err_status_bad_param;
     }
 
@@ -299,12 +299,12 @@ static inline srtp_err_status_t srtp_crypto_kernel_do_load_cipher_type(
     /* walk down list, checking if this type is in the list already  */
     ctype = crypto_kernel.cipher_type_list;
     while (ctype != NULL) {
-        if (id == ctype->id) {
+        if (id == srtp_cipher_type_get_id(ctype->cipher_type)) {
             if (!replace) {
                 return srtp_err_status_bad_param;
             }
             status =
-                srtp_cipher_type_test(new_ct, ctype->cipher_type->test_data);
+                srtp_cipher_type_test(new_ct, srtp_cipher_type_get_test_data(ctype->cipher_type));
             if (status) {
                 return status;
             }
@@ -465,7 +465,7 @@ srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
         return srtp_err_status_fail;
     }
 
-    return ((ct)->alloc(cp, key_len, tag_len));
+    return srtp_cipher_type_alloc(ct, cp, key_len, tag_len);
 }
 
 const srtp_auth_type_t *srtp_crypto_kernel_get_auth_type(srtp_auth_type_id_t id)
