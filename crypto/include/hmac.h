@@ -47,6 +47,7 @@
 #define HMAC_H
 
 #include "auth.h"
+#include "auth_structs.h"
 #include "sha1.h"
 
 typedef struct {

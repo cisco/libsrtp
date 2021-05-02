@@ -2595,7 +2595,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
          * if the keystream prefix length is zero, then we know that
          * the authenticator isn't using a universal hash function
          */
-        if (session_keys->rtp_auth->prefix_len != 0) {
+        if (srtp_auth_get_prefix_length(session_keys->rtp_auth) != 0) {
             prefix_len = srtp_auth_get_prefix_length(session_keys->rtp_auth);
             status = srtp_cipher_output(session_keys->rtp_cipher, tmp_tag,
                                         &prefix_len);

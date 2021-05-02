@@ -51,7 +51,7 @@
 #include "cipher.h"
 #include "cipher_priv.h"
 #include "crypto_types.h"
-#include "crypto_priv.h"
+#include "cipher_structs.h"
 #include "err.h"   /* for srtp_debug */
 #include "alloc.h" /* for crypto_alloc(), crypto_free()  */
 

@@ -196,7 +196,7 @@ srtp_err_status_t srtp_crypto_kernel_status()
     /* for each auth type, describe and test */
     while (atype != NULL) {
         srtp_err_report(srtp_err_level_info, "auth func: %s\n",
-                        atype->auth_type->description);
+                        srtp_auth_type_get_description(atype->auth_type));
         srtp_err_report(srtp_err_level_info, "  self-test: ");
         status = srtp_auth_type_self_test(atype->auth_type);
         if (status) {
@@ -253,7 +253,7 @@ srtp_err_status_t srtp_crypto_kernel_shutdown()
         crypto_kernel.auth_type_list = atype->next;
         debug_print(srtp_mod_crypto_kernel,
                     "freeing memory for authentication %s",
-                    atype->auth_type->description);
+                    srtp_auth_type_get_description(atype->auth_type));
         srtp_crypto_free(atype);
     }
 
@@ -364,7 +364,7 @@ srtp_err_status_t srtp_crypto_kernel_do_load_auth_type(
         return srtp_err_status_bad_param;
     }
 
-    if (new_at->id != id) {
+    if (srtp_auth_type_get_id(new_at) != id) {
         return srtp_err_status_bad_param;
     }
 
@@ -381,7 +381,7 @@ srtp_err_status_t srtp_crypto_kernel_do_load_auth_type(
             if (!replace) {
                 return srtp_err_status_bad_param;
             }
-            status = srtp_auth_type_test(new_at, atype->auth_type->test_data);
+            status = srtp_auth_type_test(new_at, srtp_auth_type_get_test_data(atype->auth_type));
             if (status) {
                 return status;
             }
@@ -505,7 +505,7 @@ srtp_err_status_t srtp_crypto_kernel_alloc_auth(srtp_auth_type_id_t id,
         return srtp_err_status_fail;
     }
 
-    return ((at)->alloc(ap, key_len, tag_len));
+    return srtp_auth_type_alloc(at, ap, key_len, tag_len);
 }
 
 srtp_err_status_t srtp_crypto_kernel_load_debug_module(

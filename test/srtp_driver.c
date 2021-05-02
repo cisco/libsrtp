@@ -1449,7 +1449,9 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
     srtp_stream_t stream;
     srtp_session_keys_t *session_keys = NULL;
     const srtp_cipher_type_t *rtp_cipher_type;
+    const srtp_auth_type_t *rtp_auth_type;
     const srtp_cipher_type_t *rtcp_cipher_type;
+    const srtp_auth_type_t *rtcp_auth_type;
 
     /* sanity checking */
     if (srtp == NULL) {
@@ -1461,7 +1463,9 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
         stream = srtp->stream_template;
         session_keys = &stream->session_keys[0];
         rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+        rtp_auth_type = srtp_auth_get_type(session_keys->rtp_auth);
         rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
+        rtcp_auth_type = srtp_auth_get_type(session_keys->rtcp_auth);
         printf("# SSRC:          any %s\r\n"
                "# rtp cipher:    %s\r\n"
                "# rtp auth:      %s\r\n"
@@ -1473,10 +1477,10 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
                "# tx rtx allowed:%s\r\n",
                direction[stream->direction],
                srtp_cipher_type_get_description(rtp_cipher_type),
-               session_keys->rtp_auth->type->description,
+               srtp_auth_type_get_description(rtp_auth_type),
                serv_descr[stream->rtp_services],
                srtp_cipher_type_get_description(rtcp_cipher_type),
-               session_keys->rtcp_auth->type->description,
+               srtp_auth_type_get_description(rtcp_auth_type),
                serv_descr[stream->rtcp_services],
                srtp_rdbx_get_window_size(&stream->rtp_rdbx),
                stream->allow_repeat_tx ? "true" : "false");
@@ -1505,7 +1509,9 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
         session_keys = &stream->session_keys[0];
 
         rtp_cipher_type = srtp_cipher_get_type(session_keys->rtp_cipher);
+        rtp_auth_type = srtp_auth_get_type(session_keys->rtp_auth);
         rtcp_cipher_type = srtp_cipher_get_type(session_keys->rtcp_cipher);
+        rtcp_auth_type = srtp_auth_get_type(session_keys->rtcp_auth);
         printf("# SSRC:          0x%08x\r\n"
                "# rtp cipher:    %s\r\n"
                "# rtp auth:      %s\r\n"
@@ -1517,10 +1523,10 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
                "# tx rtx allowed:%s\r\n",
                stream->ssrc,
                srtp_cipher_type_get_description(rtp_cipher_type),
-               session_keys->rtp_auth->type->description,
+               srtp_auth_type_get_description(rtp_auth_type),
                serv_descr[stream->rtp_services],
                srtp_cipher_type_get_description(rtcp_cipher_type),
-               session_keys->rtcp_auth->type->description,
+               srtp_auth_type_get_description(rtcp_auth_type),
                serv_descr[stream->rtcp_services],
                srtp_rdbx_get_window_size(&stream->rtp_rdbx),
                stream->allow_repeat_tx ? "true" : "false");

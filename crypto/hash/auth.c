@@ -48,6 +48,7 @@
 #endif
 
 #include "auth.h"
+#include "auth_structs.h"
 #include "err.h"       /* for srtp_debug */
 #include "datatypes.h" /* for octet_string */
 
@@ -57,6 +58,61 @@ srtp_debug_module_t srtp_mod_auth = {
     0,          /* debugging is off by default */
     "auth func" /* printable name for module   */
 };
+
+srtp_err_status_t srtp_auth_type_alloc(const srtp_auth_type_t *at,
+                                       srtp_auth_t **a,
+                                       int key_len,
+                                       int out_len)
+{
+  return at->alloc(a, key_len, out_len);
+}
+
+srtp_err_status_t srtp_auth_dealloc(srtp_auth_t *a)
+{
+  return a->type->dealloc(a);
+}
+
+srtp_err_status_t srtp_auth_init(srtp_auth_t *a, const uint8_t *key)
+{
+  return a->type->init(a->state, key, a->key_len);
+}
+
+srtp_err_status_t srtp_auth_compute(srtp_auth_t *a,
+                                    const uint8_t *buffer,
+                                    int octets_to_auth,
+                                    uint8_t *tag)
+{
+  return a->type->compute(a->state, buffer, octets_to_auth, a->out_len, tag);
+}
+
+srtp_err_status_t srtp_auth_start(srtp_auth_t *a)
+{
+  return a->type->start(a->state);
+}
+
+srtp_err_status_t srtp_auth_update(srtp_auth_t *a,
+                                   const uint8_t *buffer,
+                                   int octets_to_auth)
+{
+  return a->type->update(a->state, buffer, octets_to_auth);
+}
+
+srtp_auth_type_id_t srtp_auth_type_get_id(const srtp_auth_type_t *at) {
+  return at->id;
+}
+
+const char* srtp_auth_type_get_description(const srtp_auth_type_t *at) {
+  return at->description;
+}
+
+const srtp_auth_test_case_t *srtp_auth_type_get_test_data(const srtp_auth_type_t *at) {
+  return at->test_data;
+}
+
+const srtp_auth_type_t *srtp_auth_get_type(const srtp_auth_t *a)
+{
+    return a->type;
+}
 
 int srtp_auth_get_key_length(const srtp_auth_t *a)
 {

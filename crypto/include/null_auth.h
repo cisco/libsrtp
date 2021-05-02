@@ -46,6 +46,7 @@
 #define NULL_AUTH_H
 
 #include "auth.h"
+#include "auth_structs.h"
 
 #ifdef __cplusplus
 extern "C" {

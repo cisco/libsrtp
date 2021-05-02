@@ -42,8 +42,8 @@
  *
  */
 
-#ifndef SRTP_CRYPTO_PRIV_H
-#define SRTP_CRYPTO_PRIV_H
+#ifndef SRTP_CIPHER_STRUCTS_H
+#define SRTP_CIPHER_STRUCTS_H
 
 #include "srtp.h"
 #include "crypto_types.h" /* for values of cipher_type_id_t */
@@ -135,5 +135,5 @@ typedef struct srtp_cipher_t {
 }
 #endif
 
-#endif /* SRTP_CRYPTO_PRIV_H */
+#endif /* SRTP_CIPHER_STRUCTS_H */
 

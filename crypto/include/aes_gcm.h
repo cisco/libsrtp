@@ -47,6 +47,7 @@
 #define AES_GCM_H
 
 #include "cipher.h"
+#include "cipher_structs.h"
 #include "srtp.h"
 #include "datatypes.h"
 
