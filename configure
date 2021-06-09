@@ -5882,9 +5882,9 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char EVP_EncryptInit ();
+char EVP_EncryptInit (void);
 int
-main ()
+main (void)
 {
 return EVP_EncryptInit ();
   ;
