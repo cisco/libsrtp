@@ -133,7 +133,7 @@ if crypto_library == 'openssl'
   # forks of OpenSSL: https://github.com/cisco/libsrtp/issues/458
   if (
     openssl_dep.type_name() != 'internal' and
-    get_option('crypto-library-kdf').disabled() != true and
+    not get_option('crypto-library-kdf').disabled() and
     cc.has_function('kdf_srtp', dependencies: openssl_dep)
   )
     cdata.set('OPENSSL_KDF', true)
