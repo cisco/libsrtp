@@ -131,7 +131,11 @@ if crypto_library == 'openssl'
   use_openssl = true
   # NOTE: This is not available in upstream OpenSSL yet. It's only in 'certain'
   # forks of OpenSSL: https://github.com/cisco/libsrtp/issues/458
-  if cc.has_function('kdf_srtp', dependencies: openssl_dep)
+  if (
+    openssl_dep.type_name() != 'internal' and
+    not get_option('crypto-library-kdf').disabled() and
+    cc.has_function('kdf_srtp', dependencies: openssl_dep)
+  )
     cdata.set('OPENSSL_KDF', true)
   elif get_option('crypto-library-kdf').enabled()
     error('KDF support has been enabled, but OpenSSL does not provide it')
