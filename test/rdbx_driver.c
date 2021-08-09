@@ -130,13 +130,6 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void print_rdbx(srtp_rdbx_t *rdbx)
-{
-    char buf[2048];
-    printf("rdbx: {%llu, %s}\n", (unsigned long long)(rdbx->index),
-           bitvector_bit_string(&rdbx->bitmask, buf, sizeof(buf)));
-}
-
 /*
  * rdbx_check_add(rdbx, idx) checks a known-to-be-good idx against
  * rdbx, then adds it.  if a failure is detected (i.e., the check

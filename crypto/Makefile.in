@@ -65,9 +65,8 @@ SHA1_DRIVER = test/sha1_driver$(EXE)
 endif
 
 testapp = test/cipher_driver$(EXE) test/datatypes_driver$(EXE) \
-	  test/stat_driver$(EXE) $(SHA1_DRIVER) \
-	  test/kernel_driver$(EXE) $(AES_CALC) \
-	  test/env$(EXE)
+	  $(SHA1_DRIVER) test/kernel_driver$(EXE) \
+	  $(AES_CALC) test/env$(EXE)
 
 # data values used to test the aes_calc application for AES-128
 k128=000102030405060708090a0b0c0d0e0f
@@ -91,7 +90,6 @@ ifneq (1, $(USE_EXTERNAL_CRYPTO))
 endif
 	$(FIND_LIBRARIES) test/cipher_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) test/datatypes_driver$(EXE) -v >/dev/null
-	$(FIND_LIBRARIES) test/stat_driver$(EXE) >/dev/null
 	$(FIND_LIBRARIES) test/kernel_driver$(EXE) -v >/dev/null
 	@echo "crypto test applications passed."
 

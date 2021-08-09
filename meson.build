@@ -225,13 +225,11 @@ kernel_sources = files(
 
 math_sources = files(
   'crypto/math/datatypes.c',
-  'crypto/math/stat.c',
 )
 
 replay_sources = files(
   'crypto/replay/rdb.c',
   'crypto/replay/rdbx.c',
-  'crypto/replay/ut_sim.c',
 )
 
 public_headers = files(

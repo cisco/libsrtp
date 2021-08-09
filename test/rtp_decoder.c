@@ -768,17 +768,3 @@ void rtp_decoder_handle_pkt(u_char *arg,
             (long)delta.tv_usec);
     hexdump(&message, octets_recvd);
 }
-
-void rtp_print_error(srtp_err_status_t status, char *message)
-{
-    // clang-format off
-    fprintf(stderr,
-            "error: %s %d%s\n", message, status,
-            status == srtp_err_status_replay_fail ? " (replay check failed)" :
-            status == srtp_err_status_bad_param ? " (bad param)" :
-            status == srtp_err_status_no_ctx ? " (no context)" :
-            status == srtp_err_status_cipher_fail ? " (cipher failed)" :
-            status == srtp_err_status_key_expired ? " (key expired)" :
-            status == srtp_err_status_auth_fail ? " (auth check failed)" : "");
-    // clang-format on
-}

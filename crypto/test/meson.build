@@ -3,7 +3,6 @@
 test_apps = [
   'cipher_driver',
   'datatypes_driver',
-  'stat_driver',
   'kernel_driver',
   'env',
 ]

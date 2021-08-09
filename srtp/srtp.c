@@ -2751,25 +2751,6 @@ srtp_err_status_t srtp_shutdown()
 }
 
 /*
- * The following code is under consideration for removal.  See
- * SRTP_MAX_TRAILER_LEN
- */
-#if 0
-
-/*
- * srtp_get_trailer_length(&a) returns the number of octets that will
- * be added to an RTP packet by the SRTP processing.  This value
- * is constant for a given srtp_stream_t (i.e. between initializations).
- */
-
-int
-srtp_get_trailer_length(const srtp_stream_t s) {
-  return srtp_auth_get_tag_length(s->rtp_auth);
-}
-
-#endif
-
-/*
  * srtp_get_stream(ssrc) returns a pointer to the stream corresponding
  * to ssrc, or NULL if no stream exists for that ssrc
  *
