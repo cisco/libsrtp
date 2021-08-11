@@ -302,7 +302,9 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
     uint32_t *b;
 
     /* check that there's enough segment left*/
-    if ((bytes_to_encr + htons(c->counter.v16[7])) > 0xffff) {
+    unsigned int bytes_of_new_keystream = bytes_to_encr - c->bytes_in_buffer;
+    unsigned int blocks_of_new_keystream = (bytes_of_new_keystream + 15) >> 4;
+    if ((blocks_of_new_keystream + htons(c->counter.v16[7])) > 0xffff) {
         return srtp_err_status_terminus;
     }
 
