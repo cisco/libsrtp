@@ -61,7 +61,7 @@ srtp_err_status_t cipher_driver_self_test(srtp_cipher_type_t *ct);
 
 /*
  * cipher_driver_test_buffering(ct) tests the cipher's output
- * buffering for correctness by checking the consistency of succesive
+ * buffering for correctness by checking the consistency of successive
  * calls
  */
 
@@ -477,7 +477,7 @@ srtp_err_status_t cipher_array_alloc_init(srtp_cipher_t ***ca,
 
         /*     printf("%dth cipher is at %p\n", i, *cipher_array); */
         /*     printf("%dth cipher description: %s\n", i,  */
-        /* 	   (*cipher_array)->type->description); */
+        /*         (*cipher_array)->type->description); */
 
         /* advance cipher array pointer */
         cipher_array++;

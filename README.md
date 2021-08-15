@@ -377,12 +377,12 @@ included in the `test/` subdirectory.
 Test driver     | Function tested
 ---------       | -------
 kernel_driver   | crypto kernel (ciphers, auth funcs, rng)
-srtp_driver	    | srtp in-memory tests (does not use the network)
-rdbx_driver	    | rdbx (extended replay database)
-roc_driver	    | extended sequence number functions
-replay_driver	  | replay database
-cipher_driver	  | ciphers
-auth_driver	    | hash functions
+srtp_driver     | srtp in-memory tests (does not use the network)
+rdbx_driver     | rdbx (extended replay database)
+roc_driver      | extended sequence number functions
+replay_driver   | replay database
+cipher_driver   | ciphers
+auth_driver     | hash functions
 
 The app `rtpw` is a simple rtp application which reads words from
 `/usr/dict/words` and then sends them out one at a time using [s]rtp.

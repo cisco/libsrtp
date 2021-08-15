@@ -282,9 +282,9 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
  * This function encrypts a buffer using AES CTR mode
  *
  * Parameters:
- *	c	Crypto context
- *	buf	data to encrypt
- *	enc_len	length of encrypt buffer
+ *      c       Crypto context
+ *      buf     data to encrypt
+ *      enc_len length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
                                                       unsigned char *buf,

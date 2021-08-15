@@ -65,7 +65,7 @@ srtp_debug_module_t srtp_mod_aes_icm = {
  * 16 bits
  * <----->
  * +------+------+------+------+------+------+------+------+
- * |           nonce           |    pakcet index    |  ctr |---+
+ * |           nonce           |    packet index    |  ctr |---+
  * +------+------+------+------+------+------+------+------+   |
  *                                                             |
  * +------+------+------+------+------+------+------+------+   v
@@ -73,9 +73,9 @@ srtp_debug_module_t srtp_mod_aes_icm = {
  * +------+------+------+------+------+------+------+------+   |
  *                                                             |
  *                                                        +---------+
- *							  | encrypt |
- *							  +---------+
- *							       |
+ *                                                        | encrypt |
+ *                                                        +---------+
+ *                                                             |
  * +------+------+------+------+------+------+------+------+   |
  * |                    keystream block                    |<--+
  * +------+------+------+------+------+------+------+------+
@@ -257,7 +257,7 @@ static srtp_err_status_t srtp_aes_icm_set_iv(void *cv,
 
 /*
  * aes_icm_advance(...) refills the keystream_buffer and
- * advances the block index of the sicm_context forward by one
+ * advances the block index of the ICM context forward by one
  *
  * this is an internal, hopefully inlined function
  */

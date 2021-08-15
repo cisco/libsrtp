@@ -237,9 +237,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv(
  * This function processes the AAD
  *
  * Parameters:
- *	c	Crypto context
- *	aad	Additional data to process for AEAD cipher suites
- *	aad_len	length of aad buffer
+ *      c       Crypto context
+ *      aad     Additional data to process for AEAD cipher suites
+ *      aad_len length of aad buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
                                                       const uint8_t *aad,
@@ -286,9 +286,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
  * This function encrypts a buffer using AES GCM mode
  *
  * Parameters:
- *	c	Crypto context
- *	buf	data to encrypt
- *	enc_len	length of encrypt buffer
+ *      c       Crypto context
+ *      buf     data to encrypt
+ *      enc_len length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
                                                       unsigned char *buf,
@@ -314,9 +314,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
  * enough room to accept the appended tag.
  *
  * Parameters:
- *	c	Crypto context
- *	buf	data to encrypt
- *	len	length of encrypt buffer
+ *      c       Crypto context
+ *      buf     data to encrypt
+ *      len     length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_get_tag(void *cv,
                                                       uint8_t *buf,
@@ -347,9 +347,9 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag(void *cv,
  * This function decrypts a buffer using AES GCM mode
  *
  * Parameters:
- *	c	Crypto context
- *	buf	data to encrypt
- *	enc_len	length of encrypt buffer
+ *      c       Crypto context
+ *      buf     data to encrypt
+ *      enc_len length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
                                                       unsigned char *buf,
