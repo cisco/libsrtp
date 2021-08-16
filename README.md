@@ -1,4 +1,5 @@
 [![CMake Build](https://github.com/cisco/libsrtp/actions/workflows/cmake.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/cmake.yml)
+[![Autotools Build](https://github.com/cisco/libsrtp/actions/workflows/autotools.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/autotools.yml)
 [![Build Status](https://travis-ci.org/cisco/libsrtp.svg?branch=master)](https://travis-ci.org/cisco/libsrtp)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/14274/badge.svg)](https://scan.coverity.com/projects/cisco-libsrtp)
 [![OSS-Fuzz Status](https://oss-fuzz-build-logs.storage.googleapis.com/badges/systemd.svg)](https://oss-fuzz-build-logs.storage.googleapis.com/index.html#libsrtp)
