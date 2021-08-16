@@ -1,0 +1,56 @@
+name: AutoTools CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        crypto: [internal, openssl, nss]
+        include:
+          - crypto: internal
+            configure-crypto-enable: ""
+          - crypto: openssl
+            configure-crypto-enable: "--enable-openssl"
+          - crypto: nss
+            configure-crypto-enable: "--enable-nss"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Setup Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install valgrind
+
+    - name: Setup Ubuntu NSS
+      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
+      run: sudo apt-get install libnss3-dev
+    
+    - name: Setup macOS OpenSSL
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
+      run: echo "configure-env=PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig" >> $GITHUB_ENV
+      
+    - name: Setup macOS NSS
+      if:  matrix.os == 'macos-latest' && matrix.crypto == 'nss'
+      run: brew install nss
+      
+    - uses: actions/checkout@v2
+
+    - name: Configure
+      run: ${{env.configure-env}} EXTRA_CFLAGS=-Werror ./configure ${{ matrix.configure-crypto-enable}}
+
+    - name: Build
+      run: make
+
+    - name: Test
+      run: make runtest
+      
+    - name: Test Valgrind
+      if:  matrix.os == 'ubuntu-latest'
+      run: make runtest-valgrind
