@@ -265,6 +265,12 @@ install(FILES include/srtp.h crypto/include/auth.h
 if(TEST_APPS)
   enable_testing()
 
+  find_package(PCAP)
+  if (PCAP_FOUND)
+    add_executable(rtp_decoder test/rtp_decoder.c test/getopt_s.c test/util.c)
+    target_link_libraries(rtp_decoder srtp2 ${PCAP_LIBRARY})
+  endif()
+
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
     if(NOT USE_EXTERNAL_CRYPTO)
       add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
