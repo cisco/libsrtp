@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:m:p:o:");
+        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:c:m:p:o:");
         if (c == -1) {
             break;
         }
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
         case 'l':
             do_list_mods = 1;
             break;
-        case 's':
+        case 'c':
             for (i_scsp = &srtp_crypto_suites[0]; i_scsp->can_name != NULL;
                  i_scsp++) {
                 if (strcasecmp(i_scsp->can_name, optarg_s) == 0) {
@@ -622,7 +622,7 @@ void usage(char *string)
 {
     fprintf(
         stderr,
-        "usage: %s [-d <debug>]* [[-k][-b] <key>] [-a][-t][-e] [-s "
+        "usage: %s [-d <debug>]* [[-k][-b] <key>] [-a][-t][-e] [-c "
         "<srtp-crypto-suite>] [-m <mode>]\n"
         "or     %s -l\n"
         "where  -a use message authentication\n"
@@ -634,7 +634,7 @@ void usage(char *string)
         "       -l list debug modules\n"
         "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
         "       -d <debug> turn on debugging for module <debug>\n"
-        "       -s \"<srtp-crypto-suite>\" to set both key and tag size based\n"
+        "       -c \"<srtp-crypto-suite>\" to set both key and tag size based\n"
         "          on RFC4568-style crypto suite specification\n"
         "       -m <mode> set the mode to be one of [rtp]|rtcp|rtcp-mux\n"
         "       -p <pcap file> path to pcap file (defaults to stdin)\n"
