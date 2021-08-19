@@ -1097,8 +1097,9 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     pkt_end = (uint8_t *)hdr + msg_len + tag_length;
     for (i = 0; i < 4; i++) {
         if (pkt_end[i] != 0xff) {
-            fprintf(stdout, "overwrite in srtp_protect() function "
-                            "(expected %x, found %x in trailing octet %d)\n",
+            fprintf(stdout,
+                    "overwrite in srtp_protect() function "
+                    "(expected %x, found %x in trailing octet %d)\n",
                     0xff, ((uint8_t *)hdr)[i], i);
             free(hdr);
             free(hdr2);
@@ -1312,8 +1313,9 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     pkt_end = (uint8_t *)hdr + msg_len + tag_length;
     for (i = 0; i < 4; i++) {
         if (pkt_end[i] != 0xff) {
-            fprintf(stdout, "overwrite in srtp_protect_rtcp() function "
-                            "(expected %x, found %x in trailing octet %d)\n",
+            fprintf(stdout,
+                    "overwrite in srtp_protect_rtcp() function "
+                    "(expected %x, found %x in trailing octet %d)\n",
                     0xff, ((uint8_t *)hdr)[i], i);
             free(hdr);
             free(hdr2);
@@ -1583,18 +1585,19 @@ char *srtp_packet_to_string(srtp_hdr_t *hdr, int pkt_octet_len)
     }
 
     /* write packet into string */
-    sprintf(packet_string, "(s)rtp packet: {\n"
-                           "   version:\t%d\n"
-                           "   p:\t\t%d\n"
-                           "   x:\t\t%d\n"
-                           "   cc:\t\t%d\n"
-                           "   m:\t\t%d\n"
-                           "   pt:\t\t%x\n"
-                           "   seq:\t\t%x\n"
-                           "   ts:\t\t%x\n"
-                           "   ssrc:\t%x\n"
-                           "   data:\t%s\n"
-                           "} (%d octets in total)\n",
+    sprintf(packet_string,
+            "(s)rtp packet: {\n"
+            "   version:\t%d\n"
+            "   p:\t\t%d\n"
+            "   x:\t\t%d\n"
+            "   cc:\t\t%d\n"
+            "   m:\t\t%d\n"
+            "   pt:\t\t%x\n"
+            "   seq:\t\t%x\n"
+            "   ts:\t\t%x\n"
+            "   ssrc:\t%x\n"
+            "   data:\t%s\n"
+            "} (%d octets in total)\n",
             hdr->version, hdr->p, hdr->x, hdr->cc, hdr->m, hdr->pt, hdr->seq,
             hdr->ts, hdr->ssrc, octet_string_hex_string(data, hex_len),
             pkt_octet_len);

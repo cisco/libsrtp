@@ -173,8 +173,8 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
             }
 
             /*
-            * deallocate cipher, if it is not the same as that in template
-            */
+             * deallocate cipher, if it is not the same as that in template
+             */
             if (template_session_keys &&
                 session_keys->rtp_cipher == template_session_keys->rtp_cipher) {
                 /* do nothing */
@@ -879,7 +879,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     /* If RTP or RTCP have a key length > AES-128, assume matching kdf. */
     /* TODO: kdf algorithm, master key length, and master salt length should
      * be part of srtp_policy_t.
-    */
+     */
     session_keys = &srtp->session_keys[current_mki_index];
 
 /* initialize key limit to maximum value */
@@ -1293,8 +1293,8 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 
 void srtp_event_reporter(srtp_event_data_t *data)
 {
-    srtp_err_report(srtp_err_level_warning, "srtp: in stream 0x%x: ",
-                    data->ssrc);
+    srtp_err_report(srtp_err_level_warning,
+                    "srtp: in stream 0x%x: ", data->ssrc);
 
     switch (data->event) {
     case event_ssrc_collision:
