@@ -335,10 +335,10 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
         /* fill buffer with new keystream */
         srtp_aes_icm_advance(c);
 
-/*
- * add keystream into the data buffer (this would be a lot faster
- * if we could assume 32-bit alignment!)
- */
+        /*
+         * add keystream into the data buffer (this would be a lot faster
+         * if we could assume 32-bit alignment!)
+         */
 
 #if ALIGN_32
         b = (uint32_t *)buf;
