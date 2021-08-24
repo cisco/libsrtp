@@ -76,15 +76,6 @@ uint32_t SHA_K1 = 0x6ED9EBA1; /* Kt for 20 <= t <= 39 */
 uint32_t SHA_K2 = 0x8F1BBCDC; /* Kt for 40 <= t <= 59 */
 uint32_t SHA_K3 = 0xCA62C1D6; /* Kt for 60 <= t <= 79 */
 
-void srtp_sha1(const uint8_t *msg, int octets_in_msg, uint32_t hash_value[5])
-{
-    srtp_sha1_ctx_t ctx;
-
-    srtp_sha1_init(&ctx);
-    srtp_sha1_update(&ctx, msg, octets_in_msg);
-    srtp_sha1_final(&ctx, hash_value);
-}
-
 /*
  *  srtp_sha1_core(M, H) computes the core compression function, where M is
  *  the next part of the message (in network byte order) and H is the
@@ -284,7 +275,7 @@ void srtp_sha1_update(srtp_sha1_ctx_t *ctx,
  * into the twenty octets located at *output
  */
 
-void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t *output)
+void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t output[5])
 {
     uint32_t A, B, C, D, E, TEMP;
     uint32_t W[80];

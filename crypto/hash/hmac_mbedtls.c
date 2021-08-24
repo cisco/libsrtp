@@ -1,10 +1,9 @@
 /*
- * hmac_ossl.c
+ * hmac_mbedtls.c
  *
- * Implementation of hmac srtp_auth_type_t that leverages OpenSSL
+ * Implementation of hmac srtp_auth_type_t that leverages Mbedtls
  *
- * John A. Foley
- * Cisco Systems, Inc.
+ * YongCheng Yang
  */
 /*
  *
@@ -50,8 +49,7 @@
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
+#include <mbedtls/md.h>
 
 #define SHA1_DIGEST_SIZE 20
 
@@ -59,12 +57,12 @@
 
 srtp_debug_module_t srtp_mod_hmac = {
     0,                   /* debugging is off by default */
-    "hmac sha-1 openssl" /* printable name for module   */
+    "hmac sha-1 mbedtls" /* printable name for module   */
 };
 
-static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
-                                         int key_len,
-                                         int out_len)
+static srtp_err_status_t srtp_hmac_mbedtls_alloc(srtp_auth_t **a,
+                                                 int key_len,
+                                                 int out_len)
 {
     extern const srtp_auth_type_t srtp_hmac;
 
@@ -74,42 +72,26 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
                 out_len);
 
     /* check output length - should be less than 20 bytes */
+    if (key_len > SHA1_DIGEST_SIZE) {
+        return srtp_err_status_bad_param;
+    }
+    /* check output length - should be less than 20 bytes */
     if (out_len > SHA1_DIGEST_SIZE) {
         return srtp_err_status_bad_param;
     }
 
-/* OpenSSL 1.1.0 made HMAC_CTX an opaque structure, which must be allocated
-   using HMAC_CTX_new.  But this function doesn't exist in OpenSSL 1.0.x. */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L || LIBRESSL_VERSION_NUMBER
-    {
-        /* allocate memory for auth and HMAC_CTX structures */
-        uint8_t *pointer;
-        HMAC_CTX *new_hmac_ctx;
-        pointer = (uint8_t *)srtp_crypto_alloc(sizeof(HMAC_CTX) +
-                                               sizeof(srtp_auth_t));
-        if (pointer == NULL) {
-            return srtp_err_status_alloc_fail;
-        }
-        *a = (srtp_auth_t *)pointer;
-        (*a)->state = pointer + sizeof(srtp_auth_t);
-        new_hmac_ctx = (HMAC_CTX *)((*a)->state);
-
-        HMAC_CTX_init(new_hmac_ctx);
-    }
-
-#else
     *a = (srtp_auth_t *)srtp_crypto_alloc(sizeof(srtp_auth_t));
     if (*a == NULL) {
         return srtp_err_status_alloc_fail;
     }
-
-    (*a)->state = HMAC_CTX_new();
+    // allocate the buffer of mbedtls context.
+    (*a)->state = srtp_crypto_alloc(sizeof(mbedtls_md_context_t));
     if ((*a)->state == NULL) {
         srtp_crypto_free(*a);
         *a = NULL;
         return srtp_err_status_alloc_fail;
     }
-#endif
+    mbedtls_md_init((mbedtls_md_context_t *)(*a)->state);
 
     /* set pointers */
     (*a)->type = &srtp_hmac;
@@ -120,24 +102,14 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
+static srtp_err_status_t srtp_hmac_mbedtls_dealloc(srtp_auth_t *a)
 {
-    HMAC_CTX *hmac_ctx;
-
-    hmac_ctx = (HMAC_CTX *)a->state;
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L || LIBRESSL_VERSION_NUMBER
-    HMAC_CTX_cleanup(hmac_ctx);
-
-    /* zeroize entire state*/
-    octet_string_set_to_zero(a, sizeof(HMAC_CTX) + sizeof(srtp_auth_t));
-
-#else
-    HMAC_CTX_free(hmac_ctx);
-
+    mbedtls_md_context_t *hmac_ctx;
+    hmac_ctx = (mbedtls_md_context_t *)a->state;
+    mbedtls_md_free(hmac_ctx);
+    srtp_crypto_free(hmac_ctx);
     /* zeroize entire state*/
     octet_string_set_to_zero(a, sizeof(srtp_auth_t));
-#endif
 
     /* free memory */
     srtp_crypto_free(a);
@@ -145,56 +117,64 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_start(void *statev)
+static srtp_err_status_t srtp_hmac_mbedtls_start(void *statev)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
-
-    if (HMAC_Init_ex(state, NULL, 0, NULL, NULL) == 0)
+    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
+    if (mbedtls_md_hmac_reset(state) != 0)
         return srtp_err_status_auth_fail;
 
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_init(void *statev,
-                                        const uint8_t *key,
-                                        int key_len)
+static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
+                                                const uint8_t *key,
+                                                int key_len)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
+    const mbedtls_md_info_t *info = NULL;
 
-    if (HMAC_Init_ex(state, key, key_len, EVP_sha1(), NULL) == 0)
+    info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
+    if (info == NULL)
+        return srtp_err_status_auth_fail;
+
+    if (mbedtls_md_setup(state, info, 1) != 0)
+        return srtp_err_status_auth_fail;
+
+    debug_print(srtp_mod_hmac, "mbedtls setup, name: %s",
+                mbedtls_md_get_name(info));
+    debug_print(srtp_mod_hmac, "mbedtls setup, size: %d",
+                mbedtls_md_get_size(info));
+
+    if (mbedtls_md_hmac_starts(state, key, key_len) != 0)
         return srtp_err_status_auth_fail;
 
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_update(void *statev,
-                                          const uint8_t *message,
-                                          int msg_octets)
+static srtp_err_status_t srtp_hmac_mbedtls_update(void *statev,
+                                                  const uint8_t *message,
+                                                  int msg_octets)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
 
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
-    if (HMAC_Update(state, message, msg_octets) == 0)
+    if (mbedtls_md_hmac_update(state, message, msg_octets) != 0)
         return srtp_err_status_auth_fail;
 
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_hmac_compute(void *statev,
-                                           const uint8_t *message,
-                                           int msg_octets,
-                                           int tag_len,
-                                           uint8_t *result)
+static srtp_err_status_t srtp_hmac_mbedtls_compute(void *statev,
+                                                   const uint8_t *message,
+                                                   int msg_octets,
+                                                   int tag_len,
+                                                   uint8_t *result)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
     uint8_t hash_value[SHA1_DIGEST_SIZE];
     int i;
-    unsigned int len;
-
-    debug_print(srtp_mod_hmac, "input: %s",
-                srtp_octet_string_hex_string(message, msg_octets));
 
     /* check tag length, return error if we can't provide the value expected */
     if (tag_len > SHA1_DIGEST_SIZE) {
@@ -202,13 +182,10 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
     }
 
     /* hash message, copy output into H */
-    if (HMAC_Update(state, message, msg_octets) == 0)
+    if (mbedtls_md_hmac_update(statev, message, msg_octets) != 0)
         return srtp_err_status_auth_fail;
 
-    if (HMAC_Final(state, hash_value, &len) == 0)
-        return srtp_err_status_auth_fail;
-
-    if (len < tag_len)
+    if (mbedtls_md_hmac_finish(state, hash_value) != 0)
         return srtp_err_status_auth_fail;
 
     /* copy hash_value to *result */
@@ -222,21 +199,23 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
     return srtp_err_status_ok;
 }
 
-static const char srtp_hmac_description[] =
-    "hmac sha-1 authentication function";
+/* end test case 0 */
+
+static const char srtp_hmac_mbedtls_description[] =
+    "hmac sha-1 authentication function using mbedtls";
 
 /*
  * srtp_auth_type_t hmac is the hmac metaobject
  */
 
 const srtp_auth_type_t srtp_hmac = {
-    srtp_hmac_alloc,        /* */
-    srtp_hmac_dealloc,      /* */
-    srtp_hmac_init,         /* */
-    srtp_hmac_compute,      /* */
-    srtp_hmac_update,       /* */
-    srtp_hmac_start,        /* */
-    srtp_hmac_description,  /* */
-    &srtp_hmac_test_case_0, /* */
-    SRTP_HMAC_SHA1          /* */
+    srtp_hmac_mbedtls_alloc,       /* */
+    srtp_hmac_mbedtls_dealloc,     /* */
+    srtp_hmac_mbedtls_init,        /* */
+    srtp_hmac_mbedtls_compute,     /* */
+    srtp_hmac_mbedtls_update,      /* */
+    srtp_hmac_mbedtls_start,       /* */
+    srtp_hmac_mbedtls_description, /* */
+    &srtp_hmac_test_case_0,        /* */
+    SRTP_HMAC_SHA1                 /* */
 };

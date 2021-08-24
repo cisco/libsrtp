@@ -82,12 +82,6 @@ int main(void)
     return 0;
 }
 
-void print_rdb(srtp_rdb_t *rdb)
-{
-    printf("rdb: {%u, %s}\n", rdb->window_start,
-           v128_bit_string(&rdb->bitmask));
-}
-
 srtp_err_status_t rdb_check_add(srtp_rdb_t *rdb, uint32_t idx)
 {
     if (srtp_rdb_check(rdb, idx) != srtp_err_status_ok) {

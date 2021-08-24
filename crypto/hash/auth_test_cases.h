@@ -1,14 +1,6 @@
 /*
- * null-auth.h
  *
- * David A. McGrew
- * Cisco Systems, Inc.
- *
- */
-
-/*
- *
- * Copyright (c) 2001-2017, Cisco Systems, Inc.
+ * Copyright (c) 2013-2021, Cisco Systems, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -42,21 +34,15 @@
  *
  */
 
-#ifndef NULL_AUTH_H
-#define NULL_AUTH_H
+#ifndef AUTH_TEST_CASES_H
+#define AUTH_TEST_CASES_H
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "auth.h"
 
-#ifdef __cplusplus
-extern "C" {
+extern const srtp_auth_test_case_t srtp_hmac_test_case_0;
+
 #endif
-
-typedef struct {
-    char foo;
-} srtp_null_auth_ctx_t;
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* NULL_AUTH_H */

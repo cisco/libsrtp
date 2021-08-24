@@ -1,6 +1,52 @@
 Changelog
 
-2.4.0-pre (This version)
+2.4.0
+
+Major changes
+
+#529 - Remove EKT files, this was never completed and the draft has since changed.
+
+#512 - Adds suport for Mbedtls as a crypto backend.
+
+#503 - Support apple silicon build.
+
+#495 - Adds support for the Meson build system. This is an alternative to Cmake and auto tools.
+
+Other changes
+
+#546 - Improve OpenSSL KDF check.
+
+#542 - Add void to function declarations for EVP_EncryptInit check.
+
+#531 - Remove dead code.
+
+#524 - Support running against nss >= 3.52.
+
+#521 - Remove references to dtls from libsrtp.
+
+#520 - Use nss based hmac when nss enabled.
+
+#519 - Move selftest vectors form backends to common files.
+
+#515 - Extend cmake support.
+
+#514 - Fix gcc11 warning by defining output length.
+
+#502 - Remove visual studio build files.
+
+#501 - cmake: Set the VERSION property of the srtp2 library.
+
+#500 - Fixed issue #499 with buffer overflow.
+
+#498 - Feature/additional error checks.
+
+#496 - Rework check for OPENSSL_cleanse().
+
+#492 - Avoid non-existing compiler flag -O4.
+
+#491 - Fix two-byte RTP header extension encryption.
+
+#478 - Modify cmake to install crypto_types.h instead of cipher_types.h
 
 2.3.0
 
@@ -11,6 +57,8 @@ A fuzzer was added to the project based on libFuzzer. This is run as part of Goo
 CMake support was added as an alternative build system. This was primarily added to replace the Visual Studio project files currently checked in but has been extend to support building on all platforms. Initial PR #449 and #455 but has been support has been continuously improved. 
 
 NSS support for crypto backend was added. This is can be used as an alternative to openssl. Initial PR #413 but there has been numerous improvements.
+
+Other changes
 
 PR #474 - Add flag to disable pcap dependency when build test apps.
 

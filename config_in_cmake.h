@@ -18,6 +18,12 @@
 /* Define this to use OpenSSL crypto. */
 #cmakedefine OPENSSL 1
 
+/* Define this to use MBEDTLS. */
+#cmakedefine MBEDTLS 1
+
+/* Define this to use NSS crypto. */
+#cmakedefine NSS 1
+
 /* Define this to use AES-GCM. */
 #cmakedefine GCM 1
 

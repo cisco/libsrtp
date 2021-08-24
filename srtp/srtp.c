@@ -48,7 +48,6 @@
 #include "srtp_priv.h"
 #include "crypto_types.h"
 #include "err.h"
-#include "ekt.h"   /* for SRTP Encrypted Key Transport */
 #include "alloc.h" /* for srtp_crypto_alloc() */
 
 #ifdef GCM
@@ -266,8 +265,6 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
     if (status)
         return status;
 
-    /* DAM - need to deallocate EKT here */
-
     if (stream_template &&
         stream->enc_xtn_hdr == stream_template->enc_xtn_hdr) {
         /* do nothing */
@@ -281,6 +278,15 @@ srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
     return srtp_err_status_ok;
 }
 
+static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *p)
+{
+    if (p != NULL && p->deprecated_ekt != NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    return srtp_err_status_ok;
+}
+
 srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
                                     const srtp_policy_t *p)
 {
@@ -288,6 +294,11 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     srtp_err_status_t stat;
     unsigned int i = 0;
     srtp_session_keys_t *session_keys = NULL;
+
+    stat = srtp_valid_policy(p);
+    if (stat != srtp_err_status_ok) {
+        return stat;
+    }
 
     /*
      * This function allocates the stream context, rtp and rtcp ciphers
@@ -373,13 +384,6 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
             srtp_stream_dealloc(str, NULL);
             return srtp_err_status_alloc_fail;
         }
-    }
-
-    /* allocate ekt data associated with stream */
-    stat = srtp_ekt_alloc(&str->ekt, p->ekt);
-    if (stat) {
-        srtp_stream_dealloc(str, NULL);
-        return stat;
     }
 
     if (p->enc_xtn_hdr && p->enc_xtn_hdr_count > 0) {
@@ -542,9 +546,6 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     str->direction = stream_template->direction;
     str->rtp_services = stream_template->rtp_services;
     str->rtcp_services = stream_template->rtcp_services;
-
-    /* set pointer to EKT data associated with stream */
-    str->ekt = stream_template->ekt;
 
     /* copy information about extensions header encryption */
     str->enc_xtn_hdr = stream_template->enc_xtn_hdr;
@@ -1220,6 +1221,11 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 {
     srtp_err_status_t err;
 
+    err = srtp_valid_policy(p);
+    if (err != srtp_err_status_ok) {
+        return err;
+    }
+
     debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)", p->ssrc.value);
 
     /* initialize replay database */
@@ -1279,16 +1285,6 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
         return err;
     }
 
-    /*
-     * if EKT is in use, then initialize the EKT data associated with
-     * the stream
-     */
-    err = srtp_ekt_stream_init_from_policy(srtp->ekt, p->ekt);
-    if (err) {
-        srtp_rdbx_dealloc(&srtp->rtp_rdbx);
-        return err;
-    }
-
     return srtp_err_status_ok;
 }
 
@@ -1299,8 +1295,8 @@ srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 
 void srtp_event_reporter(srtp_event_data_t *data)
 {
-    srtp_err_report(srtp_err_level_warning, "srtp: in stream 0x%x: ",
-                    data->ssrc);
+    srtp_err_report(srtp_err_level_warning,
+                    "srtp: in stream 0x%x: ", data->ssrc);
 
     switch (data->event) {
     case event_ssrc_collision:
@@ -2930,25 +2926,6 @@ srtp_err_status_t srtp_shutdown()
 }
 
 /*
- * The following code is under consideration for removal.  See
- * SRTP_MAX_TRAILER_LEN
- */
-#if 0
-
-/*
- * srtp_get_trailer_length(&a) returns the number of octets that will
- * be added to an RTP packet by the SRTP processing.  This value
- * is constant for a given srtp_stream_t (i.e. between initializations).
- */
-
-int
-srtp_get_trailer_length(const srtp_stream_t s) {
-  return srtp_auth_get_tag_length(s->rtp_auth);
-}
-
-#endif
-
-/*
  * srtp_get_stream(ssrc) returns a pointer to the stream corresponding
  * to ssrc, or NULL if no stream exists for that ssrc
  *
@@ -3009,6 +2986,11 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
     srtp_stream_t tmp;
+
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+        return status;
+    }
 
     /* sanity check arguments */
     if ((session == NULL) || (policy == NULL) ||
@@ -3071,6 +3053,11 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
 { /* SRTP policy (list)     */
     srtp_err_status_t stat;
     srtp_ctx_t *ctx;
+
+    stat = srtp_valid_policy(policy);
+    if (stat != srtp_err_status_ok) {
+        return stat;
+    }
 
     /* sanity check arguments */
     if (session == NULL)
@@ -3142,6 +3129,11 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy)
 {
     srtp_err_status_t stat;
 
+    stat = srtp_valid_policy(policy);
+    if (stat != srtp_err_status_ok) {
+        return stat;
+    }
+
     /* sanity check arguments */
     if ((session == NULL) || (policy == NULL) ||
         (!srtp_validate_policy_master_keys(policy))) {
@@ -3166,6 +3158,11 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     srtp_err_status_t status;
     srtp_stream_t new_stream_template;
     srtp_stream_t new_stream_list = NULL;
+
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+        return status;
+    }
 
     if (session->stream_template == NULL) {
         return srtp_err_status_bad_param;
@@ -3265,6 +3262,11 @@ static srtp_err_status_t update_stream(srtp_t session,
     srtp_rdb_t old_rtcp_rdb;
     srtp_stream_t stream;
 
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+        return status;
+    }
+
     stream = srtp_get_stream(session, htonl(policy->ssrc.value));
     if (stream == NULL) {
         return srtp_err_status_bad_param;
@@ -3300,6 +3302,11 @@ srtp_err_status_t srtp_update_stream(srtp_t session,
                                      const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
+
+    status = srtp_valid_policy(policy);
+    if (status != srtp_err_status_ok) {
+        return status;
+    }
 
     /* sanity check arguments */
     if ((session == NULL) || (policy == NULL) ||
@@ -4159,10 +4166,6 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
     auth_tag =
         (uint8_t *)hdr + *pkt_octet_len + sizeof(srtcp_trailer_t) + mki_size;
 
-    /* perform EKT processing if needed */
-    srtp_ekt_write_data(stream->ekt, auth_tag, tag_len, pkt_octet_len,
-                        srtp_rdbx_get_packet_index(&stream->rtp_rdbx));
-
     /*
      * check sequence number for overruns, and copy it into the packet
      * if its value isn't too big
@@ -4278,7 +4281,6 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     unsigned int enc_octet_len = 0; /* number of octets in encrypted portion */
     uint8_t *auth_tag = NULL;       /* location of auth_tag within packet     */
     uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
-    uint8_t tag_copy[SRTP_MAX_TAG_LEN];
     srtp_err_status_t status;
     unsigned int auth_len;
     int tag_len;
@@ -4315,23 +4317,6 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     if (stream == NULL) {
         if (ctx->stream_template != NULL) {
             stream = ctx->stream_template;
-
-            /*
-             * check to see if stream_template has an EKT data structure, in
-             * which case we initialize the template using the EKT policy
-             * referenced by that data (which consists of decrypting the
-             * master key from the EKT field)
-             *
-             * this function initializes a *provisional* stream, and this
-             * stream should not be accepted until and unless the packet
-             * passes its authentication check
-             */
-            if (stream->ekt != NULL) {
-                status = srtp_stream_init_from_ekt(stream, srtcp_hdr,
-                                                   *pkt_octet_len);
-                if (status)
-                    return status;
-            }
 
             debug_print(mod_srtp,
                         "srtcp using provisional stream (SSRC: 0x%08x)",
@@ -4423,21 +4408,6 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     auth_tag = (uint8_t *)hdr + auth_len + mki_size;
 
     /*
-     * if EKT is in use, then we make a copy of the tag from the packet,
-     * and then zeroize the location of the base tag
-     *
-     * we first re-position the auth_tag pointer so that it points to
-     * the base tag
-     */
-    if (stream->ekt) {
-        auth_tag -= srtp_ekt_octets_after_base_tag(stream->ekt);
-        memcpy(tag_copy, auth_tag, tag_len);
-        octet_string_set_to_zero(auth_tag, tag_len);
-        auth_tag = tag_copy;
-        auth_len += tag_len;
-    }
-
-    /*
      * check the sequence number for replays
      */
     /* this is easier than dealing with bitfield access */
@@ -4524,12 +4494,6 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     *pkt_octet_len -= mki_size;
 
     /*
-     * if EKT is in effect, subtract the EKT data out of the packet
-     * length
-     */
-    *pkt_octet_len -= srtp_ekt_octets_after_base_tag(stream->ekt);
-
-    /*
      * verify that stream is for received traffic - this check will
      * detect SSRC collisions, since a stream that appears in both
      * srtp_protect() and srtp_unprotect() will fail this test in one of
@@ -4594,10 +4558,6 @@ void *srtp_get_user_data(srtp_t ctx)
 {
     return ctx->user_data;
 }
-
-/*
- * dtls keying for srtp
- */
 
 srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
     srtp_crypto_policy_t *policy,

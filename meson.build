@@ -1,4 +1,4 @@
-project('libsrtp2', 'c', version: '2.4.0',
+project('libsrtp2', 'c', version: '2.5.0',
   meson_version: '>= 0.52.0',
   default_options: ['buildtype=debugoptimized'])
 
@@ -131,7 +131,11 @@ if crypto_library == 'openssl'
   use_openssl = true
   # NOTE: This is not available in upstream OpenSSL yet. It's only in 'certain'
   # forks of OpenSSL: https://github.com/cisco/libsrtp/issues/458
-  if cc.has_function('kdf_srtp', dependencies: openssl_dep)
+  if (
+    openssl_dep.type_name() != 'internal' and
+    not get_option('crypto-library-kdf').disabled() and
+    cc.has_function('kdf_srtp', dependencies: openssl_dep)
+  )
     cdata.set('OPENSSL_KDF', true)
   elif get_option('crypto-library-kdf').enabled()
     error('KDF support has been enabled, but OpenSSL does not provide it')
@@ -165,12 +169,12 @@ if get_option('optimization') not in ['0', 'g', 's']
 endif
 
 sources = files(
-  'srtp/ekt.c',
   'srtp/srtp.c',
   )
 
 ciphers_sources = files(
   'crypto/cipher/cipher.c',
+  'crypto/cipher/cipher_test_cases.c',
   'crypto/cipher/null_cipher.c',
   )
 
@@ -193,6 +197,7 @@ endif
 
 hashes_sources = files(
   'crypto/hash/auth.c',
+  'crypto/hash/auth_test_cases.c',
   'crypto/hash/null_auth.c',
   )
 
@@ -201,10 +206,8 @@ if use_openssl
     'crypto/hash/hmac_ossl.c',
   )
 elif use_nss
-  # TODO(RLB): Use NSS for HMAC
   hashes_sources += files(
-    'crypto/hash/hmac.c',
-    'crypto/hash/sha1.c',
+    'crypto/hash/hmac_nss.c',
   )
 else
   hashes_sources += files(
@@ -222,13 +225,11 @@ kernel_sources = files(
 
 math_sources = files(
   'crypto/math/datatypes.c',
-  'crypto/math/stat.c',
 )
 
 replay_sources = files(
   'crypto/replay/rdb.c',
   'crypto/replay/rdbx.c',
-  'crypto/replay/ut_sim.c',
 )
 
 public_headers = files(

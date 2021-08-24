@@ -96,39 +96,39 @@ static struct srtp_crypto_suite srtp_crypto_suites[] = {
 #if 0
   {.can_name = "F8_128_HMAC_SHA1_32", .gcm_on = 0, .key_size = 128, .tag_size = 4},
 #endif
-    {.can_name = "AES_CM_128_HMAC_SHA1_32",
-     .gcm_on = 0,
-     .key_size = 128,
-     .tag_size = 4 },
-    {.can_name = "AES_CM_128_HMAC_SHA1_80",
-     .gcm_on = 0,
-     .key_size = 128,
-     .tag_size = 10 },
-    {.can_name = "AES_192_CM_HMAC_SHA1_32",
-     .gcm_on = 0,
-     .key_size = 192,
-     .tag_size = 4 },
-    {.can_name = "AES_192_CM_HMAC_SHA1_80",
-     .gcm_on = 0,
-     .key_size = 192,
-     .tag_size = 10 },
-    {.can_name = "AES_256_CM_HMAC_SHA1_32",
-     .gcm_on = 0,
-     .key_size = 256,
-     .tag_size = 4 },
-    {.can_name = "AES_256_CM_HMAC_SHA1_80",
-     .gcm_on = 0,
-     .key_size = 256,
-     .tag_size = 10 },
-    {.can_name = "AEAD_AES_128_GCM",
-     .gcm_on = 1,
-     .key_size = 128,
-     .tag_size = 16 },
-    {.can_name = "AEAD_AES_256_GCM",
-     .gcm_on = 1,
-     .key_size = 256,
-     .tag_size = 16 },
-    {.can_name = NULL }
+    { .can_name = "AES_CM_128_HMAC_SHA1_32",
+      .gcm_on = 0,
+      .key_size = 128,
+      .tag_size = 4 },
+    { .can_name = "AES_CM_128_HMAC_SHA1_80",
+      .gcm_on = 0,
+      .key_size = 128,
+      .tag_size = 10 },
+    { .can_name = "AES_192_CM_HMAC_SHA1_32",
+      .gcm_on = 0,
+      .key_size = 192,
+      .tag_size = 4 },
+    { .can_name = "AES_192_CM_HMAC_SHA1_80",
+      .gcm_on = 0,
+      .key_size = 192,
+      .tag_size = 10 },
+    { .can_name = "AES_256_CM_HMAC_SHA1_32",
+      .gcm_on = 0,
+      .key_size = 256,
+      .tag_size = 4 },
+    { .can_name = "AES_256_CM_HMAC_SHA1_80",
+      .gcm_on = 0,
+      .key_size = 256,
+      .tag_size = 10 },
+    { .can_name = "AEAD_AES_128_GCM",
+      .gcm_on = 1,
+      .key_size = 128,
+      .tag_size = 16 },
+    { .can_name = "AEAD_AES_256_GCM",
+      .gcm_on = 1,
+      .key_size = 256,
+      .tag_size = 16 },
+    { .can_name = NULL }
 };
 
 void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
@@ -511,7 +511,6 @@ int main(int argc, char *argv[])
         }
 
         policy.key = (uint8_t *)key;
-        policy.ekt = NULL;
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
@@ -541,14 +540,16 @@ int main(int argc, char *argv[])
         }
         /* check that hex string is the right length */
         if (len < expected_len) {
-            fprintf(stderr, "error: too few digits in key/salt "
-                            "(should be %d digits, found %d)\n",
+            fprintf(stderr,
+                    "error: too few digits in key/salt "
+                    "(should be %d digits, found %d)\n",
                     expected_len, len);
             exit(1);
         }
         if (strlen(input_key) > policy.rtp.cipher_key_len * 2) {
-            fprintf(stderr, "error: too many digits in key/salt "
-                            "(should be %d hexadecimal digits, found %u)\n",
+            fprintf(stderr,
+                    "error: too many digits in key/salt "
+                    "(should be %d hexadecimal digits, found %u)\n",
                     policy.rtp.cipher_key_len * 2, (unsigned)strlen(input_key));
             exit(1);
         }
@@ -768,18 +769,4 @@ void rtp_decoder_handle_pkt(u_char *arg,
     fprintf(stdout, "%02ld:%02ld.%06ld\n", delta.tv_sec / 60, delta.tv_sec % 60,
             (long)delta.tv_usec);
     hexdump(&message, octets_recvd);
-}
-
-void rtp_print_error(srtp_err_status_t status, char *message)
-{
-    // clang-format off
-    fprintf(stderr,
-            "error: %s %d%s\n", message, status,
-            status == srtp_err_status_replay_fail ? " (replay check failed)" :
-            status == srtp_err_status_bad_param ? " (bad param)" :
-            status == srtp_err_status_no_ctx ? " (no context)" :
-            status == srtp_err_status_cipher_fail ? " (cipher failed)" :
-            status == srtp_err_status_key_expired ? " (key expired)" :
-            status == srtp_err_status_auth_fail ? " (auth check failed)" : "");
-    // clang-format on
 }

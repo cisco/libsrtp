@@ -73,11 +73,6 @@ typedef struct rtp_decoder_ctx_t {
 typedef struct rtp_decoder_ctx_t *rtp_decoder_t;
 
 /*
- * error to string
- */
-void rtp_print_error(srtp_err_status_t status, char *message);
-
-/*
  * prints the output of a random buffer in hexadecimal
  */
 void hexdump(const void *ptr, size_t size);

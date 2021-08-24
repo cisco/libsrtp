@@ -444,7 +444,6 @@ int main(int argc, char *argv[])
         policy.ssrc.type = ssrc_specific;
         policy.ssrc.value = ssrc;
         policy.key = (uint8_t *)key;
-        policy.ekt = NULL;
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
@@ -474,14 +473,16 @@ int main(int argc, char *argv[])
         }
         /* check that hex string is the right length */
         if (len < expected_len) {
-            fprintf(stderr, "error: too few digits in key/salt "
-                            "(should be %d digits, found %d)\n",
+            fprintf(stderr,
+                    "error: too few digits in key/salt "
+                    "(should be %d digits, found %d)\n",
                     expected_len, len);
             exit(1);
         }
         if ((int)strlen(input_key) > policy.rtp.cipher_key_len * 2) {
-            fprintf(stderr, "error: too many digits in key/salt "
-                            "(should be %d hexadecimal digits, found %u)\n",
+            fprintf(stderr,
+                    "error: too many digits in key/salt "
+                    "(should be %d hexadecimal digits, found %u)\n",
                     policy.rtp.cipher_key_len * 2, (unsigned)strlen(input_key));
             exit(1);
         }
@@ -506,7 +507,6 @@ int main(int argc, char *argv[])
         policy.ssrc.value = ssrc;
         policy.window_size = 0;
         policy.allow_repeat_tx = 0;
-        policy.ekt = NULL;
         policy.next = NULL;
     }
 

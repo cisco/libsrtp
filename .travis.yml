@@ -11,7 +11,7 @@ matrix:
     # linux build
     - os: linux
       env:
-        - TEST="linux (gcc / valgrind)"
+        - TEST="linux (gcc)"
       addons:
         apt:
           sources:
@@ -29,9 +29,9 @@ matrix:
         - make runtest-valgrind
         - make distclean
         - mkdir build && cd build
-        - cmake ..
+        - cmake -DBUILD_WITH_SANITIZERS=TRUE ..
         - make
-        - make test
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
         - cd ..
         - CC=gcc-6 meson setup --werror builddir
         - meson compile -C builddir
@@ -40,7 +40,7 @@ matrix:
     # linux build with openssl
     - os: linux
       env:
-        - TEST="linux openssl (gcc / valgrind)"
+        - TEST="linux openssl (gcc)"
       addons:
         apt:
           sources:
@@ -58,9 +58,9 @@ matrix:
         - make runtest-valgrind
         - make distclean
         - mkdir build && cd build
-        - cmake -DENABLE_OPENSSL=ON ..
+        - cmake -DENABLE_OPENSSL=ON -DBUILD_WITH_SANITIZERS=TRUE ..
         - make
-        - make test
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
         - cd ..
         - mkdir build_shared && cd build_shared
         - cmake -DENABLE_OPENSSL=ON -DBUILD_SHARED_LIBS=ON ..
@@ -110,9 +110,32 @@ matrix:
         - make
         - make runtest
         - make runtest-valgrind
+        - mkdir build && cd build
+        - cmake -DENABLE_NSS=ON -DBUILD_WITH_SANITIZERS=TRUE ..
+        - make
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
+        - cd ..
         - CC=gcc-6 meson setup --werror -Dcrypto-library=nss builddir
         - meson compile -C builddir
         - meson test -v -C builddir
+
+    # linux build with mbedtls
+    - os: linux
+      env:
+        - TEST="linux mbedtls (gcc)"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - libmbedtls-dev
+      script:
+        - mkdir build && cd build
+        - cmake -DENABLE_MBEDTLS=ON -DBUILD_WITH_SANITIZERS=TRUE ..
+        - make
+        - CTEST_OUTPUT_ON_FAILURE=1 make test
+        - cd ..
 
     # default osx build
     - os: osx
@@ -171,6 +194,19 @@ matrix:
         - meson compile -C builddir
         - meson test -v -C builddir
 
+    # osx build for Apple Silicon
+    - os: osx
+      osx_image: xcode12u
+      env:
+        - TEST="osx Apple Silicon"
+      script:
+        - mkdir build && cd build
+        - cmake "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"  ..
+        - make
+        - lipo -info srtp_driver
+        - make test
+
+
     # code format check
     - os: linux
       env:
@@ -198,7 +234,7 @@ matrix:
         - sudo docker exec --tty mipsX apt-get update
         - sudo docker exec --tty mipsX apt-get install build-essential -y
         - sudo docker exec --tty mipsX apt-get install qemu-user-static qemu-system-mips gcc-mips-linux-gnu python3-pip -y
-        - sudo docker exec --tty mipsX pip3 install meson ninja
+        - sudo docker exec --tty mipsX pip3 install meson==0.56.2 ninja
       script:
         - sudo docker exec --tty mipsX bash -c 'EXTRA_CFLAGS=-static CC=mips-linux-gnu-gcc ./configure --host=mips-linux-gnu'
         - sudo docker exec --tty mipsX make
@@ -223,9 +259,9 @@ matrix:
           exe_wrapper = 'qemu-mips-static'
           pkgconfig   = 'false'
           EOF
-        - sudo docker exec --tty mipsX meson setup --cross-file mips-cross-file.txt -Ddefault_library=static -Db_staticpic=false builddir
-        - sudo docker exec --tty mipsX meson compile -C builddir
-        - sudo docker exec --tty mipsX meson test -v --timeout-multiplier 10 -C builddir
+        #- sudo docker exec --tty mipsX meson setup --cross-file mips-cross-file.txt -Ddefault_library=static -Db_staticpic=false builddir
+        #- sudo docker exec --tty mipsX meson compile -C builddir
+        #- sudo docker exec --tty mipsX meson test -v --timeout-multiplier 10 -C builddir
         - sudo docker kill mipsX
 
     # linux build of fuzzer

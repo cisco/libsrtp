@@ -8,7 +8,6 @@
 #include <limits.h>
 #include "srtp.h"
 #include "srtp_priv.h"
-#include "ekt.h"
 #include "fuzzer.h"
 #include "mt19937.h"
 #include "testmem.h"
@@ -411,33 +410,6 @@ end:
     return ret;
 }
 
-static srtp_ekt_policy_t extract_ekt_policy(const uint8_t **data, size_t *size)
-{
-    srtp_ekt_policy_t ret = NULL;
-    struct {
-        srtp_ekt_spi_t spi;
-        uint8_t key[16];
-
-    } params;
-
-    EXTRACT_IF(&params, *data, *size, sizeof(params));
-
-    ret = fuzz_alloc_succeed(sizeof(struct srtp_ekt_policy_ctx_t), false);
-
-    ret->spi = params.spi;
-
-    /* The only supported cipher type */
-    ret->ekt_cipher_type = SRTP_EKT_CIPHER_AES_128_ECB;
-
-    ret->ekt_key = fuzz_alloc_succeed(sizeof(params.key), false);
-    memcpy(ret->ekt_key, params.key, sizeof(params.key));
-
-    ret->next_ekt_policy = NULL;
-
-end:
-    return ret;
-}
-
 static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
 {
     srtp_policy_t *policy = NULL;
@@ -448,8 +420,6 @@ static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
         uint8_t ssrc_type;
         uint32_t ssrc_value;
         uint8_t num_xtn_hdr;
-        uint8_t with_ekt;
-        srtp_ekt_spi_t ekt_spi;
         uint8_t do_extract_key;
         uint8_t do_extract_master_keys;
     } params;
@@ -461,7 +431,6 @@ static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
     params.allow_repeat_tx %= 2;
     params.ssrc_type %=
         sizeof(fuzz_ssrc_type_map) / sizeof(fuzz_ssrc_type_map[0]);
-    params.with_ekt %= 2;
 
     policy = fuzz_alloc_succeed(sizeof(*policy), true);
 
@@ -508,10 +477,6 @@ static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
             fuzz_free(policy);
             return NULL;
         }
-    }
-
-    if (params.with_ekt) {
-        policy->ekt = extract_ekt_policy(data, size);
     }
 
     policy->window_size = params.window_size;
@@ -630,12 +595,6 @@ static void free_policies(srtp_policy_t *curpolicy)
 
         fuzz_free(curpolicy->keys);
         fuzz_free(curpolicy->enc_xtn_hdr);
-
-        if (curpolicy->ekt) {
-            fuzz_free(curpolicy->ekt->ekt_key);
-            fuzz_free(curpolicy->ekt);
-        }
-
         fuzz_free(curpolicy);
 
         curpolicy = next;

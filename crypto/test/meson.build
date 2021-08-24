@@ -3,11 +3,13 @@
 test_apps = [
   'cipher_driver',
   'datatypes_driver',
-  'stat_driver',
-  'sha1_driver',
   'kernel_driver',
   'env',
 ]
+
+if not use_openssl and not use_nss
+  test_apps += ['sha1_driver']
+endif
 
 foreach test_name : test_apps
   test_exe = executable(test_name,

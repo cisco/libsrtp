@@ -1,0 +1,77 @@
+name: CMake CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        crypto: [internal, openssl, nss, mbedtls]
+        exclude:
+          - os: windows-latest
+            crypto: openssl
+          - os: windows-latest
+            crypto: nss
+          - os: windows-latest
+            crypto: mbedtls
+        include:
+          - crypto: internal
+            cmake-crypto-enable: ""
+          - crypto: openssl
+            cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
+          - crypto: nss
+            cmake-crypto-enable: "-DENABLE_NSS=ON"
+          - crypto: mbedtls
+            cmake-crypto-enable: "-DENABLE_MBEDTLS=ON"
+
+    runs-on: ${{ matrix.os }}
+    
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
+
+    steps:
+    - name: Setup Ubuntu NSS
+      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
+      run: sudo apt-get install libnss3-dev
+      
+    - name: Setup Ubuntu MbedTLS
+      if:  matrix.os == 'ubuntu-latest' && matrix.crypto == 'mbedtls'
+      run: sudo apt-get install libmbedtls-dev
+    
+    - name: Setup macOS OpenSSL
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
+      run: echo "cmake-crypto-dir=-DOPENSSL_ROOT_DIR=$(brew --prefix openssl@1.1)" >> $GITHUB_ENV
+      
+    - name: Setup macOS NSS
+      if:  matrix.os == 'macos-latest' && matrix.crypto == 'nss'
+      run: brew install nss
+      
+    - name: Setup macOS MbedTLS
+      if:  matrix.os == 'macos-latest' && matrix.crypto == 'mbedtls'
+      run: brew install mbedtls
+      
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake $GITHUB_WORKSPACE -DBUILD_WITH_SANITIZERS=TRUE ${{ matrix.cmake-crypto-enable}} ${{env.cmake-crypto-dir}}
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build .
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: ctest
