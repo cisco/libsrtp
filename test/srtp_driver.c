@@ -2037,7 +2037,7 @@ srtp_err_status_t srtp_validate_cryptex()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
-    policy.ekt = NULL;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.use_cryptex = 1;
@@ -2514,7 +2514,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_gcm;
-    policy.ekt = NULL;
+    policy.deprecated_ekt = NULL;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.use_cryptex = 1;
