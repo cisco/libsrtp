@@ -1957,7 +1957,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     /* Check if the profile is the one for cryptex */
     if (xtn_profile_specific == 0xc0de || xtn_profile_specific == 0xc2de) {
         /* Get the 4 bytes of defined by profile and length */
-        xtn_hdr_profile_and_value = *(uint32_t*)xtn_hdr;
+        xtn_hdr_profile_and_value = *(uint32_t *)xtn_hdr;
         /* Get CSRCs block position or profile if no CSRCs */
         uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
         /* Move CSRCS so block is contiguous with extension header block */
@@ -2751,7 +2751,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         /* Check if the profile is the one for cryptex */
         if (xtn_profile_specific == 0xc0de || xtn_profile_specific == 0xc2de) {
             /* Get the 4 bytes of defined by profile and length */
-            xtn_hdr_profile_and_value = *(uint32_t*)xtn_hdr;
+            xtn_hdr_profile_and_value = *(uint32_t *)xtn_hdr;
             /* Get CSRCs block position or profile if no CSRCs */
             uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
             /* Move CSRCS so block is contiguous with extension header block */
