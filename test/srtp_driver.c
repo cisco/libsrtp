@@ -2107,14 +2107,14 @@ srtp_err_status_t srtp_validate_cryptex()
         if (srtp_octet_string_is_eq(packet, reference, len)) {
             return srtp_err_status_fail;
         }
+
+        status = srtp_dealloc(srtp_recv);
+        if (status) {
+            return status;
+        }
     }
 
     status = srtp_dealloc(srtp_snd);
-    if (status) {
-        return status;
-    }
-
-    status = srtp_dealloc(srtp_recv);
     if (status) {
         return status;
     }
@@ -2584,14 +2584,14 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         if (srtp_octet_string_is_eq(packet, reference, len)) {
             return srtp_err_status_fail;
         }
+
+        status = srtp_dealloc(srtp_recv);
+        if (status) {
+            return status;
+        }
     }
 
     status = srtp_dealloc(srtp_snd);
-    if (status) {
-        return status;
-    }
-
-    status = srtp_dealloc(srtp_recv);
     if (status) {
         return status;
     }
