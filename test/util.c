@@ -117,7 +117,7 @@ uint8_t nibble_to_hex_char(uint8_t nibble)
  * hex_string_to_octet_string converts a hexadecimal string
  * of length 2 * len to a raw octet string of length len
  */
-int hex_string_to_octet_string(char *raw, char *hex, int len)
+int hex_string_to_octet_string(char *raw, const char *hex, int len)
 {
     uint8_t x;
     int tmp;

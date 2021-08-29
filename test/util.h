@@ -46,7 +46,7 @@
 
 #define MAX_PRINT_STRING_LEN 1024
 
-int hex_string_to_octet_string(char *raw, char *hex, int len);
+int hex_string_to_octet_string(char *raw, const char *hex, int len);
 char *octet_string_hex_string(const void *s, int length);
 int base64_string_to_octet_string(char *raw, int *pad, char *base64, int len);
 

@@ -441,6 +441,8 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
         str->enc_xtn_hdr_count = 0;
     }
 
+    str->use_cryptex = p->use_cryptex;
+
     return srtp_err_status_ok;
 }
 
@@ -548,7 +550,7 @@ srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
     /* copy information about extensions header encryption */
     str->enc_xtn_hdr = stream_template->enc_xtn_hdr;
     str->enc_xtn_hdr_count = stream_template->enc_xtn_hdr_count;
-
+    str->use_cryptex = stream_template->use_cryptex;
     /* defensive coding */
     str->next = NULL;
     return srtp_err_status_ok;
@@ -1694,6 +1696,9 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     unsigned int mki_size = 0;
     uint8_t *mki_location = NULL;
+    int xtn_hdr_length = 0;
+    int xtn_profile_specific = 0;
+    uint32_t xtn_hdr_profile_and_value = 0;
 
     debug_print0(mod_srtp, "function srtp_protect_aead");
 
@@ -1723,10 +1728,41 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
      * extension, if present; otherwise, it starts after the last csrc,
      * if any are present
      */
-    enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
+
+    /* Cryptex can only encrypt CSRCS if header extension is present*/
+    if (stream->use_cryptex && hdr->cc && !hdr->x) {
+        return srtp_err_status_parse_err;
+    }
     if (hdr->x == 1) {
-        xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
-        enc_start += (ntohs(xtn_hdr->length) + 1);
+        xtn_hdr = (srtp_hdr_xtnd_t *)(uint32_t *)hdr + uint32s_in_rtp_header +
+                  hdr->cc;
+        xtn_hdr_length = ntohs(xtn_hdr->length);
+        xtn_profile_specific = ntohs(xtn_hdr->profile_specific);
+    }
+    /* If no header extension is present cryptex has no effect */
+    if (stream->use_cryptex && hdr->x) {
+        /* Change profiles by cryptex values */
+        if (xtn_profile_specific == 0xbede) {
+            xtn_hdr_profile_and_value = htonl(0xc0de << 16 | xtn_hdr_length);
+        } else if (xtn_profile_specific == 0x1000) {
+            xtn_hdr_profile_and_value = htonl(0xc2de << 16 | xtn_hdr_length);
+        } else {
+            return srtp_err_status_parse_err;
+        }
+        /* Get CSRCs block position or profile if no CSRCs */
+        uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+        /* Move CSRCS so block is contiguous with extension header block */
+        for (unsigned char i = hdr->cc; i > 0; --i)
+            csrcs[i] = csrcs[i - 1];
+        /* Move profile and length before the CSRCs */
+        csrcs[0] = xtn_hdr_profile_and_value;
+        /* Start encrypting in the CSRCS block new position */
+        enc_start = csrcs + 1;
+    } else {
+        enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
+        if (hdr->x == 1) {
+            enc_start += (xtn_hdr_length + 1);
+        }
     }
     /* note: the passed size is without the auth tag */
     if (!((uint8_t *)enc_start <= (uint8_t *)hdr + *pkt_octet_len))
@@ -1808,6 +1844,17 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     if (status) {
         return srtp_err_status_cipher_fail;
     }
+
+    /* Restore CSRCs block before sending if using cryptex */
+    if (stream->use_cryptex && xtn_hdr && hdr->cc) {
+        /* Restore CSRCS to its original position */
+        uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+        for (unsigned char i = 0; i < hdr->cc; ++i)
+            csrcs[i] = csrcs[i + 1];
+        /* Restore extension header profile and length */
+        *(uint32_t *)xtn_hdr = xtn_hdr_profile_and_value;
+    }
+
     /*
      * If we're doing GCM, we need to get the tag
      * and append that to the output
@@ -1855,6 +1902,10 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     int tag_len;
     unsigned int aad_len;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
+    int xtn_hdr_length = 0;
+    int xtn_profile_specific = 0;
+    unsigned int use_cryptex = 0;
+    uint32_t xtn_hdr_profile_and_value = 0;
 
     debug_print0(mod_srtp, "function srtp_unprotect_aead");
 
@@ -1896,10 +1947,32 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      * extension, if present; otherwise, it starts after the last csrc,
      * if any are present
      */
-    enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
     if (hdr->x == 1) {
-        xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
-        enc_start += (ntohs(xtn_hdr->length) + 1);
+        xtn_hdr = (srtp_hdr_xtnd_t *)(uint32_t *)hdr + uint32s_in_rtp_header +
+                  hdr->cc;
+        xtn_hdr_length = ntohs(xtn_hdr->length);
+        xtn_profile_specific = ntohs(xtn_hdr->profile_specific);
+    }
+
+    /* Check if the profile is the one for cryptex */
+    if (xtn_profile_specific == 0xc0de || xtn_profile_specific == 0xc2de) {
+        /* Get the 4 bytes of defined by profile and length */
+        xtn_hdr_profile_and_value = *(uint32_t *)xtn_hdr;
+        /* Get CSRCs block position or profile if no CSRCs */
+        uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+        /* Move CSRCS so block is contiguous with extension header block */
+        for (unsigned char i = hdr->cc; i > 0; --i)
+            csrcs[i] = csrcs[i - 1];
+        /* Move defined by profile before the CSRCs block */
+        csrcs[0] = xtn_hdr_profile_and_value;
+        /* Start encrypting in the CSRCS block new position */
+        enc_start = csrcs + 1;
+        use_cryptex = 1;
+    } else {
+        enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
+        if (hdr->x == 1) {
+            enc_start += (xtn_hdr_length + 1);
+        }
     }
     if (!((uint8_t *)enc_start <=
           (uint8_t *)hdr + (*pkt_octet_len - tag_len - mki_size)))
@@ -1953,6 +2026,22 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
                                  &enc_octet_len);
     if (status) {
         return status;
+    }
+
+    if (use_cryptex) {
+        uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+        /* Restore CSRCS to its original position */
+        for (unsigned char i = 0; i < hdr->cc; ++i)
+            csrcs[i] = csrcs[i + 1];
+        /* Restore extension header and change profiles by cryptex values*/
+        xtn_hdr->length = htons(xtn_hdr_length);
+        if (xtn_profile_specific == 0xc0de) {
+            xtn_hdr->profile_specific = htons(0xbede);
+        } else if (xtn_profile_specific == 0xc2de) {
+            xtn_hdr->profile_specific = htons(0x1000);
+        } else {
+            return srtp_err_status_parse_err;
+        }
     }
 
     if (xtn_hdr && session_keys->rtp_xtn_hdr_cipher) {
@@ -2056,6 +2145,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     srtp_session_keys_t *session_keys = NULL;
     uint8_t *mki_location = NULL;
     int advance_packet_index = 0;
+    int xtn_hdr_length = 0;
+    int xtn_profile_specific = 0;
+    uint32_t xtn_hdr_profile_and_value = 0;
 
     debug_print0(mod_srtp, "function srtp_protect");
 
@@ -2165,10 +2257,42 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
      * if we're not providing confidentiality, set enc_start to NULL
      */
     if (stream->rtp_services & sec_serv_conf) {
-        enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
+        /* Cryptex can only encrypt CSRCS if header extension is present*/
+        if (stream->use_cryptex && hdr->cc && !hdr->x) {
+            return srtp_err_status_parse_err;
+        }
         if (hdr->x == 1) {
-            xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
-            enc_start += (ntohs(xtn_hdr->length) + 1);
+            xtn_hdr = (srtp_hdr_xtnd_t *)(uint32_t *)hdr +
+                      uint32s_in_rtp_header + hdr->cc;
+            xtn_hdr_length = ntohs(xtn_hdr->length);
+            xtn_profile_specific = ntohs(xtn_hdr->profile_specific);
+        }
+        /* If no header extension is present cryptex has no effect */
+        if (stream->use_cryptex && hdr->x) {
+            /* Change profiles by cryptex values */
+            if (xtn_profile_specific == 0xbede) {
+                xtn_hdr_profile_and_value =
+                    htonl(0xc0de << 16 | xtn_hdr_length);
+            } else if (xtn_profile_specific == 0x1000) {
+                xtn_hdr_profile_and_value =
+                    htonl(0xc2de << 16 | xtn_hdr_length);
+            } else {
+                return srtp_err_status_parse_err;
+            }
+            /* Get CSRCs block position or profile if no CSRCs */
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Move CSRCS so block is contiguous with extension header block */
+            for (unsigned char i = hdr->cc; i > 0; --i)
+                csrcs[i] = csrcs[i - 1];
+            /* Move profile and length before the CSRCs */
+            csrcs[0] = xtn_hdr_profile_and_value;
+            /* Start encrypting in the CSRCS block new position */
+            enc_start = csrcs + 1;
+        } else {
+            enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
+            if (hdr->x == 1) {
+                enc_start += (xtn_hdr_length + 1);
+            }
         }
         /* note: the passed size is without the auth tag */
         if (!((uint8_t *)enc_start <= (uint8_t *)hdr + *pkt_octet_len))
@@ -2315,6 +2439,15 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
                                 (unsigned int *)&enc_octet_len);
         if (status)
             return srtp_err_status_cipher_fail;
+        /* Restore CSRCs block before sending if using cryptex */
+        if (stream->use_cryptex && xtn_hdr && hdr->cc) {
+            /* Restore CSRCS to its original position */
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            for (unsigned char i = 0; i < hdr->cc; ++i)
+                csrcs[i] = csrcs[i + 1];
+            /* Restore extension header profile and length */
+            *(uint32_t *)xtn_hdr = xtn_hdr_profile_and_value;
+        }
     }
 
     /*
@@ -2386,6 +2519,10 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     int advance_packet_index = 0;
     uint32_t roc_to_set = 0;
     uint16_t seq_to_set = 0;
+    int xtn_hdr_length = 0;
+    int xtn_profile_specific = 0;
+    unsigned int use_cryptex = 0;
+    uint32_t xtn_hdr_profile_and_value = 0;
 
     debug_print0(mod_srtp, "function srtp_unprotect");
 
@@ -2535,29 +2672,6 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
 #endif
 
     /*
-     * find starting point for decryption and length of data to be
-     * decrypted - the encrypted portion starts after the rtp header
-     * extension, if present; otherwise, it starts after the last csrc,
-     * if any are present
-     *
-     * if we're not providing confidentiality, set enc_start to NULL
-     */
-    if (stream->rtp_services & sec_serv_conf) {
-        enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
-        if (hdr->x == 1) {
-            xtn_hdr = (srtp_hdr_xtnd_t *)enc_start;
-            enc_start += (ntohs(xtn_hdr->length) + 1);
-        }
-        if (!((uint8_t *)enc_start <=
-              (uint8_t *)hdr + (*pkt_octet_len - tag_len - mki_size)))
-            return srtp_err_status_parse_err;
-        enc_octet_len = (uint32_t)(*pkt_octet_len - tag_len - mki_size -
-                                   ((uint8_t *)enc_start - (uint8_t *)hdr));
-    } else {
-        enc_start = NULL;
-    }
-
-    /*
      * if we're providing authentication, set the auth_start and auth_tag
      * pointers to the proper locations; otherwise, set auth_start to NULL
      * to indicate that no authentication is needed
@@ -2619,6 +2733,51 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     }
 
     /*
+     * find starting point for decryption and length of data to be
+     * decrypted - the encrypted portion starts after the rtp header
+     * extension, if present; otherwise, it starts after the last csrc,
+     * if any are present
+     *
+     * if we're not providing confidentiality, set enc_start to NULL
+     */
+    if (stream->rtp_services & sec_serv_conf) {
+        if (hdr->x == 1) {
+            xtn_hdr = (srtp_hdr_xtnd_t *)(uint32_t *)hdr +
+                      uint32s_in_rtp_header + hdr->cc;
+            xtn_hdr_length = ntohs(xtn_hdr->length);
+            xtn_profile_specific = ntohs(xtn_hdr->profile_specific);
+        }
+
+        /* Check if the profile is the one for cryptex */
+        if (xtn_profile_specific == 0xc0de || xtn_profile_specific == 0xc2de) {
+            /* Get the 4 bytes of defined by profile and length */
+            xtn_hdr_profile_and_value = *(uint32_t *)xtn_hdr;
+            /* Get CSRCs block position or profile if no CSRCs */
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Move CSRCS so block is contiguous with extension header block */
+            for (unsigned char i = hdr->cc; i > 0; --i)
+                csrcs[i] = csrcs[i - 1];
+            /* Move defined by profile before the CSRCs block */
+            csrcs[0] = xtn_hdr_profile_and_value;
+            /* Start encrypting in the CSRCS block new position */
+            enc_start = csrcs + 1;
+            use_cryptex = 1;
+        } else {
+            enc_start = (uint32_t *)hdr + uint32s_in_rtp_header + hdr->cc;
+            if (hdr->x == 1) {
+                enc_start += (xtn_hdr_length + 1);
+            }
+        }
+        if (!((uint8_t *)enc_start <=
+              (uint8_t *)hdr + (*pkt_octet_len - tag_len - mki_size)))
+            return srtp_err_status_parse_err;
+        enc_octet_len = (uint32_t)(*pkt_octet_len - tag_len - mki_size -
+                                   ((uint8_t *)enc_start - (uint8_t *)hdr));
+    } else {
+        enc_start = NULL;
+    }
+
+    /*
      * update the key usage limit, and check it to make sure that we
      * didn't just hit either the soft limit or the hard limit, and call
      * the event handler if we hit either.
@@ -2650,6 +2809,22 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
                                      (uint8_t *)enc_start, &enc_octet_len);
         if (status)
             return srtp_err_status_cipher_fail;
+
+        if (use_cryptex) {
+            uint32_t *csrcs = (uint32_t *)hdr + uint32s_in_rtp_header;
+            /* Restore CSRCS to its original position */
+            for (unsigned char i = 0; i < hdr->cc; ++i)
+                csrcs[i] = csrcs[i + 1];
+            /* Restore extension header and change profiles by cryptex values*/
+            xtn_hdr->length = htons(xtn_hdr_length);
+            if (xtn_profile_specific == 0xc0de) {
+                xtn_hdr->profile_specific = htons(0xbede);
+            } else if (xtn_profile_specific == 0xc2de) {
+                xtn_hdr->profile_specific = htons(0x1000);
+            } else {
+                return srtp_err_status_parse_err;
+            }
+        }
     }
 
     /*
