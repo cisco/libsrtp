@@ -3091,11 +3091,17 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
 
     /* Create sender */
     memset(&sender_policy, 0, sizeof(sender_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtcp);
+    sender_policy.key = test_key_gcm;
+#else
     srtp_crypto_policy_set_rtp_default(&sender_policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&sender_policy.rtcp);
+    sender_policy.key = test_key;
+#endif
     sender_policy.ssrc.type = ssrc_specific;
     sender_policy.ssrc.value = 0xcafebabe;
-    sender_policy.key = test_key;
     sender_policy.window_size = 128;
 
     status = srtp_create(&sender_session, &sender_policy);
@@ -3144,11 +3150,17 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
 
     /* Create the receiver */
     memset(&receiver_policy, 0, sizeof(receiver_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtcp);
+    receiver_policy.key = test_key_gcm;
+#else
     srtp_crypto_policy_set_rtp_default(&receiver_policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&receiver_policy.rtcp);
+    receiver_policy.key = test_key;
+#endif
     receiver_policy.ssrc.type = ssrc_specific;
     receiver_policy.ssrc.value = sender_policy.ssrc.value;
-    receiver_policy.key = test_key;
     receiver_policy.window_size = 128;
 
     status = srtp_create(&receiver_session, &receiver_policy);
@@ -3230,11 +3242,17 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
 
     /* Create sender */
     memset(&sender_policy, 0, sizeof(sender_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtcp);
+    sender_policy.key = test_key_gcm;
+#else
     srtp_crypto_policy_set_rtp_default(&sender_policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&sender_policy.rtcp);
+    sender_policy.key = test_key;
+#endif
     sender_policy.ssrc.type = ssrc_specific;
     sender_policy.ssrc.value = 0xcafebabe;
-    sender_policy.key = test_key;
     sender_policy.window_size = 128;
 
     status = srtp_create(&sender_session, &sender_policy);
@@ -3261,11 +3279,17 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
 
     /* Create the receiver */
     memset(&receiver_policy, 0, sizeof(receiver_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtcp);
+    receiver_policy.key = test_key_gcm;
+#else
     srtp_crypto_policy_set_rtp_default(&receiver_policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&receiver_policy.rtcp);
+    receiver_policy.key = test_key;
+#endif
     receiver_policy.ssrc.type = ssrc_specific;
     receiver_policy.ssrc.value = sender_policy.ssrc.value;
-    receiver_policy.key = test_key;
     receiver_policy.window_size = 128;
 
     status = srtp_create(&receiver_session, &receiver_policy);
