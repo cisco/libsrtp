@@ -1740,13 +1740,23 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
      * estimate the packet index using the start of the replay window
      * and the sequence number from the header
      */
-    delta = srtp_rdbx_estimate_index(&stream->rtp_rdbx, &est, ntohs(hdr->seq));
-    status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-    if (status) {
-        if (status != srtp_err_status_replay_fail || !stream->allow_repeat_tx) {
-            return status; /* we've been asked to reuse an index */
-        }
+    status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
+
+    if (status && (status != srtp_err_status_pkt_idx_adv))
+        return status;
+
+    if (status == srtp_err_status_pkt_idx_adv) {
+        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, (uint32_t)(est >> 16),
+                              (uint16_t)(est & 0xFFFF));
+        stream->pending_roc = 0;
+        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
     } else {
+        status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+        if (status) {
+            if (status != srtp_err_status_replay_fail ||
+                !stream->allow_repeat_tx)
+                return status; /* we've been asked to reuse an index */
+        }
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
 
@@ -1845,7 +1855,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
                                              void *srtp_hdr,
                                              unsigned int *pkt_octet_len,
                                              srtp_session_keys_t *session_keys,
-                                             unsigned int mki_size)
+                                             unsigned int mki_size,
+                                             int advance_packet_index)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
     uint32_t *enc_start;            /* pointer to start of encrypted portion  */
@@ -2016,7 +2027,15 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      * the message authentication function passed, so add the packet
      * index into the replay database
      */
-    srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+    if (advance_packet_index) {
+        uint32_t roc_to_set = (uint32_t)(est >> 16);
+        uint16_t seq_to_set = (uint16_t)(est & 0xFFFF);
+        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, roc_to_set, seq_to_set);
+        stream->pending_roc = 0;
+        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
+    } else {
+        srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+    }
 
     /* decrease the packet length by the length of the auth tag */
     *pkt_octet_len -= tag_len;
@@ -2055,7 +2074,6 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     unsigned int mki_size = 0;
     srtp_session_keys_t *session_keys = NULL;
     uint8_t *mki_location = NULL;
-    int advance_packet_index = 0;
 
     debug_print0(mod_srtp, "function srtp_protect");
 
@@ -2206,10 +2224,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     if (status && (status != srtp_err_status_pkt_idx_adv))
         return status;
 
-    if (status == srtp_err_status_pkt_idx_adv)
-        advance_packet_index = 1;
-
-    if (advance_packet_index) {
+    if (status == srtp_err_status_pkt_idx_adv) {
         srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, (uint32_t)(est >> 16),
                               (uint16_t)(est & 0xFFFF));
         stream->pending_roc = 0;
@@ -2479,7 +2494,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
         return srtp_unprotect_aead(ctx, stream, delta, est, srtp_hdr,
                                    (unsigned int *)pkt_octet_len, session_keys,
-                                   mki_size);
+                                   mki_size, advance_packet_index);
     }
 
     /* get tag length from stream */
