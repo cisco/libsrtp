@@ -776,6 +776,25 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher,
     }
 }
 
+/* Get the key length that the application should supply for the given cipher */
+static inline int full_key_length(const srtp_cipher_type_t *cipher) {
+  switch (cipher->id) {
+    case SRTP_NULL_CIPHER:
+    case SRTP_AES_ICM_128:
+        return SRTP_AES_ICM_128_KEY_LEN_WSALT;
+    case SRTP_AES_ICM_192:
+        return SRTP_AES_ICM_192_KEY_LEN_WSALT;
+    case SRTP_AES_ICM_256:
+        return SRTP_AES_ICM_256_KEY_LEN_WSALT;
+    case SRTP_AES_GCM_128:
+        return SRTP_AES_GCM_128_KEY_LEN_WSALT;
+    case SRTP_AES_GCM_256:
+        return SRTP_AES_ICM_256_KEY_LEN_WSALT;
+    default:
+        return 0;
+  }
+}
+
 unsigned int srtp_validate_policy_master_keys(const srtp_policy_t *policy)
 {
     unsigned long i = 0;
@@ -870,6 +889,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     srtp_err_status_t stat;
     srtp_kdf_t kdf;
     uint8_t tmp_key[MAX_SRTP_KEY_LEN];
+    int input_keylen, input_keylen_rtcp;
     int kdf_keylen = 30, rtp_keylen, rtcp_keylen;
     int rtp_base_key_len, rtp_salt_len;
     int rtcp_base_key_len, rtcp_salt_len;
@@ -906,6 +926,12 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
 
     session_keys->mki_size = master_key->mki_size;
 
+    input_keylen = full_key_length(session_keys->rtp_cipher->type);
+    input_keylen_rtcp = full_key_length(session_keys->rtcp_cipher->type);
+    if (input_keylen_rtcp > input_keylen) {
+      input_keylen = input_keylen_rtcp;
+    }
+
     rtp_keylen = srtp_cipher_get_key_length(session_keys->rtp_cipher);
     rtcp_keylen = srtp_cipher_get_key_length(session_keys->rtcp_cipher);
     rtp_base_key_len =
@@ -920,6 +946,11 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
     }
 
+    if (input_keylen > kdf_keylen) {
+        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+    }
+
+    debug_print(mod_srtp, "input key len;: %d", input_keylen);
     debug_print(mod_srtp, "srtp key len: %d", rtp_keylen);
     debug_print(mod_srtp, "srtcp key len: %d", rtcp_keylen);
     debug_print(mod_srtp, "base key len: %d", rtp_base_key_len);
@@ -932,7 +963,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * the legacy CTR mode KDF, which uses a 112 bit master SALT.
      */
     memset(tmp_key, 0x0, MAX_SRTP_KEY_LEN);
-    memcpy(tmp_key, key, kdf_keylen);
+    memcpy(tmp_key, key, input_keylen);
 
 /* initialize KDF state     */
 #if defined(OPENSSL) && defined(OPENSSL_KDF)
