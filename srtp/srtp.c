@@ -777,8 +777,9 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher,
 }
 
 /* Get the key length that the application should supply for the given cipher */
-static inline int full_key_length(const srtp_cipher_type_t *cipher) {
-  switch (cipher->id) {
+static inline int full_key_length(const srtp_cipher_type_t *cipher)
+{
+    switch (cipher->id) {
     case SRTP_NULL_CIPHER:
     case SRTP_AES_ICM_128:
         return SRTP_AES_ICM_128_KEY_LEN_WSALT;
@@ -792,7 +793,7 @@ static inline int full_key_length(const srtp_cipher_type_t *cipher) {
         return SRTP_AES_ICM_256_KEY_LEN_WSALT;
     default:
         return 0;
-  }
+    }
 }
 
 unsigned int srtp_validate_policy_master_keys(const srtp_policy_t *policy)
@@ -929,7 +930,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     input_keylen = full_key_length(session_keys->rtp_cipher->type);
     input_keylen_rtcp = full_key_length(session_keys->rtcp_cipher->type);
     if (input_keylen_rtcp > input_keylen) {
-      input_keylen = input_keylen_rtcp;
+        input_keylen = input_keylen_rtcp;
     }
 
     rtp_keylen = srtp_cipher_get_key_length(session_keys->rtp_cipher);
