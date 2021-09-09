@@ -757,22 +757,20 @@ static inline int base_key_length(const srtp_cipher_type_t *cipher,
                                   int key_length)
 {
     switch (cipher->id) {
+    case SRTP_NULL_CIPHER:
+        return 0;
     case SRTP_AES_ICM_128:
     case SRTP_AES_ICM_192:
     case SRTP_AES_ICM_256:
         /* The legacy modes are derived from
          * the configured key length on the policy */
         return key_length - SRTP_SALT_LEN;
-        break;
     case SRTP_AES_GCM_128:
         return key_length - SRTP_AEAD_SALT_LEN;
-        break;
     case SRTP_AES_GCM_256:
         return key_length - SRTP_AEAD_SALT_LEN;
-        break;
     default:
         return key_length;
-        break;
     }
 }
 
@@ -3264,7 +3262,7 @@ void srtp_crypto_policy_set_null_cipher_hmac_sha1_80(srtp_crypto_policy_t *p)
      */
 
     p->cipher_type = SRTP_NULL_CIPHER;
-    p->cipher_key_len = 0;
+    p->cipher_key_len = 16;
     p->auth_type = SRTP_HMAC_SHA1;
     p->auth_key_len = 20;
     p->auth_tag_len = 10;
@@ -3278,7 +3276,7 @@ void srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p)
      */
 
     p->cipher_type = SRTP_NULL_CIPHER;
-    p->cipher_key_len = 0;
+    p->cipher_key_len = 16;
     p->auth_type = SRTP_NULL_AUTH;
     p->auth_key_len = 0;
     p->auth_tag_len = 0;
