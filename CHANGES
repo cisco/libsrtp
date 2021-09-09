@@ -1,5 +1,11 @@
 Changelog
 
+2.4.1
+
+Major changes
+
+#560 - Merge PR 559, Use a full-length key even with null ciphers
+
 2.4.0
 
 Major changes
