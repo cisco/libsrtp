@@ -951,7 +951,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
     }
 
-    debug_print(mod_srtp, "input key len;: %d", input_keylen);
+    debug_print(mod_srtp, "input key len: %d", input_keylen);
     debug_print(mod_srtp, "srtp key len: %d", rtp_keylen);
     debug_print(mod_srtp, "srtcp key len: %d", rtcp_keylen);
     debug_print(mod_srtp, "base key len: %d", rtp_base_key_len);
