@@ -177,6 +177,8 @@ int main(int argc, char *argv[])
     rtp_decoder_t dec;
     srtp_policy_t policy = { { 0 } };
     rtp_decoder_mode_t mode = mode_rtp;
+    srtp_ssrc_t ssrc = { ssrc_any_inbound, 0 };
+    uint32_t roc = 0;
     srtp_err_status_t status;
     int len;
     int expected_len;
@@ -202,7 +204,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:s:m:p:o:");
+        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:c:m:p:o:s:r:");
         if (c == -1) {
             break;
         }
@@ -256,7 +258,7 @@ int main(int argc, char *argv[])
         case 'l':
             do_list_mods = 1;
             break;
-        case 's':
+        case 'c':
             for (i_scsp = &srtp_crypto_suites[0]; i_scsp->can_name != NULL;
                  i_scsp++) {
                 if (strcasecmp(i_scsp->can_name, optarg_s) == 0) {
@@ -296,6 +298,13 @@ int main(int argc, char *argv[])
             break;
         case 'o':
             rtp_packet_offset = atoi(optarg_s);
+            break;
+        case 's':
+            ssrc.type = ssrc_specific;
+            ssrc.value = strtol(optarg_s, NULL, 0);
+            break;
+        case 'r':
+            roc = atoi(optarg_s);
             break;
         default:
             usage(argv[0]);
@@ -567,6 +576,13 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    policy.ssrc = ssrc;
+
+    if (roc != 0 && policy.ssrc.type != ssrc_specific) {
+        fprintf(stderr, "error: setting ROC (-r) requires -s <ssrc>\n");
+        exit(1);
+    }
+
     pcap_handle = pcap_open_offline(pcap_file, errbuf);
 
     if (!pcap_handle) {
@@ -590,7 +606,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset)) {
+    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, roc)) {
         fprintf(stderr, "error: init failed\n");
         exit(1);
     }
@@ -622,8 +638,8 @@ void usage(char *string)
 {
     fprintf(
         stderr,
-        "usage: %s [-d <debug>]* [[-k][-b] <key>] [-a][-t][-e] [-s "
-        "<srtp-crypto-suite>] [-m <mode>]\n"
+        "usage: %s [-d <debug>]* [[-k][-b] <key>] [-a][-t][-e] [-c "
+        "<srtp-crypto-suite>] [-m <mode>] [-s <ssrc> [-r <roc>]]\n"
         "or     %s -l\n"
         "where  -a use message authentication\n"
         "       -e <key size> use encryption (use 128 or 256 for key size)\n"
@@ -634,11 +650,15 @@ void usage(char *string)
         "       -l list debug modules\n"
         "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
         "       -d <debug> turn on debugging for module <debug>\n"
-        "       -s \"<srtp-crypto-suite>\" to set both key and tag size based\n"
+        "       -c \"<srtp-crypto-suite>\" to set both key and tag size based\n"
         "          on RFC4568-style crypto suite specification\n"
         "       -m <mode> set the mode to be one of [rtp]|rtcp|rtcp-mux\n"
         "       -p <pcap file> path to pcap file (defaults to stdin)\n"
-        "       -o byte offset of RTP packet in capture (defaults to 42)\n",
+        "       -o byte offset of RTP packet in capture (defaults to 42)\n"
+        "       -s <ssrc> restrict decrypting to the given SSRC (in host byte "
+        "order)\n"
+        "       -r <roc> initial rollover counter, requires -s <ssrc> "
+        "(defaults to 0)\n",
         string, string);
     exit(1);
 }
@@ -664,7 +684,8 @@ int rtp_decoder_deinit(rtp_decoder_t decoder)
 int rtp_decoder_init(rtp_decoder_t dcdr,
                      srtp_policy_t policy,
                      rtp_decoder_mode_t mode,
-                     int rtp_packet_offset)
+                     int rtp_packet_offset,
+                     uint32_t roc)
 {
     dcdr->rtp_offset = rtp_packet_offset;
     dcdr->srtp_ctx = NULL;
@@ -676,10 +697,15 @@ int rtp_decoder_init(rtp_decoder_t dcdr,
     dcdr->rtcp_cnt = 0;
     dcdr->mode = mode;
     dcdr->policy = policy;
-    dcdr->policy.ssrc.type = ssrc_any_inbound;
 
     if (srtp_create(&dcdr->srtp_ctx, &dcdr->policy)) {
         return 1;
+    }
+
+    if (policy.ssrc.type == ssrc_specific && roc != 0) {
+        if (srtp_set_stream_roc(dcdr->srtp_ctx, policy.ssrc.value, roc)) {
+            return 1;
+        }
     }
     return 0;
 }
