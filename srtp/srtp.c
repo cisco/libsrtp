@@ -788,7 +788,7 @@ static inline int full_key_length(const srtp_cipher_type_t *cipher)
     case SRTP_AES_GCM_128:
         return SRTP_AES_GCM_128_KEY_LEN_WSALT;
     case SRTP_AES_GCM_256:
-        return SRTP_AES_ICM_256_KEY_LEN_WSALT;
+        return SRTP_AES_GCM_256_KEY_LEN_WSALT;
     default:
         return 0;
     }
