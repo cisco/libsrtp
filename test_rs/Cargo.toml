@@ -1,0 +1,11 @@
+[package]
+name = "test_rs"
+version = "0.1.0"
+edition = "2018"
+
+[[bin]]
+name = "roc_driver"
+path = "src/roc_driver.rs"
+
+[dependencies]
+rand = "0.6.4"

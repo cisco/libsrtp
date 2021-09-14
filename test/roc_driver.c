@@ -98,13 +98,7 @@ srtp_err_status_t roc_test(int num_trials)
     printf("\n\ttesting sequential insertion...");
     for (i = 0; i < 2048; i++) {
         srtp_index_guess(&local, &est, (uint16_t)ref);
-#if ROC_VERBOSE
-        printf("%lld, %lld, %d\n", ref, est, i);
-#endif
         if (ref != est) {
-#if ROC_VERBOSE
-            printf(" *bad estimate*\n");
-#endif
             ++num_bad_est;
         }
         srtp_index_advance(&ref, 1);
@@ -132,10 +126,6 @@ srtp_err_status_t roc_test(int num_trials)
 
         /* estimate index based on low bits of ircvd */
         delta = srtp_index_guess(&local, &est, (uint16_t)ref);
-#if ROC_VERBOSE
-        printf("ref: %lld, local: %lld, est: %lld, ircvd: %d, delta: %d\n", ref,
-               local, est, ircvd, delta);
-#endif
 
         if (local + delta != est) {
             printf(" *bad delta*: local %llu + delta %d != est %llu\n",
@@ -148,9 +138,6 @@ srtp_err_status_t roc_test(int num_trials)
             srtp_index_advance(&local, delta);
 
         if (ref != est) {
-#if ROC_VERBOSE
-            printf(" *bad estimate*\n");
-#endif
             /* record failure event */
             ++num_bad_est;
 
