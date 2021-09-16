@@ -272,6 +272,25 @@ if(TEST_APPS)
   endif()
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
+    if(ENABLE_RUST)
+      include(FetchContent)
+
+      FetchContent_Declare(
+        Corrosion
+        GIT_REPOSITORY https://github.com/AndrewGaspar/corrosion.git
+        GIT_TAG origin/master # Optionally specify a version tag or branch here
+      )
+
+      FetchContent_MakeAvailable(Corrosion)
+
+      find_package(Corrosion REQUIRED)
+      corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml)
+    else()
+      add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
+      target_include_directories(roc_driver PRIVATE test)
+      target_link_libraries(roc_driver srtp2)
+    endif()
+
     if(NOT USE_EXTERNAL_CRYPTO)
       add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
       target_include_directories(aes_calc PRIVATE test)
@@ -287,15 +306,6 @@ if(TEST_APPS)
       target_include_directories(sha1_driver PRIVATE test)
       target_link_libraries(sha1_driver srtp2)
       add_test(sha1_driver sha1_driver -v)
-    endif()
-
-    if(ENABLE_RUST)
-      find_package(Corrosion REQUIRED)
-      corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml)
-    else()
-      add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
-      target_include_directories(roc_driver PRIVATE test)
-      target_link_libraries(roc_driver srtp2)
     endif()
 
     add_executable(datatypes_driver crypto/test/datatypes_driver.c test/util.c)
