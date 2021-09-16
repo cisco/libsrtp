@@ -1,4 +1,4 @@
-name: CMake CI
+name: CMake CI (with Rust)
 
 on:
   push:
