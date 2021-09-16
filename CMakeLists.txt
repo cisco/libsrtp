@@ -283,7 +283,6 @@ if(TEST_APPS)
 
       FetchContent_MakeAvailable(Corrosion)
 
-      find_package(Corrosion REQUIRED)
       corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml)
     else()
       add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
