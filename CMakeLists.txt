@@ -101,7 +101,11 @@ include_directories(${CONFIG_FILE_DIR})
 configure_file(config_in_cmake.h ${CONFIG_FILE_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
-if(BUILD_WITH_SANITIZERS AND NOT WIN32)
+if(BUILD_WITH_SANITIZERS AND NOT WIN32 AND NOT ENABLE_RUST)
+  # TODO(RLB): With the current Corrosion setup for compiling Rust test
+  # binaries, it doesn't appear that we can pass Cargo the proper linker options
+  # to tell it to link against the ASAN / UBSAN libraries.  We should fix this
+  # before we merge.
   if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(SANITIZERS address,undefined)
   else()
