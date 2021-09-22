@@ -21,6 +21,12 @@ else ()
   set (HAVE_X86 FALSE)
 endif ()
 
+if(ENABLE_RUST)
+  include(FetchContent)
+  FetchContent_Declare(Corrosion GIT_REPOSITORY https://github.com/AndrewGaspar/corrosion.git GIT_TAG origin/master)
+  FetchContent_MakeAvailable(Corrosion)
+endif()
+
 check_include_file(arpa/inet.h HAVE_ARPA_INET_H)
 check_include_file(byteswap.h HAVE_BYTESWAP_H)
 check_include_file(inttypes.h HAVE_INTTYPES_H)
@@ -273,22 +279,14 @@ if(TEST_APPS)
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
     if(ENABLE_RUST)
-      include(FetchContent)
-
-      FetchContent_Declare(
-        Corrosion
-        GIT_REPOSITORY https://github.com/AndrewGaspar/corrosion.git
-        GIT_TAG origin/master # Optionally specify a version tag or branch here
-      )
-
-      FetchContent_MakeAvailable(Corrosion)
-
+      # Build a Rust library with the test logic
       corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml)
       if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
         target_link_libraries(test_rs INTERFACE "-framework Security")
       endif()
       target_link_libraries(test_rs INTERFACE srtp2)
 
+      # Build the actual executables
       add_executable(roc_driver test_rs/stubs/roc_driver.c)
       target_link_libraries(roc_driver test_rs)
     else()

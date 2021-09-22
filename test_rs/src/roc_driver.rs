@@ -1,37 +1,6 @@
-#![allow(non_snake_case)]
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-
-use crate::ut_sim;
-
-mod include {
-    pub mod rdbx {
-        use std::os::raw::c_int;
-
-        pub type srtp_err_status_t = c_int;
-        pub const srtp_err_status_ok: srtp_err_status_t = 0;
-        pub const srtp_err_status_algo_fail: srtp_err_status_t = 1;
-
-        pub type srtp_xtd_seq_num_t = u64;
-        pub type srtp_sequence_number_t = u16;
-    }
-}
-
-extern "C" {
-    fn srtp_index_init(pi: *mut srtp_xtd_seq_num_t);
-    fn srtp_index_advance(pi: *mut srtp_xtd_seq_num_t, s: srtp_sequence_number_t);
-    fn srtp_index_guess(
-        local: *const srtp_xtd_seq_num_t,
-        guess: *mut srtp_xtd_seq_num_t,
-        s: srtp_sequence_number_t,
-    ) -> i32;
-}
-
-use include::rdbx::*;
-use ut_sim::UTConnection;
-
+use crate::include::rdbx::*;
+use crate::ut_sim::UTConnection;
 use std::convert::{TryFrom, TryInto};
-use std::os::raw::c_int;
 
 #[no_mangle]
 pub extern "C" fn roc_driver_main() -> c_int {
@@ -44,7 +13,7 @@ pub extern "C" fn roc_driver_main() -> c_int {
     let status = roc_test(1 << 18);
     if status != srtp_err_status_ok {
         println!("failed");
-        return status;
+        return status.try_into().unwrap();
     }
 
     println!("passed");
