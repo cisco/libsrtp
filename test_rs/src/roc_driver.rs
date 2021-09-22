@@ -2,7 +2,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 
-mod ut_sim;
+use crate::ut_sim;
 
 mod include {
     pub mod rdbx {
@@ -17,7 +17,6 @@ mod include {
     }
 }
 
-#[link(name = "srtp2")]
 extern "C" {
     fn srtp_index_init(pi: *mut srtp_xtd_seq_num_t);
     fn srtp_index_advance(pi: *mut srtp_xtd_seq_num_t, s: srtp_sequence_number_t);
@@ -34,7 +33,8 @@ use ut_sim::UTConnection;
 use std::convert::{TryFrom, TryInto};
 use std::process::exit;
 
-fn main() {
+#[no_mangle]
+pub extern "C" fn roc_driver_main() {
     println!("rollover counter test driver");
     println!("David A. McGrew");
     println!("Cisco Systems, Inc.");
