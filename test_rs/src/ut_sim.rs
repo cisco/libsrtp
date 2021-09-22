@@ -27,13 +27,17 @@ impl UTConnection {
     }
 
     pub fn next(&mut self) -> u32 {
-        let tmp = self.buffer[0];
+        let out_index = self.buffer[0];
+
         self.index += 1;
-        self.buffer[0] = self.index;
+        let new_index = self.index;
 
         let mut rng = thread_rng();
-        self.buffer.shuffle(&mut rng);
+        let shuffle_slot = self.buffer.choose_mut(&mut rng).unwrap();
+        let tmp_index = *shuffle_slot;
+        *shuffle_slot = new_index;
+        self.buffer[0] = tmp_index;
 
-        tmp
+        out_index
     }
 }

@@ -31,10 +31,10 @@ use include::rdbx::*;
 use ut_sim::UTConnection;
 
 use std::convert::{TryFrom, TryInto};
-use std::process::exit;
+use std::os::raw::c_int;
 
 #[no_mangle]
-pub extern "C" fn roc_driver_main() {
+pub extern "C" fn roc_driver_main() -> c_int {
     println!("rollover counter test driver");
     println!("David A. McGrew");
     println!("Cisco Systems, Inc.");
@@ -44,9 +44,11 @@ pub extern "C" fn roc_driver_main() {
     let status = roc_test(1 << 18);
     if status != srtp_err_status_ok {
         println!("failed");
-        exit(status);
+        return status;
     }
+
     println!("passed");
+    return 0;
 }
 
 fn roc_test(num_trials: usize) -> srtp_err_status_t {
