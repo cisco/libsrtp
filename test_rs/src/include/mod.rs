@@ -7,7 +7,7 @@ pub mod types {
     // pub type size_t = c_ulong;
 
     pub const srtp_err_status_ok: srtp_err_status_t = 0;
-    // pub const srtp_err_status_fail: srtp_err_status_t = 1;
+    pub const srtp_err_status_fail: srtp_err_status_t = 1;
     // pub const srtp_err_status_bad_param: srtp_err_status_t = 2;
     // pub const srtp_err_status_alloc_fail: srtp_err_status_t = 3;
     // pub const srtp_err_status_dealloc_fail: srtp_err_status_t = 4;
@@ -15,13 +15,13 @@ pub mod types {
     // pub const srtp_err_status_terminus: srtp_err_status_t = 6;
     // pub const srtp_err_status_auth_fail: srtp_err_status_t = 7;
     // pub const srtp_err_status_cipher_fail: srtp_err_status_t = 8;
-    // pub const srtp_err_status_replay_fail: srtp_err_status_t = 9;
+    pub const srtp_err_status_replay_fail: srtp_err_status_t = 9;
     pub const srtp_err_status_replay_old: srtp_err_status_t = 10;
     pub const srtp_err_status_algo_fail: srtp_err_status_t = 11;
     // pub const srtp_err_status_no_such_op: srtp_err_status_t = 12;
     // pub const srtp_err_status_no_ctx: srtp_err_status_t = 13;
     // pub const srtp_err_status_cant_check: srtp_err_status_t = 14;
-    // pub const srtp_err_status_key_expired: srtp_err_status_t = 15;
+    pub const srtp_err_status_key_expired: srtp_err_status_t = 15;
     // pub const srtp_err_status_socket_err: srtp_err_status_t = 16;
     // pub const srtp_err_status_signal_err: srtp_err_status_t = 17;
     // pub const srtp_err_status_nonce_bad: srtp_err_status_t = 18;
@@ -62,6 +62,8 @@ pub mod types {
 }
 
 // Submodules
+mod datatypes;
+pub mod rdb;
 pub mod rdbx;
 
 #[cfg(feature = "native-crypto")]

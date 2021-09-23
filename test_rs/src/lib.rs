@@ -3,6 +3,7 @@ mod ut_sim;
 
 // Test applications
 mod rdbx_driver;
+mod replay_driver;
 mod roc_driver;
 
 #[cfg(feature = "native-crypto")]

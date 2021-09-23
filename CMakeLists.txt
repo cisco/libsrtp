@@ -303,6 +303,9 @@ if(TEST_APPS)
       add_executable(rdbx_driver test_rs/stubs/rdbx_driver.c)
       target_link_libraries(rdbx_driver test_rs)
 
+      add_executable(replay_driver test_rs/stubs/replay_driver.c)
+      target_link_libraries(replay_driver test_rs)
+
       add_executable(roc_driver test_rs/stubs/roc_driver.c)
       target_link_libraries(roc_driver test_rs)
     else()
@@ -319,6 +322,10 @@ if(TEST_APPS)
       add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c test/ut_sim.c)
       target_include_directories(rdbx_driver PRIVATE test)
       target_link_libraries(rdbx_driver srtp2)
+    
+      add_executable(replay_driver test/replay_driver.c test/ut_sim.c)
+      target_include_directories(replay_driver PRIVATE test)
+      target_link_libraries(replay_driver srtp2)
       
       add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
       target_include_directories(roc_driver PRIVATE test)
@@ -351,12 +358,7 @@ if(TEST_APPS)
     add_test(kernel_driver kernel_driver -v)
 
     add_test(rdbx_driver rdbx_driver -v)
-
-    add_executable(replay_driver test/replay_driver.c test/ut_sim.c)
-    target_include_directories(replay_driver PRIVATE test)
-    target_link_libraries(replay_driver srtp2)
     add_test(replay_driver replay_driver -v)
-
     add_test(roc_driver roc_driver -v)
   endif()
 
