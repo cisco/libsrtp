@@ -1,3 +1,5 @@
+#![cfg(feature = "native-crypto")]
+
 use crate::include::sha1::*;
 use hex_literal::hex;
 use std::convert::TryInto;

@@ -62,6 +62,10 @@ pub mod types {
 }
 
 // Submodules
-pub mod aes;
 pub mod rdbx;
+
+#[cfg(feature = "native-crypto")]
+pub mod aes;
+
+#[cfg(feature = "native-crypto")]
 pub mod sha1;

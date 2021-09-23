@@ -1,3 +1,5 @@
+#![cfg(feature = "native-crypto")]
+
 use crate::include::aes::*;
 use clap::Clap;
 use hex::FromHexError;

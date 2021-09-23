@@ -1,3 +1,5 @@
+#![cfg(feature = "native-crypto")]
+
 pub use super::types::*;
 
 #[repr(C)]

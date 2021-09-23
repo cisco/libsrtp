@@ -278,8 +278,12 @@ if(TEST_APPS)
   endif()
 
   if(ENABLE_RUST)
-    # Build a Rust library with the test logic
-    corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml)
+    set(CARGO_FEATURES)
+    if(NOT USE_EXTERNAL_CRYPTO)
+      list(APPEND CARGO_FEATURES "native-crypto")
+    endif()
+
+    corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml FEATURES ${CARGO_FEATURES})
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       target_link_libraries(test_rs INTERFACE "-framework Security")
     endif()
