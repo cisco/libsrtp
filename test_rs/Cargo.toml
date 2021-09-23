@@ -7,4 +7,5 @@ edition = "2018"
 crate-type = ["staticlib"]
 
 [dependencies]
-rand = "0.6.4"
+rand = "0.8.4"
+clap = "3.0.0-beta.4"

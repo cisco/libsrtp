@@ -287,9 +287,16 @@ if(TEST_APPS)
       target_link_libraries(test_rs INTERFACE srtp2)
 
       # Build the actual executables
+      add_executable(rdbx_driver test_rs/stubs/rdbx_driver.c)
+      target_link_libraries(rdbx_driver test_rs)
+
       add_executable(roc_driver test_rs/stubs/roc_driver.c)
       target_link_libraries(roc_driver test_rs)
     else()
+      add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c test/ut_sim.c)
+      target_include_directories(rdbx_driver PRIVATE test)
+      target_link_libraries(rdbx_driver srtp2)
+      
       add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
       target_include_directories(roc_driver PRIVATE test)
       target_link_libraries(roc_driver srtp2)
@@ -327,9 +334,6 @@ if(TEST_APPS)
     target_link_libraries(kernel_driver srtp2)
     add_test(kernel_driver kernel_driver -v)
 
-    add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c test/ut_sim.c)
-    target_include_directories(rdbx_driver PRIVATE test)
-    target_link_libraries(rdbx_driver srtp2)
     add_test(rdbx_driver rdbx_driver -v)
 
     add_executable(replay_driver test/replay_driver.c test/ut_sim.c)

@@ -16,7 +16,7 @@ pub mod types {
     // pub const srtp_err_status_auth_fail: srtp_err_status_t = 7;
     // pub const srtp_err_status_cipher_fail: srtp_err_status_t = 8;
     // pub const srtp_err_status_replay_fail: srtp_err_status_t = 9;
-    // pub const srtp_err_status_replay_old: srtp_err_status_t = 10;
+    pub const srtp_err_status_replay_old: srtp_err_status_t = 10;
     pub const srtp_err_status_algo_fail: srtp_err_status_t = 11;
     // pub const srtp_err_status_no_such_op: srtp_err_status_t = 12;
     // pub const srtp_err_status_no_ctx: srtp_err_status_t = 13;
@@ -34,7 +34,31 @@ pub mod types {
     // pub const srtp_err_status_bad_mki: srtp_err_status_t = 25;
     // pub const srtp_err_status_pkt_idx_old: srtp_err_status_t = 26;
     // pub const srtp_err_status_pkt_idx_adv: srtp_err_status_t = 27;
+
     pub type srtp_err_status_t = c_uint;
+
+    pub trait Error {
+        fn is_ok(&self) -> bool;
+        fn is_err(&self) -> bool;
+        fn as_result(&self) -> Result<(), srtp_err_status_t>;
+    }
+
+    impl Error for srtp_err_status_t {
+        fn is_ok(&self) -> bool {
+            self.as_result().is_ok()
+        }
+
+        fn is_err(&self) -> bool {
+            self.as_result().is_err()
+        }
+
+        fn as_result(&self) -> Result<(), srtp_err_status_t> {
+            match *self {
+                srtp_err_status_ok => Ok(()),
+                err => Err(err),
+            }
+        }
+    }
 }
 
 // Submodules

@@ -2,6 +2,9 @@ use crate::include::rdbx::*;
 use crate::ut_sim::UTConnection;
 use std::convert::{TryFrom, TryInto};
 
+const FAILURE_THRESHOLD: f64 = 0.01;
+const NUM_TRIALS: usize = 1 << 18;
+
 #[no_mangle]
 pub extern "C" fn roc_driver_main() -> c_int {
     println!("rollover counter test driver");
@@ -10,18 +13,19 @@ pub extern "C" fn roc_driver_main() -> c_int {
 
     println!("testing index functions...");
 
-    let status = roc_test(1 << 18);
-    if status != srtp_err_status_ok {
-        println!("failed");
-        return status.try_into().unwrap();
+    match sequential_test(NUM_TRIALS).and(non_sequential_test(NUM_TRIALS)) {
+        Ok(_) => {
+            println!("passed");
+            0
+        }
+        Err(err) => {
+            println!("failed");
+            err.try_into().unwrap()
+        }
     }
-
-    println!("passed");
-    return 0;
 }
 
-fn roc_test(num_trials: usize) -> srtp_err_status_t {
-    const FAILURE_THRESHOLD: f64 = 0.01;
+fn sequential_test(num_trials: usize) -> Result<(), srtp_err_status_t> {
     let mut local: srtp_xtd_seq_num_t = 0;
     let mut estimated: srtp_xtd_seq_num_t = 0;
     let mut reference: srtp_xtd_seq_num_t = 0;
@@ -48,9 +52,17 @@ fn roc_test(num_trials: usize) -> srtp_err_status_t {
             "error: failure rate too high ({} bad estimates in {} trials)",
             num_bad_est, num_trials
         );
-        return srtp_err_status_algo_fail;
+        return Err(srtp_err_status_algo_fail);
     }
+
     println!("done");
+    Ok(())
+}
+
+fn non_sequential_test(num_trials: usize) -> Result<(), srtp_err_status_t> {
+    let mut local: srtp_xtd_seq_num_t = 0;
+    let mut estimated: srtp_xtd_seq_num_t = 0;
+    let mut reference: srtp_xtd_seq_num_t = 0;
 
     println!("\ttesting non-sequential insertion");
     unsafe {
@@ -59,6 +71,7 @@ fn roc_test(num_trials: usize) -> srtp_err_status_t {
         srtp_index_init(&mut reference);
     };
 
+    let mut num_bad_est: usize = 0;
     let mut utc = UTConnection::new();
     for _i in 0..num_trials {
         let ircvd = utc.next();
@@ -77,7 +90,7 @@ fn roc_test(num_trials: usize) -> srtp_err_status_t {
                 " *bad delta*: local {} + delta {} != est {}\n",
                 local, delta, estimated
             );
-            return srtp_err_status_algo_fail;
+            return Err(srtp_err_status_algo_fail);
         }
 
         if delta > 0 {
@@ -96,9 +109,9 @@ fn roc_test(num_trials: usize) -> srtp_err_status_t {
             "error: failure rate too high ({} bad estimates in {} trials)",
             num_bad_est, num_trials
         );
-        return srtp_err_status_algo_fail;
+        return Err(srtp_err_status_algo_fail);
     }
-    println!("done");
 
-    return 0;
+    println!("done");
+    Ok(())
 }
