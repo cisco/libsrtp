@@ -3,7 +3,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 
-use super::datatypes::v128_t;
+pub use super::datatypes::v128_t;
 pub use super::types::*;
 
 #[repr(C)]
