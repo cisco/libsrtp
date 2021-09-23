@@ -286,13 +286,24 @@ if(TEST_APPS)
       endif()
       target_link_libraries(test_rs INTERFACE srtp2)
 
-      # Build the actual executables
+      # Build the test binaries
+      if(NOT USE_EXTERNAL_CRYPTO)
+        add_executable(aes_calc test_rs/stubs/aes_calc.c)
+        target_link_libraries(aes_calc test_rs)
+      endif()
+
       add_executable(rdbx_driver test_rs/stubs/rdbx_driver.c)
       target_link_libraries(rdbx_driver test_rs)
 
       add_executable(roc_driver test_rs/stubs/roc_driver.c)
       target_link_libraries(roc_driver test_rs)
     else()
+      if(NOT USE_EXTERNAL_CRYPTO)
+        add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
+        target_include_directories(aes_calc PRIVATE test)
+        target_link_libraries(aes_calc srtp2)
+      endif()
+      
       add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c test/ut_sim.c)
       target_include_directories(rdbx_driver PRIVATE test)
       target_link_libraries(rdbx_driver srtp2)
@@ -303,9 +314,6 @@ if(TEST_APPS)
     endif()
 
     if(NOT USE_EXTERNAL_CRYPTO)
-      add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
-      target_include_directories(aes_calc PRIVATE test)
-      target_link_libraries(aes_calc srtp2)
       add_test(aes_calc_128 aes_calc 000102030405060708090a0b0c0d0e0f
                                      00112233445566778899aabbccddeeff
                                      69c4e0d86a7b0430d8cdb78070b4c55a)

@@ -9,3 +9,4 @@ crate-type = ["staticlib"]
 [dependencies]
 rand = "0.8.4"
 clap = "3.0.0-beta.4"
+hex = "0.4.3"

@@ -62,4 +62,5 @@ pub mod types {
 }
 
 // Submodules
+pub mod aes;
 pub mod rdbx;
