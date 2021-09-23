@@ -5,3 +5,4 @@ mod ut_sim;
 mod aes_calc;
 mod rdbx_driver;
 mod roc_driver;
+mod sha1_driver;
