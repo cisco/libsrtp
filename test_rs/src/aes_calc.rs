@@ -3,7 +3,6 @@
 use crate::include::aes::*;
 use clap::Clap;
 use hex::FromHexError;
-use std::convert::TryInto;
 use std::marker::PhantomData;
 use std::os::raw::c_int;
 use std::str::FromStr;
@@ -24,15 +23,15 @@ trait SizeValidator {
     }
 }
 
-struct AesKey;
-impl SizeValidator for AesKey {
+struct AesKeySize;
+impl SizeValidator for AesKeySize {
     fn valid(size: usize) -> bool {
         AES_KEY_SIZES.contains(&size)
     }
 }
 
-struct AesBlock;
-impl SizeValidator for AesBlock {
+struct AesBlockSize;
+impl SizeValidator for AesBlockSize {
     fn valid(size: usize) -> bool {
         size == AES_BLOCK_SIZE
     }
@@ -62,10 +61,10 @@ struct Config {
     #[clap(short)]
     verbose: bool,
 
-    key: SizeConstrainedHex<AesKey>,
+    key: SizeConstrainedHex<AesKeySize>,
 
-    plaintext: SizeConstrainedHex<AesBlock>,
-    ciphertext: Option<SizeConstrainedHex<AesBlock>>,
+    plaintext: SizeConstrainedHex<AesBlockSize>,
+    ciphertext: Option<SizeConstrainedHex<AesBlockSize>>,
 }
 
 #[no_mangle]
@@ -76,31 +75,24 @@ pub extern "C" fn aes_calc_main() -> c_int {
         println!("plaintext:\t{}", hex::encode(&config.plaintext.data));
     }
 
-    let mut exp_key = srtp_aes_expanded_key_t::default();
-    let key_ptr = config.key.data.as_ptr();
-    let key_len: i32 = config.key.data.len().try_into().unwrap();
-    if unsafe { srtp_aes_expand_encryption_key(key_ptr, key_len, &mut exp_key).is_err() } {
-        println!("error: AES key expansion failed.");
-        return 1;
-    }
+    let key = match AesKey::new(&config.key.data) {
+        Ok(x) => x,
+        Err(_) => {
+            println!("error: AES key expansion failed.");
+            return 1;
+        }
+    };
 
-    let mut ciphertext: v128_t = config.plaintext.data.into();
-    unsafe { srtp_aes_encrypt(&mut ciphertext, &exp_key) };
+    let mut ciphertext = config.plaintext.data.clone();
+    key.encrypt(&mut ciphertext).unwrap();
 
     if config.verbose {
         println!("key:\t\t{}", hex::encode(&config.key.data));
-        println!("ciphertext:\t{}", hex::encode(unsafe { &ciphertext.v8 }));
+        println!("ciphertext:\t{}", hex::encode(&ciphertext));
     }
 
     match config.ciphertext.as_ref() {
-        Some(expected) => unsafe {
-            let expected_v128: v128_t = expected.data.clone().into();
-            if ciphertext.v8 != expected_v128.v8 {
-                1
-            } else {
-                0
-            }
-        },
+        Some(expected) if expected.data != ciphertext => 1,
         _ => 0,
     }
 }

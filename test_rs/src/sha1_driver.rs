@@ -2,12 +2,12 @@
 
 use crate::include::sha1::*;
 use hex_literal::hex;
-use std::convert::TryInto;
+use std::os::raw::c_int;
 
 #[no_mangle]
 pub extern "C" fn sha1_driver_main() -> c_int {
     println!("sha1 test driver");
-    if sha1_validate().is_err() {
+    if !sha1_validate() {
         println!("SHA1 did not pass validation testing");
         1
     } else {
@@ -16,11 +16,13 @@ pub extern "C" fn sha1_driver_main() -> c_int {
     }
 }
 
-fn sha1_validate() -> Result<(), srtp_err_status_t> {
+fn sha1_validate() -> bool {
     for test_case in TEST_CASES {
-        test_case.validate()?
+        if !test_case.validate() {
+            return false;
+        }
     }
-    Ok(())
+    true
 }
 
 struct TestCase {
@@ -29,25 +31,14 @@ struct TestCase {
 }
 
 impl TestCase {
-    fn validate(&self) -> Result<(), srtp_err_status_t> {
-        let mut ctx = srtp_sha1_ctx_t::default();
-        let mut hash_value: [u8; 20] = Default::default();
+    fn validate(&self) -> bool {
+        let mut computed_hash: [u8; 20] = Default::default();
 
-        let data_ptr = self.data.as_ptr();
-        let data_len: c_int = self.data.len().try_into().unwrap();
-        let hash_ptr = hash_value.as_mut_ptr() as *mut u32;
+        let mut sha1 = Sha1::new();
+        sha1.update(self.data);
+        sha1.finalize(&mut computed_hash);
 
-        unsafe {
-            srtp_sha1_init(&mut ctx);
-            srtp_sha1_update(&mut ctx, data_ptr, data_len);
-            srtp_sha1_final(&mut ctx, hash_ptr);
-        }
-
-        if &hash_value == self.hash {
-            Ok(())
-        } else {
-            Err(srtp_err_status_algo_fail)
-        }
+        computed_hash == self.hash
     }
 }
 

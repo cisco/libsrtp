@@ -3,6 +3,7 @@ use crate::ut_sim::UTConnection;
 use clap::Clap;
 use rand::{thread_rng, Rng};
 use std::convert::TryInto;
+use std::os::raw::c_int;
 use std::time::Instant;
 
 // XXX(RLB) Might be able to replace this with Clap usage and just failing.
@@ -40,18 +41,18 @@ extern "C" fn rdbx_driver_main() -> c_int {
         println!("testing srtp_rdbx_t (ws={})...", SMALL_WINDOW);
         match test_replay_dbx(VALIDATION_TRIALS, SMALL_WINDOW) {
             Ok(_) => println!("passed"),
-            Err(err) => {
+            Err(_) => {
                 println!("failed");
-                return err.try_into().unwrap();
+                return 1;
             }
         }
 
         println!("testing srtp_rdbx_t (ws={})...", LARGE_WINDOW);
         match test_replay_dbx(VALIDATION_TRIALS, LARGE_WINDOW) {
             Ok(_) => println!("passed"),
-            Err(err) => {
+            Err(_) => {
                 println!("failed");
-                return err.try_into().unwrap();
+                return 1;
             }
         }
     }
@@ -70,19 +71,18 @@ extern "C" fn rdbx_driver_main() -> c_int {
 // rdbx_check_add(rdbx, idx) checks a known-to-be-good idx against
 // rdbx, then adds it.  if a failure is detected (i.e., the check
 // indicates that the value is already in rdbx) then
-// srtp_err_status_algo_fail is returned.
-fn rdbx_check_add(rdbx: &mut srtp_rdbx_t, idx: usize) -> Result<(), srtp_err_status_t> {
-    let mut est: srtp_xtd_seq_num_t = 0;
-    let delta = unsafe { srtp_index_guess(&rdbx.index, &mut est, idx as u16) };
+// Error::AlgoFail is returned.
+fn rdbx_check_add(rdbx: &mut ExtendedReplayDB, idx: usize) -> Result<(), Error> {
+    let (_est, delta) = rdbx.index().guess(idx as u16);
 
-    if unsafe { srtp_rdbx_check(rdbx, delta).is_err() } {
+    if rdbx.check(delta).is_err() {
         println!("replay_check failed at index {}", idx);
-        return Err(srtp_err_status_algo_fail);
+        return Err(Error::AlgoFail);
     }
 
-    if unsafe { srtp_rdbx_add_index(rdbx, delta).is_err() } {
+    if rdbx.add(delta).is_err() {
         println!("rdbx_add_index failed at index {}", idx);
-        return Err(srtp_err_status_algo_fail);
+        return Err(Error::AlgoFail);
     }
 
     Ok(())
@@ -90,123 +90,102 @@ fn rdbx_check_add(rdbx: &mut srtp_rdbx_t, idx: usize) -> Result<(), srtp_err_sta
 
 // checks that a sequence number idx is in the replay database
 // and thus will be rejected
-fn rdbx_check_expect_failure(rdbx: &mut srtp_rdbx_t, idx: usize) -> Result<(), srtp_err_status_t> {
-    let mut est: srtp_xtd_seq_num_t = 0;
-    let delta = unsafe { srtp_index_guess(&rdbx.index, &mut est, idx as u16) };
-
-    if unsafe { srtp_rdbx_check(rdbx, delta).is_ok() } {
+fn rdbx_check_expect_failure(rdbx: &ExtendedReplayDB, idx: usize) -> Result<(), Error> {
+    let (_est, delta) = rdbx.index().guess(idx as u16);
+    if rdbx.check(delta).is_ok() {
         println!("delta: {}", delta);
         println!("replay_check failed at index {} (false positive)", idx);
-        return Err(srtp_err_status_algo_fail);
+        return Err(Error::AlgoFail);
     }
 
     Ok(())
 }
 
-fn rdbx_check_add_unordered(rdbx: &mut srtp_rdbx_t, idx: usize) -> Result<(), srtp_err_status_t> {
-    let mut est: srtp_xtd_seq_num_t = 0;
-    let delta = unsafe { srtp_index_guess(&rdbx.index, &mut est, idx as u16) };
-
-    let status = unsafe { srtp_rdbx_check(rdbx, delta) };
-    if !status.is_ok() && status != srtp_err_status_replay_old {
-        println!("replay_check_add_unordered failed at index {}", idx);
-        return Err(srtp_err_status_algo_fail);
+fn rdbx_check_add_unordered(rdbx: &mut ExtendedReplayDB, idx: usize) -> Result<(), Error> {
+    let (_est, delta) = rdbx.index().guess(idx as u16);
+    match rdbx.check(delta) {
+        Ok(_) => {}
+        Err(Error::ReplayOld) => return Ok(()),
+        _ => {
+            println!("replay_check_add_unordered failed at index {}", idx);
+            return Err(Error::AlgoFail);
+        }
     }
 
-    if status == srtp_err_status_replay_old {
-        return Ok(());
-    }
-
-    if unsafe { srtp_rdbx_add_index(rdbx, delta).is_err() } {
+    if rdbx.add(delta).is_err() {
         println!("rdbx_add_index failed at index {}", idx);
-        return Err(srtp_err_status_algo_fail);
+        return Err(Error::AlgoFail);
     }
 
     Ok(())
 }
 
-// XXX(RLB) This function fails to deallocate `rdbx` in error cases
-fn test_rdbx_sequential(num_trials: usize, window_size: usize) -> Result<(), srtp_err_status_t> {
-    let mut rdbx = srtp_rdbx_t::default();
-    unsafe { srtp_rdbx_init(&mut rdbx, window_size.try_into().unwrap()).as_result()? };
-
+fn test_rdbx_sequential(num_trials: usize, window_size: usize) -> Result<(), Error> {
     // test sequential insertion
     print!("\ttesting sequential insertion...");
+    let mut rdbx = ExtendedReplayDB::new(window_size).unwrap();
     for idx in 0..num_trials {
         rdbx_check_add(&mut rdbx, idx)?;
     }
     println!("passed");
-
-    let num_fp_trials = num_trials % 0x10000;
-    if num_fp_trials == 0 {
-        println!("warning: no false positive tests performed\n");
-    }
 
     // test for false positives by checking all of the index
     // values which we've just added
     //
     // note that we limit the number of trials here, since allowing the
     // rollover counter to roll over would defeat this test
+    let num_fp_trials = num_trials % 0x10000;
+    if num_fp_trials == 0 {
+        println!("warning: no false positive tests performed\n");
+    }
+
     print!("\ttesting for false positives...");
     for idx in 0..num_fp_trials {
-        rdbx_check_expect_failure(&mut rdbx, idx)?;
+        rdbx_check_expect_failure(&rdbx, idx)?;
     }
-    println!("passed");
 
-    unsafe { srtp_rdbx_dealloc(&mut rdbx) };
+    println!("passed");
     Ok(())
 }
 
 // test non-sequential insertion
 //
-// this test covers only fase negatives, since the values returned
+// this test covers only false negatives, since the values returned
 // by UTConnection::next() are distinct
-fn test_rdbx_non_sequential(
-    num_trials: usize,
-    window_size: usize,
-) -> Result<(), srtp_err_status_t> {
-    let mut rdbx = srtp_rdbx_t::default();
-    unsafe { srtp_rdbx_init(&mut rdbx, window_size.try_into().unwrap()).as_result()? };
-
-    let mut utc = UTConnection::new();
-
-    // test sequential insertion
+fn test_rdbx_non_sequential(num_trials: usize, window_size: usize) -> Result<(), Error> {
     print!("\ttesting non-sequential insertion...");
+    let mut rdbx = ExtendedReplayDB::new(window_size).unwrap();
+    let mut utc = UTConnection::new();
     for _ in 0..num_trials {
         let ircvd: usize = utc.next().try_into().unwrap();
         rdbx_check_add_unordered(&mut rdbx, ircvd)?;
-        rdbx_check_expect_failure(&mut rdbx, ircvd)?;
+        rdbx_check_expect_failure(&rdbx, ircvd)?;
     }
-    println!("passed");
 
-    unsafe { srtp_rdbx_dealloc(&mut rdbx) };
+    println!("passed");
     Ok(())
 }
 
-fn test_rdbx_large_gaps(num_trials: usize, window_size: usize) -> Result<(), srtp_err_status_t> {
-    let mut rdbx = srtp_rdbx_t::default();
-    unsafe { srtp_rdbx_init(&mut rdbx, window_size.try_into().unwrap()).as_result()? };
-
-    let mut rng = thread_rng();
+fn test_rdbx_large_gaps(num_trials: usize, window_size: usize) -> Result<(), Error> {
     const MAX_LOG_GAP: usize = 12;
 
-    // test sequential insertion
     print!("\ttesting insertion with large gaps...");
+    let mut rdbx = ExtendedReplayDB::new(window_size).unwrap();
+    let mut rng = thread_rng();
     let mut ircvd: usize = 0;
     for _ in 0..num_trials {
         rdbx_check_add(&mut rdbx, ircvd)?;
-        rdbx_check_expect_failure(&mut rdbx, ircvd)?;
+        rdbx_check_expect_failure(&rdbx, ircvd)?;
 
         let log_gap = rng.gen_range(0..MAX_LOG_GAP);
         ircvd += 1 << log_gap;
     }
-    println!("passed");
 
-    unsafe { srtp_rdbx_dealloc(&mut rdbx) };
+    println!("passed");
     Ok(())
 }
 
-fn test_replay_dbx(num_trials: usize, window_size: usize) -> Result<(), srtp_err_status_t> {
+fn test_replay_dbx(num_trials: usize, window_size: usize) -> Result<(), Error> {
     test_rdbx_sequential(num_trials, window_size)?;
     test_rdbx_non_sequential(num_trials, window_size)?;
     test_rdbx_large_gaps(num_trials, window_size)?;
@@ -214,30 +193,21 @@ fn test_replay_dbx(num_trials: usize, window_size: usize) -> Result<(), srtp_err
 }
 
 fn rdbx_check_adds_per_second(num_trials: usize, window_size: usize) -> f64 {
-    let mut rdbx = srtp_rdbx_t::default();
-
-    let status = unsafe { srtp_rdbx_init(&mut rdbx, window_size.try_into().unwrap()) };
-    if status.is_err() {
-        println!("replay_init failed\n");
-        std::process::exit(1);
-    }
+    let mut rdbx = ExtendedReplayDB::new(window_size).unwrap();
 
     let mut failures = 0usize;
     let start = Instant::now();
     for i in 0..num_trials {
-        let mut est: srtp_xtd_seq_num_t = 0;
-        let delta = unsafe { srtp_index_guess(&rdbx.index, &mut est, i as u16) };
-
-        if unsafe { srtp_rdbx_check(&rdbx, delta).is_err() } {
+        let (_est, delta) = rdbx.index().guess(i as SequenceNumber);
+        if rdbx.check(delta).is_err() {
             failures += 1;
-        } else if unsafe { srtp_rdbx_add_index(&mut rdbx, delta).is_err() } {
+        } else if rdbx.add(delta).is_err() {
             failures += 1;
         }
     }
     let elapsed = start.elapsed();
 
     println!("number of failures: {}", failures);
-    unsafe { srtp_rdbx_dealloc(&mut rdbx) };
 
     let num_trials_f64: f64 = (num_trials as u32).try_into().unwrap();
     num_trials_f64 / elapsed.as_secs_f64()

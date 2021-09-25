@@ -62,3 +62,63 @@ extern "C" {
         s: srtp_sequence_number_t,
     ) -> i32;
 }
+
+pub type SequenceNumber = srtp_sequence_number_t;
+pub type ExtendedSequenceNumber = srtp_xtd_seq_num_t;
+
+pub trait ExtendedSequenceNumberMethods {
+    fn new() -> Self;
+    fn advance(&mut self, s: SequenceNumber);
+    fn guess(&self, s: SequenceNumber) -> (ExtendedSequenceNumber, i32);
+}
+
+impl ExtendedSequenceNumberMethods for ExtendedSequenceNumber {
+    fn new() -> Self {
+        let mut pi = ExtendedSequenceNumber::default();
+        unsafe { srtp_index_init(&mut pi) };
+        pi
+    }
+
+    fn advance(&mut self, s: SequenceNumber) {
+        unsafe { srtp_index_advance(self, s) };
+    }
+
+    fn guess(&self, s: SequenceNumber) -> (ExtendedSequenceNumber, i32) {
+        let mut guess = ExtendedSequenceNumber::default();
+        let delta = unsafe { srtp_index_guess(self, &mut guess, s) };
+        (guess, delta)
+    }
+}
+
+pub struct ExtendedReplayDB {
+    rdbx: srtp_rdbx_t,
+}
+
+impl ExtendedReplayDB {
+    pub fn new(ws: usize) -> Result<Self, Error> {
+        let ws = ws as c_ulong;
+        let mut rdbx = Self {
+            rdbx: srtp_rdbx_t::default(),
+        };
+        unsafe { srtp_rdbx_init(&mut rdbx.rdbx, ws).as_result().map(|_| rdbx) }
+    }
+
+    pub fn check(&self, difference: i32) -> Result<(), Error> {
+        let difference = difference as c_int;
+        unsafe { srtp_rdbx_check(&self.rdbx, difference).as_result() }
+    }
+
+    pub fn add(&mut self, delta: i32) -> Result<(), Error> {
+        unsafe { srtp_rdbx_add_index(&mut self.rdbx, delta).as_result() }
+    }
+
+    pub fn index(&self) -> ExtendedSequenceNumber {
+        self.rdbx.index
+    }
+}
+
+impl Drop for ExtendedReplayDB {
+    fn drop(&mut self) {
+        unsafe { srtp_rdbx_dealloc(&mut self.rdbx) };
+    }
+}

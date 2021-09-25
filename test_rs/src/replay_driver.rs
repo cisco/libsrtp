@@ -2,6 +2,7 @@ use crate::include::rdb::*;
 use crate::ut_sim::UTConnection;
 use rand::{thread_rng, Rng};
 use std::convert::TryInto;
+use std::os::raw::c_int;
 use std::time::Instant;
 
 const VALIDATION_TRIALS: usize = 1 << 12;
@@ -21,55 +22,55 @@ extern "C" fn replay_driver_main() -> c_int {
     0
 }
 
-fn rdb_check_add(rdb: &mut srtp_rdb_t, idx: usize) -> Result<(), srtp_err_status_t> {
+fn rdb_check_add(rdb: &mut ReplayDB, idx: usize) -> Result<(), Error> {
     let idx: u32 = idx.try_into().unwrap();
-    if unsafe { srtp_rdb_check(rdb, idx).is_err() } {
+    if rdb.check(idx).is_err() {
         println!("rdb_check failed at index {}", idx);
-        return Err(srtp_err_status_fail);
+        return Err(Error::Fail);
     }
 
-    if unsafe { srtp_rdb_add_index(rdb, idx).is_err() } {
+    if rdb.add(idx).is_err() {
         println!("rdb_add_index failed at index {}", idx);
-        return Err(srtp_err_status_fail);
+        return Err(Error::Fail);
     }
 
     Ok(())
 }
 
-fn rdb_check_expect_failure(rdb: &srtp_rdb_t, idx: usize) -> Result<(), srtp_err_status_t> {
+fn rdb_check_expect_failure(rdb: &ReplayDB, idx: usize) -> Result<(), Error> {
     let idx: u32 = idx.try_into().unwrap();
-    let status = unsafe { srtp_rdb_check(rdb, idx) };
-    if status != srtp_err_status_replay_old && status != srtp_err_status_replay_fail {
-        println!("rdb_check failed at index {} (false positive)", idx);
-        return Err(srtp_err_status_fail);
+    match rdb.check(idx) {
+        Err(Error::ReplayOld) => Ok(()),
+        Err(Error::ReplayFail) => Ok(()),
+        _ => {
+            println!("rdb_check failed at index {} (false positive)", idx);
+            return Err(Error::Fail);
+        }
     }
-    Ok(())
 }
 
-fn rdb_check_add_unordered(rdb: &mut srtp_rdb_t, idx: usize) -> Result<(), srtp_err_status_t> {
+fn rdb_check_add_unordered(rdb: &mut ReplayDB, idx: usize) -> Result<(), Error> {
     let idx: u32 = idx.try_into().unwrap();
 
-    let status = unsafe { srtp_rdb_check(rdb, idx) };
-    if !status.is_ok() && status != srtp_err_status_replay_old {
-        println!("rdb_check_add_unordered failed at index {}", idx);
-        return Err(srtp_err_status_algo_fail);
+    match rdb.check(idx) {
+        Ok(_) => {}
+        Err(Error::ReplayOld) => return Ok(()),
+        _ => {
+            println!("rdb_check_add_unordered failed at index {}", idx);
+            return Err(Error::AlgoFail);
+        }
     }
 
-    if status == srtp_err_status_replay_old {
-        return Ok(());
-    }
-
-    if unsafe { srtp_rdb_add_index(rdb, idx).is_err() } {
+    if rdb.add(idx).is_err() {
         println!("rdb_add_index failed at index {}", idx);
-        return Err(srtp_err_status_algo_fail);
+        return Err(Error::AlgoFail);
     }
 
     Ok(())
 }
 
-fn test_rdb_sequential(num_trials: usize) -> Result<(), srtp_err_status_t> {
-    let mut rdb = srtp_rdb_t::default();
-    unsafe { srtp_rdb_init(&mut rdb).as_result()? };
+fn test_rdb_sequential(num_trials: usize) -> Result<(), Error> {
+    let mut rdb = ReplayDB::new().unwrap();
 
     for idx in 0..num_trials {
         rdb_check_add(&mut rdb, idx)?;
@@ -79,10 +80,8 @@ fn test_rdb_sequential(num_trials: usize) -> Result<(), srtp_err_status_t> {
     Ok(())
 }
 
-fn test_rdb_non_sequential(num_trials: usize) -> Result<(), srtp_err_status_t> {
-    let mut rdb = srtp_rdb_t::default();
-    unsafe { srtp_rdb_init(&mut rdb).as_result()? };
-
+fn test_rdb_non_sequential(num_trials: usize) -> Result<(), Error> {
+    let mut rdb = ReplayDB::new().unwrap();
     let mut utc = UTConnection::new();
 
     for _ in 0..num_trials {
@@ -94,10 +93,8 @@ fn test_rdb_non_sequential(num_trials: usize) -> Result<(), srtp_err_status_t> {
     Ok(())
 }
 
-fn test_rdb_large_gaps(num_trials: usize) -> Result<(), srtp_err_status_t> {
-    let mut rdb = srtp_rdb_t::default();
-    unsafe { srtp_rdb_init(&mut rdb).as_result()? };
-
+fn test_rdb_large_gaps(num_trials: usize) -> Result<(), Error> {
+    let mut rdb = ReplayDB::new().unwrap();
     let mut rng = thread_rng();
     const MAX_LOG_GAP: usize = 12;
 
@@ -114,32 +111,37 @@ fn test_rdb_large_gaps(num_trials: usize) -> Result<(), srtp_err_status_t> {
     Ok(())
 }
 
-fn test_rdb_key_expiry() -> Result<(), srtp_err_status_t> {
-    let mut rdb = srtp_rdb_t::default();
-    unsafe { srtp_rdb_init(&mut rdb).as_result()? };
+fn test_rdb_key_expiry() -> Result<(), Error> {
+    let mut rdb = ReplayDB::new().unwrap();
+    rdb.set_value(0x7ffffffe);
 
-    rdb.window_start = 0x7ffffffe;
-    if unsafe { srtp_rdb_increment(&mut rdb).is_err() } {
-        println!("srtp_rdb_increment of 0x7ffffffe failed");
-        return Err(srtp_err_status_fail);
+    if rdb.increment().is_err() {
+        println!("rdb.increment of 0x7ffffffe failed");
+        return Err(Error::Fail);
     }
-    if unsafe { srtp_rdb_get_value(&rdb) } != 0x7fffffff {
+
+    if rdb.value() != 0x7fffffff {
         println!("rdb valiue was not 0x7fffffff");
-        return Err(srtp_err_status_fail);
+        return Err(Error::Fail);
     }
-    if unsafe { srtp_rdb_increment(&mut rdb) } != srtp_err_status_key_expired {
-        println!("srtp_rdb_increment of 0x7fffffff did not return srtp_err_status_key_expired");
-        return Err(srtp_err_status_fail);
+
+    match rdb.increment() {
+        Err(Error::KeyExpired) => {}
+        _ => {
+            println!("rdb.increment of 0x7fffffff did not return Error::KeyExpired");
+            return Err(Error::Fail);
+        }
     }
-    if unsafe { srtp_rdb_get_value(&rdb) } != 0x7fffffff {
+
+    if rdb.value() != 0x7fffffff {
         println!("rdb valiue was not 0x7fffffff");
-        return Err(srtp_err_status_fail);
+        return Err(Error::Fail);
     }
 
     Ok(())
 }
 
-fn test_rdb_db(num_trials: usize) -> Result<(), srtp_err_status_t> {
+fn test_rdb_db(num_trials: usize) -> Result<(), Error> {
     test_rdb_sequential(num_trials)?;
     test_rdb_non_sequential(num_trials)?;
     test_rdb_large_gaps(num_trials)?;
@@ -148,22 +150,18 @@ fn test_rdb_db(num_trials: usize) -> Result<(), srtp_err_status_t> {
 }
 
 fn rdb_check_adds_per_second(num_trials: usize) -> f64 {
-    let mut rdb = srtp_rdb_t::default();
-    unsafe { srtp_rdb_init(&mut rdb).as_result().unwrap() };
+    let mut rdb = ReplayDB::new().unwrap();
 
     let start = Instant::now();
     for i in (0..num_trials).step_by(3) {
         let idx: u32 = i.try_into().unwrap();
-        unsafe {
-            srtp_rdb_check(&mut rdb, idx + 2)
-                .as_result()
-                .and_then(|_| srtp_rdb_add_index(&mut rdb, idx + 2).as_result())
-                .and_then(|_| srtp_rdb_check(&rdb, idx + 1).as_result())
-                .and_then(|_| srtp_rdb_add_index(&mut rdb, idx + 1).as_result())
-                .and_then(|_| srtp_rdb_check(&rdb, idx).as_result())
-                .and_then(|_| srtp_rdb_add_index(&mut rdb, idx).as_result())
-                .unwrap();
-        }
+        rdb.check(idx + 2)
+            .and_then(|_| rdb.add(idx + 2))
+            .and_then(|_| rdb.check(idx + 1))
+            .and_then(|_| rdb.add(idx + 1))
+            .and_then(|_| rdb.check(idx))
+            .and_then(|_| rdb.add(idx))
+            .unwrap();
     }
     let elapsed = start.elapsed();
 
