@@ -284,8 +284,12 @@ if(TEST_APPS)
     endif()
 
     corrosion_import_crate(MANIFEST_PATH test_rs/Cargo.toml FEATURES ${CARGO_FEATURES})
+
+    # Certain platforms require underlying RNG libraries to be linked in
     if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
       target_link_libraries(test_rs INTERFACE "-framework Security")
+    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+      target_link_libraries(test_rs INTERFACE bcrypt)
     endif()
     target_link_libraries(test_rs INTERFACE srtp2)
   endif()
