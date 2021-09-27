@@ -1,11 +1,11 @@
-use super::types::*;
+pub use super::types::*;
 
 pub(super) type srtp_cipher_type_id_t = c_int;
 
-// const srtp_cipher_direction_t_srtp_direction_encrypt: srtp_cipher_direction_t = 0;
-// const srtp_cipher_direction_t_srtp_direction_decrypt: srtp_cipher_direction_t = 1;
-// const srtp_cipher_direction_t_srtp_direction_any: srtp_cipher_direction_t = 2;
-type srtp_cipher_direction_t = c_uint;
+const srtp_direction_encrypt: srtp_cipher_direction_t = 0;
+// const srtp_direction_decrypt: srtp_cipher_direction_t = 1;
+// const srtp_direction_any: srtp_cipher_direction_t = 2;
+type srtp_cipher_direction_t = c_int;
 
 type srtp_cipher_pointer_t = *mut srtp_cipher_t;
 type srtp_cipher_alloc_func_t = Option<
@@ -90,39 +90,39 @@ struct srtp_cipher_t {
 
 extern "C" {
     // fn srtp_cipher_get_key_length(c: *const srtp_cipher_t) -> c_int;
-    // fn srtp_cipher_type_self_test(ct: *const srtp_cipher_type_t) -> srtp_err_status_t;
+    fn srtp_cipher_type_self_test(ct: *const srtp_cipher_type_t) -> srtp_err_status_t;
     // fn srtp_cipher_type_test(
     //     ct: *const srtp_cipher_type_t,
     //     test_data: *const srtp_cipher_test_case_t,
     // ) -> srtp_err_status_t;
-    // fn srtp_cipher_bits_per_second(
-    //     c: *mut srtp_cipher_t,
-    //     octets_in_buffer: c_int,
-    //     num_trials: c_int,
-    // ) -> u64;
-    // fn srtp_cipher_type_alloc(
-    //     ct: *const srtp_cipher_type_t,
-    //     c: *mut *mut srtp_cipher_t,
-    //     key_len: c_int,
-    //     tlen: c_int,
-    // ) -> srtp_err_status_t;
-    // fn srtp_cipher_dealloc(c: *mut srtp_cipher_t) -> srtp_err_status_t;
-    // fn srtp_cipher_init(c: *mut srtp_cipher_t, key: *const u8) -> srtp_err_status_t;
-    // fn srtp_cipher_set_iv(
-    //     c: *mut srtp_cipher_t,
-    //     iv: *mut u8,
-    //     direction: c_int,
-    // ) -> srtp_err_status_t;
+    fn srtp_cipher_bits_per_second(
+        c: *mut srtp_cipher_t,
+        octets_in_buffer: c_int,
+        num_trials: c_int,
+    ) -> u64;
+    fn srtp_cipher_type_alloc(
+        ct: *const srtp_cipher_type_t,
+        c: *mut *mut srtp_cipher_t,
+        key_len: c_int,
+        tlen: c_int,
+    ) -> srtp_err_status_t;
+    fn srtp_cipher_dealloc(c: *mut srtp_cipher_t) -> srtp_err_status_t;
+    fn srtp_cipher_init(c: *mut srtp_cipher_t, key: *const u8) -> srtp_err_status_t;
+    fn srtp_cipher_set_iv(
+        c: *mut srtp_cipher_t,
+        iv: *mut u8,
+        direction: c_int,
+    ) -> srtp_err_status_t;
     // fn srtp_cipher_output(
     //     c: *mut srtp_cipher_t,
     //     buffer: *mut u8,
     //     num_octets_to_output: *mut u32,
     // ) -> srtp_err_status_t;
-    // fn srtp_cipher_encrypt(
-    //     c: *mut srtp_cipher_t,
-    //     buffer: *mut u8,
-    //     num_octets_to_output: *mut u32,
-    // ) -> srtp_err_status_t;
+    fn srtp_cipher_encrypt(
+        c: *mut srtp_cipher_t,
+        buffer: *mut u8,
+        num_octets_to_output: *mut u32,
+    ) -> srtp_err_status_t;
     // fn srtp_cipher_decrypt(
     //     c: *mut srtp_cipher_t,
     //     buffer: *mut u8,
@@ -143,3 +143,101 @@ extern "C" {
     //     id: srtp_cipher_type_id_t,
     // ) -> srtp_err_status_t;
 }
+
+extern "C" {
+    static srtp_null_cipher: srtp_cipher_type_t;
+    static srtp_aes_icm_128: srtp_cipher_type_t;
+    static srtp_aes_icm_256: srtp_cipher_type_t;
+    // TODO ifdef GCM...
+}
+
+use std::ffi::CStr;
+use std::marker::Sync;
+
+pub mod constants {
+    pub const SALT_LEN: usize = 14;
+    pub const AES_ICM_128_KEY_LEN: usize = 16;
+    pub const AES_ICM_256_KEY_LEN: usize = 32;
+
+    pub const AES_ICM_128_KEY_LEN_WSALT: usize = AES_ICM_128_KEY_LEN + SALT_LEN;
+    pub const AES_ICM_256_KEY_LEN_WSALT: usize = AES_ICM_256_KEY_LEN + SALT_LEN;
+}
+
+pub struct CipherType {
+    ct: &'static srtp_cipher_type_t,
+}
+
+impl CipherType {
+    pub fn new(&self, key: &[u8], tag_len: usize) -> Result<Cipher, Error> {
+        let mut cipher = Cipher {
+            c: std::ptr::null_mut(),
+        };
+        let key_len = key.len() as c_int;
+        let tag_len = tag_len as c_int;
+        unsafe { srtp_cipher_type_alloc(self.ct, &mut cipher.c, key_len, tag_len).as_result()? };
+        unsafe {
+            srtp_cipher_init(cipher.c, key.as_ptr())
+                .as_result()
+                .map(|_| cipher)
+        }
+    }
+
+    pub fn self_test(&self) -> Result<(), Error> {
+        unsafe { srtp_cipher_type_self_test(self.ct).as_result() }
+    }
+
+    pub fn description(&self) -> &str {
+        unsafe { CStr::from_ptr(self.ct.description).to_str().unwrap() }
+    }
+}
+
+unsafe impl Sync for CipherType {}
+
+pub struct Cipher {
+    c: *mut srtp_cipher_t,
+}
+
+impl Cipher {
+    pub fn set_iv(&self, iv: &[u8]) -> Result<(), Error> {
+        let iv_ptr = iv.as_ptr() as *mut u8;
+        unsafe { srtp_cipher_set_iv(self.c, iv_ptr, srtp_direction_encrypt).as_result() }
+    }
+
+    pub fn encrypt(&self, pt: &mut [u8], pt_len: &mut u32) -> Result<(), Error> {
+        unsafe { srtp_cipher_encrypt(self.c, pt.as_mut_ptr(), pt_len).as_result() }
+    }
+
+    pub fn bits_per_second(&self, msg_size: usize, num_trials: usize) -> u64 {
+        let msg_size = msg_size as c_int;
+        let num_trials = num_trials as c_int;
+        unsafe { srtp_cipher_bits_per_second(self.c, msg_size, num_trials) }
+    }
+
+    pub fn description(&self) -> &str {
+        let cipher = unsafe { self.c.as_ref().unwrap() };
+        let cipher_type = unsafe { cipher.type_.as_ref().unwrap() };
+        unsafe { CStr::from_ptr(cipher_type.description).to_str().unwrap() }
+    }
+
+    pub fn key_len(&self) -> usize {
+        unsafe { self.c.as_ref().unwrap().key_len as usize }
+    }
+}
+
+impl Drop for Cipher {
+    fn drop(&mut self) {
+        unsafe { srtp_cipher_dealloc(self.c).as_result().unwrap() };
+    }
+}
+
+pub static NULL_CIPHER: CipherType = CipherType {
+    ct: unsafe { &srtp_null_cipher },
+};
+
+pub static AES_ICM_128: CipherType = CipherType {
+    ct: unsafe { &srtp_aes_icm_128 },
+};
+
+pub static AES_ICM_256: CipherType = CipherType {
+    ct: unsafe { &srtp_aes_icm_256 },
+};

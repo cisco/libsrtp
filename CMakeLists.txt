@@ -315,6 +315,9 @@ if(TEST_APPS)
 
       add_executable(kernel_driver test_rs/stubs/kernel_driver.c)
       target_link_libraries(kernel_driver test_rs)
+
+      add_executable(cipher_driver test_rs/stubs/cipher_driver.c)
+      target_link_libraries(cipher_driver test_rs)
     else()
       if(NOT USE_EXTERNAL_CRYPTO)
         add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
@@ -341,6 +344,10 @@ if(TEST_APPS)
       add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
       target_include_directories(kernel_driver PRIVATE test)
       target_link_libraries(kernel_driver srtp2)
+    
+      add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
+      target_include_directories(cipher_driver PRIVATE test)
+      target_link_libraries(cipher_driver srtp2)
     endif()
 
     if(NOT USE_EXTERNAL_CRYPTO)
@@ -361,11 +368,7 @@ if(TEST_APPS)
     target_link_libraries(datatypes_driver srtp2)
     add_test(datatypes_driver datatypes_driver -v)
 
-    add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
-    target_include_directories(cipher_driver PRIVATE test)
-    target_link_libraries(cipher_driver srtp2)
     add_test(cipher_driver cipher_driver -v)
-
     add_test(kernel_driver kernel_driver -v)
     add_test(rdbx_driver rdbx_driver -v)
     add_test(replay_driver replay_driver -v)

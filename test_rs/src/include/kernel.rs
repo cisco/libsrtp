@@ -1,6 +1,5 @@
 use super::auth::*;
 use super::cipher::*;
-use super::types::*;
 
 // const srtp_crypto_kernel_state_insecure: srtp_crypto_kernel_state_t = 0;
 // const srtp_crypto_kernel_state_secure: srtp_crypto_kernel_state_t = 1;

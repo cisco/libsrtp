@@ -163,7 +163,7 @@ pub mod types {
 
 // Submodules
 mod auth;
-mod cipher;
+pub(crate) mod cipher;
 mod datatypes;
 pub(crate) mod kernel;
 pub(crate) mod rdb;
