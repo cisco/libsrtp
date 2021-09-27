@@ -346,6 +346,9 @@ if(TEST_APPS)
       add_test(sha1_driver sha1_driver -v)
     endif()
 
+    # datatypes_driver does not have an equivalent Rust implementation.  The
+    # functions it tests are low-level enough that they are largely implemented
+    # in #define directives.  These functions are not accessible via Rust FFI.
     add_executable(datatypes_driver crypto/test/datatypes_driver.c test/util.c)
     target_include_directories(datatypes_driver PRIVATE test)
     target_link_libraries(datatypes_driver srtp2)
