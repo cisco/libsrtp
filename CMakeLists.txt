@@ -312,6 +312,9 @@ if(TEST_APPS)
 
       add_executable(roc_driver test_rs/stubs/roc_driver.c)
       target_link_libraries(roc_driver test_rs)
+
+      add_executable(kernel_driver test_rs/stubs/kernel_driver.c)
+      target_link_libraries(kernel_driver test_rs)
     else()
       if(NOT USE_EXTERNAL_CRYPTO)
         add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
@@ -334,6 +337,10 @@ if(TEST_APPS)
       add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
       target_include_directories(roc_driver PRIVATE test)
       target_link_libraries(roc_driver srtp2)
+    
+      add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
+      target_include_directories(kernel_driver PRIVATE test)
+      target_link_libraries(kernel_driver srtp2)
     endif()
 
     if(NOT USE_EXTERNAL_CRYPTO)
@@ -359,11 +366,7 @@ if(TEST_APPS)
     target_link_libraries(cipher_driver srtp2)
     add_test(cipher_driver cipher_driver -v)
 
-    add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
-    target_include_directories(kernel_driver PRIVATE test)
-    target_link_libraries(kernel_driver srtp2)
     add_test(kernel_driver kernel_driver -v)
-
     add_test(rdbx_driver rdbx_driver -v)
     add_test(replay_driver replay_driver -v)
     add_test(roc_driver roc_driver -v)

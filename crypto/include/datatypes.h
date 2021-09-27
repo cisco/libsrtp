@@ -59,7 +59,7 @@
 #elif defined HAVE_WINSOCK2_H
 #include <winsock2.h>
 #else
-#error "Platform not recognized"
+// #error "Platform not recognized"
 #endif
 
 #ifdef __cplusplus

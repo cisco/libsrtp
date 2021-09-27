@@ -2,6 +2,7 @@ mod include;
 mod ut_sim;
 
 // Test applications
+mod kernel_driver;
 mod rdbx_driver;
 mod replay_driver;
 mod roc_driver;

@@ -30,7 +30,14 @@
 // Rust implementation.
 
 pub mod types {
-    pub(super) use std::os::raw::{c_int, c_uint, c_ulong};
+    pub(super) use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+
+    #[repr(C)]
+    #[derive(Debug, Copy, Clone)]
+    pub(super) struct srtp_debug_module_t {
+        pub on: ::std::os::raw::c_int,
+        pub name: *const ::std::os::raw::c_char,
+    }
 
     // Errors that do not appear in the SRTP code base are commented out.
     pub(super) type srtp_err_status_t = c_uint;
@@ -155,12 +162,15 @@ pub mod types {
 }
 
 // Submodules
+mod auth;
+mod cipher;
 mod datatypes;
-pub mod rdb;
-pub mod rdbx;
+pub(crate) mod kernel;
+pub(crate) mod rdb;
+pub(crate) mod rdbx;
 
 #[cfg(feature = "native-crypto")]
-pub mod aes;
+pub(crate) mod aes;
 
 #[cfg(feature = "native-crypto")]
-pub mod sha1;
+pub(crate) mod sha1;
