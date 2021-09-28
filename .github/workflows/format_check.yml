@@ -16,4 +16,4 @@ jobs:
       - name: Run clang format
         run: ./format.sh -d
       - name: Run cargo format
-        run: cd test_rs && cargo fmt --check
+        run: cd test_rs && cargo fmt -- --check
