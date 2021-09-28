@@ -15,3 +15,5 @@ jobs:
         run: sudo apt install clang-format-10
       - name: Run clang format
         run: ./format.sh -d
+      - name: Run cargo format
+        run: cd test_rs && cargo fmt --check

@@ -381,6 +381,12 @@ if(TEST_APPS)
   add_test(srtp_driver srtp_driver -v)
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
+    # test_srtp does not have an equivalent Rust implementation.  It tests
+    # static functions, getting access using the `#include "srtp.c"` hack.
+    # While these functions are C, it makes sense to keep this test in C, since
+    # the functions under test are not visible to FFI.  When these functions
+    # migrate to Rust, the relevant modules should replicate these as unit
+    # tests.
     add_executable(test_srtp test/test_srtp.c)
     if(ENABLE_OPENSSL)
       target_include_directories(test_srtp PRIVATE ${OPENSSL_INCLUDE_DIR})
