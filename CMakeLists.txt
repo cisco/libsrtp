@@ -401,8 +401,13 @@ if(TEST_APPS)
 
   find_program(BASH_PROGRAM bash)
   if(BASH_PROGRAM AND NOT WIN32)
-    add_executable(rtpw test/rtpw.c test/rtp.c test/util.c test/getopt_s.c)
-    target_link_libraries(rtpw srtp2)
+    if(ENABLE_RUST)
+      add_executable(rtpw test_rs/stubs/rtpw.c)
+      target_link_libraries(rtpw test_rs)
+    else()
+      add_executable(rtpw test/rtpw.c test/rtp.c test/util.c test/getopt_s.c)
+      target_link_libraries(rtpw srtp2)
+    endif()
     add_test(NAME rtpw_test
              COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test/rtpw_test.sh -w ${CMAKE_CURRENT_SOURCE_DIR}/test/words.txt
              WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

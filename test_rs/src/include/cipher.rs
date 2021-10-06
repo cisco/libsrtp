@@ -156,11 +156,63 @@ use std::marker::Sync;
 
 pub mod constants {
     pub const SALT_LEN: usize = 14;
-    pub const AES_ICM_128_KEY_LEN: usize = 16;
-    pub const AES_ICM_256_KEY_LEN: usize = 32;
+    pub const AEAD_SALT_LEN: usize = 12;
+    pub const AES_128_KEY_LEN: usize = 16;
+    pub const AES_192_KEY_LEN: usize = 24;
+    pub const AES_256_KEY_LEN: usize = 32;
 
-    pub const AES_ICM_128_KEY_LEN_WSALT: usize = AES_ICM_128_KEY_LEN + SALT_LEN;
-    pub const AES_ICM_256_KEY_LEN_WSALT: usize = AES_ICM_256_KEY_LEN + SALT_LEN;
+    pub const AES_ICM_128_KEY_LEN_WSALT: usize = AES_128_KEY_LEN + SALT_LEN;
+    pub const AES_ICM_192_KEY_LEN_WSALT: usize = AES_192_KEY_LEN + SALT_LEN;
+    pub const AES_ICM_256_KEY_LEN_WSALT: usize = AES_256_KEY_LEN + SALT_LEN;
+    pub const AES_GCM_128_KEY_LEN_WSALT: usize = AES_128_KEY_LEN + AEAD_SALT_LEN;
+    pub const AES_GCM_256_KEY_LEN_WSALT: usize = AES_256_KEY_LEN + AEAD_SALT_LEN;
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum CipherTypeId {
+    Null,
+    AesIcm128,
+    // AesIcm192,
+    AesIcm256,
+    AesGcm128(usize),
+    AesGcm256(usize),
+}
+
+impl CipherTypeId {
+    pub fn key_size(&self) -> usize {
+        match self {
+            CipherTypeId::Null => 0,
+            CipherTypeId::AesIcm128 => constants::AES_ICM_128_KEY_LEN_WSALT,
+            // CipherTypeId::AesIcm192 => constants::AES_ICM_192_KEY_LEN_WSALT,
+            CipherTypeId::AesIcm256 => constants::AES_ICM_256_KEY_LEN_WSALT,
+            CipherTypeId::AesGcm128(_) => constants::AES_GCM_128_KEY_LEN_WSALT,
+            CipherTypeId::AesGcm256(_) => constants::AES_GCM_256_KEY_LEN_WSALT,
+        }
+    }
+
+    pub fn tag_size(&self) -> usize {
+        match self {
+            CipherTypeId::Null
+            | CipherTypeId::AesIcm128
+            // | CipherTypeId::AesIcm192
+            | CipherTypeId::AesIcm256 => 0,
+            CipherTypeId::AesGcm128(tag_size) => *tag_size,
+            CipherTypeId::AesGcm256(tag_size) => *tag_size,
+        }
+    }
+}
+
+impl Into<srtp_cipher_type_id_t> for CipherTypeId {
+    fn into(self) -> srtp_cipher_type_id_t {
+        match self {
+            CipherTypeId::Null => 0,
+            CipherTypeId::AesIcm128 => 1,
+            // CipherTypeId::AesIcm192 => 4,
+            CipherTypeId::AesIcm256 => 5,
+            CipherTypeId::AesGcm128(_) => 6,
+            CipherTypeId::AesGcm256(_) => 7,
+        }
+    }
 }
 
 pub struct CipherType {

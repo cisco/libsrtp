@@ -12,15 +12,6 @@ const AES_BLOCK_SIZE: usize = 16;
 
 trait SizeValidator {
     fn valid(size: usize) -> bool;
-    fn decode(s: &str) -> Result<Vec<u8>, FromHexError> {
-        hex::decode(s).and_then(|data| {
-            if !Self::valid(data.len()) {
-                Err(FromHexError::InvalidStringLength)
-            } else {
-                Ok(data)
-            }
-        })
-    }
 }
 
 struct AesKeySize;
@@ -49,8 +40,16 @@ where
     type Err = FromHexError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let data = hex::decode(s).and_then(|data| {
+            if SV::valid(data.len()) {
+                Ok(data)
+            } else {
+                Err(FromHexError::InvalidStringLength)
+            }
+        })?;
+
         Ok(Self {
-            data: SV::decode(s)?,
+            data: data,
             phantom_data: PhantomData,
         })
     }

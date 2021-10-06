@@ -87,3 +87,34 @@ extern "C" {
     //         id: srtp_auth_type_id_t,
     //     ) -> srtp_err_status_t;
 }
+
+#[derive(Copy, Clone, Debug)]
+pub enum AuthTypeId {
+    Null,
+    HmacSha1(usize),
+}
+
+impl AuthTypeId {
+    pub fn key_size(&self) -> usize {
+        match self {
+            AuthTypeId::Null => 0,
+            AuthTypeId::HmacSha1(_) => 20,
+        }
+    }
+
+    pub fn tag_size(&self) -> usize {
+        match self {
+            AuthTypeId::Null => 0,
+            AuthTypeId::HmacSha1(tag_size) => *tag_size,
+        }
+    }
+}
+
+impl Into<srtp_auth_type_id_t> for AuthTypeId {
+    fn into(self) -> srtp_auth_type_id_t {
+        match self {
+            AuthTypeId::Null => 0,
+            AuthTypeId::HmacSha1(_) => 3,
+        }
+    }
+}

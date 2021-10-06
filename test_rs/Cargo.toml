@@ -10,7 +10,10 @@ crate-type = ["staticlib"]
 native-crypto = []
 
 [dependencies]
-rand = "0.8.4"
+base64 = "0.13.0"
 clap = "3.0.0-beta.4"
 hex = "0.4.3"
 hex-literal = "0.3.3"
+packed_struct = "0.5"
+rand = "0.8.4"
+signal-hook = "0.3.10"

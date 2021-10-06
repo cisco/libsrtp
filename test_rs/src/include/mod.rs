@@ -30,7 +30,9 @@
 // Rust implementation.
 
 pub mod types {
-    pub(super) use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+    use std::error;
+    use std::fmt;
+    pub(super) use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
 
     #[repr(C)]
     #[derive(Debug, Copy, Clone)]
@@ -102,6 +104,14 @@ pub mod types {
         PktIdxAdv,
     }
 
+    impl fmt::Display for Error {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "{:?}", self)
+        }
+    }
+
+    impl error::Error for Error {}
+
     impl From<srtp_err_status_t> for Error {
         // Note: Panics if err is srtp_err_status_ok, since this should be represented by an Ok()
         // result.  See SrtpError::as_result()
@@ -168,6 +178,7 @@ mod datatypes;
 pub(crate) mod kernel;
 pub(crate) mod rdb;
 pub(crate) mod rdbx;
+pub(crate) mod srtp;
 
 #[cfg(feature = "native-crypto")]
 pub(crate) mod aes;
