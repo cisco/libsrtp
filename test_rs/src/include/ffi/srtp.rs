@@ -633,7 +633,9 @@ impl Context {
 impl Drop for Context {
     fn drop(&mut self) {
         // Deallocate the context
-        unsafe { srtp_dealloc(self.ctx).as_result().unwrap() };
+        if !self.ctx.is_null() {
+            unsafe { srtp_dealloc(self.ctx).as_result().unwrap() };
+        }
 
         // Call srtp_shutdown if done
         let ctr = unsafe { SRTP_REFCOUNT.get_mut() };

@@ -51,18 +51,34 @@ pub extern "C" fn cipher_driver_main() -> c_int {
             &AES_ICM_256,
             constants::AES_ICM_256_KEY_LEN_WSALT
         ));
-        // TODO ifdef GCM...
+
+        #[cfg(not(feature = "native-crypto"))]
+        {
+            check!(test_array_throughput_all(
+                &AES_GCM_256,
+                constants::AES_GCM_256_KEY_LEN_WSALT
+            ));
+            check!(test_array_throughput_all(
+                &AES_GCM_256,
+                constants::AES_GCM_256_KEY_LEN_WSALT
+            ));
+        }
     }
 
     if config.validation {
         check!(cipher_self_test(&NULL_CIPHER));
         check!(cipher_self_test(&AES_ICM_128));
         check!(cipher_self_test(&AES_ICM_256));
-        // TODO ifdef GCM...
+
+        #[cfg(not(feature = "native-crypto"))]
+        {
+            check!(cipher_self_test(&AES_GCM_256));
+            check!(cipher_self_test(&AES_GCM_256));
+        }
     }
 
     // do timing and/or buffer_test on srtp_null_cipher
-    let cipher = check!(NULL_CIPHER.new(&[], 0));
+    let cipher = check!(NULL_CIPHER.create(&[], 0));
     if config.timing {
         test_throughput(&cipher);
     }
@@ -72,7 +88,7 @@ pub extern "C" fn cipher_driver_main() -> c_int {
 
     // run the throughput test on the aes_icm cipher (128-bit key)
     let key = &test_key[..constants::AES_ICM_128_KEY_LEN_WSALT];
-    let cipher = check!(NULL_CIPHER.new(key, 0));
+    let cipher = check!(AES_ICM_128.create(key, 0));
     if config.timing {
         test_throughput(&cipher);
     }
@@ -82,7 +98,7 @@ pub extern "C" fn cipher_driver_main() -> c_int {
 
     // repeat the tests with 256-bit keys
     let key = &test_key[..constants::AES_ICM_256_KEY_LEN_WSALT];
-    let cipher = check!(NULL_CIPHER.new(key, 0));
+    let cipher = check!(AES_ICM_256.create(key, 0));
     if config.timing {
         test_throughput(&cipher);
     }
@@ -90,9 +106,28 @@ pub extern "C" fn cipher_driver_main() -> c_int {
         check!(test_buffering(&cipher));
     }
 
-    // TODO ifdef GCM...
-    // run the throughput test on the aes_gcm_128 cipher
-    // run the throughput test on the aes_gcm_256 cipher
+    #[cfg(not(feature = "native-crypto"))]
+    {
+        // run the throughput test on the aes_gcm_128 cipher
+        let key = &test_key[..constants::AES_GCM_128_KEY_LEN_WSALT];
+        let cipher = check!(AES_GCM_128.create(key, 8));
+        if config.timing {
+            test_throughput(&cipher);
+        }
+        if config.validation {
+            check!(test_buffering(&cipher));
+        }
+
+        // run the throughput test on the aes_gcm_256 cipher
+        let key = &test_key[..constants::AES_GCM_256_KEY_LEN_WSALT];
+        let cipher = check!(AES_GCM_256.create(key, 16));
+        if config.timing {
+            test_throughput(&cipher);
+        }
+        if config.validation {
+            check!(test_buffering(&cipher));
+        }
+    }
 
     0
 }
@@ -217,7 +252,7 @@ fn test_array_throughput(ct: &CipherType, key_len: usize, num_cipher: usize) -> 
     let mut cipher_array = Vec::new();
     for _ in 0..num_cipher {
         let key: Vec<u8> = thread_rng().sample_iter(&Standard).take(key_len).collect();
-        let cipher = ct.new(&key, 16)?;
+        let cipher = ct.create(&key, 16)?;
         cipher_array.push(cipher);
     }
 

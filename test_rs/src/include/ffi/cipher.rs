@@ -148,7 +148,12 @@ extern "C" {
     static srtp_null_cipher: srtp_cipher_type_t;
     static srtp_aes_icm_128: srtp_cipher_type_t;
     static srtp_aes_icm_256: srtp_cipher_type_t;
-    // TODO ifdef GCM...
+
+    #[cfg(not(feature = "native-crypto"))]
+    static srtp_aes_gcm_128: srtp_cipher_type_t;
+
+    #[cfg(not(feature = "native-crypto"))]
+    static srtp_aes_gcm_256: srtp_cipher_type_t;
 }
 
 use std::ffi::CStr;
@@ -220,7 +225,7 @@ pub struct CipherType {
 }
 
 impl CipherType {
-    pub fn new(&self, key: &[u8], tag_len: usize) -> Result<Cipher, Error> {
+    pub fn create(&self, key: &[u8], tag_len: usize) -> Result<Cipher, Error> {
         let mut cipher = Cipher {
             c: std::ptr::null_mut(),
         };
@@ -278,7 +283,9 @@ impl Cipher {
 
 impl Drop for Cipher {
     fn drop(&mut self) {
-        unsafe { srtp_cipher_dealloc(self.c).as_result().unwrap() };
+        if !self.c.is_null() {
+            unsafe { srtp_cipher_dealloc(self.c).as_result().unwrap() };
+        }
     }
 }
 
@@ -292,4 +299,14 @@ pub static AES_ICM_128: CipherType = CipherType {
 
 pub static AES_ICM_256: CipherType = CipherType {
     ct: unsafe { &srtp_aes_icm_256 },
+};
+
+#[cfg(not(feature = "native-crypto"))]
+pub static AES_GCM_128: CipherType = CipherType {
+    ct: unsafe { &srtp_aes_gcm_128 },
+};
+
+#[cfg(not(feature = "native-crypto"))]
+pub static AES_GCM_256: CipherType = CipherType {
+    ct: unsafe { &srtp_aes_gcm_256 },
 };
