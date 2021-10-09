@@ -375,9 +375,14 @@ if(TEST_APPS)
     add_test(roc_driver roc_driver -v)
   endif()
 
-  add_executable(srtp_driver test/srtp_driver.c
-    test/util.c test/getopt_s.c)
-  target_link_libraries(srtp_driver srtp2)
+  if(ENABLE_RUST)
+    add_executable(srtp_driver test_rs/stubs/srtp_driver.c)
+    target_link_libraries(srtp_driver test_rs)
+  elseif()
+    add_executable(srtp_driver test/srtp_driver.c
+      test/util.c test/getopt_s.c)
+    target_link_libraries(srtp_driver srtp2)
+  endif()
   add_test(srtp_driver srtp_driver -v)
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))

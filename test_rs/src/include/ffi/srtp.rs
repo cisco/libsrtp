@@ -23,7 +23,7 @@ struct srtp_crypto_policy_t {
 // const ssrc_undefined: srtp_ssrc_type_t = 0;
 const ssrc_specific: srtp_ssrc_type_t = 1;
 // const ssrc_any_inbound: srtp_ssrc_type_t = 2;
-// const ssrc_any_outbound: srtp_ssrc_type_t = 3;
+const ssrc_any_outbound: srtp_ssrc_type_t = 3;
 type srtp_ssrc_type_t = c_uint;
 
 #[repr(C)]
@@ -247,6 +247,8 @@ extern "C" {
 
 ////////////////////
 
+pub use super::types::Error;
+
 // TODO: Refactor as struct{bool,bool}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SecurityServices {
@@ -447,7 +449,7 @@ pub enum Ssrc {
     // Undefined,
     Specific(u32),
     // AnyInbound,
-    // AnyOutbound,
+    AnyOutbound,
 }
 
 impl Into<srtp_ssrc_t> for Ssrc {
@@ -456,7 +458,7 @@ impl Into<srtp_ssrc_t> for Ssrc {
             // Ssrc::Undefined => (ssrc_undefined, 0),
             Ssrc::Specific(ssrc) => (ssrc_specific, ssrc),
             // Ssrc::AnyInbound => (ssrc_any_inbound, 0),
-            // Ssrc::AnyOutbound => (ssrc_any_outbound, 0),
+            Ssrc::AnyOutbound => (ssrc_any_outbound, 0),
         };
 
         srtp_ssrc_t {

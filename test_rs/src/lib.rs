@@ -8,6 +8,7 @@ mod rdbx_driver;
 mod replay_driver;
 mod roc_driver;
 mod rtpw;
+mod srtp_driver;
 
 #[cfg(feature = "native-crypto")]
 mod aes_calc;
