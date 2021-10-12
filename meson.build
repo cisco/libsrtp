@@ -264,7 +264,8 @@ else
   libsrtp2 = libsrtp2_static
 endif
 
-subdir('include/srtp2') # copies public_headers into the builddir and sets public_incs
+subdir('include/srtp2') # copies public_headers into the builddir
+public_incs = include_directories('include') # sets public_incs
 
 libsrtp2_dep = declare_dependency(link_with: libsrtp2,
   include_directories: public_incs)
