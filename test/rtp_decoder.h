@@ -107,7 +107,7 @@ int rtp_decoder_init(rtp_decoder_t dcdr,
                      int rtp_packet_offset,
                      int mki_on,
                      uint32_t roc,
-                     int rccm3_n);
+                     int rccm_n);
 
 int rtp_decoder_deinit(rtp_decoder_t decoder);
 
