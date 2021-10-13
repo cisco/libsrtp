@@ -63,6 +63,8 @@ typedef struct rtp_decoder_ctx_t {
     srtp_ctx_t *srtp_ctx;
     rtp_decoder_mode_t mode;
     int rtp_offset;
+    int mki_on;
+    int rccm_n;
     struct timeval start_tv;
     int frame_nr;
     int error_cnt;
@@ -103,7 +105,9 @@ int rtp_decoder_init(rtp_decoder_t dcdr,
                      srtp_policy_t policy,
                      rtp_decoder_mode_t mode,
                      int rtp_packet_offset,
-                     uint32_t roc);
+                     int mki_on,
+                     uint32_t roc,
+                     int rccm3_n);
 
 int rtp_decoder_deinit(rtp_decoder_t decoder);
 

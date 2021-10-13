@@ -82,6 +82,7 @@
 #endif
 
 #define MAX_KEY_LEN 96
+#define MAX_MKI_LEN 64
 #define MAX_FILTER 256
 #define MAX_FILE 255
 
@@ -170,6 +171,10 @@ int main(int argc, char *argv[])
     char *input_key = NULL;
     int b64_input = 0;
     char key[MAX_KEY_LEN];
+    char *input_mki = NULL;
+    char mki[MAX_MKI_LEN];
+    srtp_master_key_t master_key;
+    srtp_master_key_t *master_keys[1] = { &master_key };
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
     char pcap_file[MAX_FILE] = "-";
@@ -182,6 +187,8 @@ int main(int argc, char *argv[])
     srtp_err_status_t status;
     int len;
     int expected_len;
+    int mki_size = 0;
+    int rccm_n = 0;
     int do_list_mods = 0;
 
     fprintf(stderr, "Using %s [0x%x]\n", srtp_get_version_string(),
@@ -204,7 +211,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:c:m:p:o:s:r:");
+        c = getopt_s(argc, argv, "b:k:i:gt:ae:ld:f:c:m:n:p:o:s:r:");
         if (c == -1) {
             break;
         }
@@ -214,6 +221,9 @@ int main(int argc, char *argv[])
         /* fall thru */
         case 'k':
             input_key = optarg_s;
+            break;
+        case 'i':
+            input_mki = optarg_s;
             break;
         case 'e':
             scs.key_size = atoi(optarg_s);
@@ -286,6 +296,9 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unknown/unsupported mode %s\n", optarg_s);
                 exit(1);
             }
+            break;
+        case 'n':
+            rccm_n = atoi(optarg_s);
             break;
         case 'p':
             if (strlen(optarg_s) > MAX_FILE) {
@@ -519,7 +532,13 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        policy.key = (uint8_t *)key;
+        if (input_mki == NULL) {
+            policy.key = (uint8_t *)key;
+        } else {
+            policy.num_master_keys = 1;
+            policy.keys = master_keys;
+            master_key.key = (unsigned char *)key;
+        }
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
@@ -570,6 +589,18 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s\n",
                 octet_string_hex_string(key + key_octets, salt_octets));
 
+        /* Extract MKI */
+        mki_size = hex_string_to_octet_string(mki, input_mki, strlen(input_mki));
+        mki_size /= 2;
+        master_key.mki_id = (unsigned char *)mki;
+        master_key.mki_size = mki_size;
+        fprintf(stderr, "set mki to '%s' (length=%d)\n",
+                octet_string_hex_string(mki, mki_size), mki_size);
+
+        if (rccm_n > 0) {
+            fprintf(stderr, "set ROC transmission rate to %d (RCCm3, RFC4771)\n",
+                    rccm_n);
+        }
     } else {
         fprintf(stderr,
                 "error: neither encryption or authentication were selected\n");
@@ -606,7 +637,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, roc)) {
+    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, (mki_size != 0), roc, rccm_n)) {
         fprintf(stderr, "error: init failed\n");
         exit(1);
     }
@@ -648,11 +679,13 @@ void usage(char *string)
         "       -k <key>  sets the srtp master key given in hexadecimal\n"
         "       -b <key>  sets the srtp master key given in base64\n"
         "       -l list debug modules\n"
+        "       -i <mki>  sets the MKI given in hexadecimal\n"
         "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
         "       -d <debug> turn on debugging for module <debug>\n"
         "       -c \"<srtp-crypto-suite>\" to set both key and tag size based\n"
         "          on RFC4568-style crypto suite specification\n"
         "       -m <mode> set the mode to be one of [rtp]|rtcp|rtcp-mux\n"
+        "       -n <rate> RFC4771 ROC transmission rate (assumes RCCm3)\n"
         "       -p <pcap file> path to pcap file (defaults to stdin)\n"
         "       -o byte offset of RTP packet in capture (defaults to 42)\n"
         "       -s <ssrc> restrict decrypting to the given SSRC (in host byte "
@@ -685,9 +718,13 @@ int rtp_decoder_init(rtp_decoder_t dcdr,
                      srtp_policy_t policy,
                      rtp_decoder_mode_t mode,
                      int rtp_packet_offset,
-                     uint32_t roc)
+                     int mki_on,
+                     uint32_t roc,
+                     int rccm_n)
 {
     dcdr->rtp_offset = rtp_packet_offset;
+    dcdr->mki_on = mki_on;
+    dcdr->rccm_n = rccm_n;
     dcdr->srtp_ctx = NULL;
     dcdr->start_tv.tv_usec = 0;
     dcdr->start_tv.tv_sec = 0;
@@ -777,14 +814,33 @@ void rtp_decoder_handle_pkt(u_char *arg,
             return;
         }
 
-        status = srtp_unprotect(dcdr->srtp_ctx, &message, &octets_recvd);
+        if (dcdr->rccm_n > 0) {
+            uint16_t seq;
+
+            /* RFC4771 RCCm3 handling enabled; check if ROC appended */
+            seq = ntohs(message.header.seq);
+            if ((octets_recvd >= 4) && ((seq % dcdr->rccm_n) == 0)) {
+                uint32_t ssrc;
+                uint32_t roc;
+
+                /* Packet with ROC; extract unauthenticated (RCCm3) ROC value */
+                octets_recvd -= 4;
+                roc = ntohl(*(uint32_t *)(((uint8_t *)rtp_packet) + octets_recvd));
+                ssrc = ntohl(message.header.ssrc);
+
+                /* Apply extracted ROC to stream */
+                srtp_set_stream_roc(dcdr->srtp_ctx, ssrc, roc);
+            }
+        }
+
+        status = srtp_unprotect_mki(dcdr->srtp_ctx, &message, &octets_recvd, dcdr->mki_on);
         if (status) {
             dcdr->error_cnt++;
             return;
         }
         dcdr->rtp_cnt++;
     } else {
-        status = srtp_unprotect_rtcp(dcdr->srtp_ctx, &message, &octets_recvd);
+        status = srtp_unprotect_rtcp_mki(dcdr->srtp_ctx, &message, &octets_recvd, dcdr->mki_on);
         if (status) {
             dcdr->error_cnt++;
             return;
