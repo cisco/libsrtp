@@ -128,7 +128,7 @@ pub extern "C" fn srtp_driver_main() -> c_int {
         }
 
         // create a big policy list and run tests on it
-        let big_policy = POLICY_ARRAY.to_vec();
+        let big_policy = create_big_policy();
 
         println!("testing srtp_protect and srtp_unprotect with big policy");
         check_pass_fail!(srtp_test(&big_policy, None, None));
@@ -451,6 +451,18 @@ static INVALID_POLICY_ARRAY: &[Policy] = &[
     // impossible to express such an invalid policy.
 ];
 
+fn create_big_policy() -> Vec<Policy<'static>> {
+    let mut policy = POLICY_ARRAY.to_vec();
+
+    let mut ssrc: u32 = 0;
+    for p in &mut policy {
+        p.ssrc = Ssrc::Specific(ssrc);
+        ssrc += 1;
+    }
+
+    policy
+}
+
 static WILDCARD_POLICY: Policy = Policy {
     ssrc: Ssrc::AnyOutbound,
     rtp: CryptoPolicy::RTP_DEFAULT,
@@ -619,10 +631,10 @@ fn srtp_test(
     mki_index: Option<usize>,
 ) -> Result<(), Error> {
     let mut send_policy: Vec<Policy> = Vec::with_capacity(policy.len());
-    send_policy.clone_from_slice(policy);
+    send_policy.extend_from_slice(policy);
 
     let mut receive_policy: Vec<Policy> = Vec::with_capacity(policy.len());
-    receive_policy.clone_from_slice(policy);
+    receive_policy.extend_from_slice(policy);
 
     let enc_ext_hdr = extension_header.is_some();
     let mut ext_hdr: Vec<u8> = Vec::new();
@@ -667,8 +679,6 @@ fn srtp_test(
         Some(mki_index) => srtp_sender.protect_mki(&mut pkt_buffer, pt_size, mki_index)?,
     };
 
-    let pkt_ct_ref = pkt_buffer[..ct_size].to_vec();
-
     // TODO print test packet after protection
 
     // check for overrun of the srtp_protect() function
@@ -676,7 +686,9 @@ fn srtp_test(
     // The packet is followed by a value of 0xfffff; if the value of the
     // data following the packet is different, then we know that the
     // protect function is overwriting the end of the packet.
-    if pkt_buffer[ct_size..].iter().all(|&b| b == 0xff) {
+    //
+    // TODO check that ct_size is as intended, according to the defined trailer size
+    if !pkt_buffer[ct_size..].iter().all(|&b| b == 0xff) {
         return Err(Error::AlgoFail);
     }
 
@@ -699,7 +711,7 @@ fn srtp_test(
         Some(_) => srtp_receiver.unprotect_mki(&mut pkt_buffer[..ct_size])?,
     };
 
-    if &pkt_buffer[..pt_size_dec] != &pkt_ct_ref {
+    if &pkt_buffer[..pt_size_dec] != &pkt_pt_ref {
         return Err(Error::AlgoFail);
     }
 
@@ -752,10 +764,10 @@ fn srtp_test(
 
 fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> {
     let mut send_policy: Vec<Policy> = Vec::with_capacity(policy.len());
-    send_policy.clone_from_slice(policy);
+    send_policy.extend_from_slice(policy);
 
     let mut receive_policy: Vec<Policy> = Vec::with_capacity(policy.len());
-    receive_policy.clone_from_slice(policy);
+    receive_policy.extend_from_slice(policy);
 
     for mut p in &mut receive_policy {
         if let Ssrc::AnyOutbound = p.ssrc {
@@ -788,8 +800,6 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
         Some(mki_index) => srtcp_sender.protect_rtcp_mki(&mut pkt_buffer, pt_size, mki_index)?,
     };
 
-    let pkt_ct_ref = pkt_buffer[..ct_size].to_vec();
-
     // TODO print test packet after protection
 
     // check for overrun of the srtcp_protect() function
@@ -799,7 +809,7 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     // protect function is overwriting the end of the packet.
     //
     // TODO match this against srtcp_get_protect_rtcp_trailer_length
-    if pkt_buffer[ct_size..].iter().all(|&b| b == 0xff) {
+    if !pkt_buffer[ct_size..].iter().all(|&b| b == 0xff) {
         return Err(Error::AlgoFail);
     }
 
@@ -810,7 +820,7 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     // probability, especially if the packets are short.  For that
     // reason, we skip this check if the plaintext is less than four
     // octets long.
-    if policy[0].rtp.conf() {
+    if policy[0].rtcp.conf() {
         if &pkt_buffer[RTP_HEADER_SIZE..pt_size] == &pkt_pt_ref[RTP_HEADER_SIZE..pt_size] {
             return Err(Error::AlgoFail);
         }
@@ -822,7 +832,7 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
         Some(_) => srtcp_receiver.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size])?,
     };
 
-    if &pkt_buffer[..pt_size_dec] != &pkt_ct_ref {
+    if &pkt_buffer[..pt_size_dec] != &pkt_pt_ref {
         return Err(Error::AlgoFail);
     }
 
@@ -844,7 +854,7 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     }
 
     // if the policy includes authentication, then test for false positives
-    if policy[0].rtp.auth() {
+    if policy[0].rtcp.auth() {
         // increment the sequence number
         pkt_buffer[3] += 1;
 
@@ -876,7 +886,74 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
 }
 
 fn srtp_validate() -> Result<(), Error> {
-    Ok(()) // TODO
+    const SRTP_PLAINTEXT: &'static [u8] = &hex!(
+        "800f1234decafbad"
+        "cafebabeabababab"
+        "abababababababab"
+        "abababab");
+    const SRTP_CIPHERTEXT: &'static [u8] = &hex!(
+        "800f1234decafbad"
+        "cafebabe4e55dc4c"
+        "e79978d88ca4d215"
+        "949d2402b78d6acc"
+        "99ea179b8dbb");
+    const SRTCP_PLAINTEXT: &'static [u8] = &hex!(
+        "81c8000bcafebabe"
+        "abababababababab"
+        "abababababababab");
+    const SRTCP_CIPHERTEXT: &'static [u8] = &hex!(
+        "81c8000bcafebabe"
+        "7128035be487b9bd"
+        "bef89041f977a5a8"
+        "80000001993e08cd"
+        "54d6c1230798");
+
+    // create a session with a single stream using the default srtp
+    // policy and with the SSRC value 0xcafebabe
+    let policy = &[Policy {
+        ssrc: Ssrc::Specific(0xcafebabe),
+        rtp: CryptoPolicy::RTP_DEFAULT,
+        rtcp: CryptoPolicy::RTCP_DEFAULT,
+        keys: TEST_KEYS_128_ICM,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }];
+
+    let mut send = Context::new(policy)?;
+    let mut recv = Context::new(policy)?;
+
+    // protect plaintext, then compare with ciphertext
+    let mut srtp_buffer = vec![0u8; SRTP_CIPHERTEXT.len()];
+    srtp_buffer[..SRTP_PLAINTEXT.len()].copy_from_slice(SRTP_PLAINTEXT);
+
+    let srtp_ct_len = send.protect(&mut srtp_buffer, SRTP_PLAINTEXT.len())?;
+    if &srtp_buffer[..srtp_ct_len] != SRTP_CIPHERTEXT {
+        return Err(Error::Fail);
+    }
+
+    // protect plaintext rtcp, then compare with srtcp ciphertext
+    let mut srtcp_buffer = vec![0u8; SRTCP_CIPHERTEXT.len()];
+    srtcp_buffer[..SRTCP_PLAINTEXT.len()].copy_from_slice(SRTCP_PLAINTEXT);
+
+    let srtcp_ct_len = send.protect_rtcp(&mut srtcp_buffer, SRTCP_PLAINTEXT.len())?;
+    if &srtcp_buffer[..srtcp_ct_len] != SRTCP_CIPHERTEXT {
+        return Err(Error::Fail);
+    }
+
+    // unprotect ciphertext, then compare with plaintext
+    let srtp_pt_len = recv.unprotect(&mut srtp_buffer[..srtp_ct_len])?;
+    if &srtp_buffer[..srtp_pt_len] != SRTP_PLAINTEXT {
+        return Err(Error::Fail);
+    }
+
+    // unprotect srtcp ciphertext, then compare with rtcp plaintext
+    let srtcp_pt_len = recv.unprotect_rtcp(&mut srtcp_buffer[..srtcp_ct_len])?;
+    if &srtcp_buffer[..srtcp_pt_len] != SRTCP_PLAINTEXT {
+        return Err(Error::Fail);
+    }
+
+    Ok(())
 }
 
 fn srtp_validate_null() -> Result<(), Error> {

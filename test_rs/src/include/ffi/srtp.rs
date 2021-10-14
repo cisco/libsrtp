@@ -335,7 +335,7 @@ impl CryptoPolicy {
     pub const NULL_CIPHER_HMAC_SHA1_80: Self = Self {
         cipher: CipherTypeId::Null,
         auth: AuthTypeId::HmacSha1(10),
-        security_services: SecurityServices::Confidentiality,
+        security_services: SecurityServices::Authentication,
     };
 
     pub const NULL_CIPHER_NULL_AUTH: Self = Self {
