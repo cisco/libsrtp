@@ -22,7 +22,7 @@ struct srtp_crypto_policy_t {
 
 // const ssrc_undefined: srtp_ssrc_type_t = 0;
 const ssrc_specific: srtp_ssrc_type_t = 1;
-// const ssrc_any_inbound: srtp_ssrc_type_t = 2;
+const ssrc_any_inbound: srtp_ssrc_type_t = 2;
 const ssrc_any_outbound: srtp_ssrc_type_t = 3;
 type srtp_ssrc_type_t = c_uint;
 
@@ -79,7 +79,6 @@ extern "C" {
     fn srtp_init() -> srtp_err_status_t;
     fn srtp_shutdown() -> srtp_err_status_t;
     fn srtp_protect(ctx: srtp_t, rtp_hdr: *mut c_void, len_ptr: *mut c_int) -> srtp_err_status_t;
-    /*
     fn srtp_protect_mki(
         ctx: *mut srtp_ctx_t,
         rtp_hdr: *mut c_void,
@@ -87,17 +86,14 @@ extern "C" {
         use_mki: c_uint,
         mki_index: c_uint,
     ) -> srtp_err_status_t;
-    */
     fn srtp_unprotect(ctx: srtp_t, srtp_hdr: *mut c_void, len_ptr: *mut c_int)
         -> srtp_err_status_t;
-    /*
     fn srtp_unprotect_mki(
         ctx: srtp_t,
         srtp_hdr: *mut c_void,
         len_ptr: *mut c_int,
         use_mki: c_uint,
     ) -> srtp_err_status_t;
-    */
     fn srtp_create<'a>(session: *mut srtp_t, policy: *const srtp_policy_t<'a>)
         -> srtp_err_status_t;
     /*
@@ -139,8 +135,10 @@ const srtp_profile_null_sha1_32: srtp_profile_t = 6;
 const srtp_profile_aead_aes_128_gcm: srtp_profile_t = 7;
 const srtp_profile_aead_aes_256_gcm: srtp_profile_t = 8;
 type srtp_profile_t = c_uint;
+*/
 
 extern "C" {
+    /*
     fn srtp_crypto_policy_set_from_profile_for_rtp(
         policy: *mut srtp_crypto_policy_t,
         profile: srtp_profile_t,
@@ -157,6 +155,7 @@ extern "C" {
         salt: *mut c_uchar,
         bytes_in_salt: c_uint,
     );
+    */
     fn srtp_protect_rtcp(
         ctx: srtp_t,
         rtcp_hdr: *mut c_void,
@@ -180,10 +179,13 @@ extern "C" {
         pkt_octet_len: *mut c_int,
         use_mki: c_uint,
     ) -> srtp_err_status_t;
+    /*
     fn srtp_set_user_data(ctx: srtp_t, data: *mut c_void);
     fn srtp_get_user_data(ctx: srtp_t) -> *mut c_void;
+    */
 }
 
+/*
 const event_ssrc_collision: srtp_event_t = 0;
 const event_key_soft_limit: srtp_event_t = 1;
 const event_key_hard_limit: srtp_event_t = 2;
@@ -248,6 +250,10 @@ extern "C" {
 ////////////////////
 
 pub use super::types::Error;
+
+pub const MAX_TAG_LEN: usize = 16;
+pub const MAX_MKI_LEN: usize = 128;
+pub const MAX_TRAILER_LEN: usize = MAX_TAG_LEN + MAX_MKI_LEN;
 
 // TODO: Refactor as struct{bool,bool}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -426,6 +432,14 @@ impl CryptoPolicy {
         security_services: SecurityServices::Authentication,
     };
 
+    pub fn conf(&self) -> bool {
+        self.security_services.conf()
+    }
+
+    pub fn auth(&self) -> bool {
+        self.security_services.auth()
+    }
+
     fn as_srtp_crypto_policy_t(&self) -> Result<srtp_crypto_policy_t, Error> {
         let tag_size = match (self.cipher.tag_size(), self.auth.tag_size()) {
             (x, y) if x == y => x,
@@ -448,7 +462,7 @@ impl CryptoPolicy {
 pub enum Ssrc {
     // Undefined,
     Specific(u32),
-    // AnyInbound,
+    AnyInbound,
     AnyOutbound,
 }
 
@@ -457,7 +471,7 @@ impl Into<srtp_ssrc_t> for Ssrc {
         let (type_, value) = match self {
             // Ssrc::Undefined => (ssrc_undefined, 0),
             Ssrc::Specific(ssrc) => (ssrc_specific, ssrc),
-            // Ssrc::AnyInbound => (ssrc_any_inbound, 0),
+            Ssrc::AnyInbound => (ssrc_any_inbound, 0),
             Ssrc::AnyOutbound => (ssrc_any_outbound, 0),
         };
 
@@ -617,17 +631,71 @@ impl Context {
         unsafe { srtp_set_debug_module(mod_name, enabled).as_result() }
     }
 
-    pub fn srtp_protect(&mut self, data: &mut [u8], pt_size: usize) -> Result<usize, Error> {
+    pub fn protect(&mut self, data: &mut [u8], pt_size: usize) -> Result<usize, Error> {
         let rtp_hdr = data.as_mut_ptr() as *mut c_void;
         let mut len: c_int = pt_size as c_int;
         unsafe { srtp_protect(self.ctx, rtp_hdr, &mut len).as_result()? };
         Ok(len as usize)
     }
 
-    pub fn srtp_unprotect(&mut self, data: &mut [u8]) -> Result<usize, Error> {
+    pub fn protect_mki(
+        &mut self,
+        data: &mut [u8],
+        pt_size: usize,
+        mki_index: usize,
+    ) -> Result<usize, Error> {
+        let rtp_hdr = data.as_mut_ptr() as *mut c_void;
+        let mut len: c_int = pt_size as c_int;
+        let mki_index: c_uint = mki_index as c_uint;
+        unsafe { srtp_protect_mki(self.ctx, rtp_hdr, &mut len, 1, mki_index).as_result()? };
+        Ok(len as usize)
+    }
+
+    pub fn unprotect(&mut self, data: &mut [u8]) -> Result<usize, Error> {
         let rtp_hdr = data.as_mut_ptr() as *mut c_void;
         let mut len: c_int = data.len() as c_int;
         unsafe { srtp_unprotect(self.ctx, rtp_hdr, &mut len).as_result()? };
+        Ok(len as usize)
+    }
+
+    pub fn unprotect_mki(&mut self, data: &mut [u8]) -> Result<usize, Error> {
+        let rtp_hdr = data.as_mut_ptr() as *mut c_void;
+        let mut len: c_int = data.len() as c_int;
+        unsafe { srtp_unprotect_mki(self.ctx, rtp_hdr, &mut len, 1).as_result()? };
+        Ok(len as usize)
+    }
+
+    pub fn protect_rtcp(&mut self, data: &mut [u8], pt_size: usize) -> Result<usize, Error> {
+        let rtcp_hdr = data.as_mut_ptr() as *mut c_void;
+        let mut len: c_int = pt_size as c_int;
+        unsafe { srtp_protect_rtcp(self.ctx, rtcp_hdr, &mut len).as_result()? };
+        Ok(len as usize)
+    }
+
+    pub fn protect_rtcp_mki(
+        &mut self,
+        data: &mut [u8],
+        pt_size: usize,
+        mki_index: usize,
+    ) -> Result<usize, Error> {
+        let rtcp_hdr = data.as_mut_ptr() as *mut c_void;
+        let mut len: c_int = pt_size as c_int;
+        let mki_index: c_uint = mki_index as c_uint;
+        unsafe { srtp_protect_rtcp_mki(self.ctx, rtcp_hdr, &mut len, 1, mki_index).as_result()? };
+        Ok(len as usize)
+    }
+
+    pub fn unprotect_rtcp(&mut self, data: &mut [u8]) -> Result<usize, Error> {
+        let rtcp_hdr = data.as_mut_ptr() as *mut c_void;
+        let mut len: c_int = data.len() as c_int;
+        unsafe { srtp_unprotect_rtcp(self.ctx, rtcp_hdr, &mut len).as_result()? };
+        Ok(len as usize)
+    }
+
+    pub fn unprotect_rtcp_mki(&mut self, data: &mut [u8]) -> Result<usize, Error> {
+        let rtcp_hdr = data.as_mut_ptr() as *mut c_void;
+        let mut len: c_int = data.len() as c_int;
+        unsafe { srtp_unprotect_rtcp_mki(self.ctx, rtcp_hdr, &mut len, 1).as_result()? };
         Ok(len as usize)
     }
 }

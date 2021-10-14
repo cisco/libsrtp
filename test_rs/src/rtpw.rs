@@ -372,7 +372,7 @@ impl SrtpSocket {
         )?;
 
         // apply srtp
-        let srtp_size = self.srtp_ctx.srtp_protect(&mut self.buffer, rtp_size)?;
+        let srtp_size = self.srtp_ctx.protect(&mut self.buffer, rtp_size)?;
 
         // send the packet
         let sent_size = self
@@ -395,9 +395,7 @@ impl SrtpSocket {
         }
 
         // apply srtp
-        let rtp_size = self
-            .srtp_ctx
-            .srtp_unprotect(&mut self.buffer[..srtp_size])?;
+        let rtp_size = self.srtp_ctx.unprotect(&mut self.buffer[..srtp_size])?;
 
         Ok(&self.buffer[Self::RTP_HEADER_SIZE..rtp_size])
     }
