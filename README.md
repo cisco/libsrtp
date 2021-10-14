@@ -283,11 +283,13 @@ Option                         | Description
 -------------------------------|--------------------
 \-\-help                   \-h | Display help
 \-\-enable-debug-logging       | Enable debug logging in all modules
-\-\-enable-log-stdout          | Enable logging to stdout
 \-\-enable-openssl             | Enable OpenSSL crypto engine
+\-\-enable-nss                 | Enable NSS crypto engine
 \-\-enable-openssl-kdf         | Enable OpenSSL KDF algorithm
-\-\-with-log-file              | Use file for logging
+\-\-enable-log-stdout          | Enable logging to stdout
 \-\-with-openssl-dir           | Location of OpenSSL installation
+\-\-with-nss-dir               | Location of NSS installation
+\-\-with-log-file              | Use file for logging
 
 By default there is no log output, logging can be enabled to be output to stdout
 or a given file using the configure options.
