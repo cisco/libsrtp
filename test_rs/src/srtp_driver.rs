@@ -143,35 +143,10 @@ pub extern "C" fn srtp_driver_main() -> c_int {
         println!("testing srtp_protect and srtp_unprotect on wildcard ssrc policy and encrypted extensions headers");
         check_pass_fail!(srtp_test(&[WILDCARD_POLICY.clone()], Some(1), None));
 
-        // run validation test against the reference packets - note that this test only covers the
-        // default policy
-        println!("testing srtp_protect and srtp_unprotect against reference packet");
-        check_pass_fail!(srtp_validate());
-
-        println!("testing srtp_protect and srtp_unprotect against reference packet using null cipher and HMAC");
-        check_pass_fail!(srtp_validate_null());
-
-        println!("testing srtp_protect and srtp_unprotect against reference packet with encrypted extensions headers");
-        check_pass_fail!(srtp_validate_encrypted_extensions_headers());
-
-        println!("testing srtp_protect and srtp_unprotect against reference packet (AES-256)");
-        check_pass_fail!(srtp_validate_aes_256());
-
-        println!("testing srtp_protect and srtp_unprotect against packet with empty payload");
-        check_pass_fail!(srtp_test_empty_payload());
-
-        #[cfg(not(feature = "native-crypto"))]
-        {
-            println!("testing srtp_protect and srtp_unprotect against reference packet using GCM");
-            check_pass_fail!(srtp_validate_gcm());
-
-            println!("testing srtp_protect and srtp_unprotect against reference packet with encrypted extension headers (GCM)");
-            check_pass_fail!(srtp_validate_encrypted_extensions_headers_gcm());
-
-            println!(
-                "testing srtp_protect and srtp_unprotect against packet with empty payload (GCM)"
-            );
-            check_pass_fail!(srtp_test_empty_payload_gcm());
+        // run validation test against the reference packets
+        for tc in VALIDATION_TEST_CASES {
+            println!("testing srtp_protect and srtp_unprotect {}", tc.name);
+            check_pass_fail!(tc.check());
         }
 
         println!("testing srtp_remove_stream()");
@@ -248,8 +223,8 @@ pub extern "C" fn srtp_driver_main() -> c_int {
     0
 }
 
-static TEST_MKI_ID_1: &'static [u8] = &hex!("e1f97a0d");
-static TEST_MKI_ID_2: &'static [u8] = &hex!("f3a14671");
+const TEST_MKI_ID_1: &'static [u8] = &hex!("e1f97a0d");
+const TEST_MKI_ID_2: &'static [u8] = &hex!("f3a14671");
 
 // XXX(RLB) Because our Rust interface to master keys uses separate key and salt, we have to be a
 // little more verbose than the corresponding C code.  Where the C code uses one byte string, we
@@ -274,29 +249,29 @@ static TEST_MKI_ID_2: &'static [u8] = &hex!("f3a14671");
 //
 // Unfortunately, Rust doesn't allow slicing in statics, so we have to repeat ourselves instead of
 // having one buffer and taking slices of it for the variants.
-static KEY_128_1: &'static [u8] = &hex!("e1f97a0d3e018be0d64fa32c06de4139");
-static SALT_128_ICM_1: &'static [u8] = &hex!("0ec675ad498afeebb6960b3aabe6");
-static SALT_128_GCM_1: &'static [u8] = &hex!("0ec675ad498afeebb6960b3a");
-static KEY_256_1: &'static [u8] = &hex!("e1f97a0d3e018be0d64fa32c06de4139"
+const KEY_128_1: &'static [u8] = &hex!("e1f97a0d3e018be0d64fa32c06de4139");
+const SALT_128_ICM_1: &'static [u8] = &hex!("0ec675ad498afeebb6960b3aabe6");
+const SALT_128_GCM_1: &'static [u8] = &hex!("0ec675ad498afeebb6960b3a");
+const KEY_256_1: &'static [u8] = &hex!("e1f97a0d3e018be0d64fa32c06de4139"
                                         "0ec675ad498afeebb6960b3aabe6c173");
 
-static KEY_128_2: &'static [u8] = &hex!("f0f04914b513f2763a1b1fa130f10e29");
-static SALT_128_ICM_2: &'static [u8] = &hex!("98f6f6e43e4309d1e622a0e332b9");
-static SALT_128_GCM_2: &'static [u8] = &hex!("98f6f6e43e4309d1e622a0e3");
-static KEY_256_2: &'static [u8] = &hex!("f0f04914b513f2763a1b1fa130f10e29"
+const KEY_128_2: &'static [u8] = &hex!("f0f04914b513f2763a1b1fa130f10e29");
+const SALT_128_ICM_2: &'static [u8] = &hex!("98f6f6e43e4309d1e622a0e332b9");
+const SALT_128_GCM_2: &'static [u8] = &hex!("98f6f6e43e4309d1e622a0e3");
+const KEY_256_2: &'static [u8] = &hex!("f0f04914b513f2763a1b1fa130f10e29"
                                         "98f6f6e43e4309d1e622a0e332b9f1b6");
 
-static SALT_256_ICM: &'static [u8] = &hex!("c317f2dabe357793b6960b3aabe6");
-static SALT_256_GCM: &'static [u8] = &hex!("c317f2dabe357793b6960b3a");
+const SALT_256_ICM: &'static [u8] = &hex!("c317f2dabe357793b6960b3aabe6");
+const SALT_256_GCM: &'static [u8] = &hex!("c317f2dabe357793b6960b3a");
 
 // XXX(RLB): This seems redundant, but the C code defines it, so we do the same to match.
-static TEST_GCM_MASTER_KEY: MasterKey = MasterKey {
+const TEST_KEY_GCM: MasterKey = MasterKey {
     key: &hex!("000102030405060708090a0b0c0d0e0f"),
     salt: &hex!("a0a1a2a3a4a5a6a7a8a9aaab"),
     id: TEST_MKI_ID_1,
 };
 
-static TEST_KEYS_128_ICM: &[MasterKey] = &[
+const TEST_KEYS_128_ICM: &[MasterKey] = &[
     MasterKey {
         key: KEY_128_1,
         salt: SALT_128_ICM_1,
@@ -309,7 +284,7 @@ static TEST_KEYS_128_ICM: &[MasterKey] = &[
     },
 ];
 
-static TEST_KEYS_256_ICM: &[MasterKey] = &[
+const TEST_KEYS_256_ICM: &[MasterKey] = &[
     MasterKey {
         key: KEY_256_1,
         salt: SALT_256_ICM,
@@ -322,7 +297,7 @@ static TEST_KEYS_256_ICM: &[MasterKey] = &[
     },
 ];
 
-static TEST_KEYS_128_GCM: &[MasterKey] = &[
+const TEST_KEYS_128_GCM: &[MasterKey] = &[
     MasterKey {
         key: KEY_128_1,
         salt: SALT_128_GCM_1,
@@ -335,7 +310,7 @@ static TEST_KEYS_128_GCM: &[MasterKey] = &[
     },
 ];
 
-static TEST_KEYS_256_GCM: &[MasterKey] = &[
+const TEST_KEYS_256_GCM: &[MasterKey] = &[
     MasterKey {
         key: KEY_256_1,
         salt: SALT_256_GCM,
@@ -348,7 +323,7 @@ static TEST_KEYS_256_GCM: &[MasterKey] = &[
     },
 ];
 
-static POLICY_ARRAY: &[Policy] = &[
+const POLICY_ARRAY: &[Policy] = &[
     // default_policy
     Policy {
         ssrc: Ssrc::AnyOutbound,
@@ -445,7 +420,7 @@ static POLICY_ARRAY: &[Policy] = &[
     },
 ];
 
-static INVALID_POLICY_ARRAY: &[Policy] = &[
+const INVALID_POLICY_ARRAY: &[Policy] = &[
     // XXX(RLB) In the C version, this array tests that a policy that requests EKT is rejected.  In
     // the policy struct we are using here, we have removed the ability to request EKT, so it's
     // impossible to express such an invalid policy.
@@ -463,7 +438,7 @@ fn create_big_policy() -> Vec<Policy<'static>> {
     policy
 }
 
-static WILDCARD_POLICY: Policy = Policy {
+const WILDCARD_POLICY: Policy = Policy {
     ssrc: Ssrc::AnyOutbound,
     rtp: CryptoPolicy::RTP_DEFAULT,
     rtcp: CryptoPolicy::RTCP_DEFAULT,
@@ -657,8 +632,6 @@ fn srtp_test(
     let mut srtp_sender = Context::new(&send_policy)?;
     let mut srtp_receiver = Context::new(&receive_policy)?;
 
-    // TODO print policy
-
     // initialize data buffer, using the ssrc in the policy unless that value is a wildcard, in
     // which case we'll just use an arbitrary one
     let ssrc = match policy[0].ssrc {
@@ -672,14 +645,10 @@ fn srtp_test(
     let (mut pkt_buffer, pt_size) = create_test_packet(MSG_LEN_OCTETS, ssrc, enc_ext_hdr);
     let pkt_pt_ref = pkt_buffer[..pt_size].to_vec();
 
-    // TODO print test packet before protection
-
     let ct_size = match mki_index {
         None => srtp_sender.protect(&mut pkt_buffer, pt_size)?,
         Some(mki_index) => srtp_sender.protect_mki(&mut pkt_buffer, pt_size, mki_index)?,
     };
-
-    // TODO print test packet after protection
 
     // check for overrun of the srtp_protect() function
     //
@@ -778,8 +747,6 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     let mut srtcp_sender = Context::new(&send_policy)?;
     let mut srtcp_receiver = Context::new(&receive_policy)?;
 
-    // TODO print policy
-
     // initialize data buffer, using the ssrc in the policy unless that value is a wildcard, in
     // which case we'll just use an arbitrary one
     let ssrc = match policy[0].ssrc {
@@ -793,14 +760,10 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     let (mut pkt_buffer, pt_size) = create_test_packet(MSG_LEN_OCTETS, ssrc, false);
     let pkt_pt_ref = pkt_buffer[..pt_size].to_vec();
 
-    // TODO print test packet before protection
-
     let ct_size = match mki_index {
         None => srtcp_sender.protect_rtcp(&mut pkt_buffer, pt_size)?,
         Some(mki_index) => srtcp_sender.protect_rtcp_mki(&mut pkt_buffer, pt_size, mki_index)?,
     };
-
-    // TODO print test packet after protection
 
     // check for overrun of the srtcp_protect() function
     //
@@ -885,107 +848,251 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     Ok(())
 }
 
-fn srtp_validate() -> Result<(), Error> {
-    const SRTP_PLAINTEXT: &'static [u8] = &hex!(
-        "800f1234decafbad"
-        "cafebabeabababab"
-        "abababababababab"
-        "abababab");
-    const SRTP_CIPHERTEXT: &'static [u8] = &hex!(
-        "800f1234decafbad"
-        "cafebabe4e55dc4c"
-        "e79978d88ca4d215"
-        "949d2402b78d6acc"
-        "99ea179b8dbb");
-    const SRTCP_PLAINTEXT: &'static [u8] = &hex!(
-        "81c8000bcafebabe"
-        "abababababababab"
-        "abababababababab");
-    const SRTCP_CIPHERTEXT: &'static [u8] = &hex!(
-        "81c8000bcafebabe"
-        "7128035be487b9bd"
-        "bef89041f977a5a8"
-        "80000001993e08cd"
-        "54d6c1230798");
+struct ValidationTestCase {
+    name: &'static str,
+    srtp_plaintext: &'static [u8],
+    srtp_ciphertext: &'static [u8],
+    srtcp_plaintext: Option<&'static [u8]>,
+    srtcp_ciphertext: Option<&'static [u8]>,
+    policy: &'static [Policy<'static>],
+}
 
-    // create a session with a single stream using the default srtp
-    // policy and with the SSRC value 0xcafebabe
-    let policy = &[Policy {
-        ssrc: Ssrc::Specific(0xcafebabe),
-        rtp: CryptoPolicy::RTP_DEFAULT,
-        rtcp: CryptoPolicy::RTCP_DEFAULT,
-        keys: TEST_KEYS_128_ICM,
-        window_size: 128,
-        allow_repeat_tx: false,
-        extension_headers_to_encrypt: &[],
-    }];
+impl ValidationTestCase {
+    fn check(&self) -> Result<(), Error> {
+        let mut send = Context::new(self.policy)?;
+        let mut recv = Context::new(self.policy)?;
 
-    let mut send = Context::new(policy)?;
-    let mut recv = Context::new(policy)?;
+        // protect plaintext, then compare with ciphertext
+        let mut srtp_buffer = vec![0u8; self.srtp_ciphertext.len()];
+        srtp_buffer[..self.srtp_plaintext.len()].copy_from_slice(self.srtp_plaintext);
 
-    // protect plaintext, then compare with ciphertext
-    let mut srtp_buffer = vec![0u8; SRTP_CIPHERTEXT.len()];
-    srtp_buffer[..SRTP_PLAINTEXT.len()].copy_from_slice(SRTP_PLAINTEXT);
+        let srtp_ct_len = send.protect(&mut srtp_buffer, self.srtp_plaintext.len())?;
+        if &srtp_buffer[..srtp_ct_len] != self.srtp_ciphertext {
+            println!(
+                "{} ct {:x?} != {:x?}",
+                self.name,
+                &srtp_buffer[..srtp_ct_len],
+                self.srtp_ciphertext,
+            );
+            return Err(Error::Fail);
+        }
 
-    let srtp_ct_len = send.protect(&mut srtp_buffer, SRTP_PLAINTEXT.len())?;
-    if &srtp_buffer[..srtp_ct_len] != SRTP_CIPHERTEXT {
-        return Err(Error::Fail);
+        // unprotect ciphertext, then compare with plaintext
+        let srtp_pt_len = recv.unprotect(&mut srtp_buffer[..srtp_ct_len])?;
+        if &srtp_buffer[..srtp_pt_len] != self.srtp_plaintext {
+            println!(
+                "{} pt {:x?} != {:x?}",
+                self.name,
+                &srtp_buffer[..srtp_pt_len],
+                self.srtp_plaintext,
+            );
+            return Err(Error::Fail);
+        }
+
+        if let (Some(plaintext), Some(ciphertext)) = (self.srtcp_plaintext, self.srtcp_ciphertext) {
+            // protect plaintext rtcp, then compare with srtcp ciphertext
+            let mut srtcp_buffer = vec![0u8; ciphertext.len()];
+            srtcp_buffer[..plaintext.len()].copy_from_slice(plaintext);
+
+            let srtcp_ct_len = send.protect_rtcp(&mut srtcp_buffer, plaintext.len())?;
+            if &srtcp_buffer[..srtcp_ct_len] != ciphertext {
+                println!(
+                    "{} c ct {:x?} != {:x?}",
+                    self.name,
+                    &srtcp_buffer[..srtcp_ct_len],
+                    ciphertext,
+                );
+                return Err(Error::Fail);
+            }
+
+            // unprotect srtcp ciphertext, then compare with rtcp plaintext
+            let srtcp_pt_len = recv.unprotect_rtcp(&mut srtcp_buffer[..srtcp_ct_len])?;
+            if &srtcp_buffer[..srtcp_pt_len] != plaintext {
+                println!(
+                    "{} c pt {:x?} != {:x?}",
+                    self.name,
+                    &srtcp_buffer[..srtcp_pt_len],
+                    plaintext,
+                );
+                return Err(Error::Fail);
+            }
+        }
+
+        Ok(())
     }
-
-    // protect plaintext rtcp, then compare with srtcp ciphertext
-    let mut srtcp_buffer = vec![0u8; SRTCP_CIPHERTEXT.len()];
-    srtcp_buffer[..SRTCP_PLAINTEXT.len()].copy_from_slice(SRTCP_PLAINTEXT);
-
-    let srtcp_ct_len = send.protect_rtcp(&mut srtcp_buffer, SRTCP_PLAINTEXT.len())?;
-    if &srtcp_buffer[..srtcp_ct_len] != SRTCP_CIPHERTEXT {
-        return Err(Error::Fail);
-    }
-
-    // unprotect ciphertext, then compare with plaintext
-    let srtp_pt_len = recv.unprotect(&mut srtp_buffer[..srtp_ct_len])?;
-    if &srtp_buffer[..srtp_pt_len] != SRTP_PLAINTEXT {
-        return Err(Error::Fail);
-    }
-
-    // unprotect srtcp ciphertext, then compare with rtcp plaintext
-    let srtcp_pt_len = recv.unprotect_rtcp(&mut srtcp_buffer[..srtcp_ct_len])?;
-    if &srtcp_buffer[..srtcp_pt_len] != SRTCP_PLAINTEXT {
-        return Err(Error::Fail);
-    }
-
-    Ok(())
 }
 
-fn srtp_validate_null() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-fn srtp_validate_encrypted_extensions_headers() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-fn srtp_validate_aes_256() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-fn srtp_test_empty_payload() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-#[cfg(not(feature = "native-crypto"))]
-fn srtp_validate_gcm() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-#[cfg(not(feature = "native-crypto"))]
-fn srtp_validate_encrypted_extensions_headers_gcm() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-#[cfg(not(feature = "native-crypto"))]
-fn srtp_test_empty_payload_gcm() -> Result<(), Error> {
-    Ok(()) // TODO
-}
+const VALIDATION_TEST_CASES: &[ValidationTestCase] = &[
+    // srtp_validate
+    ValidationTestCase {
+        name: "against reference packet",
+        srtp_plaintext: &hex!("800f1234decafbadcafebabe"
+                              "abababababababababababababababab"),
+        srtp_ciphertext: &hex!("800f1234decafbadcafebabe"
+                               "4e55dc4ce79978d88ca4d215949d2402b78d6acc99ea179b8dbb"),
+        srtcp_plaintext: Some(&hex!("81c8000bcafebabe"
+                                    "abababababababababababababababab")),
+        srtcp_ciphertext: Some(&hex!("81c8000bcafebabe"
+                                     "7128035be487b9bdbef89041f977a5a880000001993e08cd54d6c1230798")),
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::RTP_DEFAULT,
+            rtcp: CryptoPolicy::RTCP_DEFAULT,
+            keys: TEST_KEYS_128_ICM,
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[],
+        }],
+    },
+    // srtp_validate_null
+    ValidationTestCase {
+        name: "against reference packet using null cipher and HMAC",
+        srtp_plaintext: &hex!("800f1234decafbadcafebabe"
+                              "abababababababababababababababab"),
+        srtp_ciphertext: &hex!("800f1234decafbadcafebabe"
+                               "abababababababababababababababababa136270b679134ce9b"),
+        srtcp_plaintext: Some(&hex!("81c8000bcafebabe"
+                               "abababababababababababababababab")),
+        srtcp_ciphertext: Some(&hex!("81c8000bcafebabe"
+                                "abababababababababababababababab00000001fe88c7fdfd37ebce615d")),
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::NULL_CIPHER_HMAC_SHA1_80,
+            rtcp: CryptoPolicy::NULL_CIPHER_HMAC_SHA1_80,
+            keys: TEST_KEYS_128_ICM,
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[],
+        }],
+    },
+    // srtp_validate_gcm
+    #[cfg(not(feature = "native-crypto"))]
+    ValidationTestCase {
+        name: "against reference packet using GCM",
+        srtp_plaintext: &hex!("800f1234decafbadcafebabe"
+                              "abababababababababababababababab"),
+        srtp_ciphertext: &hex!("800f1234decafbadcafebabe"
+                               "c5002ede04cfdd2eb91159e0880aa06ed2976826f796b201df3131a127e8a392"),
+        srtcp_plaintext: Some(&hex!("81c8000bcafebabe"
+                                    "abababababababababababababababab")),
+        srtcp_ciphertext: Some(&hex!("81c8000bcafebabe"
+                                     "c98b8b5df0392a55852b6c21ac8e7025c52c6fbea2b3b446ea31123ba88ce61e80000001")),
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::AES_GCM_128,
+            rtcp: CryptoPolicy::AES_GCM_128,
+            keys: &[TEST_KEY_GCM],
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[],
+        }],
+    },
+    // srtp_validate_encrypted_extensions_headers
+    ValidationTestCase {
+        name: "against reference packet with encrypted extensions headers",
+        srtp_plaintext: &hex!("900f1234decafbadcafebabe"
+                              "bede000617414273a475262748220000c8308e4655996386b395fb00"
+                              "abababababababababababababababab"),
+        srtp_ciphertext: &hex!("900f1234decafbadcafebabe"
+                               "BEDE000617588A9270F4E15E1C220000C8309546A994F0BC54789700"
+                               "4e55dc4ce79978d88ca4d215949d24025a46b3ca35c535a891c7"),
+        srtcp_plaintext: None,
+        srtcp_ciphertext: None,
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::RTP_DEFAULT,
+            rtcp: CryptoPolicy::RTCP_DEFAULT,
+            keys: TEST_KEYS_128_ICM,
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[1, 3, 4],
+        }],
+    },
+    // srtp_validate_encrypted_extensions_headers_gcm
+    #[cfg(not(feature = "native-crypto"))]
+    ValidationTestCase {
+        name: "reference packet with encrypted extension headers (GCM)",
+        srtp_plaintext: &hex!("900f1234decafbadcafebabe"
+                              "bede000617414273a475262748220000c8308e4655996386b395fb00"
+                              "abababababababababababababababab"),
+        srtp_ciphertext: &hex!("900f1234decafbadcafebabe"
+                               "bede00061712e0205bfa949b1c220000c830bb46732778d9929aab00"
+                               "0eca0cf95ee955b26cd3d288b49f6ca9f4b1b759719eb5bc"),
+        srtcp_plaintext: None,
+        srtcp_ciphertext: None,
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::AES_GCM_128_8_AUTH,
+            rtcp: CryptoPolicy::AES_GCM_128_8_AUTH,
+            keys: &[MasterKey {
+                key: &hex!("e1f97a0d3e018be0d64fa32c06de4139"),
+                salt: &hex!("0ec675ad498afeebb6960b3aabe6"),
+                id: &[],
+            }],
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[1, 3, 4],
+        }],
+    },
+    // srtp_validate_aes_256
+    ValidationTestCase {
+        name: "against reference packet (AES-256)",
+        srtp_plaintext: &hex!("800f1234decafbadcafebabe"
+                              "abababababababababababababababab"),
+        srtp_ciphertext: &hex!("800f1234decafbadcafebabe"
+                               "f1d9de17ff251ff1aa007774b0b4b40da08d9d9a5b3a55d8873b"),
+        srtcp_plaintext: None,
+        srtcp_ciphertext: None,
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::AES_ICM_256_HMAC_SHA1_80,
+            rtcp: CryptoPolicy::AES_ICM_256_HMAC_SHA1_80,
+            keys: &[MasterKey {
+                key: &hex!("f0f04914b513f2763a1b1fa130f10e2998f6f6e43e4309d1e622a0e332b9f1b6"),
+                salt: &hex!("3b04803de51ee7c96423ab5b78d2"),
+                id: &[],
+            }],
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[1, 3, 4],
+        }],
+    },
+    // srtp_test_empty_payload
+    ValidationTestCase {
+        name: "packet with empty payload",
+        srtp_plaintext: &hex!("800f1234decafbadcafebabe"),
+        srtp_ciphertext: &hex!("800f1234decafbadcafebabe773c2e1cd91d590d16e5"),
+        srtcp_plaintext: None,
+        srtcp_ciphertext: None,
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::RTP_DEFAULT,
+            rtcp: CryptoPolicy::RTCP_DEFAULT,
+            keys: TEST_KEYS_128_ICM,
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[],
+        }],
+    },
+    // srtp_test_empty_payload_gcm
+    #[cfg(not(feature = "native-crypto"))]
+    ValidationTestCase {
+        name: "packet with empty payload",
+        srtp_plaintext: &hex!("800f1234decafbadcafebabe"),
+        srtp_ciphertext: &hex!("800f1234decafbadcafebabef8b471a9e44e229c"),
+        srtcp_plaintext: None,
+        srtcp_ciphertext: None,
+        policy: &[Policy {
+            ssrc: Ssrc::Specific(0xcafebabe),
+            rtp: CryptoPolicy::AES_GCM_128_8_AUTH,
+            rtcp: CryptoPolicy::AES_GCM_128_8_AUTH,
+            keys: TEST_KEYS_128_GCM,
+            window_size: 128,
+            allow_repeat_tx: false,
+            extension_headers_to_encrypt: &[],
+        }],
+    },
+];
 
 fn srtp_test_remove_stream() -> Result<(), Error> {
     Ok(()) // TODO
