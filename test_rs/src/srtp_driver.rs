@@ -487,7 +487,12 @@ fn do_rejection_timing(policy: &Policy) -> Result<(), Error> {
 //
 // note that the location of the test packet can (and should) be
 // deallocated with the free() call once it is no longer needed.
-fn create_test_packet(msg_octets: usize, ssrc: u32, ext_hdr: bool) -> (Vec<u8>, usize) {
+fn create_test_packet(
+    msg_octets: usize,
+    ssrc: u32,
+    seq: Option<u16>,
+    ext_hdr: bool,
+) -> (Vec<u8>, usize) {
     let header = RtpHeader {
         v: 2,
         p: 0,
@@ -495,7 +500,7 @@ fn create_test_packet(msg_octets: usize, ssrc: u32, ext_hdr: bool) -> (Vec<u8>, 
         cc: 0,
         m: 0,
         pt: 0xf,
-        seq: 0x1234,
+        seq: seq.or(Some(0x1234_u16)).unwrap(),
         ts: 0xdecafbad,
         ssrc: ssrc,
     };
@@ -519,7 +524,7 @@ fn create_test_packet(msg_octets: usize, ssrc: u32, ext_hdr: bool) -> (Vec<u8>, 
     pkt.extend_from_slice(&vec![0xab; msg_octets]);
     let pt_size = pkt.len();
 
-    pkt.extend_from_slice(&vec![0xff; MAX_TRAILER_LEN + 4]);
+    pkt.extend_from_slice(&vec![0xff; MAX_TRAILER_SIZE + 4]);
 
     (pkt, pt_size)
 }
@@ -537,7 +542,7 @@ fn srtp_bits_per_second(msg_octets: usize, policy: &Policy) -> Result<f64, Error
     };
 
     // create a test packet
-    let (mut msg, pt_len) = create_test_packet(msg_octets, ssrc, false);
+    let (mut msg, pt_len) = create_test_packet(msg_octets, ssrc, None, false);
 
     let start = Instant::now();
     for _i in 0..NUM_TRIALS {
@@ -567,7 +572,7 @@ fn srtp_rejections_per_second(msg_octets: usize, policy: &Policy) -> Result<f64,
     };
 
     // create a test packet
-    let (mut msg, pt_len) = create_test_packet(msg_octets, ssrc, false);
+    let (mut msg, pt_len) = create_test_packet(msg_octets, ssrc, None, false);
     ctx.protect(&mut msg, pt_len)?;
 
     let start = Instant::now();
@@ -638,9 +643,8 @@ fn srtp_test(
     };
 
     const MSG_LEN_OCTETS: usize = 28;
-    const RTP_HEADER_SIZE: usize = 12;
 
-    let (mut pkt_buffer, pt_size) = create_test_packet(MSG_LEN_OCTETS, ssrc, enc_ext_hdr);
+    let (mut pkt_buffer, pt_size) = create_test_packet(MSG_LEN_OCTETS, ssrc, None, enc_ext_hdr);
     let pkt_pt_ref = pkt_buffer[..pt_size].to_vec();
 
     let ct_size = match mki_index {
@@ -757,7 +761,7 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     const MSG_LEN_OCTETS: usize = 28;
     const RTP_HEADER_SIZE: usize = 12;
 
-    let (mut pkt_buffer, pt_size) = create_test_packet(MSG_LEN_OCTETS, ssrc, false);
+    let (mut pkt_buffer, pt_size) = create_test_packet(MSG_LEN_OCTETS, ssrc, None, false);
     let pkt_pt_ref = pkt_buffer[..pt_size].to_vec();
 
     let ct_size = match mki_index {
@@ -1095,7 +1099,37 @@ const VALIDATION_TEST_CASES: &[ValidationTestCase] = &[
 ];
 
 fn test_remove_stream() -> Result<(), Error> {
-    Ok(()) // TODO
+    let policy = create_big_policy();
+    let mut session = Context::new(&policy)?;
+
+    // check for false positives by trying to remove a stream that's not in the session
+    match session.remove_stream(0xaaaaaaaa) {
+        Err(Error::NoCtx) => {}
+        _ => return Err(Error::Fail),
+    }
+
+    // check for false negatives by removing stream 0x1, then searching for streams 0x0 and 0x2
+    session.remove_stream(0x00000001)?;
+    if !session.has_stream(0x00000000) || !session.has_stream(0x00000002) {
+        return Err(Error::Fail);
+    }
+
+    // Now test adding and removing a single stream
+    let ssrc: u32 = 0xcafebabe;
+    let policy = Policy {
+        ssrc: Ssrc::Specific(ssrc),
+        rtp: CryptoPolicy::RTP_DEFAULT,
+        rtcp: CryptoPolicy::RTCP_DEFAULT,
+        keys: TEST_KEYS_128_ICM,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    };
+
+    let mut session = Context::new(&[])?;
+    session.add_stream(&policy)?;
+    session.remove_stream(ssrc)?;
+    Ok(())
 }
 
 fn test_update() -> Result<(), Error> {
@@ -1119,9 +1153,8 @@ fn test_update() -> Result<(), Error> {
     let msg_len_octets: usize = 32;
     let ssrc: u32 = 0x12121212;
 
-    for seq in &[0xffff_u16, 0x0001_u16] {
-        let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, false);
-        msg[2..4].copy_from_slice(&seq.to_be_bytes());
+    for seq in [0xffff_u16, 0x0001_u16] {
+        let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, Some(seq), false);
         let ct_size = send.protect(&mut msg, pt_size)?;
         recv.unprotect(&mut msg[..ct_size])?;
     }
@@ -1130,8 +1163,7 @@ fn test_update() -> Result<(), Error> {
     policy.ssrc = Ssrc::AnyOutbound;
     send.update(&[policy.clone()])?;
 
-    let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, false);
-    msg[2..4].copy_from_slice(&0x0002_u16.to_be_bytes());
+    let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, Some(0x0002), false);
     let ct_size = send.protect(&mut msg, pt_size)?;
     recv.unprotect(&mut msg[..ct_size])?;
 
@@ -1146,8 +1178,7 @@ fn test_update() -> Result<(), Error> {
     send.update(&[policy.clone()])?;
 
     // create and protect msg with new key and ROC still equal to 1
-    let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, false);
-    msg[2..4].copy_from_slice(&0x0003_u16.to_be_bytes());
+    let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, Some(0x0003), false);
     let ct_size = send.protect(&mut msg, pt_size)?;
 
     // verify that recive ctx will fail to unprotect as it still uses test_key
@@ -1170,7 +1201,9 @@ fn test_update() -> Result<(), Error> {
     recv.update(&[policy.clone()])?;
 
     // verify that can still unprotect, therfore key is updated and ROC value is preserved
-    recv.unprotect(&mut msg[..ct_size]).map(|_| ())
+    recv.unprotect(&mut msg[..ct_size]).map(|_| ())?;
+
+    Ok(())
 }
 
 fn test_max_trailer_size() -> Result<(), Error> {
@@ -1220,17 +1253,244 @@ fn test_max_trailer_size() -> Result<(), Error> {
 }
 
 fn test_get_roc() -> Result<(), Error> {
-    Ok(()) // TODO
+    const MSG_LEN_OCTETS: usize = 32;
+    const SSRC: u32 = 0xcafebabe;
+
+    // Create a sender session
+    let mut session = Context::new(&[Policy {
+        ssrc: Ssrc::Specific(SSRC),
+        rtp: CryptoPolicy::RTP_DEFAULT,
+        rtcp: CryptoPolicy::RTCP_DEFAULT,
+        keys: TEST_KEYS_128_ICM,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }])?;
+
+    // Set start sequence so we roll over
+    let cases: [(u16, u32); 2] = [(0xffff, 0x00000000), (0x0000, 0x00000001)];
+    for (seq, roc) in cases {
+        let (mut msg, pt_len) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(seq), false);
+        session.protect(&mut msg, pt_len)?;
+
+        let session_roc = session.get_stream_roc(SSRC)?;
+        if session_roc != roc {
+            return Err(Error::Fail);
+        }
+    }
+
+    Ok(())
+}
+
+fn test_set_receiver_roc_inner(packets: usize, roc_to_set: u32) -> Result<(), Error> {
+    const SSRC: u32 = 0xcafebabe;
+    const MSG_LEN_OCTETS: usize = 32;
+
+    #[cfg(feature = "native-crypto")]
+    let (rtp, rtcp, keys) = (
+        CryptoPolicy::RTP_DEFAULT,
+        CryptoPolicy::RTCP_DEFAULT,
+        TEST_KEYS_128_ICM,
+    );
+
+    #[cfg(not(feature = "native-crypto"))]
+    let (rtp, rtcp, keys) = (
+        CryptoPolicy::AES_GCM_128,
+        CryptoPolicy::AES_GCM_128,
+        TEST_KEYS_128_GCM,
+    );
+
+    let policy = &[Policy {
+        ssrc: Ssrc::Specific(SSRC),
+        rtp: rtp,
+        rtcp: rtcp,
+        keys: keys,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }];
+
+    // Create sender and receiver
+    let mut send = Context::new(policy)?;
+    let mut recv = Context::new(policy)?;
+
+    // Create and protect packets
+    let mut seq: u16 = 0;
+    for _ in 0..packets {
+        let (mut msg, pt_size) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(seq), false);
+        send.protect(&mut msg, pt_size)?;
+        seq = seq.wrapping_add(1);
+    }
+
+    // Create the first packet to decrypt and test for ROC change
+    let (mut pkt_1, pt_size_1) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(seq), false);
+    let ct_size_1 = send.protect(&mut pkt_1, pt_size_1)?;
+    seq = seq.wrapping_add(1);
+
+    // Create the second packet to decrypt and test for ROC change
+    let (mut pkt_2, pt_size_2) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(seq), false);
+    let ct_size_2 = send.protect(&mut pkt_2, pt_size_2)?;
+
+    // Set the ROC to the wanted value
+    recv.set_stream_roc(SSRC, roc_to_set)?;
+
+    // Unprotect the first packet
+    recv.unprotect(&mut pkt_1[..ct_size_1])?;
+
+    // Unprotect the second packet
+    recv.unprotect(&mut pkt_2[..ct_size_2])?;
+
+    Ok(())
 }
 
 fn test_set_receiver_roc() -> Result<(), Error> {
-    Ok(()) // TODO
+    // XXX(RLB) This code faithfully replicates the C test, but this could be improved quite a bit.
+    // The (0, 0) case doesn't actualy do anything, and it's not necessary to actually encrypt
+    // 2^16+1 packets to trigger roll-over.
+
+    // First test does not rollover
+    test_set_receiver_roc_inner(0, 0)?;
+    test_set_receiver_roc_inner(1, 0)?;
+    test_set_receiver_roc_inner(2, 0)?;
+    test_set_receiver_roc_inner(1 + 60000, 0)?;
+
+    // Second test should rollover
+    test_set_receiver_roc_inner(0xfffe, 0)?;
+    test_set_receiver_roc_inner(0xffff, 0)?;
+
+    // Now the rollover counter should be 1
+    test_set_receiver_roc_inner(0x10000, 1)?;
+    test_set_receiver_roc_inner(0x10000 + 60000, 1)?;
+
+    Ok(())
 }
 
 fn test_set_receiver_roc_then_rollover() -> Result<(), Error> {
-    Ok(()) // TODO
+    const SSRC: u32 = 0xcafebabe;
+    const MSG_LEN_OCTETS: usize = 32;
+
+    #[cfg(feature = "native-crypto")]
+    let (rtp, rtcp, keys) = (
+        CryptoPolicy::RTP_DEFAULT,
+        CryptoPolicy::RTCP_DEFAULT,
+        TEST_KEYS_128_ICM,
+    );
+
+    #[cfg(not(feature = "native-crypto"))]
+    let (rtp, rtcp, keys) = (
+        CryptoPolicy::AES_GCM_128,
+        CryptoPolicy::AES_GCM_128,
+        TEST_KEYS_128_GCM,
+    );
+
+    let policy = &[Policy {
+        ssrc: Ssrc::Specific(SSRC),
+        rtp: rtp,
+        rtcp: rtcp,
+        keys: keys,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }];
+
+    // Create sender and receiver
+    let mut send = Context::new(policy)?;
+    let mut recv = Context::new(policy)?;
+
+    // Create and protect packets to get to seq 65536 and roc == 1
+    let mut seq: u16 = 0xffff;
+    for _ in 0..65535 {
+        let (mut msg, pt_size) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(seq), false);
+        send.protect(&mut msg, pt_size)?;
+        seq = seq.wrapping_add(1);
+    }
+
+    if send.get_stream_roc(SSRC)? != 1 {
+        return Err(Error::Fail);
+    }
+
+    // Create the first packet to decrypt and test for ROC change
+    let (mut pkt_1, pt_size_1) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(0xffff), false);
+    let ct_size_1 = send.protect(&mut pkt_1, pt_size_1)?;
+
+    // Create the second packet to decrypt and test for ROC change
+    let (mut pkt_2, pt_size_2) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(0x0000), false);
+    let ct_size_2 = send.protect(&mut pkt_2, pt_size_2)?;
+
+    if send.get_stream_roc(SSRC)? != 2 {
+        return Err(Error::Fail);
+    }
+
+    // Set the ROC to the wanted value
+    recv.set_stream_roc(SSRC, 1)?;
+
+    // Unprotect the first packet
+    recv.unprotect(&mut pkt_1[..ct_size_1])?;
+
+    // Unprotect the second packet
+    recv.unprotect(&mut pkt_2[..ct_size_2])?;
+
+    // Verify that the receiver rolled over
+    if recv.get_stream_roc(SSRC)? != 2 {
+        return Err(Error::Fail);
+    }
+
+    Ok(())
+}
+
+fn test_set_sender_roc_inner(seq: u16, roc_to_set: u32) -> Result<(), Error> {
+    const SSRC: u32 = 0xcafebabe;
+    const MSG_LEN_OCTETS: usize = 32;
+
+    #[cfg(feature = "native-crypto")]
+    let (rtp, rtcp, keys) = (
+        CryptoPolicy::RTP_DEFAULT,
+        CryptoPolicy::RTCP_DEFAULT,
+        TEST_KEYS_128_ICM,
+    );
+
+    #[cfg(not(feature = "native-crypto"))]
+    let (rtp, rtcp, keys) = (
+        CryptoPolicy::AES_GCM_128,
+        CryptoPolicy::AES_GCM_128,
+        TEST_KEYS_128_GCM,
+    );
+
+    let policy = &[Policy {
+        ssrc: Ssrc::Specific(SSRC),
+        rtp: rtp,
+        rtcp: rtcp,
+        keys: keys,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }];
+
+    // Create sender and receiver
+    let mut send = Context::new(policy)?;
+    let mut recv = Context::new(policy)?;
+
+    // Set the ROC before encrypting the first packet
+    send.set_stream_roc(SSRC, roc_to_set)?;
+
+    // Create the packet to decrypt
+    let (mut msg, pt_size) = create_test_packet(MSG_LEN_OCTETS, SSRC, Some(seq), false);
+    let ct_size = send.protect(&mut msg, pt_size)?;
+
+    // Set the ROC to the wanted value
+    recv.set_stream_roc(SSRC, roc_to_set)?;
+    recv.unprotect(&mut msg[..ct_size])?;
+    Ok(())
 }
 
 fn test_set_sender_roc() -> Result<(), Error> {
-    Ok(()) // TODO
+    // XXX(RLB) This code faithfully replicates the C test, but I suspect it is incorrect.  For
+    // example, the case (42310, 65535) is tested twice, once with the ROC in hex and once in
+    // decimal.  Perhaps the intent was to set the SEQ in one of these?
+    test_set_sender_roc_inner(43210, 0)?;
+    test_set_sender_roc_inner(43210, 65535)?;
+    test_set_sender_roc_inner(43210, 0xffff)?;
+    test_set_sender_roc_inner(43210, 0xffff00)?;
+    test_set_sender_roc_inner(43210, 0xfffffff0)?;
+    Ok(())
 }

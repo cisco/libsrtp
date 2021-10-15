@@ -96,10 +96,8 @@ extern "C" {
     ) -> srtp_err_status_t;
     fn srtp_create<'a>(session: *mut srtp_t, policy: *const srtp_policy_t<'a>)
         -> srtp_err_status_t;
-    /*
     fn srtp_add_stream<'a>(session: srtp_t, policy: *const srtp_policy_t<'a>) -> srtp_err_status_t;
     fn srtp_remove_stream(session: srtp_t, ssrc: c_uint) -> srtp_err_status_t;
-    */
     fn srtp_update<'a>(session: srtp_t, policy: *const srtp_policy_t<'a>) -> srtp_err_status_t;
     /*
     fn srtp_update_stream<'a>(
@@ -252,13 +250,24 @@ extern "C" {
     fn srtp_get_stream_roc(session: srtp_t, ssrc: u32, roc: *mut u32) -> srtp_err_status_t;
 }
 
+// srtp_get_stream() is a libSRTP internal function that we declare
+// here so that we can use it to verify the correct operation of the
+// library
+//
+// XXX(RLB): We use void* for the return type because we don't care about the object itself, only
+// whether it's null or not.
+extern "C" {
+    fn srtp_get_stream(srtp: srtp_t, ssrc: u32) -> *const c_void;
+}
+
 ////////////////////
 
 pub use super::types::Error;
 
-pub const MAX_TAG_LEN: usize = 16;
-pub const MAX_MKI_LEN: usize = 128;
-pub const MAX_TRAILER_LEN: usize = MAX_TAG_LEN + MAX_MKI_LEN;
+pub const RTP_HEADER_SIZE: usize = 12;
+pub const MAX_TAG_SIZE: usize = 16;
+pub const MAX_MKI_SIZE: usize = 128;
+pub const MAX_TRAILER_SIZE: usize = MAX_TAG_SIZE + MAX_MKI_SIZE;
 
 // TODO: Refactor as struct{bool,bool}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -615,12 +624,18 @@ impl Context {
             }
         }
 
+        let policy_ptr = if !policy_vec.is_empty() {
+            &policy_vec[0]
+        } else {
+            std::ptr::null()
+        };
+
         // Create the context
         let mut ctx = Context {
             ctx: std::ptr::null_mut(),
         };
         unsafe {
-            srtp_create(&mut ctx.ctx, &policy_vec[0])
+            srtp_create(&mut ctx.ctx, policy_ptr)
                 .as_result()
                 .map(|_| ctx)
         }
@@ -637,6 +652,25 @@ impl Context {
         }
 
         unsafe { srtp_update(self.ctx, &policy_vec[0]).as_result() }
+    }
+
+    pub fn add_stream(&mut self, policy: &Policy) -> Result<(), Error> {
+        let pcd = policy.convert();
+        let policy_t = pcd.as_srtp_policy_t()?;
+        unsafe { srtp_add_stream(self.ctx, &policy_t).as_result() }
+    }
+
+    pub fn remove_stream(&mut self, ssrc: u32) -> Result<(), Error> {
+        // srtp_remove_stream expects htonl() to be applied first
+        let ssrc = ssrc.to_be();
+        unsafe { srtp_remove_stream(self.ctx, ssrc as c_uint).as_result() }
+    }
+
+    pub fn has_stream(&self, ssrc: u32) -> bool {
+        // srtp_get_stream expects htonl() to be applied first
+        let ssrc = ssrc.to_be();
+        let stream_ptr = unsafe { srtp_get_stream(self.ctx, ssrc) };
+        !stream_ptr.is_null()
     }
 
     pub fn list_debug_modules(&self) -> Result<(), Error> {
@@ -746,11 +780,11 @@ impl Context {
         Ok(length as usize)
     }
 
-    pub fn set_roc(&self, ssrc: u32, roc: u32) -> Result<(), Error> {
+    pub fn set_stream_roc(&self, ssrc: u32, roc: u32) -> Result<(), Error> {
         unsafe { srtp_set_stream_roc(self.ctx, ssrc, roc).as_result() }
     }
 
-    pub fn get_roc(&self, ssrc: u32) -> Result<u32, Error> {
+    pub fn get_stream_roc(&self, ssrc: u32) -> Result<u32, Error> {
         let mut roc: u32 = 0;
         unsafe { srtp_get_stream_roc(self.ctx, ssrc, &mut roc).as_result()? };
         Ok(roc)
