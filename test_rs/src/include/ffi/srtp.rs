@@ -99,7 +99,9 @@ extern "C" {
     /*
     fn srtp_add_stream<'a>(session: srtp_t, policy: *const srtp_policy_t<'a>) -> srtp_err_status_t;
     fn srtp_remove_stream(session: srtp_t, ssrc: c_uint) -> srtp_err_status_t;
+    */
     fn srtp_update<'a>(session: srtp_t, policy: *const srtp_policy_t<'a>) -> srtp_err_status_t;
+    /*
     fn srtp_update_stream<'a>(
         session: srtp_t,
         policy: *const srtp_policy_t<'a>,
@@ -622,6 +624,19 @@ impl Context {
                 .as_result()
                 .map(|_| ctx)
         }
+    }
+
+    pub fn update(&mut self, policies: &[Policy]) -> Result<(), Error> {
+        let pcd_vec: Vec<_> = policies.iter().map(|p| p.convert()).collect();
+        let mut policy_vec: Vec<srtp_policy_t> = Vec::with_capacity(pcd_vec.len());
+        for (i, pcd) in pcd_vec.iter().enumerate() {
+            policy_vec.push(pcd.as_srtp_policy_t()?);
+            if i > 0 {
+                policy_vec[i - 1].next = &policy_vec[i];
+            }
+        }
+
+        unsafe { srtp_update(self.ctx, &policy_vec[0]).as_result() }
     }
 
     pub fn list_debug_modules(&self) -> Result<(), Error> {

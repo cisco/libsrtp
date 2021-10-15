@@ -627,8 +627,8 @@ fn srtp_test(
         }
     }
 
-    let mut srtp_sender = Context::new(&send_policy)?;
-    let mut srtp_receiver = Context::new(&receive_policy)?;
+    let mut send = Context::new(&send_policy)?;
+    let mut recv = Context::new(&receive_policy)?;
 
     // initialize data buffer, using the ssrc in the policy unless that value is a wildcard, in
     // which case we'll just use an arbitrary one
@@ -644,8 +644,8 @@ fn srtp_test(
     let pkt_pt_ref = pkt_buffer[..pt_size].to_vec();
 
     let ct_size = match mki_index {
-        None => srtp_sender.protect(&mut pkt_buffer, pt_size)?,
-        Some(mki_index) => srtp_sender.protect_mki(&mut pkt_buffer, pt_size, mki_index)?,
+        None => send.protect(&mut pkt_buffer, pt_size)?,
+        Some(mki_index) => send.protect_mki(&mut pkt_buffer, pt_size, mki_index)?,
     };
 
     // check for overrun of the srtp_protect() function
@@ -653,8 +653,10 @@ fn srtp_test(
     // The packet is followed by a value of 0xfffff; if the value of the
     // data following the packet is different, then we know that the
     // protect function is overwriting the end of the packet.
-    //
-    // TODO check that ct_size is as intended, according to the defined trailer size
+    if ct_size > pt_size + send.max_trailer_size(mki_index)? {
+        return Err(Error::AlgoFail);
+    }
+
     if !pkt_buffer[ct_size..].iter().all(|&b| b == 0xff) {
         return Err(Error::AlgoFail);
     }
@@ -674,8 +676,8 @@ fn srtp_test(
 
     // verify that the unprotected packet matches the original one
     let pt_size_dec = match mki_index {
-        None => srtp_receiver.unprotect(&mut pkt_buffer[..ct_size])?,
-        Some(_) => srtp_receiver.unprotect_mki(&mut pkt_buffer[..ct_size])?,
+        None => recv.unprotect(&mut pkt_buffer[..ct_size])?,
+        Some(_) => recv.unprotect_mki(&mut pkt_buffer[..ct_size])?,
     };
 
     if &pkt_buffer[..pt_size_dec] != &pkt_pt_ref {
@@ -690,8 +692,8 @@ fn srtp_test(
     //   authentication.  Here it is unconditional, because the replay check is independent from
     //   authentication.
     let result = match mki_index {
-        None => srtp_receiver.unprotect(&mut pkt_buffer[..ct_size]),
-        Some(_) => srtp_receiver.unprotect_mki(&mut pkt_buffer[..ct_size]),
+        None => recv.unprotect(&mut pkt_buffer[..ct_size]),
+        Some(_) => recv.unprotect_mki(&mut pkt_buffer[..ct_size]),
     };
     match result {
         Err(Error::ReplayFail) => {}
@@ -706,8 +708,8 @@ fn srtp_test(
 
         // apply protection
         let ct_size = match mki_index {
-            None => srtp_sender.protect(&mut pkt_buffer, pt_size)?,
-            Some(mki_index) => srtp_sender.protect_mki(&mut pkt_buffer, pt_size, mki_index)?,
+            None => send.protect(&mut pkt_buffer, pt_size)?,
+            Some(mki_index) => send.protect_mki(&mut pkt_buffer, pt_size, mki_index)?,
         };
 
         // flip bits in the packet
@@ -716,8 +718,8 @@ fn srtp_test(
 
         // unprotect and check for authentication failure
         let result = match mki_index {
-            None => srtp_receiver.unprotect(&mut pkt_buffer[..ct_size]),
-            Some(_) => srtp_receiver.unprotect_mki(&mut pkt_buffer[..ct_size]),
+            None => recv.unprotect(&mut pkt_buffer[..ct_size]),
+            Some(_) => recv.unprotect_mki(&mut pkt_buffer[..ct_size]),
         };
         match result {
             Err(Error::AuthFail) => {}
@@ -742,8 +744,8 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
         }
     }
 
-    let mut srtcp_sender = Context::new(&send_policy)?;
-    let mut srtcp_receiver = Context::new(&receive_policy)?;
+    let mut send = Context::new(&send_policy)?;
+    let mut recv = Context::new(&receive_policy)?;
 
     // initialize data buffer, using the ssrc in the policy unless that value is a wildcard, in
     // which case we'll just use an arbitrary one
@@ -759,8 +761,8 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     let pkt_pt_ref = pkt_buffer[..pt_size].to_vec();
 
     let ct_size = match mki_index {
-        None => srtcp_sender.protect_rtcp(&mut pkt_buffer, pt_size)?,
-        Some(mki_index) => srtcp_sender.protect_rtcp_mki(&mut pkt_buffer, pt_size, mki_index)?,
+        None => send.protect_rtcp(&mut pkt_buffer, pt_size)?,
+        Some(mki_index) => send.protect_rtcp_mki(&mut pkt_buffer, pt_size, mki_index)?,
     };
 
     // check for overrun of the srtcp_protect() function
@@ -768,8 +770,10 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     // The packet is followed by a value of 0xfffff; if the value of the
     // data following the packet is different, then we know that the
     // protect function is overwriting the end of the packet.
-    //
-    // TODO match this against srtcp_get_protect_rtcp_trailer_length
+    if ct_size > pt_size + send.max_trailer_size_rtcp(mki_index)? {
+        return Err(Error::AlgoFail);
+    }
+
     if !pkt_buffer[ct_size..].iter().all(|&b| b == 0xff) {
         return Err(Error::AlgoFail);
     }
@@ -789,8 +793,8 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
 
     // verify that the unprotected packet matches the original one
     let pt_size_dec = match mki_index {
-        None => srtcp_receiver.unprotect_rtcp(&mut pkt_buffer[..ct_size])?,
-        Some(_) => srtcp_receiver.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size])?,
+        None => recv.unprotect_rtcp(&mut pkt_buffer[..ct_size])?,
+        Some(_) => recv.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size])?,
     };
 
     if &pkt_buffer[..pt_size_dec] != &pkt_pt_ref {
@@ -805,8 +809,8 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
     //   authentication.  Here it is unconditional, because the replay check is independent from
     //   authentication.
     let result = match mki_index {
-        None => srtcp_receiver.unprotect_rtcp(&mut pkt_buffer[..ct_size]),
-        Some(_) => srtcp_receiver.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size]),
+        None => recv.unprotect_rtcp(&mut pkt_buffer[..ct_size]),
+        Some(_) => recv.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size]),
     };
     match result {
         Err(Error::ReplayFail) => {}
@@ -821,10 +825,8 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
 
         // apply protection
         let ct_size = match mki_index {
-            None => srtcp_sender.protect_rtcp(&mut pkt_buffer, pt_size)?,
-            Some(mki_index) => {
-                srtcp_sender.protect_rtcp_mki(&mut pkt_buffer, pt_size, mki_index)?
-            }
+            None => send.protect_rtcp(&mut pkt_buffer, pt_size)?,
+            Some(mki_index) => send.protect_rtcp_mki(&mut pkt_buffer, pt_size, mki_index)?,
         };
 
         // flip bits in the packet
@@ -833,8 +835,8 @@ fn srtcp_test(policy: &[Policy], mki_index: Option<usize>) -> Result<(), Error> 
 
         // unprotect and check for authentication failure
         let result = match mki_index {
-            None => srtcp_receiver.unprotect_rtcp(&mut pkt_buffer[..ct_size]),
-            Some(_) => srtcp_receiver.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size]),
+            None => recv.unprotect_rtcp(&mut pkt_buffer[..ct_size]),
+            Some(_) => recv.unprotect_rtcp_mki(&mut pkt_buffer[..ct_size]),
         };
         match result {
             Err(Error::AuthFail) => {}
@@ -1097,7 +1099,78 @@ fn test_remove_stream() -> Result<(), Error> {
 }
 
 fn test_update() -> Result<(), Error> {
-    Ok(()) // TODO
+    let mut policy = Policy {
+        ssrc: Ssrc::AnyOutbound,
+        rtp: CryptoPolicy::RTP_DEFAULT,
+        rtcp: CryptoPolicy::RTCP_DEFAULT,
+        keys: TEST_KEYS_128_ICM,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    };
+
+    // create a send and recive ctx with defualt profile and test_key
+    let mut send = Context::new(&[policy.clone()])?;
+
+    policy.ssrc = Ssrc::AnyInbound;
+    let mut recv = Context::new(&[policy.clone()])?;
+
+    // protect and unprotect two msg's that will cause the ROC to be equal to 1
+    let msg_len_octets: usize = 32;
+    let ssrc: u32 = 0x12121212;
+
+    for seq in &[0xffff_u16, 0x0001_u16] {
+        let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, false);
+        msg[2..4].copy_from_slice(&seq.to_be_bytes());
+        let ct_size = send.protect(&mut msg, pt_size)?;
+        recv.unprotect(&mut msg[..ct_size])?;
+    }
+
+    // update send ctx with same test_key t verify update works
+    policy.ssrc = Ssrc::AnyOutbound;
+    send.update(&[policy.clone()])?;
+
+    let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, false);
+    msg[2..4].copy_from_slice(&0x0002_u16.to_be_bytes());
+    let ct_size = send.protect(&mut msg, pt_size)?;
+    recv.unprotect(&mut msg[..ct_size])?;
+
+    // update send ctx to use test_alt_key
+    let test_alt_keys = &[MasterKey {
+        key: &hex!("e5196f015ef19be1d747a72707d74733"),
+        salt: &hex!("01c2354d596af7849698ebaaacf6"),
+        id: &[],
+    }];
+
+    policy.keys = test_alt_keys;
+    send.update(&[policy.clone()])?;
+
+    // create and protect msg with new key and ROC still equal to 1
+    let (mut msg, pt_size) = create_test_packet(msg_len_octets, ssrc, false);
+    msg[2..4].copy_from_slice(&0x0003_u16.to_be_bytes());
+    let ct_size = send.protect(&mut msg, pt_size)?;
+
+    // verify that recive ctx will fail to unprotect as it still uses test_key
+    match recv.unprotect(&mut msg[..ct_size]) {
+        Err(Error::AuthFail) => {}
+        _ => return Err(Error::Fail),
+    };
+
+    // create a new recvieve ctx with test_alt_key but since it is new it will
+    // have ROC equal to 1 and therefore should fail to unprotected
+    policy.ssrc = Ssrc::AnyInbound;
+    policy.keys = test_alt_keys;
+    let mut recv_roc_0 = Context::new(&[policy.clone()])?;
+    match recv_roc_0.unprotect(&mut msg[..ct_size]) {
+        Err(Error::AuthFail) => {}
+        _ => return Err(Error::Fail),
+    }
+
+    // update recive ctx to use test_alt_key
+    recv.update(&[policy.clone()])?;
+
+    // verify that can still unprotect, therfore key is updated and ROC value is preserved
+    recv.unprotect(&mut msg[..ct_size]).map(|_| ())
 }
 
 fn test_max_trailer_size() -> Result<(), Error> {
@@ -1143,7 +1216,7 @@ fn test_max_trailer_size() -> Result<(), Error> {
         return Err(Error::Fail);
     }
 
-    Ok(()) // TODO
+    Ok(())
 }
 
 fn test_get_roc() -> Result<(), Error> {
