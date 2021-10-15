@@ -150,28 +150,26 @@ pub extern "C" fn srtp_driver_main() -> c_int {
         }
 
         println!("testing srtp_remove_stream()");
-        check_pass_fail!(srtp_test_remove_stream());
+        check_pass_fail!(test_remove_stream());
 
         println!("testing srtp_update()");
-        check_pass_fail!(srtp_test_update());
+        check_pass_fail!(test_update());
 
         println!("testing srtp_get_protect_trailer_length()");
-        check_pass_fail!(srtp_test_protect_trailer_length());
-
         println!("testing srtp_get_protect_rtcp_trailer_length()");
-        check_pass_fail!(srtp_test_protect_rtcp_trailer_length());
+        check_pass_fail!(test_max_trailer_size());
 
         println!("testing srtp_test_get_roc()");
-        check_pass_fail!(srtp_test_get_roc());
+        check_pass_fail!(test_get_roc());
 
         println!("testing srtp_test_set_receiver_roc()");
-        check_pass_fail!(srtp_test_set_receiver_roc());
+        check_pass_fail!(test_set_receiver_roc());
 
         println!("testing srtp_test_set_receiver_roc_then_rollover()");
-        check_pass_fail!(srtp_test_set_receiver_roc_then_rollover());
+        check_pass_fail!(test_set_receiver_roc_then_rollover());
 
         println!("testing srtp_test_set_sender_roc()");
-        check_pass_fail!(srtp_test_set_sender_roc());
+        check_pass_fail!(test_set_sender_roc());
     }
 
     if config.timing {
@@ -1094,34 +1092,72 @@ const VALIDATION_TEST_CASES: &[ValidationTestCase] = &[
     },
 ];
 
-fn srtp_test_remove_stream() -> Result<(), Error> {
+fn test_remove_stream() -> Result<(), Error> {
     Ok(()) // TODO
 }
 
-fn srtp_test_update() -> Result<(), Error> {
+fn test_update() -> Result<(), Error> {
     Ok(()) // TODO
 }
 
-fn srtp_test_protect_trailer_length() -> Result<(), Error> {
+fn test_max_trailer_size() -> Result<(), Error> {
+    // Default policy
+    let ctx = Context::new(&[Policy {
+        ssrc: Ssrc::AnyOutbound,
+        rtp: CryptoPolicy::RTP_DEFAULT,
+        rtcp: CryptoPolicy::RTCP_DEFAULT,
+        keys: TEST_KEYS_128_ICM,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }])?;
+
+    let trailer_sizes = (
+        ctx.max_trailer_size(None)?,
+        ctx.max_trailer_size_rtcp(None)?,
+        ctx.max_trailer_size(Some(1))?,
+        ctx.max_trailer_size_rtcp(Some(1))?,
+    );
+    if trailer_sizes != (10, 14, 14, 18) {
+        return Err(Error::Fail);
+    }
+
+    // GCM policy
+    let ctx = Context::new(&[Policy {
+        ssrc: Ssrc::AnyOutbound,
+        rtp: CryptoPolicy::AES_GCM_128,
+        rtcp: CryptoPolicy::AES_GCM_128,
+        keys: TEST_KEYS_128_GCM,
+        window_size: 128,
+        allow_repeat_tx: false,
+        extension_headers_to_encrypt: &[],
+    }])?;
+
+    let trailer_sizes = (
+        ctx.max_trailer_size(None)?,
+        ctx.max_trailer_size_rtcp(None)?,
+        ctx.max_trailer_size(Some(1))?,
+        ctx.max_trailer_size_rtcp(Some(1))?,
+    );
+    if trailer_sizes != (16, 20, 20, 24) {
+        return Err(Error::Fail);
+    }
+
     Ok(()) // TODO
 }
 
-fn srtp_test_protect_rtcp_trailer_length() -> Result<(), Error> {
+fn test_get_roc() -> Result<(), Error> {
     Ok(()) // TODO
 }
 
-fn srtp_test_get_roc() -> Result<(), Error> {
+fn test_set_receiver_roc() -> Result<(), Error> {
     Ok(()) // TODO
 }
 
-fn srtp_test_set_receiver_roc() -> Result<(), Error> {
+fn test_set_receiver_roc_then_rollover() -> Result<(), Error> {
     Ok(()) // TODO
 }
 
-fn srtp_test_set_receiver_roc_then_rollover() -> Result<(), Error> {
-    Ok(()) // TODO
-}
-
-fn srtp_test_set_sender_roc() -> Result<(), Error> {
+fn test_set_sender_roc() -> Result<(), Error> {
     Ok(()) // TODO
 }

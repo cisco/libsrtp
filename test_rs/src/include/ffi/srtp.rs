@@ -225,11 +225,15 @@ type srtp_log_level_t = c_uint;
 type srtp_log_handler_func_t = ::std::option::Option<
     unsafe extern "C" fn(level: srtp_log_level_t, msg: *const c_char, data: *mut c_void),
 >;
+*/
+
 extern "C" {
+    /*
     fn srtp_install_log_handler(
         func: srtp_log_handler_func_t,
         data: *mut c_void,
     ) -> srtp_err_status_t;
+    */
     fn srtp_get_protect_trailer_length(
         session: srtp_t,
         use_mki: u32,
@@ -245,7 +249,6 @@ extern "C" {
     fn srtp_set_stream_roc(session: srtp_t, ssrc: u32, roc: u32) -> srtp_err_status_t;
     fn srtp_get_stream_roc(session: srtp_t, ssrc: u32, roc: *mut u32) -> srtp_err_status_t;
 }
-*/
 
 ////////////////////
 
@@ -697,6 +700,45 @@ impl Context {
         let mut len: c_int = data.len() as c_int;
         unsafe { srtp_unprotect_rtcp_mki(self.ctx, rtcp_hdr, &mut len, 1).as_result()? };
         Ok(len as usize)
+    }
+
+    // XXX(RLB) Different name here to better capture the behavior.  A given context can have
+    // multiple ciphers in play, and srtp_get_protect_trailer_length takes the max over them (with
+    // the given MKI)
+    pub fn max_trailer_size(&self, mki_index: Option<usize>) -> Result<usize, Error> {
+        let (use_mki, mki_index): (u32, u32) = match mki_index {
+            Some(mki_index) => (1, mki_index as u32),
+            None => (0, 0),
+        };
+        let mut length: u32 = 0;
+        unsafe {
+            srtp_get_protect_trailer_length(self.ctx, use_mki, mki_index, &mut length)
+                .as_result()?
+        };
+        Ok(length as usize)
+    }
+
+    pub fn max_trailer_size_rtcp(&self, mki_index: Option<usize>) -> Result<usize, Error> {
+        let (use_mki, mki_index): (u32, u32) = match mki_index {
+            Some(mki_index) => (1, mki_index as u32),
+            None => (0, 0),
+        };
+        let mut length: u32 = 0;
+        unsafe {
+            srtp_get_protect_rtcp_trailer_length(self.ctx, use_mki, mki_index, &mut length)
+                .as_result()?
+        };
+        Ok(length as usize)
+    }
+
+    pub fn set_roc(&self, ssrc: u32, roc: u32) -> Result<(), Error> {
+        unsafe { srtp_set_stream_roc(self.ctx, ssrc, roc).as_result() }
+    }
+
+    pub fn get_roc(&self, ssrc: u32) -> Result<u32, Error> {
+        let mut roc: u32 = 0;
+        unsafe { srtp_get_stream_roc(self.ctx, ssrc, &mut roc).as_result()? };
+        Ok(roc)
     }
 }
 
