@@ -848,7 +848,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
         dcdr->rtcp_cnt++;
     }
     timersub(&hdr->ts, &dcdr->start_tv, &delta);
-    fprintf(stdout, "%02ld:%02ld.%06ld\n", delta.tv_sec / 60, delta.tv_sec % 60,
-            (long)delta.tv_usec);
+    fprintf(stdout, "%02ld:%02d.%06ld\n", (long)(delta.tv_sec / 60),
+            (int)(delta.tv_sec % 60), (long)delta.tv_usec);
     hexdump(&message, octets_recvd);
 }
