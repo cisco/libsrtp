@@ -590,7 +590,8 @@ int main(int argc, char *argv[])
                 octet_string_hex_string(key + key_octets, salt_octets));
 
         /* Extract MKI */
-        mki_size = hex_string_to_octet_string(mki, input_mki, strlen(input_mki));
+        mki_size =
+            hex_string_to_octet_string(mki, input_mki, strlen(input_mki));
         mki_size /= 2;
         master_key.mki_id = (unsigned char *)mki;
         master_key.mki_size = mki_size;
@@ -598,7 +599,8 @@ int main(int argc, char *argv[])
                 octet_string_hex_string(mki, mki_size), mki_size);
 
         if (rccm_n > 0) {
-            fprintf(stderr, "set ROC transmission rate to %d (RCCm3, RFC4771)\n",
+            fprintf(stderr,
+                    "set ROC transmission rate to %d (RCCm3, RFC4771)\n",
                     rccm_n);
         }
     } else {
@@ -637,7 +639,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, (mki_size != 0), roc, rccm_n)) {
+    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, (mki_size != 0),
+                         roc, rccm_n)) {
         fprintf(stderr, "error: init failed\n");
         exit(1);
     }
@@ -825,7 +828,8 @@ void rtp_decoder_handle_pkt(u_char *arg,
 
                 /* Packet with ROC; extract unauthenticated (RCCm3) ROC value */
                 octets_recvd -= 4;
-                roc = ntohl(*(uint32_t *)(((uint8_t *)rtp_packet) + octets_recvd));
+                roc = ntohl(
+                    *(uint32_t *)(((uint8_t *)rtp_packet) + octets_recvd));
                 ssrc = ntohl(message.header.ssrc);
 
                 /* Apply extracted ROC to stream */
@@ -833,14 +837,16 @@ void rtp_decoder_handle_pkt(u_char *arg,
             }
         }
 
-        status = srtp_unprotect_mki(dcdr->srtp_ctx, &message, &octets_recvd, dcdr->mki_on);
+        status = srtp_unprotect_mki(dcdr->srtp_ctx, &message, &octets_recvd,
+                                    dcdr->mki_on);
         if (status) {
             dcdr->error_cnt++;
             return;
         }
         dcdr->rtp_cnt++;
     } else {
-        status = srtp_unprotect_rtcp_mki(dcdr->srtp_ctx, &message, &octets_recvd, dcdr->mki_on);
+        status = srtp_unprotect_rtcp_mki(dcdr->srtp_ctx, &message,
+                                         &octets_recvd, dcdr->mki_on);
         if (status) {
             dcdr->error_cnt++;
             return;
