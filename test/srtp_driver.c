@@ -93,6 +93,8 @@ srtp_err_status_t srtp_test_protect_trailer_length(void);
 
 srtp_err_status_t srtp_test_protect_rtcp_trailer_length(void);
 
+srtp_err_status_t srtp_test_out_of_order_after_rollover(void);
+
 srtp_err_status_t srtp_test_get_roc(void);
 
 srtp_err_status_t srtp_test_set_receiver_roc(void);
@@ -556,6 +558,14 @@ int main(int argc, char *argv[])
 
         printf("testing srtp_get_protect_rtcp_trailer_length()...");
         if (srtp_test_protect_rtcp_trailer_length() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_test_out_of_order_after_rollover()...");
+        if (srtp_test_out_of_order_after_rollover() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -3167,6 +3177,224 @@ srtp_err_status_t srtp_test_protect_rtcp_trailer_length()
     srtp_dealloc(srtp_send_aes_gcm);
     srtp_dealloc(srtp_send_aes_gcm_mki);
 #endif
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_out_of_order_after_rollover()
+{
+    srtp_err_status_t status;
+
+    srtp_policy_t sender_policy;
+    srtp_t sender_session;
+
+    srtp_policy_t receiver_policy;
+    srtp_t receiver_session;
+
+    const int num_pkts = 5;
+    srtp_hdr_t *pkts[5];
+    int pkt_len_octets[5];
+
+    uint32_t i;
+    uint32_t stream_roc;
+
+    /* Create sender */
+    memset(&sender_policy, 0, sizeof(sender_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtcp);
+    sender_policy.key = test_key_gcm;
+#else
+    srtp_crypto_policy_set_rtp_default(&sender_policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&sender_policy.rtcp);
+    sender_policy.key = test_key;
+#endif
+    sender_policy.ssrc.type = ssrc_specific;
+    sender_policy.ssrc.value = 0xcafebabe;
+    sender_policy.window_size = 128;
+
+    status = srtp_create(&sender_session, &sender_policy);
+    if (status) {
+        return status;
+    }
+
+    /* Create the receiver */
+    memset(&receiver_policy, 0, sizeof(receiver_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtcp);
+    receiver_policy.key = test_key_gcm;
+#else
+    srtp_crypto_policy_set_rtp_default(&receiver_policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&receiver_policy.rtcp);
+    receiver_policy.key = test_key;
+#endif
+    receiver_policy.ssrc.type = ssrc_specific;
+    receiver_policy.ssrc.value = sender_policy.ssrc.value;
+    receiver_policy.window_size = 128;
+
+    status = srtp_create(&receiver_session, &receiver_policy);
+    if (status) {
+        return status;
+    }
+
+    /* Create and protect packets to get to get roc == 1 */
+    pkts[0] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value,
+                                               65534, 0, &pkt_len_octets[0]);
+    status = srtp_protect(sender_session, pkts[0], &pkt_len_octets[0]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 0) {
+        return srtp_err_status_fail;
+    }
+
+    pkts[1] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value,
+                                               65535, 1, &pkt_len_octets[1]);
+    status = srtp_protect(sender_session, pkts[1], &pkt_len_octets[1]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 0) {
+        return srtp_err_status_fail;
+    }
+
+    pkts[2] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value, 0,
+                                               2, &pkt_len_octets[2]);
+    status = srtp_protect(sender_session, pkts[2], &pkt_len_octets[2]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    pkts[3] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value, 1,
+                                               3, &pkt_len_octets[3]);
+    status = srtp_protect(sender_session, pkts[3], &pkt_len_octets[3]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    pkts[4] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value, 2,
+                                               4, &pkt_len_octets[4]);
+    status = srtp_protect(sender_session, pkts[4], &pkt_len_octets[4]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    /* Unprotect packets in this seq order 65534, 0, 2, 1, 65535 which is
+     * equivalent to index 0, 2, 4, 3, 1*/
+    status = srtp_unprotect(receiver_session, pkts[0], &pkt_len_octets[0]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 0) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_unprotect(receiver_session, pkts[2], &pkt_len_octets[2]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_unprotect(receiver_session, pkts[4], &pkt_len_octets[4]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_unprotect(receiver_session, pkts[3], &pkt_len_octets[3]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_unprotect(receiver_session, pkts[1], &pkt_len_octets[1]);
+    if (status) {
+        return status;
+    }
+    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+                                 &stream_roc);
+    if (status) {
+        return status;
+    }
+    if (stream_roc != 1) {
+        return srtp_err_status_fail;
+    }
+
+    /* Cleanup */
+    status = srtp_dealloc(sender_session);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_dealloc(receiver_session);
+    if (status) {
+        return status;
+    }
+
+    for (i = 0; i < num_pkts; i++) {
+        free(pkts[i]);
+    }
 
     return srtp_err_status_ok;
 }
