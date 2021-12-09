@@ -944,7 +944,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      * not overrun.
      */
     if ((rtp_keylen < input_keylen) && (rtcp_keylen < input_keylen)) {
-      return srtp_err_status_bad_param;
+        return srtp_err_status_bad_param;
     }
 
     if (rtp_keylen > kdf_keylen) {
@@ -3288,7 +3288,7 @@ void srtp_crypto_policy_set_null_cipher_hmac_sha1_80(srtp_crypto_policy_t *p)
 
     p->cipher_type = SRTP_NULL_CIPHER;
     p->cipher_key_len =
-        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */;
+        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
     p->auth_type = SRTP_HMAC_SHA1;
     p->auth_key_len = 20;
     p->auth_tag_len = 10;
@@ -3303,7 +3303,7 @@ void srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p)
 
     p->cipher_type = SRTP_NULL_CIPHER;
     p->cipher_key_len =
-        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */;
+        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
     p->auth_type = SRTP_NULL_AUTH;
     p->auth_key_len = 0;
     p->auth_tag_len = 0;
