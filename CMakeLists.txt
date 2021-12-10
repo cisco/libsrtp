@@ -243,7 +243,7 @@ set_target_properties(srtp2 PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 target_include_directories(srtp2 PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/crypto/include>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:/include>
+  $<INSTALL_INTERFACE:include>
 )
 if(ENABLE_OPENSSL)
   target_include_directories(srtp2 PRIVATE ${OPENSSL_INCLUDE_DIR})
@@ -261,7 +261,7 @@ if(WIN32)
 endif()
 
 install(TARGETS srtp2 DESTINATION lib
-  EXPORT libSRTPTargets 
+  EXPORT libSRTPTargets
 )
 
 install(FILES include/srtp.h crypto/include/auth.h
