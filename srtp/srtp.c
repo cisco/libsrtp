@@ -937,6 +937,16 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
         base_key_length(session_keys->rtp_cipher->type, rtp_keylen);
     rtp_salt_len = rtp_keylen - rtp_base_key_len;
 
+    /*
+     * We assume that the `key` buffer provided by the caller has a length
+     * equal to the greater of `rtp_keylen` and `rtcp_keylen`.  Since we are
+     * about to read `input_keylen` bytes from it, we need to check that we will
+     * not overrun.
+     */
+    if ((rtp_keylen < input_keylen) && (rtcp_keylen < input_keylen)) {
+        return srtp_err_status_bad_param;
+    }
+
     if (rtp_keylen > kdf_keylen) {
         kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
     }
@@ -3277,7 +3287,8 @@ void srtp_crypto_policy_set_null_cipher_hmac_sha1_80(srtp_crypto_policy_t *p)
      */
 
     p->cipher_type = SRTP_NULL_CIPHER;
-    p->cipher_key_len = 16;
+    p->cipher_key_len =
+        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
     p->auth_type = SRTP_HMAC_SHA1;
     p->auth_key_len = 20;
     p->auth_tag_len = 10;
@@ -3291,7 +3302,8 @@ void srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p)
      */
 
     p->cipher_type = SRTP_NULL_CIPHER;
-    p->cipher_key_len = 16;
+    p->cipher_key_len =
+        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
     p->auth_type = SRTP_NULL_AUTH;
     p->auth_key_len = 0;
     p->auth_tag_len = 0;
