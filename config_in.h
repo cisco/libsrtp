@@ -30,6 +30,9 @@
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON
 
+/* Define to 1 if you have the `inet_pton' function. */
+#undef HAVE_INET_PTON
+
 /* Define to 1 if the system has the type `int16_t'. */
 #undef HAVE_INT16_T
 

@@ -46,6 +46,7 @@ endforeach
 check_functions = [
   'sigaction',
   'inet_aton',
+  'inet_pton',
   'usleep',
   'socket',
 ]

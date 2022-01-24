@@ -166,7 +166,7 @@ AC_C_INLINE
 AC_TYPE_SIZE_T
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS([socket inet_aton usleep sigaction])
+AC_CHECK_FUNCS([socket inet_aton inet_pton usleep sigaction])
 
 dnl Find socket function if not found yet.
 if test "x$ac_cv_func_socket" = "xno"; then
