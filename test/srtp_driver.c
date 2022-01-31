@@ -3483,6 +3483,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     uint32_t i;
     uint32_t ts;
     uint16_t seq;
+    uint16_t stride;
 
     int msg_len_octets = 32;
     int protected_msg_len_octets_1;
@@ -3509,9 +3510,11 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     }
 
     /* Create and protect packets */
+    i = 0;
     seq = 0;
     ts = 0;
-    for (i = 0; i < packets; i++) {
+    stride = 0x4000;
+    while (i < packets) {
         srtp_hdr_t *tmp_pkt;
         int tmp_len;
 
@@ -3523,7 +3526,12 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
             return status;
         }
 
-        seq++;
+        while (stride > (packets - i) && stride > 1) {
+          stride >>= 1;
+        }
+
+        i += stride;
+        seq += stride;
         ts++;
     }
 
