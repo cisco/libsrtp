@@ -3517,7 +3517,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
         }
 
         while (stride > (packets - i) && stride > 1) {
-          stride >>= 1;
+            stride >>= 1;
         }
 
         i += stride;
