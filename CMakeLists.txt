@@ -37,6 +37,7 @@ check_include_file(winsock2.h HAVE_WINSOCK2_H)
 
 check_function_exists(sigaction HAVE_SIGACTION)
 check_function_exists(inet_aton HAVE_INET_ATON)
+check_function_exists(inet_pton HAVE_INET_PTON)
 check_function_exists(usleep HAVE_USLEEP)
 
 check_type_size(uint8_t UINT8_T)

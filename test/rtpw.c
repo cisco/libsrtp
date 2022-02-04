@@ -285,7 +285,17 @@ int main(int argc, char *argv[])
     port = atoi(argv[optind_s++]);
 
 /* set address */
-#ifdef HAVE_INET_ATON
+#ifdef HAVE_INET_PTON
+    if (0 == inet_pton(AF_INET, address, &rcvr_addr)) {
+        fprintf(stderr, "%s: cannot parse IP v4 address %s\n", argv[0],
+                address);
+        exit(1);
+    }
+    if (rcvr_addr.s_addr == INADDR_NONE) {
+        fprintf(stderr, "%s: address error", argv[0]);
+        exit(1);
+    }
+#elif HAVE_INET_ATON
     if (0 == inet_aton(address, &rcvr_addr)) {
         fprintf(stderr, "%s: cannot parse IP v4 address %s\n", argv[0],
                 address);

@@ -5195,7 +5195,7 @@ _ACEOF
 fi
 
 
-for ac_func in socket inet_aton usleep sigaction
+for ac_func in socket inet_aton inet_pton usleep sigaction
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
