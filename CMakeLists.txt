@@ -240,7 +240,11 @@ add_library(srtp2
 
 set_target_properties(srtp2 PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
-target_include_directories(srtp2 PUBLIC crypto/include include)
+target_include_directories(srtp2 PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/crypto/include>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 if(ENABLE_OPENSSL)
   target_include_directories(srtp2 PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(srtp2 OpenSSL::Crypto)
@@ -256,7 +260,10 @@ if(WIN32)
   target_compile_definitions(srtp2 PUBLIC _CRT_SECURE_NO_WARNINGS)
 endif()
 
-install(TARGETS srtp2 DESTINATION lib)
+install(TARGETS srtp2 DESTINATION lib
+  EXPORT libSRTPTargets
+)
+
 install(FILES include/srtp.h crypto/include/auth.h
   crypto/include/cipher.h
   crypto/include/crypto_types.h
@@ -352,3 +359,40 @@ if(TEST_APPS)
     endif()
   endif()
 endif()
+
+# Export targets
+install(
+  EXPORT libSRTPTargets
+  FILE libSRTPTargets.cmake
+	NAMESPACE libSRTP::
+	DESTINATION lib/cmake/libSRTP
+)
+
+#--------------------------------------------------------------------
+# Create generated files
+#--------------------------------------------------------------------
+include(CMakePackageConfigHelpers)
+
+# Generate the config file that is includes the exports
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/libSRTPConfig.cmake"
+  INSTALL_DESTINATION "${CONFIG_FILE_DIR}"
+  NO_SET_AND_CHECK_MACRO
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+# Generate the version file for the config file
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/libSRTPConfigVersion.cmake"
+  VERSION "${CMAKE_PROJECT_VERSION}"
+  COMPATIBILITY AnyNewerVersion
+)
+
+#--------------------------------------------------------------------
+# Install CMake config files
+#--------------------------------------------------------------------
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/libSRTPConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/libSRTPConfigVersion.cmake
+  DESTINATION lib/cmake/libSRTP
+)
