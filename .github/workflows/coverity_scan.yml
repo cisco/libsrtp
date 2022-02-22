@@ -1,7 +1,7 @@
 name: Start Coverity Scan
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
