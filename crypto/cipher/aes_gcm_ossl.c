@@ -280,7 +280,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
     }
 
     rv = EVP_Cipher(c->ctx, NULL, aad, aad_len);
-    if (rv != aad_len) {
+    if (rv < 0 || (uint32_t)rv != aad_len) {
         return (srtp_err_status_algo_fail);
     } else {
         return (srtp_err_status_ok);

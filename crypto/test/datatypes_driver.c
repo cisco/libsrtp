@@ -139,7 +139,7 @@ int main(void)
 
 void byte_order(void)
 {
-    int i;
+    size_t i;
     v128_t e;
 
     printf("byte ordering of crypto/math datatypes:\n");

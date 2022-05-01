@@ -168,6 +168,7 @@ void usage(char *prog_name)
 void log_handler(srtp_log_level_t level, const char *msg, void *data)
 {
     char level_char = '?';
+    (void)data;
     switch (level) {
     case srtp_log_level_error:
         level_char = 'e';
@@ -3181,7 +3182,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover()
     srtp_policy_t receiver_policy;
     srtp_t receiver_session;
 
-    const int num_pkts = 5;
+    const uint32_t num_pkts = 5;
     srtp_hdr_t *pkts[5];
     int pkt_len_octets[5];
 
