@@ -51,7 +51,14 @@
 #include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
 #include <openssl/evp.h>
+
+#if defined(OPENSSL_VERSION_MAJOR) && (OPENSSL_VERSION_MAJOR >= 3)
+#define SRTP_OSSL_USE_EVP_MAC
+#endif
+
+#ifndef SRTP_OSSL_USE_EVP_MAC
 #include <openssl/hmac.h>
+#endif
 
 #define SHA1_DIGEST_SIZE 20
 
@@ -62,11 +69,21 @@ srtp_debug_module_t srtp_mod_hmac = {
     "hmac sha-1 openssl" /* printable name for module   */
 };
 
+typedef struct {
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    EVP_MAC *mac;
+    EVP_MAC_CTX *ctx;
+#else
+    HMAC_CTX *ctx;
+#endif
+} srtp_hmac_ossl_ctx_t;
+
 static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
                                          int key_len,
                                          int out_len)
 {
     extern const srtp_auth_type_t srtp_hmac;
+    srtp_hmac_ossl_ctx_t *hmac;
 
     debug_print(srtp_mod_hmac, "allocating auth func with key length %d",
                 key_len);
@@ -83,14 +100,39 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
         return srtp_err_status_alloc_fail;
     }
 
-    (*a)->state = HMAC_CTX_new();
-    if ((*a)->state == NULL) {
+    hmac =
+        (srtp_hmac_ossl_ctx_t *)srtp_crypto_alloc(sizeof(srtp_hmac_ossl_ctx_t));
+    if (hmac == NULL) {
+        srtp_crypto_free(*a);
+        *a = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    hmac->mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
+    if (hmac->mac == NULL) {
+        srtp_crypto_free(hmac);
+        srtp_crypto_free(*a);
+        *a = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+
+    hmac->ctx = EVP_MAC_CTX_new(hmac->mac);
+#else
+    hmac->ctx = HMAC_CTX_new();
+#endif
+    if (hmac->ctx == NULL) {
+#ifdef SRTP_OSSL_USE_EVP_MAC
+        EVP_MAC_free(hmac->mac);
+#endif
+        srtp_crypto_free(hmac);
         srtp_crypto_free(*a);
         *a = NULL;
         return srtp_err_status_alloc_fail;
     }
 
     /* set pointers */
+    (*a)->state = hmac;
     (*a)->type = &srtp_hmac;
     (*a)->out_len = out_len;
     (*a)->key_len = key_len;
@@ -101,11 +143,20 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
 
 static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
 {
-    HMAC_CTX *hmac_ctx;
+    srtp_hmac_ossl_ctx_t *hmac = (srtp_hmac_ossl_ctx_t *)a->state;
 
-    hmac_ctx = (HMAC_CTX *)a->state;
+    if (hmac) {
+#ifdef SRTP_OSSL_USE_EVP_MAC
+        EVP_MAC_CTX_free(hmac->ctx);
+        EVP_MAC_free(hmac->mac);
+#else
+        HMAC_CTX_free(hmac->ctx);
+#endif
+        /* zeroize entire state*/
+        octet_string_set_to_zero(hmac, sizeof(srtp_hmac_ossl_ctx_t));
 
-    HMAC_CTX_free(hmac_ctx);
+        srtp_crypto_free(hmac);
+    }
 
     /* zeroize entire state*/
     octet_string_set_to_zero(a, sizeof(srtp_auth_t));
@@ -118,11 +169,15 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
 
 static srtp_err_status_t srtp_hmac_start(void *statev)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    srtp_hmac_ossl_ctx_t *hmac = (srtp_hmac_ossl_ctx_t *)statev;
 
-    if (HMAC_Init_ex(state, NULL, 0, NULL, NULL) == 0)
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    if (EVP_MAC_init(hmac->ctx, NULL, 0, NULL) == 0)
         return srtp_err_status_auth_fail;
-
+#else
+    if (HMAC_Init_ex(hmac->ctx, NULL, 0, NULL, NULL) == 0)
+        return srtp_err_status_auth_fail;
+#endif
     return srtp_err_status_ok;
 }
 
@@ -130,11 +185,20 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
                                         const uint8_t *key,
                                         int key_len)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    srtp_hmac_ossl_ctx_t *hmac = (srtp_hmac_ossl_ctx_t *)statev;
 
-    if (HMAC_Init_ex(state, key, key_len, EVP_sha1(), NULL) == 0)
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    OSSL_PARAM params[2];
+
+    params[0] = OSSL_PARAM_construct_utf8_string("digest", "SHA1", 0);
+    params[1] = OSSL_PARAM_construct_end();
+
+    if (EVP_MAC_init(hmac->ctx, key, key_len, params) == 0)
         return srtp_err_status_auth_fail;
-
+#else
+    if (HMAC_Init_ex(hmac->ctx, key, key_len, EVP_sha1(), NULL) == 0)
+        return srtp_err_status_auth_fail;
+#endif
     return srtp_err_status_ok;
 }
 
@@ -142,14 +206,18 @@ static srtp_err_status_t srtp_hmac_update(void *statev,
                                           const uint8_t *message,
                                           int msg_octets)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    srtp_hmac_ossl_ctx_t *hmac = (srtp_hmac_ossl_ctx_t *)statev;
 
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
-    if (HMAC_Update(state, message, msg_octets) == 0)
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    if (EVP_MAC_update(hmac->ctx, message, msg_octets) == 0)
         return srtp_err_status_auth_fail;
-
+#else
+    if (HMAC_Update(hmac->ctx, message, msg_octets) == 0)
+        return srtp_err_status_auth_fail;
+#endif
     return srtp_err_status_ok;
 }
 
@@ -159,10 +227,14 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
                                            int tag_len,
                                            uint8_t *result)
 {
-    HMAC_CTX *state = (HMAC_CTX *)statev;
+    srtp_hmac_ossl_ctx_t *hmac = (srtp_hmac_ossl_ctx_t *)statev;
     uint8_t hash_value[SHA1_DIGEST_SIZE];
     int i;
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    size_t len;
+#else
     unsigned int len;
+#endif
 
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
@@ -173,12 +245,19 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
     }
 
     /* hash message, copy output into H */
-    if (HMAC_Update(state, message, msg_octets) == 0)
+#ifdef SRTP_OSSL_USE_EVP_MAC
+    if (EVP_MAC_update(hmac->ctx, message, msg_octets) == 0)
         return srtp_err_status_auth_fail;
 
-    if (HMAC_Final(state, hash_value, &len) == 0)
+    if (EVP_MAC_final(hmac->ctx, hash_value, &len, sizeof hash_value) == 0)
+        return srtp_err_status_auth_fail;
+#else
+    if (HMAC_Update(hmac->ctx, message, msg_octets) == 0)
         return srtp_err_status_auth_fail;
 
+    if (HMAC_Final(hmac->ctx, hash_value, &len) == 0)
+        return srtp_err_status_auth_fail;
+#endif
     if (tag_len < 0 || len < (unsigned int)tag_len)
         return srtp_err_status_auth_fail;
 
