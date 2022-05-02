@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
     unsigned do_list_mods = 0;
     unsigned do_log_stdout = 0;
     srtp_err_status_t status;
-    size_t hdr_size = 12;
+    const size_t hdr_size = 12;
 
     /*
      * verify that the compiler has interpreted the header data
@@ -228,8 +228,8 @@ int main(int argc, char *argv[])
      */
     if (sizeof(srtp_hdr_t) != hdr_size) {
         printf("error: srtp_hdr_t has incorrect size"
-               "(size is %ld bytes, expected 12)\n",
-               (long)sizeof(srtp_hdr_t));
+               "(size is %ld bytes, expected %ld)\n",
+               (long)sizeof(srtp_hdr_t), (long)hdr_size);
         exit(1);
     }
 
