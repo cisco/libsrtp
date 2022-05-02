@@ -12,18 +12,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        crypto: [internal, openssl, nss, mbedtls]
+        crypto: [internal, openssl, openssl3, nss, mbedtls]
         exclude:
           - os: windows-latest
             crypto: openssl
           - os: windows-latest
+            crypto: openssl3
+          - os: windows-latest
             crypto: nss
           - os: windows-latest
             crypto: mbedtls
+          - os: ubuntu-latest
+            crypto: openssl3
         include:
           - crypto: internal
             cmake-crypto-enable: ""
           - crypto: openssl
+            cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
+          - crypto: openssl3
             cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
           - crypto: nss
             cmake-crypto-enable: "-DENABLE_NSS=ON"
@@ -31,7 +37,7 @@ jobs:
             cmake-crypto-enable: "-DENABLE_MBEDTLS=ON"
 
     runs-on: ${{ matrix.os }}
-    
+
     env:
       CTEST_OUTPUT_ON_FAILURE: 1
 
@@ -41,23 +47,29 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install libnss3-dev
-      
+
     - name: Setup Ubuntu MbedTLS
       if:  matrix.os == 'ubuntu-latest' && matrix.crypto == 'mbedtls'
       run: sudo apt-get install libmbedtls-dev
-    
+
     - name: Setup macOS OpenSSL
       if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
       run: echo "cmake-crypto-dir=-DOPENSSL_ROOT_DIR=$(brew --prefix openssl@1.1)" >> $GITHUB_ENV
-      
+
+    - name: Setup macOS OpenSSL3
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl3'
+      run: |
+        brew install openssl@3
+        echo "cmake-crypto-dir=-DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+
     - name: Setup macOS NSS
       if:  matrix.os == 'macos-latest' && matrix.crypto == 'nss'
       run: brew install nss
-      
+
     - name: Setup macOS MbedTLS
       if:  matrix.os == 'macos-latest' && matrix.crypto == 'mbedtls'
       run: brew install mbedtls
-      
+
     - uses: actions/checkout@v2
 
     - name: Create Build Environment
