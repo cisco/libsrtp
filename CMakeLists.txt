@@ -117,7 +117,9 @@ if(BUILD_WITH_SANITIZERS AND NOT WIN32)
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-  add_compile_options(-Werror)
+  add_compile_options(-Wall -pedantic -Wextra -Werror)
+elseif(MSVC)
+  add_compile_options(/W4 /WX)
 endif()
 
 set(SOURCES_C
