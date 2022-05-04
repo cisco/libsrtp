@@ -61,6 +61,7 @@ set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
 set(ENABLE_NSS OFF CACHE BOOL "Enable NSS crypto engine")
 set(TEST_APPS ON CACHE BOOL "Build test applications")
 set(BUILD_WITH_SANITIZERS OFF CACHE BOOL "Adds sanitizer flags to compiler")
+set(BUILD_WITH_WARNINGS ON CACHE BOOL "Adds warnings and warning as error flags to compiler")
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
 if(ENABLE_OPENSSL OR ENABLE_MBEDTLS OR ENABLE_NSS)
@@ -116,10 +117,13 @@ if(BUILD_WITH_SANITIZERS AND NOT WIN32)
   set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZERS}")
 endif()
 
-if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-  add_compile_options(-Wall -pedantic -Wextra -Werror)
-elseif(MSVC)
-  add_compile_options(/W4 /WX)
+
+if(BUILD_WITH_WARNINGS)
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
+    add_compile_options(-Wall -pedantic -Wextra -Werror)
+  elseif(MSVC)
+    add_compile_options(/W4 /WX)
+  endif()
 endif()
 
 set(SOURCES_C
