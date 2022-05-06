@@ -259,16 +259,15 @@ int test_check__(int cond, const char *file, int line, const char *fmt, ...)
     }
 
     if (test_verbose_level__ >= verbose_level) {
-        size_t n = 0;
         va_list args;
 
         printf("  ");
 
         if (file != NULL)
-            n += printf("%s:%d: Check ", file, line);
+            printf("%s:%d: Check ", file, line);
 
         va_start(args, fmt);
-        n += vprintf(fmt, args);
+        vprintf(fmt, args);
         va_end(args);
 
         printf("... ");
