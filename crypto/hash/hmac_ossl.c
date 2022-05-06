@@ -50,6 +50,7 @@
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
+#define OPENSSL_API_COMPAT 0x10100000L
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
 
