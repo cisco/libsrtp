@@ -135,6 +135,7 @@ void rtp_decoder_srtp_log_handler(srtp_log_level_t level,
                                   const char *msg,
                                   void *data)
 {
+    (void)data;
     char level_char = '?';
     switch (level) {
     case srtp_log_level_error:
@@ -173,9 +174,9 @@ int main(int argc, char *argv[])
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
     char pcap_file[MAX_FILE] = "-";
-    int rtp_packet_offset = DEFAULT_RTP_OFFSET;
+    size_t rtp_packet_offset = DEFAULT_RTP_OFFSET;
     rtp_decoder_t dec;
-    srtp_policy_t policy = { { 0 } };
+    srtp_policy_t policy = { 0 };
     rtp_decoder_mode_t mode = mode_rtp;
     srtp_ssrc_t ssrc = { ssrc_any_inbound, 0 };
     uint32_t roc = 0;
@@ -555,7 +556,7 @@ int main(int argc, char *argv[])
                     expected_len, len);
             exit(1);
         }
-        if (strlen(input_key) > policy.rtp.cipher_key_len * 2) {
+        if (strlen(input_key) > (size_t)policy.rtp.cipher_key_len * 2) {
             fprintf(stderr,
                     "error: too many digits in key/salt "
                     "(should be %d hexadecimal digits, found %u)\n",
@@ -684,7 +685,7 @@ int rtp_decoder_deinit(rtp_decoder_t decoder)
 int rtp_decoder_init(rtp_decoder_t dcdr,
                      srtp_policy_t policy,
                      rtp_decoder_mode_t mode,
-                     int rtp_packet_offset,
+                     size_t rtp_packet_offset,
                      uint32_t roc)
 {
     dcdr->rtp_offset = rtp_packet_offset;
@@ -716,11 +717,11 @@ int rtp_decoder_init(rtp_decoder_t dcdr,
 
 void hexdump(const void *ptr, size_t size)
 {
-    int i, j;
+    size_t i, j;
     const unsigned char *cptr = ptr;
 
     for (i = 0; i < size; i += 16) {
-        fprintf(stdout, "%04x ", i);
+        fprintf(stdout, "%04x ", (unsigned int)i);
         for (j = 0; j < 16 && i + j < size; j++) {
             fprintf(stdout, "%02x ", cptr[i + j]);
         }

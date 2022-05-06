@@ -143,7 +143,7 @@ srtp_err_status_t sha1_test_case_validate(const hash_test_case_t *test_case)
 struct hex_sha1_test_case_t {
     unsigned bit_len;
     char hex_data[MAX_HASH_DATA_LEN * 2];
-    char hex_hash[40];
+    char hex_hash[40 + 1];
 };
 
 srtp_err_status_t sha1_add_test_cases(void)

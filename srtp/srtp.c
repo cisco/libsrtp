@@ -1845,7 +1845,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     /*
      * Set the AAD over the RTP header
      */
-    aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
+    aad_len = (uint32_t)((uint8_t *)enc_start - (uint8_t *)hdr);
     status =
         srtp_cipher_set_aad(session_keys->rtp_cipher, (uint8_t *)hdr, aad_len);
     if (status) {
@@ -1991,7 +1991,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     /*
      * Set the AAD for AES-GCM, which is the RTP header
      */
-    aad_len = (uint8_t *)enc_start - (uint8_t *)hdr;
+    aad_len = (uint32_t)((uint8_t *)enc_start - (uint8_t *)hdr);
     status =
         srtp_cipher_set_aad(session_keys->rtp_cipher, (uint8_t *)hdr, aad_len);
     if (status) {
@@ -3552,7 +3552,6 @@ static srtp_err_status_t srtp_calc_aead_iv_srtcp(
  * AES-GCM mode with 128 or 256 bit keys.
  */
 static srtp_err_status_t srtp_protect_rtcp_aead(
-    srtp_t ctx,
     srtp_stream_ctx_t *stream,
     void *rtcp_hdr,
     unsigned int *pkt_octet_len,
@@ -4004,7 +4003,7 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
         session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
-        return srtp_protect_rtcp_aead(ctx, stream, rtcp_hdr,
+        return srtp_protect_rtcp_aead(stream, rtcp_hdr,
                                       (unsigned int *)pkt_octet_len,
                                       session_keys, use_mki);
     }

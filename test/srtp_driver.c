@@ -168,6 +168,7 @@ void usage(char *prog_name)
 void log_handler(srtp_log_level_t level, const char *msg, void *data)
 {
     char level_char = '?';
+    (void)data;
     switch (level) {
     case srtp_log_level_error:
         level_char = 'e';
@@ -219,15 +220,16 @@ int main(int argc, char *argv[])
     unsigned do_list_mods = 0;
     unsigned do_log_stdout = 0;
     srtp_err_status_t status;
+    const size_t hdr_size = 12;
 
     /*
      * verify that the compiler has interpreted the header data
      * structure srtp_hdr_t correctly
      */
-    if (sizeof(srtp_hdr_t) != 12) {
+    if (sizeof(srtp_hdr_t) != hdr_size) {
         printf("error: srtp_hdr_t has incorrect size"
-               "(size is %ld bytes, expected 12)\n",
-               (long)sizeof(srtp_hdr_t));
+               "(size is %ld bytes, expected %ld)\n",
+               (long)sizeof(srtp_hdr_t), (long)hdr_size);
         exit(1);
     }
 
@@ -2986,6 +2988,9 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
 #ifdef GCM
     srtp_policy_t policy_aes_gcm;
     srtp_policy_t policy_aes_gcm_mki;
+#else
+    (void)srtp_send_aes_gcm;
+    (void)srtp_send_aes_gcm_mki;
 #endif // GCM
 
     memset(&policy, 0, sizeof(policy));
@@ -3181,7 +3186,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover()
     srtp_policy_t receiver_policy;
     srtp_t receiver_session;
 
-    const int num_pkts = 5;
+    const uint32_t num_pkts = 5;
     srtp_hdr_t *pkts[5];
     int pkt_len_octets[5];
 
