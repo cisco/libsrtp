@@ -55,7 +55,7 @@
 
 #define SHA1_DIGEST_SIZE 20
 
-/* the debug module for authentiation */
+/* the debug module for authentication */
 
 srtp_debug_module_t srtp_mod_hmac = {
     0,                   /* debugging is off by default */

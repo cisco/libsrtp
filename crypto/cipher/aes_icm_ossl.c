@@ -169,7 +169,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc(srtp_cipher_t **c,
         break;
     }
 
-    /* set key size        */
+    /* set key size */
     (*c)->key_len = key_len;
 
     return srtp_err_status_ok;
@@ -258,8 +258,6 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init(void *cv,
 
     if (!EVP_EncryptInit_ex(c->ctx, evp, NULL, key, NULL)) {
         return srtp_err_status_fail;
-    } else {
-        return srtp_err_status_ok;
     }
 
     return srtp_err_status_ok;
@@ -290,9 +288,9 @@ static srtp_err_status_t srtp_aes_icm_openssl_set_iv(
 
     if (!EVP_EncryptInit_ex(c->ctx, NULL, NULL, NULL, c->counter.v8)) {
         return srtp_err_status_fail;
-    } else {
-        return srtp_err_status_ok;
     }
+
+    return srtp_err_status_ok;
 }
 
 /*
