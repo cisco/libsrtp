@@ -250,6 +250,9 @@ add_library(srtp2
 )
 
 set_target_properties(srtp2 PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+if(${CMAKE_C_COMPILER_TARGET} MATCHES ".*-linux-android.*")
+  set_target_properties(srtp2 PROPERTIES NO_SONAME ON)
+endif()
 
 target_include_directories(srtp2 PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/crypto/include>
