@@ -555,6 +555,62 @@ srtp_err_status_t srtp_unprotect_mki(srtp_t ctx,
                                      unsigned int use_mki);
 
 /**
+ * @brief srtp_unprotect_roc_mki() is the Secure RTP receiver-side packet
+ * processing function that checks for MKI.
+ *
+ * The function call srtp_unprotect(ctx, srtp_hdr, len_ptr) verifies
+ * the Secure RTP protection of the SRTP packet pointed to by srtp_hdr
+ * (which has length *len_ptr), using the SRTP context ctx.  If
+ * srtp_err_status_ok is returned, then srtp_hdr points to the resulting
+ * RTP packet and *len_ptr is the number of octets in that packet;
+ * otherwise, no assumptions should be made about the value of either
+ * data elements.
+ *
+ * The sequence numbers of the RTP packets presented to this function
+ * need not be consecutive, but they @b must be out of order by less
+ * than 2^15 = 32,768 packets.
+ *
+ * @warning This function assumes that the SRTP packet is aligned on a
+ * 32-bit boundary.
+ *
+ * @param ctx is the SRTP session which applies to the particular packet.
+ *
+ * @param srtp_hdr is a pointer to the header of the SRTP packet
+ * (before the call).  after the function returns, it points to the
+ * rtp packet if srtp_err_status_ok was returned; otherwise, the value of
+ * the data to which it points is undefined.
+ *
+ * @param len_ptr is a pointer to the length in octets of the complete
+ * srtp packet (header and body) before the function call, and of the
+ * complete rtp packet after the call, if srtp_err_status_ok was returned.
+ * Otherwise, the value of the data to which it points is undefined.
+ *
+ * @param roc in case the received packet is the first for a stream,
+ * roc is used to authenticate the packet. If a stream already exists,
+ * this parameter is ignored.
+ *
+ * @param use_mki is a boolean to tell the system if mki is being used.  If
+ * set to false then will use the first set of session keys.  If set to true
+ * will
+ * use the session keys identified by the mki_index
+ *
+ * @return
+ *    - srtp_err_status_ok          if the RTP packet is valid.
+ *    - srtp_err_status_auth_fail   if the SRTP packet failed the message
+ *                                  authentication check.
+ *    - srtp_err_status_replay_fail if the SRTP packet is a replay (e.g. packet
+ *                                  has already been processed and accepted).
+ *    - srtp_err_status_bad_mki if the MKI in the packet is not a known MKI id
+ *    - [other]  if there has been an error in the cryptographic mechanisms.
+ *
+ */
+srtp_err_status_t srtp_unprotect_roc_mki(srtp_ctx_t *ctx,
+                                         void *srtp_hdr,
+                                         int *pkt_octet_len,
+                                         unsigned int roc,
+                                         unsigned int use_mki);
+
+/**
  * @brief srtp_create() allocates and initializes an SRTP session.
 
  * The function call srtp_create(session, policy) allocates and

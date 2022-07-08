@@ -2423,6 +2423,15 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
                                      int *pkt_octet_len,
                                      unsigned int use_mki)
 {
+    return srtp_unprotect_roc_mki(ctx, srtp_hdr, pkt_octet_len, 0, use_mki);
+}
+
+srtp_err_status_t srtp_unprotect_roc_mki(srtp_ctx_t *ctx,
+                                     void *srtp_hdr,
+                                     int *pkt_octet_len,
+                                     unsigned int roc,
+                                     unsigned int use_mki)
+{
     srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
     uint32_t *enc_start;            /* pointer to start of encrypted portion  */
     uint32_t *auth_start;           /* pointer to start of auth. portion      */
@@ -2474,10 +2483,10 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
  * and set delta equal to the same value
  */
 #ifdef NO_64BIT_MATH
-            est = (srtp_xtd_seq_num_t)make64(0, ntohs(hdr->seq));
+            est = (srtp_xtd_seq_num_t)make64(roc, ntohs(hdr->seq));
             delta = low32(est);
 #else
-            est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
+            est = (srtp_xtd_seq_num_t)(((uint64_t)roc) << 16) | ntohs(hdr->seq);
             delta = (int)est;
 #endif
         } else {
