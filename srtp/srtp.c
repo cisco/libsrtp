@@ -2489,6 +2489,7 @@ srtp_err_status_t srtp_unprotect_roc_mki(srtp_ctx_t *ctx,
             est = (srtp_xtd_seq_num_t)(((uint64_t)roc) << 16) | ntohs(hdr->seq);
             delta = (int)est;
 #endif
+            advance_packet_index = 1;
         } else {
             /*
              * no stream corresponding to SSRC found, and we don't do
