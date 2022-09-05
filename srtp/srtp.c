@@ -3005,12 +3005,60 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy)
     return srtp_err_status_ok;
 }
 
+struct update_template_stream_data {
+    srtp_err_status_t status;
+    srtp_t session;
+    srtp_stream_t new_stream_template;
+    srtp_stream_list_t *new_stream_list;
+};
+
+static int update_template_stream(srtp_stream_t stream, void *raw_data)
+{
+    struct update_template_stream_data *data =
+        (struct update_template_stream_data *)raw_data;
+    srtp_t session = data->session;
+    uint32_t ssrc = stream->ssrc;
+    srtp_xtd_seq_num_t old_index;
+    srtp_rdb_t old_rtcp_rdb;
+
+    /* old / non-template streams are copied unchanged */
+    if (stream->session_keys[0].rtp_auth !=
+        session->stream_template->session_keys[0].rtp_auth) {
+        srtp_stream_list_delete(&session->stream_list, ssrc);
+        srtp_stream_list_insert(data->new_stream_list, stream);
+        return 0;
+    }
+
+    /* save old extendard seq */
+    old_index = stream->rtp_rdbx.index;
+    old_rtcp_rdb = stream->rtcp_rdb;
+
+    /* remove stream */
+    data->status = srtp_remove_stream(session, ssrc);
+    if (data->status)
+        return 1;
+
+    /* allocate and initialize a new stream */
+    data->status = srtp_stream_clone(data->new_stream_template, ssrc, &stream);
+    if (data->status)
+        return 1;
+
+    /* add new stream to the head of the new_stream_list */
+    srtp_stream_list_insert(data->new_stream_list, stream);
+
+    /* restore old extended seq */
+    stream->rtp_rdbx.index = old_index;
+    stream->rtcp_rdb = old_rtcp_rdb;
+
+    return 0;
+}
+
 static srtp_err_status_t update_template_streams(srtp_t session,
                                                  const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
     srtp_stream_t new_stream_template;
-    srtp_stream_t new_stream_list = NULL;
+    srtp_stream_list_t new_stream_list;
 
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
@@ -3034,77 +3082,33 @@ static srtp_err_status_t update_template_streams(srtp_t session,
         return status;
     }
 
-    /* for all old templated streams */
-    for (;;) {
-        srtp_stream_t stream;
-        uint32_t ssrc;
-        srtp_xtd_seq_num_t old_index;
-        srtp_rdb_t old_rtcp_rdb;
-
-        stream = session->stream_list;
-        while ((stream != NULL) &&
-               (stream->session_keys[0].rtp_auth !=
-                session->stream_template->session_keys[0].rtp_auth)) {
-            stream = stream->next;
-        }
-        if (stream == NULL) {
-            /* no more templated streams */
-            break;
-        }
-
-        /* save old extendard seq */
-        ssrc = stream->ssrc;
-        old_index = stream->rtp_rdbx.index;
-        old_rtcp_rdb = stream->rtcp_rdb;
-
-        /* remove stream */
-        status = srtp_remove_stream(session, ssrc);
-        if (status) {
-            /* free new allocations */
-            while (new_stream_list != NULL) {
-                srtp_stream_t next = new_stream_list->next;
-                srtp_stream_dealloc(new_stream_list, new_stream_template);
-                new_stream_list = next;
-            }
-            srtp_stream_dealloc(new_stream_template, NULL);
-            return status;
-        }
-
-        /* allocate and initialize a new stream */
-        status = srtp_stream_clone(new_stream_template, ssrc, &stream);
-        if (status) {
-            /* free new allocations */
-            while (new_stream_list != NULL) {
-                srtp_stream_t next = new_stream_list->next;
-                srtp_stream_dealloc(new_stream_list, new_stream_template);
-                new_stream_list = next;
-            }
-            srtp_stream_dealloc(new_stream_template, NULL);
-            return status;
-        }
-
-        /* add new stream to the head of the new_stream_list */
-        stream->next = new_stream_list;
-        new_stream_list = stream;
-
-        /* restore old extended seq */
-        stream->rtp_rdbx.index = old_index;
-        stream->rtcp_rdb = old_rtcp_rdb;
+    /* allocate new stream list */
+    status = srtp_stream_list_create(&new_stream_list);
+    if (status) {
+        srtp_crypto_free(new_stream_template);
+        return status;
     }
-    /* dealloc old template */
+
+    /* process streams */
+    struct update_template_stream_data data = { srtp_err_status_ok, session,
+                                                new_stream_template,
+                                                &new_stream_list };
+    srtp_stream_list_for_each(&session->stream_list, &update_template_stream,
+                              &data);
+    if (data.status) {
+        /* free new allocations */
+        srtp_stream_list_dealloc(&new_stream_list, new_stream_template);
+        srtp_stream_dealloc(new_stream_template, NULL);
+        return data.status;
+    }
+
+    /* dealloc old list / template */
+    srtp_stream_list_dealloc(&session->stream_list, session->stream_template);
     srtp_stream_dealloc(session->stream_template, NULL);
-    /* set new template */
+    /* set new list / template */
     session->stream_template = new_stream_template;
-    /* add new list */
-    if (new_stream_list) {
-        srtp_stream_t tail = new_stream_list;
-        while (tail->next) {
-            tail = tail->next;
-        }
-        tail->next = session->stream_list;
-        session->stream_list = new_stream_list;
-    }
-    return status;
+    session->stream_list = new_stream_list;
+    return srtp_err_status_ok;
 }
 
 static srtp_err_status_t update_stream(srtp_t session,
