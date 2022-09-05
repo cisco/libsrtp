@@ -157,7 +157,7 @@ typedef struct srtp_stream_ctx_t_ {
  * an srtp_ctx_t holds a stream list and a service description
  */
 typedef struct srtp_ctx_t_ {
-    struct srtp_stream_ctx_t_ *stream_list;     /* linked list of streams     */
+    srtp_stream_list_t stream_list;             /* linked list of streams     */
     struct srtp_stream_ctx_t_ *stream_template; /* act as template for other  */
                                                 /* streams                    */
     void *user_data;                            /* user custom data           */
