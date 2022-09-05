@@ -103,6 +103,9 @@ srtp_err_status_t srtp_steam_init_all_master_keys(
  */
 srtp_err_status_t srtp_stream_init(srtp_stream_t srtp, const srtp_policy_t *p);
 
+srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
+                                      const srtp_stream_ctx_t *stream_template);
+
 /*
  * libsrtp internal datatypes
  */
