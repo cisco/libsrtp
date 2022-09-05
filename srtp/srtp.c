@@ -46,6 +46,7 @@
 #include "config.h"
 
 #include "srtp_priv.h"
+#include "stream_list_priv.h"
 #include "crypto_types.h"
 #include "err.h"
 #include "alloc.h" /* for srtp_crypto_alloc() */
@@ -4747,3 +4748,94 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 
     return srtp_err_status_ok;
 }
+
+#ifndef SRTP_NO_STREAM_LIST
+
+/* in the default implementation, we have an intrusive linked list */
+struct {
+    srtp_stream_ctx_t dummy;
+} srtp_stream_list_ctx_t_;
+
+srtp_err_status_t srtp_stream_list_create(srtp_stream_list_t *list)
+{
+    (*list) = NULL;
+    return srtp_err_status_ok;
+}
+
+void srtp_stream_list_insert(srtp_stream_list_t *list_, srtp_stream_t stream)
+{
+    srtp_stream_t *list = (srtp_stream_t *)list_;
+
+    /* insert at the head of the list */
+    stream->next = (*list);
+    (*list) = stream;
+}
+
+srtp_stream_t srtp_stream_list_get(srtp_stream_list_t *list_, uint32_t ssrc)
+{
+    srtp_stream_t *list = (srtp_stream_t *)list_;
+
+    /* walk down list until ssrc is found */
+    srtp_stream_t stream = (*list);
+    while (stream != NULL) {
+        if (stream->ssrc == ssrc)
+            return stream;
+        stream = stream->next;
+    }
+
+    /* we haven't found our ssrc, so return a null */
+    return NULL;
+}
+
+srtp_stream_t srtp_stream_list_delete(srtp_stream_list_t *list_, uint32_t ssrc)
+{
+    srtp_stream_t *list = (srtp_stream_t *)list_;
+
+    /* walk down list until ssrc is found */
+    srtp_stream_t *stream = list;
+    while ((*stream) != NULL) {
+        if ((*stream)->ssrc == ssrc) {
+            srtp_stream_t tmp = (*stream);
+            (*stream) = tmp->next;
+            return tmp;
+        }
+        stream = &(*stream)->next;
+    }
+
+    /* we haven't found our ssrc, so return a null */
+    return NULL;
+}
+
+void srtp_stream_list_for_each(srtp_stream_list_t *list_,
+                               int (*callback)(srtp_stream_t, void *),
+                               void *data)
+{
+    srtp_stream_t *list = (srtp_stream_t *)list_;
+    srtp_stream_t stream = (*list);
+    while (stream != NULL) {
+        srtp_stream_t tmp = stream;
+        stream = stream->next;
+        if (callback(tmp, data))
+            break;
+    }
+}
+
+srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t *list_,
+                                           srtp_stream_t template)
+{
+    srtp_stream_t *list = (srtp_stream_t *)list_;
+    srtp_err_status_t status;
+
+    /* walk list of streams, deallocating as we go */
+    while ((*list) != NULL) {
+        srtp_stream_t next = (*list)->next;
+        status = srtp_stream_dealloc((*list), template);
+        if (status)
+            return status;
+        (*list) = next;
+    }
+
+    return srtp_err_status_ok;
+}
+
+#endif

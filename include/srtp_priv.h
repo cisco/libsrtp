@@ -66,6 +66,7 @@ extern "C" {
 
 typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
 typedef srtp_stream_ctx_t *srtp_stream_t;
+typedef struct srtp_stream_list_ctx_t_ *srtp_stream_list_t;
 
 /*
  * the following declarations are libSRTP internal functions
