@@ -2056,9 +2056,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
             return status;
         }
 
-        /* add new stream to the head of the stream_list */
-        new_stream->next = ctx->stream_list;
-        ctx->stream_list = new_stream;
+        /* add new stream to the list */
+        srtp_stream_list_insert(&ctx->stream_list, new_stream);
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -2147,9 +2146,8 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             if (status)
                 return status;
 
-            /* add new stream to the head of the stream_list */
-            new_stream->next = ctx->stream_list;
-            ctx->stream_list = new_stream;
+            /* add new stream to the list */
+            srtp_stream_list_insert(&ctx->stream_list, new_stream);
 
             /* set direction to outbound */
             new_stream->direction = dir_srtp_sender;
@@ -2746,9 +2744,8 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         if (status)
             return status;
 
-        /* add new stream to the head of the stream_list */
-        new_stream->next = ctx->stream_list;
-        ctx->stream_list = new_stream;
+        /* add new stream to the list */
+        srtp_stream_list_insert(&ctx->stream_list, new_stream);
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -3900,9 +3897,8 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
             return status;
         }
 
-        /* add new stream to the head of the stream_list */
-        new_stream->next = ctx->stream_list;
-        ctx->stream_list = new_stream;
+        /* add new stream to the list */
+        srtp_stream_list_insert(&ctx->stream_list, new_stream);
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -3966,9 +3962,8 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
             if (status)
                 return status;
 
-            /* add new stream to the head of the stream_list */
-            new_stream->next = ctx->stream_list;
-            ctx->stream_list = new_stream;
+            /* add new stream to the list */
+            srtp_stream_list_insert(&ctx->stream_list, new_stream);
 
             /* set stream (the pointer used in this function) */
             stream = new_stream;
@@ -4413,9 +4408,8 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
         if (status)
             return status;
 
-        /* add new stream to the head of the stream_list */
-        new_stream->next = ctx->stream_list;
-        ctx->stream_list = new_stream;
+        /* add new stream to the list */
+        srtp_stream_list_insert(&ctx->stream_list, new_stream);
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
