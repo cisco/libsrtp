@@ -4569,6 +4569,32 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
     return srtp_err_status_ok;
 }
 
+struct get_protect_trailer_length_data {
+    int valid;
+    uint32_t length;
+    uint32_t is_rtp;
+    uint32_t use_mki;
+    uint32_t mki_index;
+};
+
+static int get_protect_trailer_length_cb(srtp_stream_t stream, void *raw_data)
+{
+    struct get_protect_trailer_length_data *data =
+        (struct get_protect_trailer_length_data *)raw_data;
+    uint32_t temp_length;
+
+    data->valid = 1;
+    if (stream_get_protect_trailer_length(stream, data->is_rtp, data->use_mki,
+                                          data->mki_index,
+                                          &temp_length) == srtp_err_status_ok) {
+        if (temp_length > data->length) {
+            data->length = temp_length;
+        }
+    }
+
+    return 0;
+}
+
 srtp_err_status_t get_protect_trailer_length(srtp_t session,
                                              uint32_t is_rtp,
                                              uint32_t use_mki,
@@ -4576,38 +4602,29 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
                                              uint32_t *length)
 {
     srtp_stream_ctx_t *stream;
+    struct get_protect_trailer_length_data data = { 0, 0, is_rtp, use_mki,
+                                                    mki_index };
 
     if (session == NULL) {
         return srtp_err_status_bad_param;
     }
 
-    if (session->stream_template == NULL && session->stream_list == NULL) {
-        return srtp_err_status_bad_param;
-    }
-
-    *length = 0;
-
     stream = session->stream_template;
 
     if (stream != NULL) {
+        data.valid = 1;
         stream_get_protect_trailer_length(stream, is_rtp, use_mki, mki_index,
-                                          length);
+                                          &data.length);
     }
 
-    stream = session->stream_list;
+    srtp_stream_list_for_each(&session->stream_list,
+                              &get_protect_trailer_length_cb, &data);
 
-    while (stream != NULL) {
-        uint32_t temp_length;
-        if (stream_get_protect_trailer_length(stream, is_rtp, use_mki,
-                                              mki_index, &temp_length) ==
-            srtp_err_status_ok) {
-            if (temp_length > *length) {
-                *length = temp_length;
-            }
-        }
-        stream = stream->next;
+    if (!data.valid) {
+        return srtp_err_status_bad_param;
     }
 
+    *length = data.length;
     return srtp_err_status_ok;
 }
 
