@@ -49,6 +49,7 @@
 #include "getopt_s.h" /* for local getopt()    */
 
 #include "srtp_priv.h"
+#include "stream_list_priv.h"
 #include "util.h"
 
 #ifdef HAVE_NETINET_IN_H
@@ -1467,13 +1468,75 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     return srtp_err_status_ok;
 }
 
+struct srtp_session_print_stream_data {
+    // set by callback to indicate failure
+    srtp_err_status_t status;
+    // indicates if it is the template stream or a regular stream
+    int is_template;
+};
+
+int srtp_session_print_stream(srtp_stream_t stream, void *raw_data)
+{
+    static const char *serv_descr[4] = { "none", "confidentiality",
+                                         "authentication",
+                                         "confidentiality and authentication" };
+    static const char *direction[3] = { "unknown", "outbound", "inbound" };
+
+    struct srtp_session_print_stream_data *data =
+        (struct srtp_session_print_stream_data *)raw_data;
+    srtp_session_keys_t *session_keys = &stream->session_keys[0];
+    char ssrc_text[32];
+
+    if (!data->is_template && stream->rtp_services > sec_serv_conf_and_auth) {
+        data->status = srtp_err_status_bad_param;
+        return 1;
+    }
+
+    if (data->is_template) {
+        snprintf(ssrc_text, sizeof(ssrc_text), "any %s",
+                 direction[stream->direction]);
+    } else {
+        snprintf(ssrc_text, sizeof(ssrc_text), "0x%08x", stream->ssrc);
+    }
+
+    printf("# SSRC:          %s\r\n"
+           "# rtp cipher:    %s\r\n"
+           "# rtp auth:      %s\r\n"
+           "# rtp services:  %s\r\n"
+           "# rtcp cipher:   %s\r\n"
+           "# rtcp auth:     %s\r\n"
+           "# rtcp services: %s\r\n"
+           "# window size:   %lu\r\n"
+           "# tx rtx allowed:%s\r\n",
+           ssrc_text, session_keys->rtp_cipher->type->description,
+           session_keys->rtp_auth->type->description,
+           serv_descr[stream->rtp_services],
+           session_keys->rtcp_cipher->type->description,
+           session_keys->rtcp_auth->type->description,
+           serv_descr[stream->rtcp_services],
+           srtp_rdbx_get_window_size(&stream->rtp_rdbx),
+           stream->allow_repeat_tx ? "true" : "false");
+
+    printf("# Encrypted extension headers: ");
+    if (stream->enc_xtn_hdr && stream->enc_xtn_hdr_count > 0) {
+        int *enc_xtn_hdr = stream->enc_xtn_hdr;
+        int count = stream->enc_xtn_hdr_count;
+        while (count > 0) {
+            printf("%d ", *enc_xtn_hdr);
+            enc_xtn_hdr++;
+            count--;
+        }
+        printf("\n");
+    } else {
+        printf("none\n");
+    }
+
+    return 0;
+}
+
 srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
 {
-    char *serv_descr[4] = { "none", "confidentiality", "authentication",
-                            "confidentiality and authentication" };
-    char *direction[3] = { "unknown", "outbound", "inbound" };
-    srtp_stream_t stream;
-    srtp_session_keys_t *session_keys = NULL;
+    struct srtp_session_print_stream_data data = { srtp_err_status_ok, 0 };
 
     /* sanity checking */
     if (srtp == NULL) {
@@ -1482,86 +1545,16 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
 
     /* if there's a template stream, print it out */
     if (srtp->stream_template != NULL) {
-        stream = srtp->stream_template;
-        session_keys = &stream->session_keys[0];
-        printf("# SSRC:          any %s\r\n"
-               "# rtp cipher:    %s\r\n"
-               "# rtp auth:      %s\r\n"
-               "# rtp services:  %s\r\n"
-               "# rtcp cipher:   %s\r\n"
-               "# rtcp auth:     %s\r\n"
-               "# rtcp services: %s\r\n"
-               "# window size:   %lu\r\n"
-               "# tx rtx allowed:%s\r\n",
-               direction[stream->direction],
-               session_keys->rtp_cipher->type->description,
-               session_keys->rtp_auth->type->description,
-               serv_descr[stream->rtp_services],
-               session_keys->rtcp_cipher->type->description,
-               session_keys->rtcp_auth->type->description,
-               serv_descr[stream->rtcp_services],
-               srtp_rdbx_get_window_size(&stream->rtp_rdbx),
-               stream->allow_repeat_tx ? "true" : "false");
-
-        printf("# Encrypted extension headers: ");
-        if (stream->enc_xtn_hdr && stream->enc_xtn_hdr_count > 0) {
-            int *enc_xtn_hdr = stream->enc_xtn_hdr;
-            int count = stream->enc_xtn_hdr_count;
-            while (count > 0) {
-                printf("%d ", *enc_xtn_hdr);
-                enc_xtn_hdr++;
-                count--;
-            }
-            printf("\n");
-        } else {
-            printf("none\n");
-        }
+        data.is_template = 1;
+        srtp_session_print_stream(srtp->stream_template, &data);
     }
 
     /* loop over streams in session, printing the policy of each */
-    stream = srtp->stream_list;
-    while (stream != NULL) {
-        if (stream->rtp_services > sec_serv_conf_and_auth) {
-            return srtp_err_status_bad_param;
-        }
-        session_keys = &stream->session_keys[0];
+    data.is_template = 0;
+    srtp_stream_list_for_each(&srtp->stream_list, &srtp_session_print_stream,
+                              &data);
 
-        printf("# SSRC:          0x%08x\r\n"
-               "# rtp cipher:    %s\r\n"
-               "# rtp auth:      %s\r\n"
-               "# rtp services:  %s\r\n"
-               "# rtcp cipher:   %s\r\n"
-               "# rtcp auth:     %s\r\n"
-               "# rtcp services: %s\r\n"
-               "# window size:   %lu\r\n"
-               "# tx rtx allowed:%s\r\n",
-               stream->ssrc, session_keys->rtp_cipher->type->description,
-               session_keys->rtp_auth->type->description,
-               serv_descr[stream->rtp_services],
-               session_keys->rtcp_cipher->type->description,
-               session_keys->rtcp_auth->type->description,
-               serv_descr[stream->rtcp_services],
-               srtp_rdbx_get_window_size(&stream->rtp_rdbx),
-               stream->allow_repeat_tx ? "true" : "false");
-
-        printf("# Encrypted extension headers: ");
-        if (stream->enc_xtn_hdr && stream->enc_xtn_hdr_count > 0) {
-            int *enc_xtn_hdr = stream->enc_xtn_hdr;
-            int count = stream->enc_xtn_hdr_count;
-            while (count > 0) {
-                printf("%d ", *enc_xtn_hdr);
-                enc_xtn_hdr++;
-                count--;
-            }
-            printf("\n");
-        } else {
-            printf("none\n");
-        }
-
-        /* advance to next stream in the list */
-        stream = stream->next;
-    }
-    return srtp_err_status_ok;
+    return data.status;
 }
 
 srtp_err_status_t srtp_print_policy(const srtp_policy_t *policy)
