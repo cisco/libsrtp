@@ -248,6 +248,7 @@ add_library(srtp2
   ${REPLAY_SOURCES_C}
   ${SOURCES_H}
 )
+add_library(libSRTP::srtp2 ALIAS srtp2)
 
 set_target_properties(srtp2 PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
 
