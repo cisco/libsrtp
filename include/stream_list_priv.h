@@ -74,13 +74,16 @@ srtp_err_status_t srtp_stream_list_create(srtp_stream_list_t *list);
 /**
  * insert a stream into the list
  *
- * ownership is transferred from caller to the list.
+ * returns srtp_err_status_alloc_fail if insertion failed due to unavailable
+ * capacity in the list. if operation succeeds, srtp_err_status_ok is returned
+ * and ownership is transferred from caller into the list
  *
  * if another stream with the same SSRC already exists in the list,
  * behavior is undefined. if the SSRC field is mutated while the
  * stream is inserted, further operations have undefined behavior
  */
-void srtp_stream_list_insert(srtp_stream_list_t *list, srtp_stream_t stream);
+srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t *list,
+                                          srtp_stream_t stream);
 
 /*
  * look up the stream corresponding to the specified SSRC and return it.
