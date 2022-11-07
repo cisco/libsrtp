@@ -667,8 +667,8 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
 
         // Get tag if supported by the cipher
         if (c->type->get_tag) {
-            if (srtp_cipher_get_tag(c, (uint8_t *)(enc_buf + len),
-                                    &tag_len) != srtp_err_status_ok) {
+            if (srtp_cipher_get_tag(c, (uint8_t *)(enc_buf + len), &tag_len) !=
+                srtp_err_status_ok) {
                 srtp_crypto_free(enc_buf);
                 return 0;
             }
