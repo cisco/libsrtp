@@ -633,6 +633,8 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
     unsigned char *enc_buf;
     unsigned int len = octets_in_buffer;
     uint32_t tag_len = 32;
+    unsigned char aad[4] = {0, 0, 0, 0};
+    uint32_t aad_len = 4;
 
     enc_buf = (unsigned char *)srtp_crypto_alloc(octets_in_buffer + tag_len);
     if (enc_buf == NULL) {
@@ -642,11 +644,22 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
     v128_set_to_zero(&nonce);
     timer = clock();
     for (i = 0; i < num_trials; i++, nonce.v32[3] = i) {
+        // Set IV
         if (srtp_cipher_set_iv(c, (uint8_t *)&nonce, srtp_direction_encrypt) !=
             srtp_err_status_ok) {
             srtp_crypto_free(enc_buf);
             return 0;
         }
+
+        // Set (empty) AAD if supported by the cipher
+        if (c->type->set_aad) {
+            if (srtp_cipher_set_aad(c, aad, aad_len) != srtp_err_status_ok) {
+                srtp_crypto_free(enc_buf);
+                return 0;
+            }
+        }
+
+        // Encrypt the buffer
         if (srtp_cipher_encrypt(c, enc_buf, &len) != srtp_err_status_ok) {
             srtp_crypto_free(enc_buf);
             return 0;
