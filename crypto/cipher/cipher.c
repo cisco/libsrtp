@@ -632,7 +632,7 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
     clock_t timer;
     unsigned char *enc_buf;
     unsigned int len = octets_in_buffer;
-    uint32_t tag_len = 32;
+    uint32_t tag_len = SRTP_MAX_TAG_LEN;
     unsigned char aad[4] = { 0, 0, 0, 0 };
     uint32_t aad_len = 4;
 
@@ -667,7 +667,7 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
 
         // Get tag if supported by the cipher
         if (c->type->get_tag) {
-            if (srtp_cipher_get_tag(c, (uint8_t *)(enc_buf + octets_in_buffer),
+            if (srtp_cipher_get_tag(c, (uint8_t *)(enc_buf + len),
                                     &tag_len) != srtp_err_status_ok) {
                 srtp_crypto_free(enc_buf);
                 return 0;
