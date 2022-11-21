@@ -2831,16 +2831,16 @@ srtp_err_status_t srtp_test_update()
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
-    policy.ssrc.type = ssrc_any_outbound;
     policy.key = test_key;
 
     /* create a send and recive ctx with defualt profile and test_key */
-    status = srtp_create(&srtp_recv, &policy);
+    policy.ssrc.type = ssrc_any_outbound;
+    status = srtp_create(&srtp_snd, &policy);
     if (status)
         return status;
 
     policy.ssrc.type = ssrc_any_inbound;
-    status = srtp_create(&srtp_snd, &policy);
+    status = srtp_create(&srtp_recv, &policy);
     if (status)
         return status;
 
