@@ -1,5 +1,5 @@
 name: CIFuzz
-on: [pull_request]
+on: [ push, pull_request ]
 jobs:
   Fuzzing:
     runs-on: ubuntu-latest
@@ -9,14 +9,12 @@ jobs:
       uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
       with:
         oss-fuzz-project-name: 'libsrtp'
-        dry-run: false
         language: c++
     - name: Run Fuzzers
       uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
       with:
         oss-fuzz-project-name: 'libsrtp'
         fuzz-seconds: 300
-        dry-run: false
         language: c++
     - name: Upload Crash
       uses: actions/upload-artifact@v3
