@@ -60,7 +60,7 @@ srtp_debug_module_t srtp_mod_crypto_kernel = {
 
 /* crypto_kernel is a global variable, the only one of its datatype */
 
-srtp_crypto_kernel_t crypto_kernel = {
+static srtp_crypto_kernel_t crypto_kernel = {
     srtp_crypto_kernel_state_insecure, /* start off in insecure state */
     NULL,                              /* no cipher types yet         */
     NULL,                              /* no auth types yet           */
