@@ -220,11 +220,21 @@ will want to read the Security Considerations section of [RFC 3711](https://tool
 In addition, it is important that you read and understand the
 terms outlined in the [License and Disclaimer](#license-and-disclaimer) section.
 
+This library also supports the AES-GCM Authenticated Encryption methods
+described in [RFC 7714](https://tools.ietf.org/html/rfc7714)
+
 --------------------------------------------------------------------------------
 
 <a name="implementation-notes"></a>
 ## Implementation Notes
 
+  * It is possible to configure which 3rd party (ie openssl/nss/etc) crypto backend
+    libSRTP will be built with. If no 3rd party backend is set then libSRTP provides
+    an internal implementation of AES and Sha1. The internal implementation only
+    supports AES-128 & AES-256, so to use AES-192 or the AES-GCM group of ciphers a
+    3rd party crypto backend must be configured. For this and performance reasons it
+    is highly recommended to use a 3rd party crypto backend.
+  
   * The `srtp_protect()` function assumes that the buffer holding the
     rtp packet has enough storage allocated that the authentication
     tag can be written to the end of that packet. If this assumption
