@@ -251,7 +251,6 @@ double rdb_check_adds_per_second(void)
     uint32_t i;
     srtp_rdb_t rdb;
     clock_t timer;
-    int failures = 0; /* count number of failures        */
 
     if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
         printf("rdb_init failed\n");
@@ -260,18 +259,12 @@ double rdb_check_adds_per_second(void)
 
     timer = clock();
     for (i = 0; i < REPLAY_NUM_TRIALS; i += 3) {
-        if (srtp_rdb_check(&rdb, i + 2) != srtp_err_status_ok)
-            ++failures;
-        if (srtp_rdb_add_index(&rdb, i + 2) != srtp_err_status_ok)
-            ++failures;
-        if (srtp_rdb_check(&rdb, i + 1) != srtp_err_status_ok)
-            ++failures;
-        if (srtp_rdb_add_index(&rdb, i + 1) != srtp_err_status_ok)
-            ++failures;
-        if (srtp_rdb_check(&rdb, i) != srtp_err_status_ok)
-            ++failures;
-        if (srtp_rdb_add_index(&rdb, i) != srtp_err_status_ok)
-            ++failures;
+        srtp_rdb_check(&rdb, i + 2);
+        srtp_rdb_add_index(&rdb, i + 2);
+        srtp_rdb_check(&rdb, i + 1);
+        srtp_rdb_add_index(&rdb, i + 1);
+        srtp_rdb_check(&rdb, i);
+        srtp_rdb_add_index(&rdb, i);
     }
     timer = clock() - timer;
 
