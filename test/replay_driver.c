@@ -132,7 +132,7 @@ srtp_err_status_t rdb_check_add_unordered(srtp_rdb_t *rdb, uint32_t idx)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t test_rdb_db()
+srtp_err_status_t test_rdb_db(void)
 {
     srtp_rdb_t rdb;
     uint32_t idx, ircvd;
