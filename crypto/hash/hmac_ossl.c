@@ -131,6 +131,7 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
 #else
     hmac->ctx = HMAC_CTX_new();
 #endif
+
     if (hmac->ctx == NULL) {
 #ifdef SRTP_OSSL_USE_EVP_MAC
         EVP_MAC_free(hmac->mac);
@@ -196,8 +197,9 @@ static srtp_err_status_t srtp_hmac_start(void *statev)
             return srtp_err_status_alloc_fail;
         }
     } else {
-        if (EVP_MAC_init(hmac->ctx, NULL, 0, NULL) == 0)
+        if (EVP_MAC_init(hmac->ctx, NULL, 0, NULL) == 0) {
             return srtp_err_status_auth_fail;
+        }
     }
 #else
     if (HMAC_Init_ex(hmac->ctx, NULL, 0, NULL, NULL) == 0)
