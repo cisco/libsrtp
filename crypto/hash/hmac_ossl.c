@@ -112,7 +112,6 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
         *a = NULL;
         return srtp_err_status_alloc_fail;
     }
-    memset(hmac, 0, sizeof(srtp_hmac_ossl_ctx_t));
 
 #ifdef SRTP_OSSL_USE_EVP_MAC
     hmac->mac = EVP_MAC_fetch(NULL, "HMAC", NULL);
