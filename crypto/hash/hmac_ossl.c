@@ -72,6 +72,19 @@ srtp_debug_module_t srtp_mod_hmac = {
     "hmac sha-1 openssl" /* printable name for module   */
 };
 
+/*
+ * There are three different behaviors of OpenSSL HMAC for different versions.
+ *
+ * 1. Pre-3.0 - Use HMAC API
+ * 2. 3.0.0 - 3.0.2 - EVP API is required, but doesn't support reinitialization,
+ *    so we have to use EVP_MAC_CTX_dup
+ * 3. 3.0.3 and later - EVP API is required and supports reinitialization
+ *
+ * The distingtion between cases 2 & 3 needs to be made at runtime, because in a
+ * shared library context you might end up building against 3.0.3 and running
+ * against 3.0.2.
+ */
+
 typedef struct {
 #ifdef SRTP_OSSL_USE_EVP_MAC
     EVP_MAC *mac;
