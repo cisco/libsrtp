@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-20.04, macos-latest, windows-latest]
         crypto: [internal, openssl, nss, mbedtls]
         exclude:
           - os: windows-latest
@@ -37,13 +37,13 @@ jobs:
 
     steps:
     - name: Setup Ubuntu NSS
-      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
+      if: matrix.os == 'ubuntu-20.04' && matrix.crypto == 'nss'
       run: |
         sudo apt-get update
         sudo apt-get install libnss3-dev
       
     - name: Setup Ubuntu MbedTLS
-      if:  matrix.os == 'ubuntu-latest' && matrix.crypto == 'mbedtls'
+      if:  matrix.os == 'ubuntu-20.04' && matrix.crypto == 'mbedtls'
       run: sudo apt-get install libmbedtls-dev
     
     - name: Setup macOS OpenSSL
