@@ -120,10 +120,12 @@ endif()
 
 if(BUILD_WITH_WARNINGS)
   if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-    add_compile_options(-Wall -pedantic -Wextra -Werror)
+    set(WARNINGS -Wall -pedantic -Wextra -Werror)
   elseif(MSVC)
-    add_compile_options(/W4 /WX)
+    set(WARNINGS /W4 /WX)
   endif()
+  message(STATUS "Using warnings: ${WARNINGS}")
+  add_compile_options(${WARNINGS})
 endif()
 
 set(SOURCES_C
