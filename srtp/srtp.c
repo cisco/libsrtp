@@ -149,9 +149,8 @@ unsigned int srtp_get_version(void)
     return rv;
 }
 
-static srtp_err_status_t srtp_stream_dealloc(
-    srtp_stream_ctx_t *stream,
-    const srtp_stream_ctx_t *stream_template)
+srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
+                                      const srtp_stream_ctx_t *stream_template)
 {
     srtp_err_status_t status;
     unsigned int i = 0;
