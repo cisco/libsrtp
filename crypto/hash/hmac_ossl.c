@@ -136,23 +136,31 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
     }
 
     hmac->ctx = EVP_MAC_CTX_new(hmac->mac);
-
-    hmac->use_dup =
-        OpenSSL_version_num() < SRTP_OSSL_MIN_REINIT_VERSION ? 1 : 0;
-
-#else
-    hmac->ctx = HMAC_CTX_new();
-#endif
-
     if (hmac->ctx == NULL) {
-#ifdef SRTP_OSSL_USE_EVP_MAC
         EVP_MAC_free(hmac->mac);
-#endif
         srtp_crypto_free(hmac);
         srtp_crypto_free(*a);
         *a = NULL;
         return srtp_err_status_alloc_fail;
     }
+
+    hmac->use_dup =
+        OpenSSL_version_num() < SRTP_OSSL_MIN_REINIT_VERSION ? 1 : 0;
+
+    if (hmac->use_dup) {
+        debug_print0(srtp_mod_hmac, "using EVP_MAC_CTX_dup");
+        hmac->ctx_dup = hmac->ctx;
+        hmac->ctx = NULL;
+    }
+#else
+    hmac->ctx = HMAC_CTX_new();
+    if (hmac->ctx == NULL) {
+        srtp_crypto_free(hmac);
+        srtp_crypto_free(*a);
+        *a = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+#endif
 
     /* set pointers */
     (*a)->state = hmac;
@@ -170,11 +178,11 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
 
     if (hmac) {
 #ifdef SRTP_OSSL_USE_EVP_MAC
-        if (hmac->ctx_dup) {
-            EVP_MAC_CTX_free(hmac->ctx_dup);
-        }
-        if (hmac->ctx) {
+        if (hmac->ctx != NULL) {
             EVP_MAC_CTX_free(hmac->ctx);
+        }
+        if (hmac->ctx_dup != NULL) {
+            EVP_MAC_CTX_free(hmac->ctx_dup);
         }
         EVP_MAC_free(hmac->mac);
 #else
@@ -201,11 +209,11 @@ static srtp_err_status_t srtp_hmac_start(void *statev)
 
 #ifdef SRTP_OSSL_USE_EVP_MAC
     if (hmac->use_dup) {
-        if (hmac->ctx_dup) {
-            EVP_MAC_CTX_free(hmac->ctx_dup);
+        if (hmac->ctx != NULL) {
+            EVP_MAC_CTX_free(hmac->ctx);
         }
-        hmac->ctx_dup = EVP_MAC_CTX_dup(hmac->ctx);
-        if (hmac->ctx_dup == NULL) {
+        hmac->ctx = EVP_MAC_CTX_dup(hmac->ctx_dup);
+        if (hmac->ctx == NULL) {
             return srtp_err_status_alloc_fail;
         }
     } else {
@@ -232,8 +240,10 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
     params[0] = OSSL_PARAM_construct_utf8_string("digest", "SHA1", 0);
     params[1] = OSSL_PARAM_construct_end();
 
-    if (EVP_MAC_init(hmac->ctx, key, key_len, params) == 0)
+    if (EVP_MAC_init(hmac->use_dup ? hmac->ctx_dup : hmac->ctx, key, key_len,
+                     params) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #else
     if (HMAC_Init_ex(hmac->ctx, key, key_len, EVP_sha1(), NULL) == 0)
         return srtp_err_status_auth_fail;
@@ -251,9 +261,9 @@ static srtp_err_status_t srtp_hmac_update(void *statev,
                 srtp_octet_string_hex_string(message, msg_octets));
 
 #ifdef SRTP_OSSL_USE_EVP_MAC
-    if (EVP_MAC_update(hmac->use_dup ? hmac->ctx_dup : hmac->ctx, message,
-                       msg_octets) == 0)
+    if (EVP_MAC_update(hmac->ctx, message, msg_octets) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #else
     if (HMAC_Update(hmac->ctx, message, msg_octets) == 0)
         return srtp_err_status_auth_fail;
@@ -286,13 +296,13 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
 
     /* hash message, copy output into H */
 #ifdef SRTP_OSSL_USE_EVP_MAC
-    if (EVP_MAC_update(hmac->use_dup ? hmac->ctx_dup : hmac->ctx, message,
-                       msg_octets) == 0)
+    if (EVP_MAC_update(hmac->ctx, message, msg_octets) == 0) {
         return srtp_err_status_auth_fail;
+    }
 
-    if (EVP_MAC_final(hmac->use_dup ? hmac->ctx_dup : hmac->ctx, hash_value,
-                      &len, sizeof hash_value) == 0)
+    if (EVP_MAC_final(hmac->ctx, hash_value, &len, sizeof hash_value) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #else
     if (HMAC_Update(hmac->ctx, message, msg_octets) == 0)
         return srtp_err_status_auth_fail;
