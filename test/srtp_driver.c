@@ -1659,7 +1659,7 @@ double mips_estimate(int num_trials, int *ignore)
  * These packets were made with the default SRTP policy.
  */
 
-srtp_err_status_t srtp_validate()
+srtp_err_status_t srtp_validate(void)
 {
     // clang-format off
     uint8_t srtp_plaintext_ref[28] = {
@@ -1819,7 +1819,7 @@ srtp_err_status_t srtp_validate()
  * and HMAC authentication.
  */
 
-srtp_err_status_t srtp_validate_null()
+srtp_err_status_t srtp_validate_null(void)
 {
     // clang-format off
     uint8_t srtp_plaintext_ref[28] = {
@@ -1977,7 +1977,7 @@ srtp_err_status_t srtp_validate_null()
  * srtp_validate_gcm() verifies the correctness of libsrtp by comparing
  * an computed packet against the known ciphertext for the plaintext.
  */
-srtp_err_status_t srtp_validate_gcm()
+srtp_err_status_t srtp_validate_gcm(void)
 {
     // clang-format off
     uint8_t rtp_plaintext_ref[28] = {
@@ -2139,7 +2139,7 @@ srtp_err_status_t srtp_validate_gcm()
 /*
  * Test vectors taken from RFC 6904, Appendix A
  */
-srtp_err_status_t srtp_validate_encrypted_extensions_headers()
+srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
 {
     // clang-format off
     unsigned char test_key_ext_headers[30] = {
@@ -2262,7 +2262,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers()
 /*
  * Headers of test vectors taken from RFC 6904, Appendix A
  */
-srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm()
+srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
 {
     // clang-format off
     unsigned char test_key_ext_headers[30] = {
@@ -2385,7 +2385,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm()
  * These packets were made with the AES-CM-256/HMAC-SHA-1-80 policy.
  */
 
-srtp_err_status_t srtp_validate_aes_256()
+srtp_err_status_t srtp_validate_aes_256(void)
 {
     // clang-format off
     unsigned char aes_256_test_key[46] = {
@@ -2544,7 +2544,7 @@ srtp_err_status_t srtp_dealloc_big_policy(srtp_policy_t *list)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_empty_payload()
+srtp_err_status_t srtp_test_empty_payload(void)
 {
     srtp_t srtp_snd, srtp_recv;
     srtp_err_status_t status;
@@ -2620,7 +2620,7 @@ srtp_err_status_t srtp_test_empty_payload()
 }
 
 #ifdef GCM
-srtp_err_status_t srtp_test_empty_payload_gcm()
+srtp_err_status_t srtp_test_empty_payload_gcm(void)
 {
     srtp_t srtp_snd, srtp_recv;
     srtp_err_status_t status;
@@ -2696,7 +2696,7 @@ srtp_err_status_t srtp_test_empty_payload_gcm()
 }
 #endif // GCM
 
-srtp_err_status_t srtp_test_remove_stream()
+srtp_err_status_t srtp_test_remove_stream(void)
 {
     srtp_err_status_t status;
     srtp_policy_t *policy_list, policy;
@@ -2809,7 +2809,7 @@ unsigned char test_alt_key[46] = {
  * atempts to prove that srtp_update does not reset the ROC.
  */
 
-srtp_err_status_t srtp_test_update()
+srtp_err_status_t srtp_test_update(void)
 {
     srtp_err_status_t status;
     uint32_t ssrc = 0x12121212;
@@ -2826,16 +2826,16 @@ srtp_err_status_t srtp_test_update()
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
     policy.next = NULL;
-    policy.ssrc.type = ssrc_any_outbound;
     policy.key = test_key;
 
     /* create a send and recive ctx with defualt profile and test_key */
-    status = srtp_create(&srtp_recv, &policy);
+    policy.ssrc.type = ssrc_any_outbound;
+    status = srtp_create(&srtp_snd, &policy);
     if (status)
         return status;
 
     policy.ssrc.type = ssrc_any_inbound;
-    status = srtp_create(&srtp_snd, &policy);
+    status = srtp_create(&srtp_recv, &policy);
     if (status)
         return status;
 
@@ -3054,7 +3054,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_protect_trailer_length()
+srtp_err_status_t srtp_test_protect_trailer_length(void)
 {
     srtp_t srtp_send;
     srtp_t srtp_send_mki;
@@ -3111,7 +3111,7 @@ srtp_err_status_t srtp_test_protect_trailer_length()
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_protect_rtcp_trailer_length()
+srtp_err_status_t srtp_test_protect_rtcp_trailer_length(void)
 {
     srtp_t srtp_send;
     srtp_t srtp_send_mki;
@@ -3169,7 +3169,7 @@ srtp_err_status_t srtp_test_protect_rtcp_trailer_length()
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_out_of_order_after_rollover()
+srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 {
     srtp_err_status_t status;
 
@@ -3387,7 +3387,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover()
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_get_roc()
+srtp_err_status_t srtp_test_get_roc(void)
 {
     srtp_err_status_t status;
     srtp_policy_t policy;
@@ -3729,7 +3729,7 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_set_receiver_roc()
+srtp_err_status_t srtp_test_set_receiver_roc(void)
 {
     int packets;
     uint32_t roc;
@@ -3793,7 +3793,7 @@ srtp_err_status_t srtp_test_set_receiver_roc()
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_test_set_sender_roc()
+srtp_err_status_t srtp_test_set_sender_roc(void)
 {
     uint32_t roc;
     uint16_t seq;

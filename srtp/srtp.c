@@ -110,7 +110,7 @@ static srtp_err_status_t srtp_validate_rtp_header(void *rtp_hdr,
     return srtp_err_status_ok;
 }
 
-const char *srtp_get_version_string()
+const char *srtp_get_version_string(void)
 {
     /*
      * Simply return the autotools generated string
@@ -118,7 +118,7 @@ const char *srtp_get_version_string()
     return SRTP_VER_STRING;
 }
 
-unsigned int srtp_get_version()
+unsigned int srtp_get_version(void)
 {
     unsigned int major = 0, minor = 0, micro = 0;
     unsigned int rv = 0;
@@ -149,8 +149,9 @@ unsigned int srtp_get_version()
     return rv;
 }
 
-srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
-                                      const srtp_stream_ctx_t *stream_template)
+static srtp_err_status_t srtp_stream_dealloc(
+    srtp_stream_ctx_t *stream,
+    const srtp_stream_ctx_t *stream_template)
 {
     srtp_err_status_t status;
     unsigned int i = 0;
@@ -300,8 +301,8 @@ static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *p)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
-                                    const srtp_policy_t *p)
+static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
+                                           const srtp_policy_t *p)
 {
     srtp_stream_ctx_t *str;
     srtp_err_status_t stat;
@@ -465,9 +466,10 @@ srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
  * the SSRC
  */
 
-srtp_err_status_t srtp_stream_clone(const srtp_stream_ctx_t *stream_template,
-                                    uint32_t ssrc,
-                                    srtp_stream_ctx_t **str_ptr)
+static srtp_err_status_t srtp_stream_clone(
+    const srtp_stream_ctx_t *stream_template,
+    uint32_t ssrc,
+    srtp_stream_ctx_t **str_ptr)
 {
     srtp_err_status_t status;
     srtp_stream_ctx_t *str;
@@ -807,7 +809,8 @@ static inline int full_key_length(const srtp_cipher_type_t *cipher)
     }
 }
 
-unsigned int srtp_validate_policy_master_keys(const srtp_policy_t *policy)
+static unsigned int srtp_validate_policy_master_keys(
+    const srtp_policy_t *policy)
 {
     unsigned long i = 0;
 
@@ -2793,7 +2796,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_init()
+srtp_err_status_t srtp_init(void)
 {
     srtp_err_status_t status;
 
@@ -2810,7 +2813,7 @@ srtp_err_status_t srtp_init()
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_shutdown()
+srtp_err_status_t srtp_shutdown(void)
 {
     srtp_err_status_t status;
 
@@ -4705,7 +4708,7 @@ srtp_err_status_t srtp_list_debug_modules(void)
 static srtp_log_handler_func_t *srtp_log_handler = NULL;
 static void *srtp_log_handler_data = NULL;
 
-void srtp_err_handler(srtp_err_reporting_level_t level, const char *msg)
+static void srtp_err_handler(srtp_err_reporting_level_t level, const char *msg)
 {
     if (srtp_log_handler) {
         srtp_log_level_t log_level = srtp_log_level_error;

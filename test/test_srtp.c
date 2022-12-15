@@ -84,7 +84,7 @@ TEST_LIST = { { "srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
  * Implementation.
  */
 
-void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
+void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output(void)
 {
     // Preconditions
     srtp_session_keys_t session_keys;
@@ -111,7 +111,7 @@ void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()
     TEST_CHECK(memcmp(&zero_vector, &init_vector, sizeof(v128_t)) == 0);
 }
 
-void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
+void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param(void)
 {
     // Preconditions
     srtp_session_keys_t session_keys;
@@ -143,7 +143,7 @@ void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param()
  * Ensure that for each valid sequence number where the most significant bit is
  * high that we get an expected and unique IV.
  */
-void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()
+void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void)
 {
 #define SAMPLE_COUNT (3)
     // Preconditions

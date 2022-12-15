@@ -8,10 +8,10 @@ on:
 
 jobs:
   format-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - name: Install Clang Format
-        run: sudo apt install clang-format-10
+        run: sudo apt install clang-format-12
       - name: Run clang format
         run: ./format.sh -d
