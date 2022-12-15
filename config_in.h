@@ -141,9 +141,6 @@
 /* Define this to use OpenSSL crypto. */
 #undef OPENSSL
 
-/* Define this if OPENSSL_cleanse is broken. */
-#undef OPENSSL_CLEANSE_BROKEN
-
 /* Define this to use OpenSSL KDF for SRTP. */
 #undef OPENSSL_KDF
 

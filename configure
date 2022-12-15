@@ -685,6 +685,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -775,6 +776,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1027,6 +1029,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1164,7 +1175,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1317,6 +1328,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -3546,8 +3558,37 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-# expand $ac_aux_dir to an absolute path
-am_aux_dir=`cd $ac_aux_dir && pwd`
+ac_aux_dir=
+for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
+  if test -f "$ac_dir/install-sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install-sh -c"
+    break
+  elif test -f "$ac_dir/install.sh"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/install.sh -c"
+    break
+  elif test -f "$ac_dir/shtool"; then
+    ac_aux_dir=$ac_dir
+    ac_install_sh="$ac_aux_dir/shtool install -c"
+    break
+  fi
+done
+if test -z "$ac_aux_dir"; then
+  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
+fi
+
+# These three variables are undocumented and unsupported,
+# and are intended to be withdrawn in a future Autoconf release.
+# They can cause serious problems if a builder's source tree is in a directory
+# whose full name contains unusual characters.
+ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
+ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
+ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
+
+
+# Expand $ac_aux_dir to an absolute path.
+am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 
 if test -n "$ac_tool_prefix"; then
@@ -3657,7 +3698,13 @@ $as_echo_n "checking the archiver ($AR) interface... " >&6; }
 if ${am_cv_ar_interface+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  am_cv_ar_interface=ar
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+   am_cv_ar_interface=ar
    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 int some_variable = 0;
@@ -3688,6 +3735,11 @@ if ac_fn_c_try_compile "$LINENO"; then :
 
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+   ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_ar_interface" >&5
@@ -3801,35 +3853,6 @@ esac
 else
   RANLIB="$ac_cv_prog_RANLIB"
 fi
-
-ac_aux_dir=
-for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
-  if test -f "$ac_dir/install-sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install-sh -c"
-    break
-  elif test -f "$ac_dir/install.sh"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/install.sh -c"
-    break
-  elif test -f "$ac_dir/shtool"; then
-    ac_aux_dir=$ac_dir
-    ac_install_sh="$ac_aux_dir/shtool install -c"
-    break
-  fi
-done
-if test -z "$ac_aux_dir"; then
-  as_fn_error $? "cannot find install-sh, install.sh, or shtool in \"$srcdir\" \"$srcdir/..\" \"$srcdir/../..\"" "$LINENO" 5
-fi
-
-# These three variables are undocumented and unsupported,
-# and are intended to be withdrawn in a future Autoconf release.
-# They can cause serious problems if a builder's source tree is in a directory
-# whose full name contains unusual characters.
-ac_config_guess="$SHELL $ac_aux_dir/config.guess"  # Please don't use this var.
-ac_config_sub="$SHELL $ac_aux_dir/config.sub"  # Please don't use this var.
-ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
-
 
 # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
@@ -5497,12 +5520,12 @@ if test -n "$crypto_CFLAGS"; then
     pkg_cv_crypto_CFLAGS="$crypto_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.0.2i\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.0.2i") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.1.0") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_crypto_CFLAGS=`$PKG_CONFIG --cflags "libcrypto >= 1.0.2i" 2>/dev/null`
+  pkg_cv_crypto_CFLAGS=`$PKG_CONFIG --cflags "libcrypto >= 1.1.0" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -5514,12 +5537,12 @@ if test -n "$crypto_LIBS"; then
     pkg_cv_crypto_LIBS="$crypto_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.0.2i\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.0.2i") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.1.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.1.0") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_crypto_LIBS=`$PKG_CONFIG --libs "libcrypto >= 1.0.2i" 2>/dev/null`
+  pkg_cv_crypto_LIBS=`$PKG_CONFIG --libs "libcrypto >= 1.1.0" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -5540,73 +5563,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto >= 1.0.2i" 2>&1`
+	        crypto_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto >= 1.1.0" 2>&1`
         else
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto >= 1.0.2i" 2>&1`
+	        crypto_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto >= 1.1.0" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$crypto_PKG_ERRORS" >&5
 
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for crypto" >&5
-$as_echo_n "checking for crypto... " >&6; }
-
-if test -n "$crypto_CFLAGS"; then
-    pkg_cv_crypto_CFLAGS="$crypto_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.0.1\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.0.1") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_crypto_CFLAGS=`$PKG_CONFIG --cflags "libcrypto >= 1.0.1" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$crypto_LIBS"; then
-    pkg_cv_crypto_LIBS="$crypto_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.0.1\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.0.1") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_crypto_LIBS=`$PKG_CONFIG --libs "libcrypto >= 1.0.1" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto >= 1.0.1" 2>&1`
-        else
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto >= 1.0.1" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$crypto_PKG_ERRORS" >&5
-
-	as_fn_error $? "Package requirements (libcrypto >= 1.0.1) were not met:
+	as_fn_error $? "Package requirements (libcrypto >= 1.1.0) were not met:
 
 $crypto_PKG_ERRORS
 
@@ -5631,111 +5595,6 @@ See the pkg-config man page for more details.
 
 To get pkg-config, see <http://pkg-config.freedesktop.org/>.
 See \`config.log' for more details" "$LINENO" 5; }
-else
-	crypto_CFLAGS=$pkg_cv_crypto_CFLAGS
-	crypto_LIBS=$pkg_cv_crypto_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	CFLAGS="$CFLAGS $crypto_CFLAGS"
-          LIBS="$crypto_LIBS $LIBS"
-          openssl_cleanse_broken=maybe
-fi
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for crypto" >&5
-$as_echo_n "checking for crypto... " >&6; }
-
-if test -n "$crypto_CFLAGS"; then
-    pkg_cv_crypto_CFLAGS="$crypto_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.0.1\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.0.1") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_crypto_CFLAGS=`$PKG_CONFIG --cflags "libcrypto >= 1.0.1" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$crypto_LIBS"; then
-    pkg_cv_crypto_LIBS="$crypto_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.0.1\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.0.1") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_crypto_LIBS=`$PKG_CONFIG --libs "libcrypto >= 1.0.1" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto >= 1.0.1" 2>&1`
-        else
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto >= 1.0.1" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$crypto_PKG_ERRORS" >&5
-
-	as_fn_error $? "Package requirements (libcrypto >= 1.0.1) were not met:
-
-$crypto_PKG_ERRORS
-
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-Alternatively, you may set the environment variables crypto_CFLAGS
-and crypto_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
-is in your PATH or set the PKG_CONFIG environment variable to the full
-path to pkg-config.
-
-Alternatively, you may set the environment variables crypto_CFLAGS
-and crypto_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details.
-
-To get pkg-config, see <http://pkg-config.freedesktop.org/>.
-See \`config.log' for more details" "$LINENO" 5; }
-else
-	crypto_CFLAGS=$pkg_cv_crypto_CFLAGS
-	crypto_LIBS=$pkg_cv_crypto_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-	CFLAGS="$CFLAGS $crypto_CFLAGS"
-          LIBS="$crypto_LIBS $LIBS"
-          openssl_cleanse_broken=maybe
-fi
 else
 	crypto_CFLAGS=$pkg_cv_crypto_CFLAGS
 	crypto_LIBS=$pkg_cv_crypto_LIBS
@@ -5743,7 +5602,6 @@ else
 $as_echo "yes" >&6; }
 	CFLAGS="$CFLAGS $crypto_CFLAGS"
         LIBS="$crypto_LIBS $LIBS"
-        openssl_cleanse_broken=no
 fi
    else
      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for dlopen in -ldl" >&5
@@ -5901,7 +5759,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.0.1 crypto lib
+as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -5962,7 +5820,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.0.1 crypto lib
+as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -6023,7 +5881,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.0.1 crypto lib
+as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -6038,63 +5896,6 @@ $as_echo "#define OPENSSL 1" >>confdefs.h
    HMAC_OBJS=crypto/hash/hmac_ossl.o
    USE_EXTERNAL_CRYPTO=1
 
-
-   if test "x$openssl_cleanse_broken" != "xno"; then :
-
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking if OPENSSL_cleanse is broken" >&5
-$as_echo_n "checking if OPENSSL_cleanse is broken... " >&6; }
-     if test "$cross_compiling" = yes; then :
-  openssl_cleanse_broken=maybe
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-       #include <stdio.h>
-       #include <openssl/crypto.h>
-
-int
-main ()
-{
-
-       #define BUFFER_SIZE (16)
-       char buffer[BUFFER_SIZE];
-       int i;
-       for (i = 0; i < BUFFER_SIZE; i++) {
-         buffer[i] = i & 0xff;
-       }
-       OPENSSL_cleanse(buffer, BUFFER_SIZE);
-       for (i = 0; i < BUFFER_SIZE; i++) {
-         if (buffer[i]) {
-           printf("Buffer contents not zero at position %d (is %d)\n", i,
-               buffer[i]);
-           return 1;
-         }
-       }
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
-  openssl_cleanse_broken=no
-else
-  openssl_cleanse_broken=yes
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $openssl_cleanse_broken" >&5
-$as_echo "$openssl_cleanse_broken" >&6; }
-     if test "x$openssl_cleanse_broken" != "xno"; then :
-
-
-$as_echo "#define OPENSSL_CLEANSE_BROKEN 1" >>confdefs.h
-
-
-fi
-
-fi
 
    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to leverage OpenSSL KDF algorithm" >&5
 $as_echo_n "checking whether to leverage OpenSSL KDF algorithm... " >&6; }
