@@ -178,12 +178,8 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
 
     if (hmac) {
 #ifdef SRTP_OSSL_USE_EVP_MAC
-        if (hmac->ctx != NULL) {
-            EVP_MAC_CTX_free(hmac->ctx);
-        }
-        if (hmac->ctx_dup != NULL) {
-            EVP_MAC_CTX_free(hmac->ctx_dup);
-        }
+        EVP_MAC_CTX_free(hmac->ctx);
+        EVP_MAC_CTX_free(hmac->ctx_dup);
         EVP_MAC_free(hmac->mac);
 #else
         HMAC_CTX_free(hmac->ctx);
@@ -209,9 +205,7 @@ static srtp_err_status_t srtp_hmac_start(void *statev)
 
 #ifdef SRTP_OSSL_USE_EVP_MAC
     if (hmac->use_dup) {
-        if (hmac->ctx != NULL) {
-            EVP_MAC_CTX_free(hmac->ctx);
-        }
+        EVP_MAC_CTX_free(hmac->ctx);
         hmac->ctx = EVP_MAC_CTX_dup(hmac->ctx_dup);
         if (hmac->ctx == NULL) {
             return srtp_err_status_alloc_fail;
