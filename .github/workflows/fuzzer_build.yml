@@ -10,15 +10,15 @@ on:
 
 jobs:
   fuzz:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    
+
     - name: Install clang
       run: sudo apt install clang
-    
+
     - name: Configure with fuzzing
       run: CC=clang CXX=clang++ CXXFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O3" CFLAGS="-fsanitize=fuzzer-no-link,address,undefined -g -O3" LDFLAGS="-fsanitize=fuzzer-no-link,address,undefined" ./configure
-    
+
     - name: Build
       run: LIBFUZZER="-fsanitize=fuzzer" make srtp-fuzzer
