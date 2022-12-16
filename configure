@@ -5885,6 +5885,67 @@ as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing EVP_CIPHER_CTX_reset" >&5
+$as_echo_n "checking for library containing EVP_CIPHER_CTX_reset... " >&6; }
+if ${ac_cv_search_EVP_CIPHER_CTX_reset+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EVP_CIPHER_CTX_reset ();
+int
+main ()
+{
+return EVP_CIPHER_CTX_reset ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' crypto; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_EVP_CIPHER_CTX_reset=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_EVP_CIPHER_CTX_reset+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_EVP_CIPHER_CTX_reset+:} false; then :
+
+else
+  ac_cv_search_EVP_CIPHER_CTX_reset=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_EVP_CIPHER_CTX_reset" >&5
+$as_echo "$ac_cv_search_EVP_CIPHER_CTX_reset" >&6; }
+ac_res=$ac_cv_search_EVP_CIPHER_CTX_reset
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
+See \`config.log' for more details" "$LINENO" 5; }
+fi
+
 
 
 $as_echo "#define GCM 1" >>confdefs.h
