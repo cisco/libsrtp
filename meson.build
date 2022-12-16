@@ -124,7 +124,7 @@ use_nss = false
 
 crypto_library = get_option('crypto-library')
 if crypto_library == 'openssl'
-  openssl_dep = dependency('openssl', version: '>= 1.0.1', required: true)
+  openssl_dep = dependency('openssl', version: '>= 1.1.0', required: true)
   srtp2_deps += [openssl_dep]
   cdata.set('GCM', true)
   cdata.set('OPENSSL', true)
