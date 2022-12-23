@@ -58,8 +58,8 @@ extern "C" {
  * the API was extracted to allow downstreams to override its
  * implementation by defining the `SRTP_NO_STREAM_LIST` preprocessor
  * directive, which removes the default implementation of these
- * functions. if this is done, the `next` field is free for the
- * implementation to use.
+ * functions. if this is done, the `next` & `prev` fields are free for
+ * the implementation to use.
  *
  * this is still an internal interface; there is no stability
  * guarantee--downstreams should watch this file for changes in
@@ -69,7 +69,14 @@ extern "C" {
 /**
  * allocate and initialize a stream list instance
  */
-srtp_err_status_t srtp_stream_list_create(srtp_stream_list_t *list);
+srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr);
+
+/**
+ * deallocate a stream list instance
+ *
+ * the list must be empty or else an error is returned.
+ */
+srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list);
 
 /**
  * insert a stream into the list
@@ -82,37 +89,32 @@ srtp_err_status_t srtp_stream_list_create(srtp_stream_list_t *list);
  * behavior is undefined. if the SSRC field is mutated while the
  * stream is inserted, further operations have undefined behavior
  */
-srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t *list,
+srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
                                           srtp_stream_t stream);
 
 /*
  * look up the stream corresponding to the specified SSRC and return it.
  * if no such SSRC is found, NULL is returned.
  */
-srtp_stream_t srtp_stream_list_get(srtp_stream_list_t *list, uint32_t ssrc);
+srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc);
 
 /**
- * delete the stream associated to the specified SSRC.
+ * remove the stream from the list.
  *
- * if a stream is found and removed, it's returned and ownership is
- * transferred to the caller. if not found, NULL is returned.
+ * ownership is transferred to the caller.
+ *
+ * if the stream is not in the list the behavior is undefined.
  */
-srtp_stream_t srtp_stream_list_delete(srtp_stream_list_t *list, uint32_t ssrc);
+void srtp_stream_list_remove(srtp_stream_list_t list, srtp_stream_t stream);
 
 /**
  * iterate through all stored streams. while iterating, it is allowed to delete
  * the current element; any other mutation to the list is undefined behavior.
  * returning non-zero from callback aborts the iteration.
  */
-void srtp_stream_list_for_each(srtp_stream_list_t *list,
+void srtp_stream_list_for_each(srtp_stream_list_t list,
                                int (*callback)(srtp_stream_t, void *),
                                void *data);
-
-/**
- * deallocate a stream list instance and all streams inserted in it
- */
-srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t *list,
-                                           srtp_stream_t template_);
 
 #ifdef __cplusplus
 }

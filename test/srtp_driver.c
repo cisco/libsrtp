@@ -125,6 +125,8 @@ char *srtp_packet_to_string(srtp_hdr_t *hdr, int packet_len);
 
 double mips_estimate(int num_trials, int *ignore);
 
+srtp_err_status_t srtp_stream_list_test(void);
+
 #define TEST_MKI_ID_SIZE 4
 
 extern uint8_t test_key[46];
@@ -154,15 +156,17 @@ srtp_master_key_t *test_keys[2] = {
 
 void usage(char *prog_name)
 {
-    printf("usage: %s [ -t ][ -c ][ -v ][ -o ][-d <debug_module> ]* [ -l ]\n"
-           "  -t         run timing test\n"
-           "  -r         run rejection timing test\n"
-           "  -c         run codec timing test\n"
-           "  -v         run validation tests\n"
-           "  -o         output logging to stdout\n"
-           "  -d <mod>   turn on debugging module <mod>\n"
-           "  -l         list debugging modules\n",
-           prog_name);
+    printf(
+        "usage: %s [ -t ][ -c ][ -v ][ -s ][ -o ][-d <debug_module> ]* [ -l ]\n"
+        "  -t         run timing test\n"
+        "  -r         run rejection timing test\n"
+        "  -c         run codec timing test\n"
+        "  -v         run validation tests\n"
+        "  -s         run stream list tests only\n"
+        "  -o         output logging to stdout\n"
+        "  -d <mod>   turn on debugging module <mod>\n"
+        "  -l         list debugging modules\n",
+        prog_name);
     exit(1);
 }
 
@@ -218,6 +222,7 @@ int main(int argc, char *argv[])
     unsigned do_rejection_test = 0;
     unsigned do_codec_timing = 0;
     unsigned do_validation = 0;
+    unsigned do_stream_list = 0;
     unsigned do_list_mods = 0;
     unsigned do_log_stdout = 0;
     srtp_err_status_t status;
@@ -252,7 +257,7 @@ int main(int argc, char *argv[])
 
     /* process input arguments */
     while (1) {
-        q = getopt_s(argc, argv, "trcvold:");
+        q = getopt_s(argc, argv, "trcvsold:");
         if (q == -1) {
             break;
         }
@@ -268,6 +273,10 @@ int main(int argc, char *argv[])
             break;
         case 'v':
             do_validation = 1;
+            do_stream_list = 1;
+            break;
+        case 's':
+            do_stream_list = 1;
             break;
         case 'o':
             do_log_stdout = 1;
@@ -288,7 +297,7 @@ int main(int argc, char *argv[])
     }
 
     if (!do_validation && !do_timing_test && !do_codec_timing &&
-        !do_list_mods && !do_rejection_test) {
+        !do_list_mods && !do_rejection_test && !do_stream_list) {
         usage(argv[0]);
     }
 
@@ -591,6 +600,16 @@ int main(int argc, char *argv[])
 
         printf("testing srtp_test_set_sender_roc()...");
         if (srtp_test_set_sender_roc() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+    }
+
+    if (do_stream_list) {
+        printf("testing srtp_stream_list...");
+        if (srtp_stream_list_test() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -1551,7 +1570,7 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
 
     /* loop over streams in session, printing the policy of each */
     data.is_template = 0;
-    srtp_stream_list_for_each(&srtp->stream_list, &srtp_session_print_stream,
+    srtp_stream_list_for_each(srtp->stream_list, srtp_session_print_stream,
                               &data);
 
     return data.status;
@@ -4280,3 +4299,240 @@ const srtp_policy_t wildcard_policy = {
     0,    /* list of encrypted extension headers is empty */
     NULL
 };
+
+static srtp_stream_t stream_list_test_create_stream(uint32_t ssrc)
+{
+    srtp_stream_t stream = calloc(1, sizeof(srtp_stream_ctx_t));
+    stream->ssrc = ssrc;
+    return stream;
+}
+
+static void stream_list_test_free_stream(srtp_stream_t stream)
+{
+    free(stream);
+}
+
+int stream_list_test_count_cb(srtp_stream_t stream, void *data)
+{
+    int *count = (int *)data;
+    (*count)++;
+    (void)stream;
+    return 0;
+}
+
+struct remove_one_data {
+    uint32_t ssrc;
+    srtp_stream_list_t list;
+};
+
+int stream_list_test_remove_one_cb(srtp_stream_t stream, void *data)
+{
+    struct remove_one_data *d = (struct remove_one_data *)data;
+    if (stream->ssrc == d->ssrc) {
+        srtp_stream_list_remove(d->list, stream);
+        stream_list_test_free_stream(stream);
+        return 1;
+    }
+    return 0;
+}
+
+int stream_list_test_remove_all_cb(srtp_stream_t stream, void *data)
+{
+    srtp_stream_list_t *list = (srtp_stream_list_t *)data;
+    srtp_stream_list_remove(*list, stream);
+    stream_list_test_free_stream(stream);
+    return 0;
+}
+
+srtp_err_status_t srtp_stream_list_test(void)
+{
+    srtp_stream_list_t list;
+
+    if (srtp_stream_list_alloc(&list)) {
+        return srtp_err_status_fail;
+    }
+
+    /* add 4 streams*/
+    if (srtp_stream_list_insert(list, stream_list_test_create_stream(1))) {
+        return srtp_err_status_fail;
+    }
+    if (srtp_stream_list_insert(list, stream_list_test_create_stream(2))) {
+        return srtp_err_status_fail;
+    }
+    if (srtp_stream_list_insert(list, stream_list_test_create_stream(3))) {
+        return srtp_err_status_fail;
+    }
+    if (srtp_stream_list_insert(list, stream_list_test_create_stream(4))) {
+        return srtp_err_status_fail;
+    }
+
+    /* find */
+    if (srtp_stream_list_get(list, 3) == NULL) {
+        return srtp_err_status_fail;
+    }
+    if (srtp_stream_list_get(list, 1) == NULL) {
+        return srtp_err_status_fail;
+    }
+    if (srtp_stream_list_get(list, 2) == NULL) {
+        return srtp_err_status_fail;
+    }
+    if (srtp_stream_list_get(list, 4) == NULL) {
+        return srtp_err_status_fail;
+    }
+
+    /* find not in list */
+    if (srtp_stream_list_get(list, 5)) {
+        return srtp_err_status_fail;
+    }
+
+    /* for each */
+    int count = 0;
+    srtp_stream_list_for_each(list, stream_list_test_count_cb, &count);
+    if (count != 4) {
+        return srtp_err_status_fail;
+    }
+
+    /* remove */
+    srtp_stream_t stream = srtp_stream_list_get(list, 3);
+    if (stream == NULL) {
+        return srtp_err_status_fail;
+    }
+    srtp_stream_list_remove(list, stream);
+    stream_list_test_free_stream(stream);
+
+    /* find after remove */
+    if (srtp_stream_list_get(list, 3)) {
+        return srtp_err_status_fail;
+    }
+
+    /* recount */
+    count = 0;
+    srtp_stream_list_for_each(list, stream_list_test_count_cb, &count);
+    if (count != 3) {
+        return srtp_err_status_fail;
+    }
+
+    /* remove one in for each */
+    struct remove_one_data data = { 2, list };
+    srtp_stream_list_for_each(list, stream_list_test_remove_one_cb, &data);
+
+    /* find after remove */
+    if (srtp_stream_list_get(list, 2)) {
+        return srtp_err_status_fail;
+    }
+
+    /* recount */
+    count = 0;
+    srtp_stream_list_for_each(list, stream_list_test_count_cb, &count);
+    if (count != 2) {
+        return srtp_err_status_fail;
+    }
+
+    /* destroy non empty list */
+    if (srtp_stream_list_dealloc(list) == srtp_err_status_ok) {
+        return srtp_err_status_fail;
+    }
+
+    /* remove all in for each */
+    srtp_stream_list_for_each(list, stream_list_test_remove_all_cb, &list);
+
+    /* recount */
+    count = 0;
+    srtp_stream_list_for_each(list, stream_list_test_count_cb, &count);
+    if (count != 0) {
+        return srtp_err_status_fail;
+    }
+
+    /* destroy empty list */
+    if (srtp_stream_list_dealloc(list)) {
+        return srtp_err_status_fail;
+    }
+
+    return srtp_err_status_ok;
+}
+
+#ifdef SRTP_USE_TEST_STREAM_LIST
+
+/*
+ * A srtp_stream_list_ctx_t implementation using a single linked list
+ * that does not use the internal next / prev fields.
+ */
+
+struct test_list_node {
+    srtp_stream_t stream;
+    struct test_list_node *next;
+};
+struct srtp_stream_list_ctx_t_ {
+    struct test_list_node *head;
+};
+
+srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
+{
+    struct srtp_stream_list_ctx_t_ *l =
+        malloc(sizeof(struct srtp_stream_list_ctx_t_));
+    l->head = NULL;
+    *list_ptr = l;
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
+{
+    struct test_list_node *node = list->head;
+    if (node) {
+        return srtp_err_status_fail;
+    }
+    free(list);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
+                                          srtp_stream_t stream)
+{
+    struct test_list_node *node = malloc(sizeof(struct test_list_node));
+    node->stream = stream;
+    node->next = list->head;
+    list->head = node;
+
+    return srtp_err_status_ok;
+}
+
+srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
+{
+    struct test_list_node *node = list->head;
+    while (node != NULL) {
+        if (node->stream->ssrc == ssrc)
+            return node->stream;
+        node = node->next;
+    }
+    return NULL;
+}
+
+void srtp_stream_list_remove(srtp_stream_list_t list, srtp_stream_t stream)
+{
+    struct test_list_node **node = &(list->head);
+    while ((*node) != NULL) {
+        if ((*node)->stream->ssrc == stream->ssrc) {
+            struct test_list_node *tmp = (*node);
+            (*node) = tmp->next;
+            free(tmp);
+            return;
+        }
+        node = &(*node)->next;
+    }
+}
+
+void srtp_stream_list_for_each(srtp_stream_list_t list,
+                               int (*callback)(srtp_stream_t, void *),
+                               void *data)
+{
+    struct test_list_node *node = list->head;
+    while (node != NULL) {
+        struct test_list_node *tmp = node;
+        node = node->next;
+        if (callback(tmp->stream, data))
+            break;
+    }
+}
+
+#endif

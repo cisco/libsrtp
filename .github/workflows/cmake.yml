@@ -77,3 +77,11 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: ctest
+
+    - name: Test Stream List Replacement
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: |
+        make clean
+        make C_FLAGS="-DSRTP_NO_STREAM_LIST -DSRTP_USE_TEST_STREAM_LIST" srtp_driver
+        ./srtp_driver -v

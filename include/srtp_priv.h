@@ -98,15 +98,6 @@ srtp_err_status_t srtp_steam_init_all_master_keys(
     const unsigned int max_master_keys);
 
 /*
- * srtp_stream_init(s, p) initializes the srtp_stream_t s to
- * use the policy at the location p
- */
-srtp_err_status_t srtp_stream_init(srtp_stream_t srtp, const srtp_policy_t *p);
-
-srtp_err_status_t srtp_stream_dealloc(srtp_stream_ctx_t *stream,
-                                      const srtp_stream_ctx_t *stream_template);
-
-/*
  * libsrtp internal datatypes
  */
 typedef enum direction_t {
@@ -154,6 +145,7 @@ typedef struct srtp_stream_ctx_t_ {
     int enc_xtn_hdr_count;
     uint32_t pending_roc;
     struct srtp_stream_ctx_t_ *next; /* linked list of streams */
+    struct srtp_stream_ctx_t_ *prev; /* linked list of streams */
 } strp_stream_ctx_t_;
 
 /*
