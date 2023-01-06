@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-20.04, macos-latest]
         crypto: [internal, openssl, nss]
         include:
           - crypto: internal
@@ -25,11 +25,11 @@ jobs:
 
     steps:
     - name: Setup Ubuntu
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-20.04'
       run: sudo apt-get install valgrind
 
     - name: Setup Ubuntu NSS
-      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
+      if: matrix.os == 'ubuntu-20.04' && matrix.crypto == 'nss'
       run: |
         sudo apt-get update
         sudo apt-get install libnss3-dev
@@ -54,5 +54,5 @@ jobs:
       run: make runtest
 
     - name: Test Valgrind
-      if:  matrix.os == 'ubuntu-latest'
+      if:  matrix.os == 'ubuntu-20.04'
       run: make runtest-valgrind
