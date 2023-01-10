@@ -82,6 +82,6 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: |
-        make clean
-        make C_FLAGS="-DSRTP_NO_STREAM_LIST -DSRTP_USE_TEST_STREAM_LIST" srtp_driver
-        ./srtp_driver -v
+        cmake $GITHUB_WORKSPACE -DBUILD_WITH_SANITIZERS=TRUE ${{ matrix.cmake-crypto-enable}} ${{env.cmake-crypto-dir}} -DCMAKE_C_FLAGS:STRING="-DSRTP_NO_STREAM_LIST -DSRTP_USE_TEST_STREAM_LIST"
+        cmake --build . --clean-first -t srtp_driver
+        ctest -R srtp_driver
