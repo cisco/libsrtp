@@ -4302,7 +4302,7 @@ const srtp_policy_t wildcard_policy = {
 
 static srtp_stream_t stream_list_test_create_stream(uint32_t ssrc)
 {
-    srtp_stream_t stream = calloc(1, sizeof(srtp_stream_ctx_t));
+    srtp_stream_t stream = malloc(sizeof(srtp_stream_ctx_t));
     stream->ssrc = ssrc;
     return stream;
 }

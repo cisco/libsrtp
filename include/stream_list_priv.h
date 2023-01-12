@@ -83,7 +83,6 @@ srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list);
  *
  * returns srtp_err_status_alloc_fail if insertion failed due to unavailable
  * capacity in the list. if operation succeeds, srtp_err_status_ok is returned
- * and ownership is transferred from caller into the list
  *
  * if another stream with the same SSRC already exists in the list,
  * behavior is undefined. if the SSRC field is mutated while the
@@ -101,9 +100,9 @@ srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc);
 /**
  * remove the stream from the list.
  *
- * ownership is transferred to the caller.
- *
- * if the stream is not in the list the behavior is undefined.
+ * The stream to be removed is referenced "by value", i.e., by the pointer to be
+ * removed from the list. This pointer is obtained using `srtp_stream_list_get`
+ * or as callback parameter in `srtp_stream_list_for_each`.
  */
 void srtp_stream_list_remove(srtp_stream_list_t list, srtp_stream_t stream);
 

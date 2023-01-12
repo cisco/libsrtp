@@ -287,8 +287,9 @@ static srtp_err_status_t srtp_insert_or_dealloc_stream(srtp_stream_list_t list,
 {
     srtp_err_status_t status = srtp_stream_list_insert(list, stream);
     /* on failure, ownership wasn't transferred and we need to deallocate */
-    if (status)
+    if (status) {
         srtp_stream_dealloc(stream, template);
+    }
     return status;
 }
 
@@ -2103,8 +2104,9 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         /* add new stream to the list */
         status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
                                                ctx->stream_template);
-        if (status)
+        if (status) {
             return status;
+        }
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -2196,8 +2198,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
             /* add new stream to the list */
             status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
                                                    ctx->stream_template);
-            if (status)
+            if (status) {
                 return status;
+            }
 
             /* set direction to outbound */
             new_stream->direction = dir_srtp_sender;
@@ -2791,14 +2794,16 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
          */
         status =
             srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
-        if (status)
+        if (status) {
             return status;
+        }
 
         /* add new stream to the list */
         status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
                                                ctx->stream_template);
-        if (status)
+        if (status) {
             return status;
+        }
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -2874,14 +2879,16 @@ srtp_err_status_t srtp_dealloc(srtp_t session)
     /* deallocate streams */
     status = srtp_remove_and_dealloc_streams(session->stream_list,
                                              session->stream_template);
-    if (status)
+    if (status) {
         return status;
+    }
 
     /* deallocate stream template, if there is one */
     if (session->stream_template != NULL) {
         status = srtp_stream_dealloc(session->stream_template, NULL);
-        if (status)
+        if (status) {
             return status;
+        }
     }
 
     /* deallocate stream list */
@@ -2952,8 +2959,9 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
     case (ssrc_specific):
         status = srtp_insert_or_dealloc_stream(session->stream_list, tmp,
                                                session->stream_template);
-        if (status)
+        if (status) {
             return status;
+        }
         break;
     case (ssrc_undefined):
     default:
@@ -3032,6 +3040,7 @@ srtp_err_status_t srtp_remove_stream(srtp_t session, uint32_t ssrc)
     if (stream == NULL) {
         return srtp_err_status_no_ctx;
     }
+
     srtp_stream_list_remove(session->stream_list, stream);
 
     /* deallocate the stream */
@@ -3091,8 +3100,9 @@ static int update_template_stream_cb(srtp_stream_t stream, void *raw_data)
         srtp_stream_list_remove(session->stream_list, stream);
         data->status = srtp_insert_or_dealloc_stream(
             data->new_stream_list, stream, session->stream_template);
-        if (data->status)
+        if (data->status) {
             return 1;
+        }
         return 0;
     }
 
@@ -3102,19 +3112,22 @@ static int update_template_stream_cb(srtp_stream_t stream, void *raw_data)
 
     /* remove stream */
     data->status = srtp_remove_stream(session, ssrc);
-    if (data->status)
+    if (data->status) {
         return 1;
+    }
 
     /* allocate and initialize a new stream */
     data->status = srtp_stream_clone(data->new_stream_template, ssrc, &stream);
-    if (data->status)
+    if (data->status) {
         return 1;
+    }
 
     /* add new stream to the head of the new_stream_list */
     data->status = srtp_insert_or_dealloc_stream(data->new_stream_list, stream,
                                                  data->new_stream_template);
-    if (data->status)
+    if (data->status) {
         return 1;
+    }
 
     /* restore old extended seq */
     stream->rtp_rdbx.index = old_index;
@@ -3178,6 +3191,7 @@ static srtp_err_status_t update_template_streams(srtp_t session,
                                     session->stream_template);
     srtp_stream_list_dealloc(session->stream_list);
     srtp_stream_dealloc(session->stream_template, NULL);
+
     /* set new list / template */
     session->stream_template = new_stream_template;
     session->stream_list = new_stream_list;
@@ -3952,8 +3966,9 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
         /* add new stream to the list */
         status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
                                                ctx->stream_template);
-        if (status)
+        if (status) {
             return status;
+        }
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -4020,8 +4035,9 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
             /* add new stream to the list */
             status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
                                                    ctx->stream_template);
-            if (status)
+            if (status) {
                 return status;
+            }
 
             /* set stream (the pointer used in this function) */
             stream = new_stream;
@@ -4469,8 +4485,9 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
         /* add new stream to the list */
         status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
                                                ctx->stream_template);
-        if (status)
+        if (status) {
             return status;
+        }
 
         /* set stream (the pointer used in this function) */
         stream = new_stream;
@@ -4652,8 +4669,8 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
 }
 
 struct get_protect_trailer_length_data {
-    int valid;
-    uint32_t length;
+    uint32_t found_stream; /* whether at least one matching stream was found */
+    uint32_t length;       /* maximum trailer length found so far */
     uint32_t is_rtp;
     uint32_t use_mki;
     uint32_t mki_index;
@@ -4665,10 +4682,10 @@ static int get_protect_trailer_length_cb(srtp_stream_t stream, void *raw_data)
         (struct get_protect_trailer_length_data *)raw_data;
     uint32_t temp_length;
 
-    data->valid = 1;
     if (stream_get_protect_trailer_length(stream, data->is_rtp, data->use_mki,
                                           data->mki_index,
                                           &temp_length) == srtp_err_status_ok) {
+        data->found_stream = 1;
         if (temp_length > data->length) {
             data->length = temp_length;
         }
@@ -4694,7 +4711,7 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
     stream = session->stream_template;
 
     if (stream != NULL) {
-        data.valid = 1;
+        data.found_stream = 1;
         stream_get_protect_trailer_length(stream, is_rtp, use_mki, mki_index,
                                           &data.length);
     }
@@ -4702,7 +4719,7 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
     srtp_stream_list_for_each(session->stream_list,
                               get_protect_trailer_length_cb, &data);
 
-    if (!data.valid) {
+    if (!data.found_stream) {
         return srtp_err_status_bad_param;
     }
 
@@ -4823,8 +4840,10 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 
 #ifndef SRTP_NO_STREAM_LIST
 
-/* in the default implementation, we have an intrusive linked list */
+/* in the default implementation, we have an intrusive doubly-linked list */
 struct srtp_stream_list_ctx_t_ {
+    /* a stub stream that just holds pointers to the beginning and end of the
+     * list */
     srtp_stream_ctx_t data;
 } srtp_stream_list_ctx_t_;
 
@@ -4835,6 +4854,10 @@ srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
     if (list == NULL) {
         return srtp_err_status_alloc_fail;
     }
+
+    list->data.next = NULL;
+    list->data.prev = NULL;
+
     *list_ptr = list;
     return srtp_err_status_ok;
 }
