@@ -45,7 +45,7 @@
 #ifndef SRTP_STREAM_LIST_PRIV_H
 #define SRTP_STREAM_LIST_PRIV_H
 
-#include <srtp_priv.h>
+#include "srtp_priv.h"
 
 #ifdef __cplusplus
 extern "C" {
