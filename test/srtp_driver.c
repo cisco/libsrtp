@@ -1621,7 +1621,7 @@ char *srtp_packet_to_string(srtp_hdr_t *hdr, int pkt_octet_len)
     }
 
     /* write packet into string */
-    sprintf(packet_string,
+    snprintf(packet_string, sizeof(packet_string),
             "(s)rtp packet: {\n"
             "   version:\t%d\n"
             "   p:\t\t%d\n"
