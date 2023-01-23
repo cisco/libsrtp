@@ -1622,21 +1622,21 @@ char *srtp_packet_to_string(srtp_hdr_t *hdr, int pkt_octet_len)
 
     /* write packet into string */
     snprintf(packet_string, sizeof(packet_string),
-            "(s)rtp packet: {\n"
-            "   version:\t%d\n"
-            "   p:\t\t%d\n"
-            "   x:\t\t%d\n"
-            "   cc:\t\t%d\n"
-            "   m:\t\t%d\n"
-            "   pt:\t\t%x\n"
-            "   seq:\t\t%x\n"
-            "   ts:\t\t%x\n"
-            "   ssrc:\t%x\n"
-            "   data:\t%s\n"
-            "} (%d octets in total)\n",
-            hdr->version, hdr->p, hdr->x, hdr->cc, hdr->m, hdr->pt, hdr->seq,
-            hdr->ts, hdr->ssrc, octet_string_hex_string(data, hex_len),
-            pkt_octet_len);
+             "(s)rtp packet: {\n"
+             "   version:\t%d\n"
+             "   p:\t\t%d\n"
+             "   x:\t\t%d\n"
+             "   cc:\t\t%d\n"
+             "   m:\t\t%d\n"
+             "   pt:\t\t%x\n"
+             "   seq:\t\t%x\n"
+             "   ts:\t\t%x\n"
+             "   ssrc:\t%x\n"
+             "   data:\t%s\n"
+             "} (%d octets in total)\n",
+             hdr->version, hdr->p, hdr->x, hdr->cc, hdr->m, hdr->pt, hdr->seq,
+             hdr->ts, hdr->ssrc, octet_string_hex_string(data, hex_len),
+             pkt_octet_len);
 
     return packet_string;
 }
