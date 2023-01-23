@@ -467,7 +467,8 @@ static void test_run__(const struct test__ *test)
                     signame = "SIGTERM";
                     break;
                 default:
-                    sprintf(tmp, "signal %d", WTERMSIG(exit_code));
+                    snprintf(tmp, sizeof(tmp), "signal %d",
+                             WTERMSIG(exit_code));
                     signame = tmp;
                     break;
                 }
