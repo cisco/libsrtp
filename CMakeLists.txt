@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 project(libsrtp2 VERSION 2.6.0 LANGUAGES C)
 
@@ -59,7 +59,7 @@ set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
 set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
 set(ENABLE_NSS OFF CACHE BOOL "Enable NSS crypto engine")
-set(TEST_APPS ON CACHE BOOL "Build test applications")
+option(LIBSRTP_TEST_APPS "Build libSRTP test applications" ON)
 set(BUILD_WITH_SANITIZERS OFF CACHE BOOL "Adds sanitizer flags to compiler")
 set(BUILD_WITH_WARNINGS ON CACHE BOOL "Adds warnings and warning as error flags to compiler")
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
@@ -283,7 +283,7 @@ install(FILES include/srtp.h crypto/include/auth.h
   crypto/include/crypto_types.h
   DESTINATION include/srtp2)
 
-if(TEST_APPS)
+if(LIBSRTP_TEST_APPS)
   enable_testing()
 
   find_package(PCAP)
