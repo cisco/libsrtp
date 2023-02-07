@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 
 project(libsrtp2 VERSION 2.6.0 LANGUAGES C)
 
-set(PACKAGE_VERSION ${CMAKE_PROJECT_VERSION})
-set(PACKAGE_STRING "${CMAKE_PROJECT_NAME} ${CMAKE_PROJECT_VERSION}")
+set(PACKAGE_VERSION ${PROJECT_VERSION})
+set(PACKAGE_STRING "${PROJECT_NAME} ${PROJECT_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -252,7 +252,7 @@ add_library(srtp2
 )
 add_library(libSRTP::srtp2 ALIAS srtp2)
 
-set_target_properties(srtp2 PROPERTIES VERSION ${CMAKE_PROJECT_VERSION})
+set_target_properties(srtp2 PROPERTIES VERSION ${PROJECT_VERSION})
 
 target_include_directories(srtp2 PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/crypto/include>
@@ -398,7 +398,7 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
 # Generate the version file for the config file
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/libSRTPConfigVersion.cmake"
-  VERSION "${CMAKE_PROJECT_VERSION}"
+  VERSION "${PROJECT_VERSION}"
   COMPATIBILITY AnyNewerVersion
 )
 
