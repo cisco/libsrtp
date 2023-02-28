@@ -4841,7 +4841,7 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 #ifndef SRTP_NO_STREAM_LIST
 
 /* in the default implementation, we have an intrusive doubly-linked list */
-struct srtp_stream_list_ctx_t_ {
+typedef struct srtp_stream_list_ctx_t_ {
     /* a stub stream that just holds pointers to the beginning and end of the
      * list */
     srtp_stream_ctx_t data;
