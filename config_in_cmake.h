@@ -122,3 +122,14 @@
     #define inline
   #endif
 #endif
+
+/* Define gcc/clang-style SSE macros on compilers that don't define them (primarilly, MSVC). */
+#if !defined(__SSE2__) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2))
+#define __SSE2__
+#endif
+#if !defined(__SSSE3__) && defined(__AVX__)
+#define __SSSE3__
+#endif
+#if !defined(__SSE4_1__) && defined(__AVX__)
+#define __SSE4_1__
+#endif
