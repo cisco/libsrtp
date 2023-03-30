@@ -139,17 +139,6 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc(srtp_cipher_t **c,
         return srtp_err_status_alloc_fail;
     }
 
-    icm->ctx = EVP_CIPHER_CTX_new();
-    if (icm->ctx == NULL) {
-        srtp_crypto_free(icm);
-        srtp_crypto_free(*c);
-        *c = NULL;
-        return srtp_err_status_alloc_fail;
-    }
-
-    /* set pointers */
-    (*c)->state = icm;
-
     /* setup cipher parameters */
     switch (key_len) {
     case SRTP_AES_ICM_128_KEY_LEN_WSALT:
@@ -172,6 +161,33 @@ static srtp_err_status_t srtp_aes_icm_openssl_alloc(srtp_cipher_t **c,
     /* set key size */
     (*c)->key_len = key_len;
 
+    /* fetch cipher*/
+    if ((*c)->algorithm == SRTP_AES_ICM_128) {
+        icm->cipher = EVP_CIPHER_fetch(NULL, "AES-128-CTR", NULL);
+    } else if ((*c)->algorithm == SRTP_AES_ICM_192) {
+        icm->cipher = EVP_CIPHER_fetch(NULL, "AES-192-CTR", NULL);
+    } else {
+        icm->cipher = EVP_CIPHER_fetch(NULL, "AES-256-CTR", NULL);
+    }
+    if (icm->cipher == NULL) {
+        srtp_crypto_free(icm);
+        srtp_crypto_free(*c);
+        *c = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+
+    icm->ctx = EVP_CIPHER_CTX_new();
+    if (icm->ctx == NULL) {
+        EVP_CIPHER_free(icm->cipher);
+        srtp_crypto_free(icm);
+        srtp_crypto_free(*c);
+        *c = NULL;
+        return srtp_err_status_alloc_fail;
+    }
+
+    /* set pointers */
+    (*c)->state = icm;
+
     return srtp_err_status_ok;
 }
 
@@ -192,6 +208,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_dealloc(srtp_cipher_t *c)
     ctx = (srtp_aes_icm_ctx_t *)c->state;
     if (ctx != NULL) {
         EVP_CIPHER_CTX_free(ctx->ctx);
+        EVP_CIPHER_free(ctx->cipher);
         /* zeroize the key material */
         octet_string_set_to_zero(ctx, sizeof(srtp_aes_icm_ctx_t));
         srtp_crypto_free(ctx);
@@ -216,7 +233,6 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init(void *cv,
                                                            const uint8_t *key)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
-    const EVP_CIPHER *evp;
 
     /*
      * set counter and initial values to 'offset' value, being careful not to
@@ -235,24 +251,9 @@ static srtp_err_status_t srtp_aes_icm_openssl_context_init(void *cv,
                 srtp_octet_string_hex_string(key, c->key_size));
     debug_print(srtp_mod_aes_icm, "offset: %s", v128_hex_string(&c->offset));
 
-    switch (c->key_size) {
-    case SRTP_AES_256_KEY_LEN:
-        evp = EVP_aes_256_ctr();
-        break;
-    case SRTP_AES_192_KEY_LEN:
-        evp = EVP_aes_192_ctr();
-        break;
-    case SRTP_AES_128_KEY_LEN:
-        evp = EVP_aes_128_ctr();
-        break;
-    default:
-        return srtp_err_status_bad_param;
-        break;
-    }
-
     EVP_CIPHER_CTX_reset(c->ctx);
 
-    if (!EVP_EncryptInit_ex(c->ctx, evp, NULL, key, NULL)) {
+    if (!EVP_EncryptInit_ex(c->ctx, c->cipher, NULL, key, NULL)) {
         return srtp_err_status_fail;
     }
 
