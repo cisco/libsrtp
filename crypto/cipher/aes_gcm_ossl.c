@@ -199,6 +199,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_context_init(void *cv,
         return (srtp_err_status_init_fail);
     }
 
+    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
+        return (srtp_err_status_init_fail);
+    }
+
     return (srtp_err_status_ok);
 }
 
@@ -221,10 +225,6 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_iv(
 
     debug_print(srtp_mod_aes_gcm, "setting iv: %s",
                 srtp_octet_string_hex_string(iv, 12));
-
-    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_IVLEN, 12, 0)) {
-        return (srtp_err_status_init_fail);
-    }
 
     if (!EVP_CipherInit_ex(c->ctx, NULL, NULL, NULL, iv,
                            (c->dir == srtp_direction_encrypt ? 1 : 0))) {
