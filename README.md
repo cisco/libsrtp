@@ -213,7 +213,7 @@ supported. This includes
 - the cipher F8,
 - the use of the packet index to select between master keys.
 
-The user should be aware that it is possible to misuse this libary,
+The user should be aware that it is possible to misuse this library,
 and that the result may be that the security level it provides is
 inadequate. If you are implementing a feature using this library, you
 will want to read the Security Considerations section of [RFC 3711](https://tools.ietf.org/html/rfc3711#section-9).
