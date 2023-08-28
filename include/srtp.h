@@ -330,6 +330,11 @@ typedef struct srtp_policy_t {
                                    /**< transmissions must have the same    */
                                    /**< RTP payload, or a severe security   */
                                    /**< weakness is introduced!)            */
+    int force_zero_roc;            /**< Note that if the ROC is forced to   */
+                                   /**< zero that only 2^16 packets can be  */
+                                   /**< send with a given (master or        */
+                                   /**< session) key, or a severe security  */
+                                   /**< weakness is introduced!             */
     int *enc_xtn_hdr;              /**< List of header ids to encrypt.      */
     int enc_xtn_hdr_count;         /**< Number of entries in list of header */
                                    /**<  ids.                               */

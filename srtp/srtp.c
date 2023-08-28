@@ -577,6 +577,7 @@ static srtp_err_status_t srtp_stream_clone(
     }
     srtp_rdb_init(&str->rtcp_rdb);
     str->allow_repeat_tx = stream_template->allow_repeat_tx;
+    str->force_zero_roc = stream_template->force_zero_roc;
 
     /* set ssrc to that provided */
     str->ssrc = ssrc;
@@ -1351,13 +1352,18 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
     /* initialize SRTCP replay database */
     srtp_rdb_init(&srtp->rtcp_rdb);
 
-    /* initialize allow_repeat_tx */
+    /* initialize allow_repeat_tx and force_zero_roc */
     /* guard against uninitialized memory: allow only 0 or 1 here */
     if (p->allow_repeat_tx != 0 && p->allow_repeat_tx != 1) {
         srtp_rdbx_dealloc(&srtp->rtp_rdbx);
         return srtp_err_status_bad_param;
     }
+    if (p->force_zero_roc != 0 && p->force_zero_roc != 1) {
+        srtp_rdbx_dealloc(&srtp->rtp_rdbx);
+        return srtp_err_status_bad_param;
+    }
     srtp->allow_repeat_tx = p->allow_repeat_tx;
+    srtp->force_zero_roc = p->force_zero_roc;
 
     /* DAM - no RTCP key limit at present */
 
@@ -1738,7 +1744,13 @@ static srtp_err_status_t srtp_get_est_pkt_index(srtp_hdr_t *hdr,
 {
     srtp_err_status_t result = srtp_err_status_ok;
 
-    if (stream->pending_roc) {
+    if (stream->force_zero_roc) {
+        stream->pending_roc = 0;
+        result = srtp_estimate_index(&stream->rtp_rdbx, stream->pending_roc,
+                                     est, ntohs(hdr->seq), delta);
+        if (result == srtp_err_status_pkt_idx_old)
+            result = srtp_err_status_pkt_idx_adv;
+    } else if (stream->pending_roc) {
         result = srtp_estimate_index(&stream->rtp_rdbx, stream->pending_roc,
                                      est, ntohs(hdr->seq), delta);
     } else {
@@ -4816,6 +4828,9 @@ srtp_err_status_t srtp_set_stream_roc(srtp_t session,
 
     stream = srtp_get_stream(session, htonl(ssrc));
     if (stream == NULL)
+        return srtp_err_status_bad_param;
+
+    if (stream->force_zero_roc && roc)
         return srtp_err_status_bad_param;
 
     stream->pending_roc = roc;

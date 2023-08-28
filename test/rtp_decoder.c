@@ -524,6 +524,7 @@ int main(int argc, char *argv[])
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = 0;
+        policy.force_zero_roc = 0;
         policy.rtp.sec_serv = sec_servs;
         policy.rtcp.sec_serv =
             sec_servs; // sec_serv_none;  /* we don't do RTCP anyway */
