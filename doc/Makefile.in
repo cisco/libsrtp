@@ -14,7 +14,7 @@ VPATH = @srcdir@
 
 # Determine the version of the library
 
-version = $(shell cat $(top_srcdir)/VERSION)
+version = @PACKAGE_VERSION@
 
 .PHONY: libsrtpdoc clean
 libsrtpdoc:
