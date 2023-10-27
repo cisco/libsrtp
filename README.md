@@ -353,7 +353,7 @@ cmake .. -G "Visual Studio 15 2017 Win64"
 <a name="using-meson"></a>
 ## Using Meson
 
-On all platforms including Windows, one can build using [Meson](https://mesonbuild.org).
+On all platforms including Windows, one can build using [Meson](https://mesonbuild.com).
 Steps to download Meson are here: https://mesonbuild.com/Getting-meson.html
 
 To build with Meson, you can do something like:
