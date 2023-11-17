@@ -1570,7 +1570,7 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp)
 
     /* loop over streams in session, printing the policy of each */
     data.is_template = 0;
-    srtp_stream_list_for_each(srtp->stream_list, srtp_session_print_stream,
+    srtp_stream_hash_for_each(srtp->stream_hash, srtp_session_print_stream,
                               &data);
 
     return data.status;

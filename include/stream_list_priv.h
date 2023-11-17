@@ -115,6 +115,55 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
                                int (*callback)(srtp_stream_t, void *),
                                void *data);
 
+/**
+ * allocate and initialize a stream hash instance
+ */
+srtp_err_status_t srtp_stream_hash_alloc(srtp_stream_hash_t *hash_ptr);
+
+/**
+ * deallocate a stream hash instance
+ *
+ * the underlying lists must be empty or else an error is returned.
+ */
+srtp_err_status_t srtp_stream_hash_dealloc(srtp_stream_hash_t hash);
+
+/**
+ * insert a stream into the hash
+ *
+ * returns srtp_err_status_alloc_fail if insertion failed due to unavailable
+ * capacity in the hash. if operation succeeds, srtp_err_status_ok is returned
+ *
+ * if another stream with the same SSRC already exists in the hash,
+ * behavior is undefined. if the SSRC field is mutated while the
+ * stream is inserted, further operations have undefined behavior
+ */
+srtp_err_status_t srtp_stream_hash_insert(srtp_stream_hash_t hash,
+                                          srtp_stream_t stream);
+
+/*
+ * look up the stream corresponding to the specified SSRC and return it.
+ * if no such SSRC is found, NULL is returned.
+ */
+srtp_stream_t srtp_stream_hash_get(srtp_stream_hash_t hash, uint32_t ssrc);
+
+/**
+ * remove the stream from the hash.
+ *
+ * The stream to be removed is referenced "by value", i.e., by the pointer to be
+ * removed from the hash. This pointer is obtained using `srtp_stream_hash_get`
+ * or as callback parameter in `srtp_stream_hash_for_each`.
+ */
+void srtp_stream_hash_remove(srtp_stream_hash_t hash, srtp_stream_t stream);
+
+/**
+ * iterate through all stored streams. while iterating, it is allowed to delete
+ * the current element; any other mutation to the hash is undefined behavior.
+ * returning non-zero from callback aborts the iteration.
+ */
+void srtp_stream_hash_for_each(srtp_stream_hash_t hash,
+                               int (*callback)(srtp_stream_t, void *),
+                               void *data);
+
 #ifdef __cplusplus
 }
 #endif
