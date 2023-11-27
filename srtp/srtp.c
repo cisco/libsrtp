@@ -5003,7 +5003,7 @@ void srtp_stream_hash_remove(srtp_stream_hash_t hash,
     srtp_stream_list_t list =
         hash->list[stream_to_remove->ssrc & (SRTP_STREAM_HASH_SIZE - 1)];
 
-    return srtp_stream_list_remove(list, stream_to_remove);
+    srtp_stream_list_remove(list, stream_to_remove);
 }
 
 void srtp_stream_hash_for_each(srtp_stream_hash_t hash,
