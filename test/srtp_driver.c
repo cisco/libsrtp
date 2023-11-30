@@ -122,6 +122,7 @@ srtp_err_status_t srtp_session_print_policy(srtp_t srtp);
 srtp_err_status_t srtp_print_policy(const srtp_policy_t *policy);
 
 char *srtp_packet_to_string(srtp_hdr_t *hdr, int packet_len);
+char *srtp_rtcp_packet_to_string(srtcp_hdr_t *hdr, int pkt_octet_len);
 
 double mips_estimate(int num_trials, int *ignore);
 
@@ -751,6 +752,47 @@ srtp_hdr_t *srtp_create_test_packet(int pkt_octet_len,
     return hdr;
 }
 
+srtcp_hdr_t *srtp_create_rtcp_test_packet(int pkt_octet_len,
+                                          uint32_t ssrc,
+                                          int *pkt_len)
+{
+    int i;
+    uint8_t *buffer;
+    srtcp_hdr_t *hdr;
+    int bytes_in_hdr = 8;
+
+    /* allocate memory for test packet */
+    hdr = (srtcp_hdr_t *)malloc(pkt_octet_len + bytes_in_hdr +
+                                SRTP_MAX_SRTCP_TRAILER_LEN + 4);
+    if (!hdr) {
+        return NULL;
+    }
+
+    hdr->version = 2; /* RTP version two     */
+    hdr->p = 0;       /* no padding needed   */
+    hdr->rc = 0;      /* no reports          */
+    hdr->pt = 0xc8;   /* sender report (200) */
+    hdr->len = ((bytes_in_hdr + pkt_octet_len) % 4) - 1;
+    hdr->ssrc = htonl(ssrc); /* synch. source       */
+
+    buffer = (uint8_t *)hdr;
+    buffer += bytes_in_hdr;
+
+    /* set data to 0xab */
+    for (i = 0; i < pkt_octet_len; i++) {
+        *buffer++ = 0xab;
+    }
+
+    /* set post-data value to 0xffff to enable overrun checking */
+    for (i = 0; i < SRTP_MAX_SRTCP_TRAILER_LEN + 4; i++) {
+        *buffer++ = 0xff;
+    }
+
+    *pkt_len = bytes_in_hdr + pkt_octet_len;
+
+    return hdr;
+}
+
 static srtp_hdr_t *srtp_create_test_packet_extended(int pkt_octet_len,
                                                     uint32_t ssrc,
                                                     uint16_t seq,
@@ -1008,7 +1050,7 @@ srtp_err_status_t srtp_test_call_protect(srtp_t srtp_sender,
 }
 
 srtp_err_status_t srtp_test_call_protect_rtcp(srtp_t srtp_sender,
-                                              srtp_hdr_t *hdr,
+                                              srtcp_hdr_t *hdr,
                                               int *len,
                                               int mki_index)
 {
@@ -1032,7 +1074,7 @@ srtp_err_status_t srtp_test_call_unprotect(srtp_t srtp_sender,
 }
 
 srtp_err_status_t srtp_test_call_unprotect_rtcp(srtp_t srtp_sender,
-                                                srtp_hdr_t *hdr,
+                                                srtcp_hdr_t *hdr,
                                                 int *len,
                                                 int use_mki)
 {
@@ -1283,7 +1325,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     srtp_t srtcp_sender;
     srtp_t srtcp_rcvr;
     srtp_err_status_t status = srtp_err_status_ok;
-    srtp_hdr_t *hdr, *hdr2;
+    srtcp_hdr_t *hdr, *hdr2;
     uint8_t hdr_enc[64];
     uint8_t *pkt_end;
     int msg_len_octets, msg_len_enc, msg_len;
@@ -1312,21 +1354,21 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
         ssrc = policy->ssrc.value;
     }
     msg_len_octets = 28;
-    hdr = srtp_create_test_packet(msg_len_octets, ssrc, &len);
+    hdr = srtp_create_rtcp_test_packet(msg_len_octets, ssrc, &len);
     /* save message len */
     msg_len = len;
 
     if (hdr == NULL) {
         return srtp_err_status_alloc_fail;
     }
-    hdr2 = srtp_create_test_packet(msg_len_octets, ssrc, &len2);
+    hdr2 = srtp_create_rtcp_test_packet(msg_len_octets, ssrc, &len2);
     if (hdr2 == NULL) {
         free(hdr);
         return srtp_err_status_alloc_fail;
     }
 
     debug_print(mod_driver, "before protection:\n%s",
-                srtp_packet_to_string(hdr, len));
+                srtp_rtcp_packet_to_string(hdr, len));
 
 #if PRINT_REFERENCE_PACKET
     debug_print(mod_driver, "reference packet before protection:\n%s",
@@ -1335,7 +1377,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     err_check(srtp_test_call_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
 
     debug_print(mod_driver, "after protection:\n%s",
-                srtp_packet_to_string(hdr, len));
+                srtp_rtcp_packet_to_string(hdr, len));
 #if PRINT_REFERENCE_PACKET
     debug_print(mod_driver, "after protection:\n%s",
                 octet_string_hex_string((uint8_t *)hdr, len));
@@ -1346,7 +1388,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     msg_len_enc = len;
 
     /*
-     * check for overrun of the srtp_protect() function
+     * check for overrun of the srtp_protect_rtcp() function
      *
      * The packet is followed by a value of 0xfffff; if the value of the
      * data following the packet is different, then we know that the
@@ -1416,7 +1458,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     err_check(srtp_test_call_unprotect_rtcp(srtcp_rcvr, hdr, &len, use_mki));
 
     debug_print(mod_driver, "after unprotection:\n%s",
-                srtp_packet_to_string(hdr, len));
+                srtp_rtcp_packet_to_string(hdr, len));
 
     /* verify that the unprotected packet matches the origial one */
     for (i = 0; i < len; i++) {
@@ -1454,9 +1496,6 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
         }
 
         printf("testing for false positives in auth check...");
-
-        /* increment sequence number in header */
-        hdr->seq++;
 
         /* apply protection */
         err_check(
@@ -1637,6 +1676,34 @@ char *srtp_packet_to_string(srtp_hdr_t *hdr, int pkt_octet_len)
              hdr->version, hdr->p, hdr->x, hdr->cc, hdr->m, hdr->pt, hdr->seq,
              hdr->ts, hdr->ssrc, octet_string_hex_string(data, hex_len),
              pkt_octet_len);
+
+    return packet_string;
+}
+
+char *srtp_rtcp_packet_to_string(srtcp_hdr_t *hdr, int pkt_octet_len)
+{
+    int octets_in_rtcp_header = 8;
+    uint8_t *data = ((uint8_t *)hdr) + octets_in_rtcp_header;
+    int hex_len = pkt_octet_len - octets_in_rtcp_header;
+
+    /* sanity checking */
+    if ((hdr == NULL) || (pkt_octet_len > MTU)) {
+        return NULL;
+    }
+
+    /* write packet into string */
+    snprintf(packet_string, sizeof(packet_string),
+             "(s)rtcp packet: {\n"
+             "   version:\t%d\n"
+             "   p:\t\t%d\n"
+             "   rc:\t\t%d\n"
+             "   pt:\t\t%x\n"
+             "   len:\t\t%x\n"
+             "   ssrc:\t%x\n"
+             "   data:\t%s\n"
+             "} (%d octets in total)\n",
+             hdr->version, hdr->p, hdr->rc, hdr->pt, hdr->len, hdr->ssrc,
+             octet_string_hex_string(data, hex_len), pkt_octet_len);
 
     return packet_string;
 }
@@ -2136,6 +2203,12 @@ srtp_err_status_t srtp_validate_gcm(void)
     if (status || (len != 24)) {
         return status;
     }
+
+    debug_print(mod_driver, "srtcp plain:\n  %s",
+                octet_string_hex_string(srtcp_ciphertext, len));
+    debug_print(mod_driver, "srtcp plain reference:\n  %s",
+                octet_string_hex_string(rtcp_plaintext_ref,
+                                        sizeof(rtcp_plaintext_ref)));
 
     if (srtp_octet_string_is_eq(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
         return srtp_err_status_fail;
