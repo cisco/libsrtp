@@ -4838,6 +4838,12 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
     return srtp_err_status_ok;
 }
 
+#define SRTP_STREAM_HASH_SIZE 32
+
+struct srtp_stream_hash_t_ {
+    srtp_stream_list_t *list;
+} srtp_stream_hash_t_;
+
 #ifndef SRTP_NO_STREAM_LIST
 
 /* in the default implementation, we have an intrusive doubly-linked list */
@@ -4846,12 +4852,6 @@ typedef struct srtp_stream_list_ctx_t_ {
      * list */
     srtp_stream_ctx_t data;
 } srtp_stream_list_ctx_t_;
-
-#define SRTP_STREAM_HASH_SIZE 32
-
-struct srtp_stream_hash_t_ {
-    srtp_stream_list_t *list;
-} srtp_stream_hash_t_;
 
 srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
 {
@@ -4930,6 +4930,8 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
             break;
     }
 }
+
+#endif
 
 srtp_err_status_t srtp_stream_hash_alloc(srtp_stream_hash_t *hash_ptr)
 {
@@ -5019,5 +5021,3 @@ void srtp_stream_hash_for_each(srtp_stream_hash_t hash,
         srtp_stream_list_for_each(list, callback, data);
     }
 }
-
-#endif
