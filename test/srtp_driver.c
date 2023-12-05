@@ -1281,7 +1281,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
             free(hdr);
             free(hdr2);
             free(rcvr_policy);
-            return status;
+            return srtp_err_status_algo_fail;
         } else {
             printf("passed\n");
         }
@@ -1300,11 +1300,12 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         /* unprotect, and check for authentication failure */
         status = srtp_test_call_unprotect(srtp_rcvr, hdr, &len, use_mki);
         if (status != srtp_err_status_auth_fail) {
+            printf("failed with error code %d\n", status);
             printf("failed\n");
             free(hdr);
             free(hdr2);
             free(rcvr_policy);
-            return status;
+            return srtp_err_status_algo_fail;
         } else {
             printf("passed\n");
         }
@@ -1460,7 +1461,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     debug_print(mod_driver, "after unprotection:\n%s",
                 srtp_rtcp_packet_to_string(hdr, len));
 
-    /* verify that the unprotected packet matches the origial one */
+    /* verify that the unprotected packet matches the original one */
     for (i = 0; i < len; i++) {
         if (((uint8_t *)hdr)[i] != ((uint8_t *)hdr2)[i]) {
             fprintf(stdout, "mismatch at octet %d\n", i);
@@ -1490,7 +1491,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
             free(hdr);
             free(hdr2);
             free(rcvr_policy);
-            return status;
+            return srtp_err_status_algo_fail;
         } else {
             printf("passed\n");
         }
@@ -1507,11 +1508,12 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
         /* unprotect, and check for authentication failure */
         status = srtp_test_call_unprotect_rtcp(srtcp_rcvr, hdr, &len, use_mki);
         if (status != srtp_err_status_auth_fail) {
+            printf("failed with error code %d\n", status);
             printf("failed\n");
             free(hdr);
             free(hdr2);
             free(rcvr_policy);
-            return status;
+            return srtp_err_status_algo_fail;
         } else {
             printf("passed\n");
         }
