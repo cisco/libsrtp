@@ -1,0 +1,110 @@
+name: Meson CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '20 4 * * 1'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        crypto: [internal, openssl, openssl3, nss, mbedtls]
+        exclude:
+          - os: windows-latest
+            crypto: openssl
+          - os: windows-latest
+            crypto: openssl3
+          - os: windows-latest
+            crypto: nss
+          - os: windows-latest
+            crypto: mbedtls
+          - os: ubuntu-latest
+            crypto: openssl3
+        include:
+          - crypto: internal
+            meson-crypto-enable: ""
+          - crypto: openssl
+            meson-crypto-enable: "-Dcrypto-library=openssl"
+          - crypto: openssl3
+            meson-crypto-enable: "-Dcrypto-library=openssl"
+          - crypto: nss
+            meson-crypto-enable: "-Dcrypto-library=nss"
+          - crypto: mbedtls
+            meson-crypto-enable: "-Dcrypto-library=mbedtls"
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
+
+    steps:
+    - name: Setup Ubuntu Meson
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install meson
+
+    - name: Setup macOS Meson
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install meson
+
+    - name: Setup Windows Meson & Ninja
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install ninja
+        pip3 install meson
+
+    - name: Setup Ubuntu NSS
+      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
+      run: |
+        sudo apt-get update
+        sudo apt-get install libnss3-dev
+
+    - name: Setup Ubuntu MbedTLS
+      if:  matrix.os == 'ubuntu-latest' && matrix.crypto == 'mbedtls'
+      run: sudo apt-get install libmbedtls-dev
+
+    - name: Setup macOS OpenSSL
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
+      run: echo "pkgconfig-crypto-dir=PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig" >> $GITHUB_ENV
+
+    - name: Setup macOS OpenSSL3
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl3'
+      run: |
+        brew install openssl@3
+        echo "pkgconfig-crypto-dir=PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig" >> $GITHUB_ENV
+
+    - name: Setup macOS NSS
+      if:  matrix.os == 'macos-latest' && matrix.crypto == 'nss'
+      run: brew install nss
+
+    - name: Setup macOS MbedTLS
+      if:  matrix.os == 'macos-latest' && matrix.crypto == 'mbedtls'
+      run: brew install mbedtls
+
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: meson setup ${{github.workspace}}/build
+
+    - name: Configure Meson
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: ${{ env.pkgconfig-crypto-dir }} meson configure ${{ matrix.meson-crypto-enable }}
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: ninja
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: meson test

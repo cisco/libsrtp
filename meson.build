@@ -121,6 +121,7 @@ endif
 
 use_openssl = false
 use_nss = false
+use_mbedtls = false
 
 crypto_library = get_option('crypto-library')
 if crypto_library == 'openssl'
@@ -151,6 +152,20 @@ elif crypto_library == 'nss'
   # TODO(RLB): Use NSS for KDF
   if get_option('crypto-library-kdf').enabled()
     error('KDF support has not been implemented for NSS')
+  endif
+elif crypto_library == 'mbedtls'
+  mbedtls_dep = dependency('mbedtls', required: false)
+  if not mbedtls_dep.found()
+    mbedtls_dep = cc.find_library('mbedcrypto', has_headers: ['mbedtls/aes.h'], required: true)
+  endif
+  srtp2_deps += [mbedtls_dep]
+  cdata.set('GCM', true)
+  cdata.set('MBEDTLS', true)
+  cdata.set('USE_EXTERNAL_CRYPTO', true)
+  use_mbedtls = true
+  # TODO(RLB): Use NSS for KDF
+  if get_option('crypto-library-kdf').enabled()
+    error('KDF support has not been implemented for mbedtls')
   endif
 endif
 
@@ -189,6 +204,11 @@ elif use_nss
     'crypto/cipher/aes_icm_nss.c',
     'crypto/cipher/aes_gcm_nss.c',
   )
+elif use_mbedtls
+  ciphers_sources += files(
+    'crypto/cipher/aes_icm_mbedtls.c',
+    'crypto/cipher/aes_gcm_mbedtls.c',
+  )
 else
   ciphers_sources += files(
     'crypto/cipher/aes.c',
@@ -209,6 +229,10 @@ if use_openssl
 elif use_nss
   hashes_sources += files(
     'crypto/hash/hmac_nss.c',
+  )
+elif use_mbedtls
+  hashes_sources += files(
+    'crypto/hash/hmac_mbedtls.c',
   )
 else
   hashes_sources += files(
