@@ -26,13 +26,13 @@ jobs:
     steps:
     - name: Setup Ubuntu
       if: matrix.os == 'ubuntu-latest'
-      run: sudo apt-get install valgrind
+      run: |
+        sudo apt-get update
+        sudo apt-get install valgrind
 
     - name: Setup Ubuntu NSS
       if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
-      run: |
-        sudo apt-get update
-        sudo apt-get install libnss3-dev
+      run: sudo apt-get install libnss3-dev
 
     - name: Setup macOS OpenSSL
       if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
