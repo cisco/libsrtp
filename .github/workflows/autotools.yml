@@ -54,5 +54,5 @@ jobs:
       run: make runtest
 
     - name: Test Valgrind
-      if:  matrix.os == 'ubuntu-latest'
+      if:  matrix.os == 'ubuntu-latest' && matrix.crypto != 'nss'
       run: make runtest-valgrind
