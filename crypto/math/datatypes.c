@@ -397,14 +397,14 @@ void bitvector_left_shift(bitvector_t *x, int shift)
 
 #endif /* defined(__SSSE3__) */
 
-int srtp_octet_string_is_eq(uint8_t *a, uint8_t *b, int len)
+int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, int len)
 {
     /*
      * We use this somewhat obscure implementation to try to ensure the running
      * time only depends on len, even accounting for compiler optimizations.
      * The accumulator ends up zero iff the strings are equal.
      */
-    uint8_t *end = b + len;
+    const uint8_t *end = b + len;
     uint32_t accumulator = 0;
 
 #if defined(__SSE2__)
