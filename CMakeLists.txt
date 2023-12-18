@@ -1,17 +1,42 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.21)
 
 project(libsrtp2 VERSION 2.6.0 LANGUAGES C)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 set(PACKAGE_STRING "${PROJECT_NAME} ${PROJECT_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
+
+option(ENABLE_WARNINGS "Enable to add warnings to a target." ON)
+option(ENABLE_WARNINGS_AS_ERRORS "Enable to treat warnings as errors." ON)
+
+option(ENABLE_SANITIZE_ADDR "Enable address sanitize." OFF)
+option(ENABLE_SANITIZE_UNDEF "Enable undefined sanitize." OFF)
+option(ENABLE_SANITIZE_LEAK "Enable leak sanitize (Gcc/Clang only)." OFF)
+option(ENABLE_SANITIZE_THREAD "Enable thread sanitize (Gcc/Clang only)." OFF)
+
+option(ENABLE_LTO "Enable to add Link Time Optimization." OFF)
+
+option(LIBSRTP_TEST_APPS "Build libSRTP test applications" ON)
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
+
 include(TestBigEndian)
 include(CheckIncludeFile)
 include(CheckFunctionExists)
 include(CheckTypeSize)
 include(CheckCSourceCompiles)
+include(ConfigSafeGuards)
+
+if(ENABLE_WARNINGS)
+    include(Warnings)
+endif()
+
 
 test_big_endian(WORDS_BIGENDIAN)
 
@@ -59,10 +84,6 @@ set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
 set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
 set(ENABLE_NSS OFF CACHE BOOL "Enable NSS crypto engine")
-option(LIBSRTP_TEST_APPS "Build libSRTP test applications" ON)
-set(BUILD_WITH_SANITIZERS OFF CACHE BOOL "Adds sanitizer flags to compiler")
-set(BUILD_WITH_WARNINGS ON CACHE BOOL "Adds warnings and warning as error flags to compiler")
-option(BUILD_SHARED_LIBS "Build shared library" OFF)
 
 if(ENABLE_OPENSSL OR ENABLE_MBEDTLS OR ENABLE_NSS)
   set(USE_EXTERNAL_CRYPTO TRUE)
@@ -103,29 +124,13 @@ include_directories(${CONFIG_FILE_DIR})
 configure_file(config_in_cmake.h ${CONFIG_FILE_DIR}/config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
-if(BUILD_WITH_SANITIZERS AND NOT WIN32)
-  if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(SANITIZERS address,undefined)
-  else()
-    set(SANITIZERS leak,address,undefined)
-  endif()
-  message(STATUS "Using sanitizers: ${SANITIZERS}")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZERS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZERS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZERS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZERS}")
-  set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=${SANITIZERS}")
+if(ENABLE_SANITIZE_ADDR OR ENABLE_SANITIZE_UNDEF)
+    include(Sanitizer)
+    add_sanitizer_flags()
 endif()
 
-
-if(BUILD_WITH_WARNINGS)
-  if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-    set(WARNINGS -Wall -pedantic -Wextra -Werror)
-  elseif(MSVC)
-    set(WARNINGS /W4 /WX)
-  endif()
-  message(STATUS "Using warnings: ${WARNINGS}")
-  add_compile_options(${WARNINGS})
+if(ENABLE_LTO)
+    include(LTO)
 endif()
 
 set(SOURCES_C
@@ -252,6 +257,25 @@ add_library(srtp2
 )
 add_library(libSRTP::srtp2 ALIAS srtp2)
 
+if (${ENABLE_WARNINGS})
+    target_set_warnings(
+            TARGET
+            "srtp2"
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
+endif()
+
+if(${ENABLE_LTO})
+    target_enable_lto(
+            TARGET
+            "srtp2"
+            ENABLE
+            ON)
+endif()
+
+
 set_target_properties(srtp2 PROPERTIES VERSION ${PROJECT_VERSION})
 
 target_include_directories(srtp2 PUBLIC
@@ -297,6 +321,13 @@ if(LIBSRTP_TEST_APPS)
       add_executable(aes_calc crypto/test/aes_calc.c test/getopt_s.c test/util.c)
       target_include_directories(aes_calc PRIVATE test)
       target_link_libraries(aes_calc srtp2)
+      target_set_warnings(
+              TARGET
+              aes_calc
+              ENABLE
+              ${ENABLE_WARNINGS}
+              AS_ERRORS
+              ${ENABLE_WARNINGS_AS_ERRORS})
       add_test(aes_calc_128 aes_calc 000102030405060708090a0b0c0d0e0f
                                      00112233445566778899aabbccddeeff
                                      69c4e0d86a7b0430d8cdb78070b4c55a)
@@ -305,37 +336,86 @@ if(LIBSRTP_TEST_APPS)
                                      8ea2b7ca516745bfeafc49904b496089)
 
       add_executable(sha1_driver crypto/test/sha1_driver.c test/util.c)
+      target_set_warnings(
+              TARGET
+              sha1_driver
+              ENABLE
+              ${ENABLE_WARNINGS}
+              AS_ERRORS
+              ${ENABLE_WARNINGS_AS_ERRORS})
       target_include_directories(sha1_driver PRIVATE test)
       target_link_libraries(sha1_driver srtp2)
       add_test(sha1_driver sha1_driver -v)
     endif()
 
     add_executable(datatypes_driver crypto/test/datatypes_driver.c test/util.c)
+    target_set_warnings(
+            TARGET
+            datatypes_driver
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_include_directories(datatypes_driver PRIVATE test)
     target_link_libraries(datatypes_driver srtp2)
     add_test(datatypes_driver datatypes_driver -v)
 
     add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
+    target_set_warnings(
+            TARGET
+            cipher_driver
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_include_directories(cipher_driver PRIVATE test)
     target_link_libraries(cipher_driver srtp2)
     add_test(cipher_driver cipher_driver -v)
 
     add_executable(kernel_driver crypto/test/kernel_driver.c test/getopt_s.c)
+    target_set_warnings(
+            TARGET
+            kernel_driver
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_include_directories(kernel_driver PRIVATE test)
     target_link_libraries(kernel_driver srtp2)
     add_test(kernel_driver kernel_driver -v)
 
     add_executable(rdbx_driver test/rdbx_driver.c test/getopt_s.c test/ut_sim.c)
+    target_set_warnings(
+            TARGET
+            rdbx_driver
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_include_directories(rdbx_driver PRIVATE test)
     target_link_libraries(rdbx_driver srtp2)
     add_test(rdbx_driver rdbx_driver -v)
 
     add_executable(replay_driver test/replay_driver.c test/ut_sim.c)
+    target_set_warnings(
+            TARGET
+            replay_driver
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_include_directories(replay_driver PRIVATE test)
     target_link_libraries(replay_driver srtp2)
     add_test(replay_driver replay_driver -v)
 
     add_executable(roc_driver test/roc_driver.c test/ut_sim.c)
+    target_set_warnings(
+            TARGET
+            roc_driver
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_include_directories(roc_driver PRIVATE test)
     target_link_libraries(roc_driver srtp2)
     add_test(roc_driver roc_driver -v)
@@ -343,11 +423,25 @@ if(LIBSRTP_TEST_APPS)
 
   add_executable(srtp_driver test/srtp_driver.c
     test/util.c test/getopt_s.c)
+  target_set_warnings(
+          TARGET
+          srtp_driver
+          ENABLE
+          ${ENABLE_WARNINGS}
+          AS_ERRORS
+          ${ENABLE_WARNINGS_AS_ERRORS})
   target_link_libraries(srtp_driver srtp2)
   add_test(srtp_driver srtp_driver -v)
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
     add_executable(test_srtp test/test_srtp.c)
+    target_set_warnings(
+            TARGET
+            test_srtp
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     if(ENABLE_OPENSSL)
       target_include_directories(test_srtp PRIVATE ${OPENSSL_INCLUDE_DIR})
     elseif(ENABLE_MBEDTLS)
@@ -362,6 +456,13 @@ if(LIBSRTP_TEST_APPS)
   find_program(BASH_PROGRAM bash)
   if(BASH_PROGRAM AND NOT WIN32)
     add_executable(rtpw test/rtpw.c test/rtp.c test/util.c test/getopt_s.c)
+    target_set_warnings(
+            TARGET
+            rtpw
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
     target_link_libraries(rtpw srtp2)
     add_test(NAME rtpw_test
              COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/test/rtpw_test.sh -w ${CMAKE_CURRENT_SOURCE_DIR}/test/words.txt

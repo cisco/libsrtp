@@ -80,7 +80,7 @@ jobs:
     - name: Configure CMake
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake $GITHUB_WORKSPACE -DBUILD_WITH_SANITIZERS=TRUE ${{ matrix.cmake-crypto-enable}} ${{env.cmake-crypto-dir}}
+      run: cmake $GITHUB_WORKSPACE -DLIBSRTP_TEST_APPS=ON  ${{ matrix.cmake-crypto-enable}} ${{env.cmake-crypto-dir}}
 
     - name: Build
       working-directory: ${{github.workspace}}/build
