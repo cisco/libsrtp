@@ -187,7 +187,8 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
         return srtp_err_status_bad_param;
     }
 
-    SECItem key_item = { siBuffer, (unsigned char *)key, key_len };
+    /* explicitly cast away const of key */
+    SECItem key_item = { siBuffer, (unsigned char *)(uintptr_t)key, key_len };
     sym_key = PK11_ImportSymKey(slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap,
                                 CKA_SIGN, &key_item, NULL);
     PK11_FreeSlot(slot);

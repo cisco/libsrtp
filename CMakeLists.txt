@@ -120,7 +120,7 @@ endif()
 
 if(BUILD_WITH_WARNINGS)
   if(CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID MATCHES "GNU")
-    set(WARNINGS -Wall -pedantic -Wextra -Werror)
+    set(WARNINGS -Wall -pedantic -Wextra -Wcast-qual -Werror)
   elseif(MSVC)
     set(WARNINGS /W4 /WX)
   endif()
