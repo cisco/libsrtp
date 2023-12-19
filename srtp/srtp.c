@@ -79,13 +79,13 @@ srtp_debug_module_t mod_srtp = {
 #define uint32s_in_rtcp_header 2
 #define octets_in_rtp_extn_hdr 4
 
-static srtp_err_status_t srtp_validate_rtp_header(void *rtp_hdr,
-                                                  int *pkt_octet_len)
+static srtp_err_status_t srtp_validate_rtp_header(const void *rtp_hdr,
+                                                  int pkt_octet_len)
 {
-    srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
+    const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp_hdr;
     int rtp_header_len;
 
-    if (*pkt_octet_len < octets_in_rtp_header)
+    if (pkt_octet_len < octets_in_rtp_header)
         return srtp_err_status_bad_param;
 
     /* Check RTP header length */
@@ -93,18 +93,18 @@ static srtp_err_status_t srtp_validate_rtp_header(void *rtp_hdr,
     if (hdr->x == 1)
         rtp_header_len += octets_in_rtp_extn_hdr;
 
-    if (*pkt_octet_len < rtp_header_len)
+    if (pkt_octet_len < rtp_header_len)
         return srtp_err_status_bad_param;
 
     /* Verifing profile length. */
     if (hdr->x == 1) {
-        srtp_hdr_xtnd_t *xtn_hdr =
-            (srtp_hdr_xtnd_t *)((uint32_t *)hdr + uint32s_in_rtp_header +
-                                hdr->cc);
+        const srtp_hdr_xtnd_t *xtn_hdr =
+            (const srtp_hdr_xtnd_t *)((const uint32_t *)hdr +
+                                      uint32s_in_rtp_header + hdr->cc);
         int profile_len = ntohs(xtn_hdr->length);
         rtp_header_len += profile_len * 4;
         /* profile length counts the number of 32-bit words */
-        if (*pkt_octet_len < rtp_header_len)
+        if (pkt_octet_len < rtp_header_len)
             return srtp_err_status_bad_param;
     }
     return srtp_err_status_ok;
@@ -1577,7 +1577,7 @@ static srtp_err_status_t srtp_process_header_encryption(
 static void srtp_calc_aead_iv(srtp_session_keys_t *session_keys,
                               v128_t *iv,
                               srtp_xtd_seq_num_t *seq,
-                              srtp_hdr_t *hdr)
+                              const srtp_hdr_t *hdr)
 {
     v128_t in;
     v128_t salt;
@@ -1616,11 +1616,11 @@ static void srtp_calc_aead_iv(srtp_session_keys_t *session_keys,
 }
 
 srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
-                                           uint8_t *hdr,
-                                           const unsigned int *pkt_octet_len,
+                                           const uint8_t *hdr,
+                                           unsigned int pkt_octet_len,
                                            unsigned int *mki_size)
 {
-    unsigned int base_mki_start_location = *pkt_octet_len;
+    unsigned int base_mki_start_location = pkt_octet_len;
     unsigned int mki_start_location = 0;
     unsigned int tag_len = 0;
     unsigned int i = 0;
@@ -1731,7 +1731,7 @@ static srtp_err_status_t srtp_estimate_index(srtp_rdbx_t *rdbx,
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t srtp_get_est_pkt_index(srtp_hdr_t *hdr,
+static srtp_err_status_t srtp_get_est_pkt_index(const srtp_hdr_t *hdr,
                                                 srtp_stream_ctx_t *stream,
                                                 srtp_xtd_seq_num_t *est,
                                                 int *delta)
@@ -2169,7 +2169,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     /* we assume the hdr is 32-bit aligned to start */
 
     /* Verify RTP header */
-    status = srtp_validate_rtp_header(rtp_hdr, pkt_octet_len);
+    status = srtp_validate_rtp_header(rtp_hdr, *pkt_octet_len);
     if (status)
         return status;
 
@@ -2499,7 +2499,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     /* we assume the hdr is 32-bit aligned to start */
 
     /* Verify RTP header */
-    status = srtp_validate_rtp_header(srtp_hdr, pkt_octet_len);
+    status = srtp_validate_rtp_header(srtp_hdr, *pkt_octet_len);
     if (status)
         return status;
 
@@ -2568,9 +2568,9 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
 
     /* Determine if MKI is being used and what session keys should be used */
     if (use_mki) {
-        session_keys = srtp_get_session_keys(
-            stream, (uint8_t *)hdr, (const unsigned int *)pkt_octet_len,
-            &mki_size);
+        session_keys =
+            srtp_get_session_keys(stream, (const uint8_t *)hdr,
+                                  (unsigned int)*pkt_octet_len, &mki_size);
 
         if (session_keys == NULL)
             return srtp_err_status_bad_mki;
@@ -3574,7 +3574,7 @@ static srtp_err_status_t srtp_calc_aead_iv_srtcp(
     srtp_session_keys_t *session_keys,
     v128_t *iv,
     uint32_t seq_num,
-    srtcp_hdr_t *hdr)
+    const srtcp_hdr_t *hdr)
 {
     v128_t in;
     v128_t salt;
@@ -3873,8 +3873,9 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
          * If payload encryption is enabled, then the AAD consist of
          * the RTCP header and the seq# at the end of the packet
          */
-        status = srtp_cipher_set_aad(session_keys->rtcp_cipher, (uint8_t *)hdr,
-                                     octets_in_rtcp_header);
+        status =
+            srtp_cipher_set_aad(session_keys->rtcp_cipher, (const uint8_t *)hdr,
+                                octets_in_rtcp_header);
         if (status) {
             return (srtp_err_status_cipher_fail);
         }
@@ -4282,9 +4283,9 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
      * Determine if MKI is being used and what session keys should be used
      */
     if (use_mki) {
-        session_keys = srtp_get_session_keys(
-            stream, (uint8_t *)hdr, (const unsigned int *)pkt_octet_len,
-            &mki_size);
+        session_keys =
+            srtp_get_session_keys(stream, (const uint8_t *)hdr,
+                                  (unsigned int)*pkt_octet_len, &mki_size);
 
         if (session_keys == NULL)
             return srtp_err_status_bad_mki;

@@ -163,7 +163,7 @@ void v128_left_shift(v128_t *x, int shift_index);
  * verifying authentication tags.
  */
 
-int srtp_octet_string_is_eq(uint8_t *a, uint8_t *b, int len);
+int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, int len);
 
 /*
  * A portable way to zero out memory as recommended by
