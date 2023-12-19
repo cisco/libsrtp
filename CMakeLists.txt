@@ -131,7 +131,6 @@ endif()
 
 if(ENABLE_LTO)
     include(LTO)
-
 endif()
 
 set(SOURCES_C

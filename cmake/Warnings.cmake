@@ -45,6 +45,7 @@ function(target_set_warnings)
 #        -Wsign-conversion # warn on sign conversions
         -Wnull-dereference # warn if a null dereference is detected
         -Wdouble-promotion # warn if float is implicit promoted to double
+        -Wcast-qual
     )
 
     set(GCC_WARNINGS
