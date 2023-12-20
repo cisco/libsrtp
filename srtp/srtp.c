@@ -82,12 +82,24 @@ static uint32_t srtp_get_rtp_hdr_len(const srtp_hdr_t *hdr)
     return octets_in_rtp_header + 4 * hdr->cc;
 }
 
+/*
+ * Returns the location of the header extention cast too a srtp_hdr_xtnd_t
+ * struct. Will always return a value and assumes that the caller has already
+ * verified that a header extension is present by checking the x bit of
+ * srtp_hdr_t.
+ */
 static srtp_hdr_xtnd_t *srtp_get_rtp_xtn_hdr(srtp_hdr_t *hdr)
 {
     uint32_t rtp_xtn_hdr_start = srtp_get_rtp_hdr_len(hdr);
     return (srtp_hdr_xtnd_t *)((uint8_t *)hdr + rtp_xtn_hdr_start);
 }
 
+/*
+ * Returns the length of the extension header including the extension header
+ * header so will return a minium of 4. Assumes the srtp_hdr_xtnd_t is a valid
+ * pointer and that the caller has already verified that a header extension is
+ * valid by checking the x bit of the RTP header.
+ */
 static uint32_t srtp_get_rtp_xtn_hdr_len(const srtp_hdr_xtnd_t *xtn_hdr)
 {
     return (ntohs(xtn_hdr->length) + 1) * 4;
