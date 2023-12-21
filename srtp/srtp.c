@@ -4841,8 +4841,138 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 
 #ifndef SRTP_NO_STREAM_LIST
 
+#ifdef SRTP_STREAM_INDEX
+
+#define INITIAL_STREAM_INDEX_SIZE 2
+
+typedef struct stream_index_entry {
+    uint32_t ssrc;
+    srtp_stream_t stream;
+} stream_index_entry;
+
+typedef struct srtp_stream_index_ {
+    stream_index_entry *entries;
+    size_t size;
+    size_t available;
+} srtp_stream_index_;
+
+void srtp_stream_index_dump(srtp_stream_index stream_index)
+{
+    printf("stream index size: %zu\n", stream_index->size);
+    printf("stream index available: %zu\n", stream_index->available);
+
+    unsigned int end = stream_index->size - stream_index->available;
+    unsigned int i = 0;
+
+    for (; i < end; i++) {
+        printf("ssrc: %d, stream:%p\n", stream_index->entries[i].ssrc,
+               stream_index->entries[i].stream);
+    }
+}
+srtp_err_status_t srtp_stream_index_alloc(srtp_stream_index *stream_index_ptr)
+{
+    srtp_stream_index stream_index =
+        srtp_crypto_alloc(sizeof(srtp_stream_index_));
+    if (stream_index == NULL) {
+        return srtp_err_status_alloc_fail;
+    }
+
+    stream_index->entries = srtp_crypto_alloc(sizeof(stream_index_entry) *
+                                              INITIAL_STREAM_INDEX_SIZE);
+    if (stream_index->entries == NULL) {
+        return srtp_err_status_alloc_fail;
+    }
+
+    *stream_index_ptr = stream_index;
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_stream_index_dealloc(srtp_stream_index stream_index)
+{
+    srtp_crypto_free(stream_index->entries);
+    srtp_crypto_free(stream_index);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_stream_index_insert(srtp_stream_index stream_index,
+                                           srtp_stream_t stream)
+{
+    // there is no available index entry, duplicate number of entries
+    if (stream_index->available == 0) {
+        size_t new_size = stream_index->size * 2;
+        stream_index_entry *new_entries =
+            srtp_crypto_alloc(sizeof(stream_index_entry) * new_size);
+        if (new_entries == NULL) {
+            return srtp_err_status_alloc_fail;
+        }
+
+        // copy previous entries into the new ones.
+        memcpy(new_entries, stream_index->entries,
+               sizeof(stream_index_entry) * stream_index->size);
+        // release previous entries.
+        srtp_crypto_free(stream_index->entries);
+        // assign new entries to the index.
+        stream_index->entries = new_entries;
+        // update index info.
+        stream_index->size = new_size;
+        stream_index->available = new_size / 2;
+    }
+
+    // fill the first available entry
+    size_t next_index = stream_index->size - stream_index->available;
+    stream_index->entries[next_index].ssrc = stream->ssrc;
+    stream_index->entries[next_index].stream = stream;
+
+    // update available value.
+    stream_index->available--;
+
+    return srtp_err_status_ok;
+}
+
+void srtp_stream_index_remove(srtp_stream_index stream_index, uint32_t ssrc)
+{
+    unsigned int i = 0;
+    unsigned int end = stream_index->size - stream_index->available;
+
+    for (; i < end; i++) {
+        if (stream_index->entries[i].ssrc == ssrc) {
+            size_t entries_to_move =
+                stream_index->size - stream_index->available - i - 1;
+            memmove(&stream_index->entries[i], &stream_index->entries[i + 1],
+                    entries_to_move * sizeof(stream_index_entry));
+            stream_index->available++;
+
+            break;
+        }
+    }
+}
+
+srtp_stream_t srtp_stream_index_get(srtp_stream_index stream_index,
+                                    uint32_t ssrc)
+{
+    unsigned int i = 0;
+    unsigned int end = stream_index->size - stream_index->available;
+
+    stream_index_entry *entries = stream_index->entries;
+
+    for (; i < end; i++) {
+        if (entries[i].ssrc == ssrc) {
+            return entries[i].stream;
+        }
+    }
+
+    return NULL;
+}
+
+#endif
+
 /* in the default implementation, we have an intrusive doubly-linked list */
 typedef struct srtp_stream_list_ctx_t_ {
+#ifdef SRTP_STREAM_INDEX
+    srtp_stream_index index;
+#endif
     /* a stub stream that just holds pointers to the beginning and end of the
      * list */
     srtp_stream_ctx_t data;
@@ -4855,6 +4985,16 @@ srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
     if (list == NULL) {
         return srtp_err_status_alloc_fail;
     }
+
+#ifdef SRTP_STREAM_INDEX
+    srtp_err_status_t stat = srtp_stream_index_alloc(&list->index);
+    if (stat) {
+        return stat;
+    }
+
+    list->index->size = INITIAL_STREAM_INDEX_SIZE;
+    list->index->available = INITIAL_STREAM_INDEX_SIZE;
+#endif
 
     list->data.next = NULL;
     list->data.prev = NULL;
@@ -4869,6 +5009,9 @@ srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
     if (list->data.next) {
         return srtp_err_status_fail;
     }
+#ifdef SRTP_STREAM_INDEX
+    srtp_stream_index_dealloc(list->index);
+#endif
     srtp_crypto_free(list);
     return srtp_err_status_ok;
 }
@@ -4884,11 +5027,21 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
     list->data.next = stream;
     stream->prev = &(list->data);
 
+#ifdef SRTP_STREAM_INDEX
+    srtp_err_status_t stat = srtp_stream_index_insert(list->index, stream);
+    if (stat) {
+        return stat;
+    }
+#endif
+
     return srtp_err_status_ok;
 }
 
 srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
 {
+#ifdef SRTP_STREAM_INDEX
+    return srtp_stream_index_get(list->index, ssrc);
+#else
     /* walk down list until ssrc is found */
     srtp_stream_t stream = list->data.next;
     while (stream != NULL) {
@@ -4900,6 +5053,7 @@ srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
 
     /* we haven't found our ssrc, so return a null */
     return NULL;
+#endif
 }
 
 void srtp_stream_list_remove(srtp_stream_list_t list,
@@ -4911,6 +5065,9 @@ void srtp_stream_list_remove(srtp_stream_list_t list,
     if (stream_to_remove->next != NULL) {
         stream_to_remove->next->prev = stream_to_remove->prev;
     }
+#ifdef SRTP_STREAM_INDEX
+    srtp_stream_index_remove(list->index, stream_to_remove->ssrc);
+#endif
 }
 
 void srtp_stream_list_for_each(srtp_stream_list_t list,
