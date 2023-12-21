@@ -4841,7 +4841,7 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 
 #ifndef SRTP_NO_STREAM_LIST
 
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
 
 #define INITIAL_STREAM_INDEX_SIZE 2
 
@@ -4970,7 +4970,7 @@ srtp_stream_t srtp_stream_index_get(srtp_stream_index stream_index,
 
 /* in the default implementation, we have an intrusive doubly-linked list */
 typedef struct srtp_stream_list_ctx_t_ {
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
     srtp_stream_index index;
 #endif
     /* a stub stream that just holds pointers to the beginning and end of the
@@ -4986,7 +4986,7 @@ srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
         return srtp_err_status_alloc_fail;
     }
 
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
     srtp_err_status_t stat = srtp_stream_index_alloc(&list->index);
     if (stat) {
         return stat;
@@ -5009,7 +5009,7 @@ srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
     if (list->data.next) {
         return srtp_err_status_fail;
     }
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
     srtp_stream_index_dealloc(list->index);
 #endif
     srtp_crypto_free(list);
@@ -5027,7 +5027,7 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
     list->data.next = stream;
     stream->prev = &(list->data);
 
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
     srtp_err_status_t stat = srtp_stream_index_insert(list->index, stream);
     if (stat) {
         return stat;
@@ -5039,7 +5039,7 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
 
 srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
 {
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
     return srtp_stream_index_get(list->index, ssrc);
 #else
     /* walk down list until ssrc is found */
@@ -5065,7 +5065,7 @@ void srtp_stream_list_remove(srtp_stream_list_t list,
     if (stream_to_remove->next != NULL) {
         stream_to_remove->next->prev = stream_to_remove->prev;
     }
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
     srtp_stream_index_remove(list->index, stream_to_remove->ssrc);
 #endif
 }

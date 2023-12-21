@@ -68,8 +68,7 @@ typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
 typedef srtp_stream_ctx_t *srtp_stream_t;
 typedef struct srtp_stream_list_ctx_t_ *srtp_stream_list_t;
 
-#define SRTP_STREAM_INDEX
-#ifdef SRTP_STREAM_INDEX
+#ifdef ENABLE_STREAM_INDEX
 typedef struct srtp_stream_index_ *srtp_stream_index;
 #endif
 

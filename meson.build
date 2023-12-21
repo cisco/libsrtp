@@ -119,6 +119,10 @@ if get_option('debug-logging')
   cdata.set('ENABLE_DEBUG_LOGGING', true)
 endif
 
+if get_option('stream-index')
+  cdata.set('ENABLE_STREAM_INDEX', true)
+endif
+
 use_openssl = false
 use_nss = false
 use_mbedtls = false
