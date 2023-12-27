@@ -2818,7 +2818,7 @@ srtp_err_status_t srtp_test_remove_stream(void)
      * check for false positives by trying to remove a stream that's not
      * in the session
      */
-    status = srtp_remove_stream(session, htonl(0xaaaaaaaa));
+    status = srtp_remove_stream(session, 0xaaaaaaaa);
     if (status != srtp_err_status_no_ctx) {
         return srtp_err_status_fail;
     }
@@ -2827,7 +2827,7 @@ srtp_err_status_t srtp_test_remove_stream(void)
      * check for false negatives by removing stream 0x1, then
      * searching for streams 0x0 and 0x2
      */
-    status = srtp_remove_stream(session, htonl(0x1));
+    status = srtp_remove_stream(session, 0x1);
     if (status != srtp_err_status_ok) {
         return srtp_err_status_fail;
     }
@@ -2872,7 +2872,7 @@ srtp_err_status_t srtp_test_remove_stream(void)
         return status;
     }
 
-    status = srtp_remove_stream(session, htonl(0xcafebabe));
+    status = srtp_remove_stream(session, 0xcafebabe);
     if (status != srtp_err_status_ok) {
         return status;
     }

@@ -3050,7 +3050,7 @@ srtp_err_status_t srtp_remove_stream(srtp_t session, uint32_t ssrc)
         return srtp_err_status_bad_param;
 
     /* find and remove stream from the list */
-    stream = srtp_stream_list_get(session->stream_list, ssrc);
+    stream = srtp_stream_list_get(session->stream_list, htonl(ssrc));
     if (stream == NULL) {
         return srtp_err_status_no_ctx;
     }

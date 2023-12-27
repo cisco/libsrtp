@@ -621,7 +621,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
  *        will be removed.
  *
  * @param ssrc is the SSRC value of the stream to be removed
- *             in network byte order.
+ *             in host byte order.
  *
  * @warning Wildcard SSRC values cannot be removed from a
  *          session.
