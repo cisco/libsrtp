@@ -618,13 +618,17 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
  * context given by the argument session.
  *
  * @param session is the SRTP session from which the stream
- *        will be removed.
+ * will be removed.
  *
  * @param ssrc is the SSRC value of the stream to be removed
- *             in host byte order.
+ * in host byte order.
+ *
+ * @attention In libSRTP version before 3.0.0 the SSRC param was in network
+ * byte order, this was changed in 3.0.0 to host byte order to be
+ * consistant with the rest of the api.
  *
  * @warning Wildcard SSRC values cannot be removed from a
- *          session.
+ * session.
  *
  * @return
  *    - srtp_err_status_ok     if the stream deallocation succeeded.
