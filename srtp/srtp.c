@@ -2917,7 +2917,7 @@ srtp_err_status_t srtp_dealloc(srtp_t session)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy)
+srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
     srtp_stream_t tmp;
@@ -3025,7 +3025,7 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
      * initializing a stream for each element
      */
     while (policy != NULL) {
-        stat = srtp_add_stream(ctx, policy);
+        stat = srtp_stream_add(ctx, policy);
         if (stat) {
             /* clean up everything */
             srtp_dealloc(*session);
@@ -3040,7 +3040,7 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_remove_stream(srtp_t session, uint32_t ssrc)
+srtp_err_status_t srtp_stream_remove(srtp_t session, uint32_t ssrc)
 {
     srtp_stream_ctx_t *stream;
     srtp_err_status_t status;
@@ -3081,7 +3081,7 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy)
     }
 
     while (policy != NULL) {
-        stat = srtp_update_stream(session, policy);
+        stat = srtp_stream_update(session, policy);
         if (stat) {
             return stat;
         }
@@ -3125,7 +3125,7 @@ static int update_template_stream_cb(srtp_stream_t stream, void *raw_data)
     old_rtcp_rdb = stream->rtcp_rdb;
 
     /* remove stream */
-    data->status = srtp_remove_stream(session, ssrc);
+    data->status = srtp_stream_remove(session, ssrc);
     if (data->status) {
         return 1;
     }
@@ -3212,7 +3212,7 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     return srtp_err_status_ok;
 }
 
-static srtp_err_status_t update_stream(srtp_t session,
+static srtp_err_status_t stream_update(srtp_t session,
                                        const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
@@ -3234,12 +3234,12 @@ static srtp_err_status_t update_stream(srtp_t session,
     old_index = stream->rtp_rdbx.index;
     old_rtcp_rdb = stream->rtcp_rdb;
 
-    status = srtp_remove_stream(session, htonl(policy->ssrc.value));
+    status = srtp_stream_remove(session, htonl(policy->ssrc.value));
     if (status) {
         return status;
     }
 
-    status = srtp_add_stream(session, policy);
+    status = srtp_stream_add(session, policy);
     if (status) {
         return status;
     }
@@ -3256,7 +3256,7 @@ static srtp_err_status_t update_stream(srtp_t session,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_update_stream(srtp_t session,
+srtp_err_status_t srtp_stream_update(srtp_t session,
                                      const srtp_policy_t *policy)
 {
     srtp_err_status_t status;
@@ -3277,7 +3277,7 @@ srtp_err_status_t srtp_update_stream(srtp_t session,
         status = update_template_streams(session, policy);
         break;
     case (ssrc_specific):
-        status = update_stream(session, policy);
+        status = stream_update(session, policy);
         break;
     case (ssrc_undefined):
     default:
@@ -4817,7 +4817,7 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_set_stream_roc(srtp_t session,
+srtp_err_status_t srtp_stream_set_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t roc)
 {
@@ -4832,7 +4832,7 @@ srtp_err_status_t srtp_set_stream_roc(srtp_t session,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_get_stream_roc(srtp_t session,
+srtp_err_status_t srtp_stream_get_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t *roc)
 {

@@ -584,7 +584,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_t ctx,
  * for the session.  The struct may be a single element, or it may be
  * the head of a list, in which case each element of the list is
  * processed.  It may also be NULL, in which case streams should be added
- * later using srtp_add_stream().  The final element of the list @b must
+ * later using srtp_stream_add().  The final element of the list @b must
  * have its `next' field set to NULL.
  *
  * @return
@@ -595,10 +595,10 @@ srtp_err_status_t srtp_unprotect_mki(srtp_t ctx,
 srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t *policy);
 
 /**
- * @brief srtp_add_stream() allocates and initializes an SRTP stream
+ * @brief srtp_stream_add() allocates and initializes an SRTP stream
  * within a given SRTP session.
  *
- * The function call srtp_add_stream(session, policy) allocates and
+ * The function call srtp_stream_add(session, policy) allocates and
  * initializes a new SRTP stream within a given, previously created
  * session, applying the policy given as the other argument to that
  * stream.
@@ -608,12 +608,12 @@ srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t *policy);
  *    - srtp_err_status_alloc_fail   if stream allocation failed
  *    - srtp_err_status_init_fail    if stream initialization failed.
  */
-srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
+srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t *policy);
 
 /**
- * @brief srtp_remove_stream() deallocates an SRTP stream.
+ * @brief srtp_stream_remove() deallocates an SRTP stream.
  *
- * The function call srtp_remove_stream(session, ssrc) removes
+ * The function call srtp_stream_remove(session, ssrc) removes
  * the SRTP stream with the SSRC value ssrc from the SRTP session
  * context given by the argument session.
  *
@@ -635,7 +635,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
  *    - [other]           otherwise.
  *
  */
-srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
+srtp_err_status_t srtp_stream_remove(srtp_t session, unsigned int ssrc);
 
 /**
  * @brief srtp_update() updates all streams in the session.
@@ -664,9 +664,9 @@ srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
 srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy);
 
 /**
- * @brief srtp_update_stream() updates a SRTP stream.
+ * @brief srtp_stream_update() updates a SRTP stream.
  *
- * The function call srtp_update_stream(session, policy) updates
+ * The function call srtp_stream_update(session, policy) updates
  * the stream(s) in the session that match applying the given
  * policy and key. The existing ROC value of all stream(s) will
  * be preserved.
@@ -684,7 +684,7 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy);
  *    - [other]                      otherwise.
  *
  */
-srtp_err_status_t srtp_update_stream(srtp_t session,
+srtp_err_status_t srtp_stream_update(srtp_t session,
                                      const srtp_policy_t *policy);
 
 /**
@@ -1562,7 +1562,7 @@ void *srtp_get_user_data(srtp_t ctx);
  * reached, an SRTP stream will enter an `expired' state in which no
  * more packets can be protected or unprotected.  When this happens,
  * it is likely that you will want to either deallocate the stream
- * (using srtp_remove_stream()), and possibly allocate a new one.
+ * (using srtp_stream_remove()), and possibly allocate a new one.
  *
  * When an SRTP stream expires, the other streams in the same session
  * are unaffected, unless key sharing is used by that stream.  In the
@@ -1725,7 +1725,7 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
                                                        uint32_t *length);
 
 /**
- * @brief srtp_set_stream_roc(session, ssrc, roc)
+ * @brief srtp_stream_set_roc(session, ssrc, roc)
  *
  * Set the roll-over-counter on a session for a given SSRC
  *
@@ -1733,12 +1733,12 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
  * stream found
  *
  */
-srtp_err_status_t srtp_set_stream_roc(srtp_t session,
+srtp_err_status_t srtp_stream_set_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t roc);
 
 /**
- * @brief srtp_get_stream_roc(session, ssrc, roc)
+ * @brief srtp_stream_get_roc(session, ssrc, roc)
  *
  * Get the roll-over-counter on a session for a given SSRC
  *
@@ -1746,7 +1746,7 @@ srtp_err_status_t srtp_set_stream_roc(srtp_t session,
  * stream found
  *
  */
-srtp_err_status_t srtp_get_stream_roc(srtp_t session,
+srtp_err_status_t srtp_stream_get_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t *roc);
 

@@ -704,7 +704,7 @@ int rtp_decoder_init(rtp_decoder_t dcdr,
     }
 
     if (policy.ssrc.type == ssrc_specific && roc != 0) {
-        if (srtp_set_stream_roc(dcdr->srtp_ctx, policy.ssrc.value, roc)) {
+        if (srtp_stream_set_roc(dcdr->srtp_ctx, policy.ssrc.value, roc)) {
             return 1;
         }
     }
