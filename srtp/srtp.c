@@ -4856,19 +4856,6 @@ typedef struct srtp_stream_index_ {
     size_t available;
 } srtp_stream_index_;
 
-void srtp_stream_index_dump(srtp_stream_index stream_index)
-{
-    printf("stream index size: %zu\n", stream_index->size);
-    printf("stream index available: %zu\n", stream_index->available);
-
-    unsigned int end = stream_index->size - stream_index->available;
-    unsigned int i = 0;
-
-    for (; i < end; i++) {
-        printf("ssrc: %d, stream:%p\n", stream_index->entries[i].ssrc,
-               stream_index->entries[i].stream);
-    }
-}
 srtp_err_status_t srtp_stream_index_alloc(srtp_stream_index *stream_index_ptr)
 {
     srtp_stream_index stream_index =
