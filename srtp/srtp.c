@@ -4895,14 +4895,14 @@ srtp_err_status_t srtp_stream_index_insert(srtp_stream_index stream_index,
             return srtp_err_status_alloc_fail;
         }
 
-        // copy previous entries into the new ones.
+        // copy previous entries into the new ones
         memcpy(new_entries, stream_index->entries,
                sizeof(stream_index_entry) * stream_index->size);
-        // release previous entries.
+        // release previous entries
         srtp_crypto_free(stream_index->entries);
-        // assign new entries to the index.
+        // assign new entries to the index
         stream_index->entries = new_entries;
-        // update index info.
+        // update index info
         stream_index->size = new_size;
         stream_index->available = new_size / 2;
     }
@@ -4912,7 +4912,7 @@ srtp_err_status_t srtp_stream_index_insert(srtp_stream_index stream_index,
     stream_index->entries[next_index].ssrc = stream->ssrc;
     stream_index->entries[next_index].stream = stream;
 
-    // update available value.
+    // update available value
     stream_index->available--;
 
     return srtp_err_status_ok;
