@@ -534,9 +534,9 @@ int main(int argc, char *argv[])
 #endif
 
         /*
-         * test the function srtp_remove_stream()
+         * test the function srtp_stream_remove()
          */
-        printf("testing srtp_remove_stream()...");
+        printf("testing srtp_stream_remove()...");
         if (srtp_test_remove_stream() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
@@ -2818,7 +2818,7 @@ srtp_err_status_t srtp_test_remove_stream(void)
      * check for false positives by trying to remove a stream that's not
      * in the session
      */
-    status = srtp_remove_stream(session, htonl(0xaaaaaaaa));
+    status = srtp_stream_remove(session, 0xaaaaaaaa);
     if (status != srtp_err_status_no_ctx) {
         return srtp_err_status_fail;
     }
@@ -2827,7 +2827,7 @@ srtp_err_status_t srtp_test_remove_stream(void)
      * check for false negatives by removing stream 0x1, then
      * searching for streams 0x0 and 0x2
      */
-    status = srtp_remove_stream(session, htonl(0x1));
+    status = srtp_stream_remove(session, 0x1);
     if (status != srtp_err_status_ok) {
         return srtp_err_status_fail;
     }
@@ -2867,12 +2867,12 @@ srtp_err_status_t srtp_test_remove_stream(void)
         return status;
     }
 
-    status = srtp_add_stream(session, &policy);
+    status = srtp_stream_add(session, &policy);
     if (status != srtp_err_status_ok) {
         return status;
     }
 
-    status = srtp_remove_stream(session, htonl(0xcafebabe));
+    status = srtp_stream_remove(session, 0xcafebabe);
     if (status != srtp_err_status_ok) {
         return status;
     }
@@ -3327,7 +3327,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+    status = srtp_stream_get_roc(sender_session, sender_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3342,7 +3342,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+    status = srtp_stream_get_roc(sender_session, sender_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3357,7 +3357,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+    status = srtp_stream_get_roc(sender_session, sender_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3372,7 +3372,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+    status = srtp_stream_get_roc(sender_session, sender_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3387,7 +3387,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(sender_session, sender_policy.ssrc.value,
+    status = srtp_stream_get_roc(sender_session, sender_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3402,7 +3402,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_get_roc(receiver_session, receiver_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3415,7 +3415,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_get_roc(receiver_session, receiver_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3428,7 +3428,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_get_roc(receiver_session, receiver_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3441,7 +3441,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_get_roc(receiver_session, receiver_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3454,7 +3454,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     if (status) {
         return status;
     }
-    status = srtp_get_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_get_roc(receiver_session, receiver_policy.ssrc.value,
                                  &stream_roc);
     if (status) {
         return status;
@@ -3523,7 +3523,7 @@ srtp_err_status_t srtp_test_get_roc(void)
             return status;
         }
 
-        status = srtp_get_stream_roc(session, policy.ssrc.value, &roc);
+        status = srtp_stream_get_roc(session, policy.ssrc.value, &roc);
         if (status) {
             return status;
         }
@@ -3672,7 +3672,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     memcpy(recv_pkt_2, pkt_2, protected_msg_len_octets_2);
 
     /* Set the ROC to the wanted value */
-    status = srtp_set_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_set_roc(receiver_session, receiver_policy.ssrc.value,
                                  roc_to_set);
     if (status) {
         return status;
@@ -3750,7 +3750,7 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
     }
 
     /* Set the ROC before encrypting the first packet */
-    status = srtp_set_stream_roc(sender_session, sender_policy.ssrc.value,
+    status = srtp_stream_set_roc(sender_session, sender_policy.ssrc.value,
                                  roc_to_set);
     if (status != srtp_err_status_ok) {
         return status;
@@ -3794,7 +3794,7 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
     memcpy(recv_pkt, pkt, protected_msg_len_octets);
 
     /* Set the ROC to the wanted value */
-    status = srtp_set_stream_roc(receiver_session, receiver_policy.ssrc.value,
+    status = srtp_stream_set_roc(receiver_session, receiver_policy.ssrc.value,
                                  roc_to_set);
     if (status) {
         return status;

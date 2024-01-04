@@ -6,10 +6,10 @@ srtp_protect_mki
 srtp_unprotect
 srtp_unprotect_mki
 srtp_create
-srtp_add_stream
-srtp_remove_stream
+srtp_stream_add
+srtp_stream_remove
 srtp_update
-srtp_update_stream
+srtp_stream_update
 srtp_get_stream
 srtp_crypto_policy_set_rtp_default
 srtp_crypto_policy_set_rtcp_default
@@ -41,9 +41,9 @@ srtp_protect_rtcp
 srtp_protect_rtcp_mki
 srtp_unprotect_rtcp
 srtp_unprotect_rtcp_mki
-srtp_set_stream_roc
+srtp_stream_set_roc
 srtp_set_user_data
-srtp_get_stream_roc
+srtp_stream_get_roc
 srtp_get_user_data
 srtp_install_event_handler
 srtp_get_version_string

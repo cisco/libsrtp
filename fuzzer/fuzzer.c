@@ -849,7 +849,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
             /* Keep removing streams until the set of SSRCs extracted from the
              * fuzzer input is exhausted */
             if (i < num_remove_stream) {
-                if (srtp_remove_stream(srtp_ctx, remove_stream_ssrc[i]) !=
+                if (srtp_stream_remove(srtp_ctx, remove_stream_ssrc[i]) !=
                     srtp_err_status_ok) {
                     goto end;
                 }
@@ -860,11 +860,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
              * extracted from the fuzzer input is exhausted */
             if (j < num_set_roc * 2) {
                 uint32_t roc;
-                if (srtp_set_stream_roc(srtp_ctx, set_roc[j], set_roc[j + 1]) !=
+                if (srtp_stream_set_roc(srtp_ctx, set_roc[j], set_roc[j + 1]) !=
                     srtp_err_status_ok) {
                     goto end;
                 }
-                if (srtp_get_stream_roc(srtp_ctx, set_roc[j + 1], &roc) !=
+                if (srtp_stream_get_roc(srtp_ctx, set_roc[j + 1], &roc) !=
                     srtp_err_status_ok) {
                     goto end;
                 }
