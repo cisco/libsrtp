@@ -79,10 +79,10 @@ static uint8_t srtp_nibble_to_hex_char(uint8_t nibble)
     return buf[nibble & 0xF];
 }
 
-char *srtp_octet_string_hex_string(const void *s, int length)
+char *srtp_octet_string_hex_string(const void *s, size_t length)
 {
     const uint8_t *str = (const uint8_t *)s;
-    int i;
+    size_t i;
 
     /* double length, since one octet takes two hex characters */
     length *= 2;
@@ -397,7 +397,7 @@ void bitvector_left_shift(bitvector_t *x, int shift)
 
 #endif /* defined(__SSSE3__) */
 
-int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, int len)
+int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
 {
     /*
      * We use this somewhat obscure implementation to try to ensure the running
@@ -410,7 +410,7 @@ int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, int len)
 #if defined(__SSE2__)
     __m128i mm_accumulator1 = _mm_setzero_si128();
     __m128i mm_accumulator2 = _mm_setzero_si128();
-    for (int i = 0, n = len >> 5; i < n; ++i, a += 32, b += 32) {
+    for (size_t i = 0, n = len >> 5; i < n; ++i, a += 32, b += 32) {
         __m128i mm_a1 = _mm_loadu_si128((const __m128i *)a);
         __m128i mm_b1 = _mm_loadu_si128((const __m128i *)b);
         __m128i mm_a2 = _mm_loadu_si128((const __m128i *)(a + 16));

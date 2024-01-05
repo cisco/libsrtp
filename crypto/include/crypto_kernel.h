@@ -178,8 +178,8 @@ srtp_err_status_t srtp_crypto_kernel_load_debug_module(
  */
 srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
                                                   srtp_cipher_pointer_t *cp,
-                                                  int key_len,
-                                                  int tag_len);
+                                                  size_t key_len,
+                                                  size_t tag_len);
 
 /*
  * srtp_crypto_kernel_alloc_auth(id, ap, key_len, tag_len);
@@ -194,8 +194,8 @@ srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
  */
 srtp_err_status_t srtp_crypto_kernel_alloc_auth(srtp_auth_type_id_t id,
                                                 srtp_auth_pointer_t *ap,
-                                                int key_len,
-                                                int tag_len);
+                                                size_t key_len,
+                                                size_t tag_len);
 
 /*
  * srtp_crypto_kernel_set_debug_module(mod_name, v)

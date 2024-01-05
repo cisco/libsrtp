@@ -56,8 +56,8 @@
 #include <openssl/aes.h>
 
 typedef struct {
-    int key_size;
-    int tag_len;
+    size_t key_size;
+    size_t tag_len;
     EVP_CIPHER_CTX *ctx;
     srtp_cipher_direction_t dir;
 } srtp_aes_gcm_ctx_t;
@@ -70,10 +70,10 @@ typedef struct {
 #include <mbedtls/gcm.h>
 
 typedef struct {
-    int key_size;
-    int tag_len;
-    int aad_size;
-    int iv_len;
+    size_t key_size;
+    size_t tag_len;
+    size_t aad_size;
+    size_t iv_len;
     uint8_t iv[12];
     uint8_t tag[16];
     uint8_t aad[MAX_AD_SIZE];
@@ -93,14 +93,14 @@ typedef struct {
 #define MAX_AD_SIZE 2048
 
 typedef struct {
-    int key_size;
-    int tag_size;
+    size_t key_size;
+    size_t tag_size;
     srtp_cipher_direction_t dir;
     NSSInitContext *nss;
     PK11SymKey *key;
     uint8_t iv[12];
     uint8_t aad[MAX_AD_SIZE];
-    int aad_size;
+    size_t aad_size;
     CK_GCM_PARAMS params;
     uint8_t tag[16];
 } srtp_aes_gcm_ctx_t;

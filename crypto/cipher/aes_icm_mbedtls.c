@@ -114,13 +114,13 @@ srtp_debug_module_t srtp_mod_aes_icm = {
  * isn't used in counter mode.
  */
 static srtp_err_status_t srtp_aes_icm_mbedtls_alloc(srtp_cipher_t **c,
-                                                    int key_len,
-                                                    int tlen)
+                                                    size_t key_len,
+                                                    size_t tlen)
 {
     srtp_aes_icm_ctx_t *icm;
     (void)tlen;
 
-    debug_print(srtp_mod_aes_icm, "allocating cipher with key length %d",
+    debug_print(srtp_mod_aes_icm, "allocating cipher with key length %zu",
                 key_len);
 
     /*
@@ -291,7 +291,7 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
  */
 static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
                                                       unsigned char *buf,
-                                                      unsigned int *enc_len)
+                                                      size_t *enc_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
 

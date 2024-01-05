@@ -58,11 +58,11 @@
 #define PRINT_DEBUG 0   /* set to 1 to print out debugging data */
 #define VERBOSE_DEBUG 0 /* set to 1 to print out more data      */
 
-int rtp_sendto(rtp_sender_t sender, const void *msg, int len)
+ssize_t rtp_sendto(rtp_sender_t sender, const void *msg, size_t len)
 {
-    int octets_sent;
+    size_t octets_sent;
     srtp_err_status_t stat;
-    int pkt_len = len + RTP_HEADER_LEN;
+    size_t pkt_len = len + RTP_HEADER_LEN;
 
     /* marshal data */
     strncpy(sender->message.body, msg, len);
@@ -98,18 +98,21 @@ int rtp_sendto(rtp_sender_t sender, const void *msg, int len)
     return octets_sent;
 }
 
-int rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len)
+ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
 {
-    int octets_recvd;
+    ssize_t ret;
+    size_t octets_recvd;
     srtp_err_status_t stat;
 
-    octets_recvd = recvfrom(receiver->socket, (void *)&receiver->message, *len,
-                            0, (struct sockaddr *)NULL, 0);
+    ret = recvfrom(receiver->socket, (void *)&receiver->message, *len, 0,
+                   (struct sockaddr *)NULL, 0);
 
-    if (octets_recvd == -1) {
+    if (ret < 0) {
         *len = 0;
         return -1;
     }
+
+    octets_recvd = ret;
 
     /* verify rtp header */
     if (receiver->message.header.version != 2) {
@@ -118,7 +121,7 @@ int rtp_recvfrom(rtp_receiver_t receiver, void *msg, int *len)
     }
 
 #if PRINT_DEBUG
-    fprintf(stderr, "%d octets received from SSRC %u\n", octets_recvd,
+    fprintf(stderr, "%zu octets received from SSRC %u\n", octets_recvd,
             receiver->message.header.ssrc);
 #endif
 #if VERBOSE_DEBUG

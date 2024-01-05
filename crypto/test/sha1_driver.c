@@ -76,7 +76,7 @@ srtp_err_status_t hash_test_case_add(hash_test_case_t **list_ptr,
 {
     hash_test_case_t *list_head = *list_ptr;
     hash_test_case_t *test_case;
-    unsigned tmp_len;
+    size_t tmp_len;
 
     test_case = malloc(sizeof(hash_test_case_t));
     if (test_case == NULL)

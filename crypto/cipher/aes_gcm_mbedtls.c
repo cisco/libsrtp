@@ -98,15 +98,16 @@ srtp_debug_module_t srtp_mod_aes_gcm = {
  * initializing the KDF.
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_alloc(srtp_cipher_t **c,
-                                                    int key_len,
-                                                    int tlen)
+                                                    size_t key_len,
+                                                    size_t tlen)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *gcm;
 
-    debug_print(srtp_mod_aes_gcm, "allocating cipher with key length %d",
+    debug_print(srtp_mod_aes_gcm, "allocating cipher with key length %zu",
                 key_len);
-    debug_print(srtp_mod_aes_gcm, "allocating cipher with tag length %d", tlen);
+    debug_print(srtp_mod_aes_gcm, "allocating cipher with tag length %zu",
+                tlen);
 
     /*
      * Verify the key_len is valid for one of: AES-128/256
@@ -253,7 +254,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_set_iv(
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_set_aad(void *cv,
                                                       const uint8_t *aad,
-                                                      uint32_t aad_len)
+                                                      size_t aad_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -281,7 +282,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_set_aad(void *cv,
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
                                                       unsigned char *buf,
-                                                      unsigned int *enc_len)
+                                                      size_t *enc_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -317,11 +318,11 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_get_tag(void *cv,
                                                       uint8_t *buf,
-                                                      uint32_t *len)
+                                                      size_t *len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    debug_print(srtp_mod_aes_gcm, "appended tag size:  %d", c->tag_len);
+    debug_print(srtp_mod_aes_gcm, "appended tag size:  %zu", c->tag_len);
     *len = c->tag_len;
     memcpy(buf, c->tag, c->tag_len);
     return (srtp_err_status_ok);
@@ -337,7 +338,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_get_tag(void *cv,
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
                                                       unsigned char *buf,
-                                                      unsigned int *enc_len)
+                                                      size_t *enc_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;

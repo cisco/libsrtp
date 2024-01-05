@@ -55,13 +55,13 @@
 #include "cipher_types.h"
 
 static srtp_err_status_t srtp_null_cipher_alloc(srtp_cipher_t **c,
-                                                int key_len,
-                                                int tlen)
+                                                size_t key_len,
+                                                size_t tlen)
 {
     extern const srtp_cipher_type_t srtp_null_cipher;
     (void)tlen;
 
-    debug_print(srtp_mod_cipher, "allocating cipher with key length %d",
+    debug_print(srtp_mod_cipher, "allocating cipher with key length %zu",
                 key_len);
 
     /* allocate memory a cipher of type null_cipher */
@@ -117,7 +117,7 @@ static srtp_err_status_t srtp_null_cipher_set_iv(void *cv,
 
 static srtp_err_status_t srtp_null_cipher_encrypt(void *cv,
                                                   unsigned char *buf,
-                                                  unsigned int *bytes_to_encr)
+                                                  size_t *bytes_to_encr)
 {
     /* srtp_null_cipher_ctx_t *c = (srtp_null_cipher_ctx_t *)cv; */
     (void)cv;

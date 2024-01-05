@@ -47,7 +47,7 @@ extern "C" {
  * A trivial platform independent random source.
  * For use in test only.
  */
-void srtp_cipher_rand_for_tests(void *dest, uint32_t len);
+void srtp_cipher_rand_for_tests(void *dest, size_t len);
 
 /*
  * A trivial platform independent 32 bit random number.

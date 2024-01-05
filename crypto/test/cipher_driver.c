@@ -318,7 +318,7 @@ void cipher_driver_test_throughput(srtp_cipher_t *c)
     int max_enc_len = 2048; /* should be a power of two */
     int num_trials = 1000000;
 
-    printf("timing %s throughput, key length %d:\n", c->type->description,
+    printf("timing %s throughput, key length %zu:\n", c->type->description,
            c->key_len);
     fflush(stdout);
     for (i = min_enc_len; i <= max_enc_len; i = i * 2)
@@ -350,8 +350,9 @@ srtp_err_status_t cipher_driver_self_test(srtp_cipher_type_t *ct)
 #define INITIAL_BUFLEN 1024
 srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
 {
-    int i, j, num_trials = 1000;
-    unsigned len, buflen = INITIAL_BUFLEN;
+    int i, num_trials = 1000;
+    size_t j;
+    size_t len, buflen = INITIAL_BUFLEN;
     uint8_t buffer0[INITIAL_BUFLEN], buffer1[INITIAL_BUFLEN], *current, *end;
     uint8_t idx[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x12, 0x34 };
@@ -361,7 +362,7 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
 
     for (i = 0; i < num_trials; i++) {
         /* set buffers to zero */
-        for (j = 0; j < (int)buflen; j++) {
+        for (j = 0; j < buflen; j++) {
             buffer0[j] = buffer1[j] = 0;
         }
 
@@ -389,7 +390,7 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
 
             /* make sure that len doesn't cause us to overreach the buffer */
             if (current + len > end)
-                len = (unsigned)(end - current);
+                len = end - current;
 
             status = srtp_cipher_encrypt(c, current, &len);
             if (status)
@@ -404,10 +405,10 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
         }
 
         /* compare buffers */
-        for (j = 0; j < (int)buflen; j++) {
+        for (j = 0; j < buflen; j++) {
             if (buffer0[j] != buffer1[j]) {
 #if PRINT_DEBUG
-                printf("test case %d failed at byte %d\n", i, j);
+                printf("test case %d failed at byte %zu\n", i, j);
                 printf("computed: %s\n",
                        octet_string_hex_string(buffer1, buflen));
                 printf("expected: %s\n",
@@ -539,7 +540,7 @@ uint64_t cipher_array_bits_per_second(srtp_cipher_t *cipher_array[],
         /* length parameter to srtp_cipher_encrypt is in/out -- out is total,
          * padded
          * length -- so reset it each time. */
-        unsigned octets_to_encrypt = octets_in_buffer;
+        size_t octets_to_encrypt = octets_in_buffer;
 
         /* encrypt buffer with cipher */
         srtp_cipher_set_iv(cipher_array[cipher_index], (uint8_t *)&nonce,
@@ -569,7 +570,7 @@ void cipher_array_test_throughput(srtp_cipher_t *ca[], int num_cipher)
     int max_enc_len = 2048; /* should be a power of two */
     int num_trials = 1000000;
 
-    printf("timing %s throughput with key length %d, array size %d:\n",
+    printf("timing %s throughput with key length %zu, array size %d:\n",
            (ca[0])->type->description, (ca[0])->key_len, num_cipher);
     fflush(stdout);
     for (i = min_enc_len; i <= max_enc_len; i = i * 4)

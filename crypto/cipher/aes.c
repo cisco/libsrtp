@@ -1503,7 +1503,7 @@ static void aes_256_expand_encryption_key(const unsigned char *key,
 
 srtp_err_status_t srtp_aes_expand_encryption_key(
     const uint8_t *key,
-    int key_len,
+    size_t key_len,
     srtp_aes_expanded_key_t *expanded_key)
 {
     if (key_len == 16) {
@@ -1522,7 +1522,7 @@ srtp_err_status_t srtp_aes_expand_encryption_key(
 
 srtp_err_status_t srtp_aes_expand_decryption_key(
     const uint8_t *key,
-    int key_len,
+    size_t key_len,
     srtp_aes_expanded_key_t *expanded_key)
 {
     int i;
