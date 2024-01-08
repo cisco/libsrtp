@@ -61,7 +61,7 @@ extern "C" {
 typedef struct {
     uint32_t H[5];            /* state vector                    */
     uint32_t M[16];           /* message buffer                  */
-    int octets_in_buffer;     /* octets of message in buffer     */
+    size_t octets_in_buffer;  /* octets of message in buffer     */
     uint32_t num_bits_in_msg; /* total number of bits in message */
 } srtp_sha1_ctx_t;
 
@@ -79,7 +79,7 @@ void srtp_sha1_init(srtp_sha1_ctx_t *ctx);
 
 void srtp_sha1_update(srtp_sha1_ctx_t *ctx,
                       const uint8_t *M,
-                      int octets_in_msg);
+                      size_t octets_in_msg);
 
 void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t output[5]);
 

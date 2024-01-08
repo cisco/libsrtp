@@ -79,7 +79,7 @@ typedef union {
 
 #define MAX_PRINT_STRING_LEN 1024
 
-char *srtp_octet_string_hex_string(const void *str, int length);
+char *srtp_octet_string_hex_string(const void *str, size_t length);
 
 char *v128_bit_string(v128_t *x);
 
@@ -163,7 +163,7 @@ void v128_left_shift(v128_t *x, int shift_index);
  * verifying authentication tags.
  */
 
-int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, int len);
+int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len);
 
 /*
  * A portable way to zero out memory as recommended by

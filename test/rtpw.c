@@ -149,8 +149,8 @@ int main(int argc, char *argv[])
     srtp_sec_serv_t sec_servs = sec_serv_none;
     unsigned char ttl = 5;
     int c;
-    int key_size = 128;
-    int tag_size = 8;
+    size_t key_size = 128;
+    size_t tag_size = 8;
     int gcm_on = 0;
     char *input_key = NULL;
     int b64_input = 0;
@@ -160,8 +160,8 @@ int main(int argc, char *argv[])
     rtp_sender_t snd;
     srtp_policy_t policy;
     srtp_err_status_t status;
-    int len;
-    int expected_len;
+    size_t len;
+    size_t expected_len;
     int do_list_mods = 0;
     uint32_t ssrc = 0xdeadbeef; /* ssrc value hardcoded for now */
 #ifdef RTPW_USE_WINSOCK2
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
         case 'e':
             key_size = atoi(optarg_s);
             if (key_size != 128 && key_size != 256) {
-                printf("error: encryption key size must be 128 or 256 (%d)\n",
+                printf("error: encryption key size must be 128 or 256 (%zu)\n",
                        key_size);
                 exit(1);
             }
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
         case 't':
             tag_size = atoi(optarg_s);
             if (tag_size != 8 && tag_size != 16) {
-                printf("error: GCM tag size must be 8 or 16 (%d)\n", tag_size);
+                printf("error: GCM tag size must be 8 or 16 (%zu)\n", tag_size);
                 exit(1);
             }
             break;
@@ -485,15 +485,15 @@ int main(int argc, char *argv[])
         if (len < expected_len) {
             fprintf(stderr,
                     "error: too few digits in key/salt "
-                    "(should be %d digits, found %d)\n",
+                    "(should be %zu digits, found %zu)\n",
                     expected_len, len);
             exit(1);
         }
-        if ((int)strlen(input_key) > policy.rtp.cipher_key_len * 2) {
+        if (strlen(input_key) > policy.rtp.cipher_key_len * 2) {
             fprintf(stderr,
                     "error: too many digits in key/salt "
-                    "(should be %d hexadecimal digits, found %u)\n",
-                    policy.rtp.cipher_key_len * 2, (unsigned)strlen(input_key));
+                    "(should be %zu hexadecimal digits, found %zu)\n",
+                    policy.rtp.cipher_key_len * 2, strlen(input_key));
             exit(1);
         }
 

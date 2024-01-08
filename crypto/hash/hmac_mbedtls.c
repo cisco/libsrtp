@@ -61,14 +61,14 @@ srtp_debug_module_t srtp_mod_hmac = {
 };
 
 static srtp_err_status_t srtp_hmac_mbedtls_alloc(srtp_auth_t **a,
-                                                 int key_len,
-                                                 int out_len)
+                                                 size_t key_len,
+                                                 size_t out_len)
 {
     extern const srtp_auth_type_t srtp_hmac;
 
-    debug_print(srtp_mod_hmac, "allocating auth func with key length %d",
+    debug_print(srtp_mod_hmac, "allocating auth func with key length %zu",
                 key_len);
-    debug_print(srtp_mod_hmac, "                          tag length %d",
+    debug_print(srtp_mod_hmac, "                          tag length %zu",
                 out_len);
 
     /* check output length - should be less than 20 bytes */
@@ -124,7 +124,7 @@ static srtp_err_status_t srtp_hmac_mbedtls_start(void *statev)
 
 static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
                                                 const uint8_t *key,
-                                                int key_len)
+                                                size_t key_len)
 {
     mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
     const mbedtls_md_info_t *info = NULL;
@@ -149,7 +149,7 @@ static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
 
 static srtp_err_status_t srtp_hmac_mbedtls_update(void *statev,
                                                   const uint8_t *message,
-                                                  int msg_octets)
+                                                  size_t msg_octets)
 {
     mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
 
@@ -164,13 +164,13 @@ static srtp_err_status_t srtp_hmac_mbedtls_update(void *statev,
 
 static srtp_err_status_t srtp_hmac_mbedtls_compute(void *statev,
                                                    const uint8_t *message,
-                                                   int msg_octets,
-                                                   int tag_len,
+                                                   size_t msg_octets,
+                                                   size_t tag_len,
                                                    uint8_t *result)
 {
     mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
     uint8_t hash_value[SHA1_DIGEST_SIZE];
-    int i;
+    size_t i;
 
     /* check tag length, return error if we can't provide the value expected */
     if (tag_len > SHA1_DIGEST_SIZE) {

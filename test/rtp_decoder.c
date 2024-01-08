@@ -559,7 +559,7 @@ int main(int argc, char *argv[])
         if (strlen(input_key) > (size_t)policy.rtp.cipher_key_len * 2) {
             fprintf(stderr,
                     "error: too many digits in key/salt "
-                    "(should be %d hexadecimal digits, found %u)\n",
+                    "(should be %zu hexadecimal digits, found %u)\n",
                     policy.rtp.cipher_key_len * 2, (unsigned)strlen(input_key));
             exit(1);
         }
@@ -738,7 +738,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
     int rtp;
     int pktsize;
     struct timeval delta;
-    int octets_recvd;
+    size_t octets_recvd;
     srtp_err_status_t status;
     dcdr->frame_nr++;
 
@@ -753,11 +753,12 @@ void rtp_decoder_handle_pkt(u_char *arg,
 
     memcpy((void *)&message, rtp_packet, hdr->caplen - dcdr->rtp_offset);
     pktsize = hdr->caplen - dcdr->rtp_offset;
-    octets_recvd = pktsize;
 
-    if (octets_recvd == -1) {
+    if (pktsize < 0) {
         return;
     }
+
+    octets_recvd = pktsize;
 
     if (dcdr->mode == mode_rtp) {
         rtp = 1;

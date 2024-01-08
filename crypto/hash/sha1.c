@@ -229,13 +229,13 @@ void srtp_sha1_init(srtp_sha1_ctx_t *ctx)
 
 void srtp_sha1_update(srtp_sha1_ctx_t *ctx,
                       const uint8_t *msg,
-                      int octets_in_msg)
+                      size_t octets_in_msg)
 {
-    int i;
+    size_t i;
     uint8_t *buf = (uint8_t *)ctx->M;
 
     /* update message bit-count */
-    ctx->num_bits_in_msg += octets_in_msg * 8;
+    ctx->num_bits_in_msg += (uint32_t)octets_in_msg * 8;
 
     /* loop over 16-word blocks of M */
     while (octets_in_msg > 0) {
@@ -279,7 +279,7 @@ void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t output[5])
 {
     uint32_t A, B, C, D, E, TEMP;
     uint32_t W[80];
-    int i, t;
+    size_t i, t;
 
     /*
      * process the remaining octets_in_buffer, padding and terminating as

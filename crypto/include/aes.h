@@ -62,12 +62,12 @@ typedef struct {
 
 srtp_err_status_t srtp_aes_expand_encryption_key(
     const uint8_t *key,
-    int key_len,
+    size_t key_len,
     srtp_aes_expanded_key_t *expanded_key);
 
 srtp_err_status_t srtp_aes_expand_decryption_key(
     const uint8_t *key,
-    int key_len,
+    size_t key_len,
     srtp_aes_expanded_key_t *expanded_key);
 
 void srtp_aes_encrypt(v128_t *plaintext,

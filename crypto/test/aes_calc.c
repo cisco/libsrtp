@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     v128_t data;
     uint8_t key[AES_MAX_KEY_LEN];
     srtp_aes_expanded_key_t exp_key;
-    int key_len, len;
+    size_t key_len, len;
     int verbose = 0;
     srtp_err_status_t status;
 
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     if (len != 32 && len != 48 && len != 64) {
         fprintf(stderr,
                 "error: bad number of digits in key "
-                "(should be 32/48/64 hexadecimal digits, found %d)\n",
+                "(should be 32/48/64 hexadecimal digits, found %zu)\n",
                 len);
         exit(1);
     }
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     if (len < 16 * 2) {
         fprintf(stderr,
                 "error: too few digits in plaintext "
-                "(should be %d hexadecimal digits, found %d)\n",
+                "(should be %d hexadecimal digits, found %zu)\n",
                 16 * 2, len);
         exit(1);
     }

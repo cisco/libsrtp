@@ -94,13 +94,13 @@ srtp_debug_module_t srtp_mod_aes_icm = {
  */
 
 static srtp_err_status_t srtp_aes_icm_alloc(srtp_cipher_t **c,
-                                            int key_len,
-                                            int tlen)
+                                            size_t key_len,
+                                            size_t tlen)
 {
     srtp_aes_icm_ctx_t *icm;
     (void)tlen;
 
-    debug_print(srtp_mod_aes_icm, "allocating cipher with key length %d",
+    debug_print(srtp_mod_aes_icm, "allocating cipher with key length %zu",
                 key_len);
 
     /*
@@ -183,7 +183,7 @@ static srtp_err_status_t srtp_aes_icm_context_init(void *cv, const uint8_t *key)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
     srtp_err_status_t status;
-    int base_key_len, copy_len;
+    size_t base_key_len, copy_len;
 
     if (c->key_size == SRTP_AES_ICM_128_KEY_LEN_WSALT ||
         c->key_size == SRTP_AES_ICM_256_KEY_LEN_WSALT) {
@@ -296,10 +296,10 @@ static void srtp_aes_icm_advance(srtp_aes_icm_ctx_t *c)
 
 static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
                                               unsigned char *buf,
-                                              unsigned int *enc_len)
+                                              size_t *enc_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
-    unsigned int bytes_to_encr = *enc_len;
+    unsigned int bytes_to_encr = (unsigned int)*enc_len;
     unsigned int i;
     uint32_t *b;
 

@@ -120,7 +120,7 @@ typedef struct srtp_session_keys_t {
     uint8_t salt[SRTP_AEAD_SALT_LEN];
     uint8_t c_salt[SRTP_AEAD_SALT_LEN];
     uint8_t *mki_id;
-    unsigned int mki_size;
+    size_t mki_size;
     srtp_key_limit_ctx_t *limit;
 } srtp_session_keys_t;
 
