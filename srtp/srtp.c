@@ -344,10 +344,29 @@ static srtp_err_status_t srtp_remove_and_dealloc_streams(
     return data.status;
 }
 
-static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *p)
+static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *policy)
 {
-    if (p != NULL && p->deprecated_ekt != NULL) {
+    if (policy == NULL) {
         return srtp_err_status_bad_param;
+    }
+
+    if (policy->key == NULL) {
+        if (policy->num_master_keys <= 0) {
+            return srtp_err_status_bad_param;
+        }
+
+        if (policy->num_master_keys > SRTP_MAX_NUM_MASTER_KEYS) {
+            return srtp_err_status_bad_param;
+        }
+
+        for (unsigned long i = 0; i < policy->num_master_keys; i++) {
+            if (policy->keys[i]->key == NULL) {
+                return srtp_err_status_bad_param;
+            }
+            if (policy->keys[i]->mki_size > SRTP_MAX_MKI_LEN) {
+                return srtp_err_status_bad_param;
+            }
+        }
     }
 
     return srtp_err_status_ok;
@@ -860,29 +879,6 @@ static inline size_t full_key_length(const srtp_cipher_type_t *cipher)
     default:
         return 0;
     }
-}
-
-static unsigned int srtp_validate_policy_master_keys(
-    const srtp_policy_t *policy)
-{
-    unsigned long i = 0;
-
-    if (policy->key == NULL) {
-        if (policy->num_master_keys <= 0)
-            return 0;
-
-        if (policy->num_master_keys > SRTP_MAX_NUM_MASTER_KEYS)
-            return 0;
-
-        for (i = 0; i < policy->num_master_keys; i++) {
-            if (policy->keys[i]->key == NULL)
-                return 0;
-            if (policy->keys[i]->mki_size > SRTP_MAX_MKI_LEN)
-                return 0;
-        }
-    }
-
-    return 1;
 }
 
 srtp_session_keys_t *srtp_get_session_keys_with_mki_index(
@@ -2919,15 +2915,15 @@ srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t *policy)
     srtp_err_status_t status;
     srtp_stream_t tmp;
 
+    /* sanity check arguments */
+    if (session == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
         return status;
     }
-
-    /* sanity check arguments */
-    if ((session == NULL) || (policy == NULL) ||
-        (!srtp_validate_policy_master_keys(policy)))
-        return srtp_err_status_bad_param;
 
     /* allocate stream  */
     status = srtp_stream_alloc(&tmp, policy);
@@ -2989,14 +2985,17 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
     srtp_err_status_t stat;
     srtp_ctx_t *ctx;
 
-    stat = srtp_valid_policy(policy);
-    if (stat != srtp_err_status_ok) {
-        return stat;
+    /* sanity check arguments */
+    if (session == NULL) {
+        return srtp_err_status_bad_param;
     }
 
-    /* sanity check arguments */
-    if (session == NULL)
-        return srtp_err_status_bad_param;
+    if (policy) {
+        stat = srtp_valid_policy(policy);
+        if (stat != srtp_err_status_ok) {
+            return stat;
+        }
+    }
 
     /* allocate srtp context and set ctx_ptr */
     ctx = (srtp_ctx_t *)srtp_crypto_alloc(sizeof(srtp_ctx_t));
@@ -3066,15 +3065,14 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy)
 {
     srtp_err_status_t stat;
 
+    /* sanity check arguments */
+    if (session == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
     stat = srtp_valid_policy(policy);
     if (stat != srtp_err_status_ok) {
         return stat;
-    }
-
-    /* sanity check arguments */
-    if ((session == NULL) || (policy == NULL) ||
-        (!srtp_validate_policy_master_keys(policy))) {
-        return srtp_err_status_bad_param;
     }
 
     while (policy != NULL) {
@@ -3258,15 +3256,15 @@ srtp_err_status_t srtp_stream_update(srtp_t session,
 {
     srtp_err_status_t status;
 
+    /* sanity check arguments */
+    if (session == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
     status = srtp_valid_policy(policy);
     if (status != srtp_err_status_ok) {
         return status;
     }
-
-    /* sanity check arguments */
-    if ((session == NULL) || (policy == NULL) ||
-        (!srtp_validate_policy_master_keys(policy)))
-        return srtp_err_status_bad_param;
 
     switch (policy->ssrc.type) {
     case (ssrc_any_outbound):

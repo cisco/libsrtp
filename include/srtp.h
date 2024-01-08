@@ -337,8 +337,6 @@ typedef struct srtp_policy_t {
                                    /**< this stream.                        */
     srtp_master_key_t **keys;      /** Array of Master Key structures       */
     unsigned long num_master_keys; /** Number of master keys                */
-    void *deprecated_ekt;          /**< DEPRECATED: pointer to the EKT      */
-                                   /**< policy structure for this stream    */
     unsigned long window_size;     /**< The window size to use for replay   */
                                    /**< protection.                         */
     int allow_repeat_tx;           /**< Whether retransmissions of          */
