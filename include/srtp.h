@@ -284,7 +284,7 @@ typedef enum {
  */
 typedef struct {
     srtp_ssrc_type_t type; /**< The type of this particular SSRC */
-    unsigned int value;    /**< The value of this SSRC, if it is not a */
+    uint32_t value;        /**< The value of this SSRC, if it is not a */
                            /**< wildcard */
 } srtp_ssrc_t;
 
@@ -636,7 +636,7 @@ srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t *policy);
  *    - [other]           otherwise.
  *
  */
-srtp_err_status_t srtp_stream_remove(srtp_t session, unsigned int ssrc);
+srtp_err_status_t srtp_stream_remove(srtp_t session, uint32_t ssrc);
 
 /**
  * @brief srtp_update() updates all streams in the session.

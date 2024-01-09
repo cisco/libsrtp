@@ -147,7 +147,7 @@ ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
 int rtp_sender_init(rtp_sender_t sender,
                     int sock,
                     struct sockaddr_in addr,
-                    unsigned int ssrc)
+                    uint32_t ssrc)
 {
     /* set header values */
     sender->message.header.ssrc = htonl(ssrc);
@@ -170,7 +170,7 @@ int rtp_sender_init(rtp_sender_t sender,
 int rtp_receiver_init(rtp_receiver_t rcvr,
                       int sock,
                       struct sockaddr_in addr,
-                      unsigned int ssrc)
+                      uint32_t ssrc)
 {
     /* set header values */
     rcvr->message.header.ssrc = htonl(ssrc);

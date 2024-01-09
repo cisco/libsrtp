@@ -37,7 +37,7 @@ struct fuzz_srtp_params {
     uint16_t window_size;
     uint8_t allow_repeat_tx;
     uint8_t ssrc_type;
-    unsigned int ssrc_value;
+    uint32_t ssrc_value;
     uint8_t key[MAX_KEY_LEN];
     uint8_t mki;
 };
