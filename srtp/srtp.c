@@ -4867,6 +4867,7 @@ srtp_err_status_t srtp_stream_index_alloc(srtp_stream_index *stream_index_ptr)
     stream_index->entries = srtp_crypto_alloc(sizeof(stream_index_entry) *
                                               INITIAL_STREAM_INDEX_SIZE);
     if (stream_index->entries == NULL) {
+        srtp_crypto_free(stream_index);
         return srtp_err_status_alloc_fail;
     }
 
