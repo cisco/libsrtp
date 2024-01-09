@@ -4921,10 +4921,9 @@ srtp_err_status_t srtp_stream_index_insert(srtp_stream_index stream_index,
 
 void srtp_stream_index_remove(srtp_stream_index stream_index, uint32_t ssrc)
 {
-    unsigned int i = 0;
     unsigned int end = stream_index->size - stream_index->available;
 
-    for (; i < end; i++) {
+    for (unsigned int i = 0; i < end; i++) {
         if (stream_index->entries[i].ssrc == ssrc) {
             size_t entries_to_move =
                 stream_index->size - stream_index->available - i - 1;
@@ -4940,12 +4939,11 @@ void srtp_stream_index_remove(srtp_stream_index stream_index, uint32_t ssrc)
 srtp_stream_t srtp_stream_index_get(srtp_stream_index stream_index,
                                     uint32_t ssrc)
 {
-    unsigned int i = 0;
     unsigned int end = stream_index->size - stream_index->available;
 
     stream_index_entry *entries = stream_index->entries;
 
-    for (; i < end; i++) {
+    for (unsigned int i = 0; i < end; i++) {
         if (entries[i].ssrc == ssrc) {
             return entries[i].stream;
         }
