@@ -134,9 +134,9 @@ int main(int argc, char *argv[])
     };
     /* clang-format on */
     int q;
-    unsigned do_timing_test = 0;
-    unsigned do_validation = 0;
-    unsigned do_array_timing_test = 0;
+    bool do_timing_test = false;
+    bool do_validation = false;
+    bool do_array_timing_test = false;
 
     /* process input arguments */
     while (1) {
@@ -145,13 +145,13 @@ int main(int argc, char *argv[])
             break;
         switch (q) {
         case 't':
-            do_timing_test = 1;
+            do_timing_test = true;
             break;
         case 'v':
-            do_validation = 1;
+            do_validation = true;
             break;
         case 'a':
-            do_array_timing_test = 1;
+            do_array_timing_test = true;
             break;
         default:
             usage(argv[0]);

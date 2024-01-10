@@ -47,6 +47,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -339,7 +340,7 @@ typedef struct srtp_policy_t {
     unsigned long num_master_keys; /** Number of master keys                */
     unsigned long window_size;     /**< The window size to use for replay   */
                                    /**< protection.                         */
-    int allow_repeat_tx;           /**< Whether retransmissions of          */
+    bool allow_repeat_tx;          /**< Whether retransmissions of          */
                                    /**< packets with the same sequence      */
                                    /**< number are allowed.                 */
                                    /**< (Note that such repeated            */
@@ -474,7 +475,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, size_t *len_ptr);
 srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
                                    void *rtp_hdr,
                                    size_t *pkt_octet_len,
-                                   unsigned int use_mki,
+                                   bool use_mki,
                                    unsigned int mki_index);
 
 /**
@@ -568,7 +569,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, size_t *len_ptr);
 srtp_err_status_t srtp_unprotect_mki(srtp_t ctx,
                                      void *srtp_hdr,
                                      size_t *len_ptr,
-                                     unsigned int use_mki);
+                                     bool use_mki);
 
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
@@ -1382,7 +1383,7 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
 srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
                                         void *rtcp_hdr,
                                         size_t *pkt_octet_len,
-                                        unsigned int use_mki,
+                                        bool use_mki,
                                         unsigned int mki_index);
 
 /**
@@ -1475,7 +1476,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
 srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
                                           void *srtcp_hdr,
                                           size_t *pkt_octet_len,
-                                          unsigned int use_mki);
+                                          bool use_mki);
 
 /**
  * @}
@@ -1702,7 +1703,7 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func,
  *
  */
 srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
-                                                  uint32_t use_mki,
+                                                  bool use_mki,
                                                   uint32_t mki_index,
                                                   size_t *length);
 
@@ -1719,7 +1720,7 @@ srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
  *
  */
 srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
-                                                       uint32_t use_mki,
+                                                       bool use_mki,
                                                        uint32_t mki_index,
                                                        size_t *length);
 

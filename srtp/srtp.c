@@ -883,7 +883,7 @@ static inline size_t full_key_length(const srtp_cipher_type_t *cipher)
 
 srtp_session_keys_t *srtp_get_session_keys_with_mki_index(
     srtp_stream_ctx_t *stream,
-    unsigned int use_mki,
+    bool use_mki,
     unsigned int mki_index)
 {
     if (use_mki) {
@@ -898,7 +898,7 @@ srtp_session_keys_t *srtp_get_session_keys_with_mki_index(
 
 size_t srtp_inject_mki(uint8_t *mki_tag_location,
                        srtp_session_keys_t *session_keys,
-                       unsigned int use_mki)
+                       bool use_mki)
 {
     size_t mki_size = 0;
 
@@ -1371,11 +1371,6 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
     srtp_rdb_init(&srtp->rtcp_rdb);
 
     /* initialize allow_repeat_tx */
-    /* guard against uninitialized memory: allow only 0 or 1 here */
-    if (p->allow_repeat_tx != 0 && p->allow_repeat_tx != 1) {
-        srtp_rdbx_dealloc(&srtp->rtp_rdbx);
-        return srtp_err_status_bad_param;
-    }
     srtp->allow_repeat_tx = p->allow_repeat_tx;
 
     /* DAM - no RTCP key limit at present */
@@ -1785,7 +1780,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
                                            void *rtp_hdr,
                                            size_t *pkt_octet_len,
                                            srtp_session_keys_t *session_keys,
-                                           unsigned int use_mki)
+                                           bool use_mki)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
     uint8_t *enc_start;       /* pointer to start of encrypted portion  */
@@ -1958,7 +1953,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
                                              size_t *pkt_octet_len,
                                              srtp_session_keys_t *session_keys,
                                              size_t mki_size,
-                                             int advance_packet_index)
+                                             bool advance_packet_index)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
     uint8_t *enc_start;       /* pointer to start of encrypted portion  */
@@ -2154,13 +2149,13 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
                                void *rtp_hdr,
                                size_t *pkt_octet_len)
 {
-    return srtp_protect_mki(ctx, rtp_hdr, pkt_octet_len, 0, 0);
+    return srtp_protect_mki(ctx, rtp_hdr, pkt_octet_len, false, 0);
 }
 
 srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
                                    void *rtp_hdr,
                                    size_t *pkt_octet_len,
-                                   unsigned int use_mki,
+                                   bool use_mki,
                                    unsigned int mki_index)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t *)rtp_hdr;
@@ -2476,13 +2471,13 @@ srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
                                  void *srtp_hdr,
                                  size_t *pkt_octet_len)
 {
-    return srtp_unprotect_mki(ctx, srtp_hdr, pkt_octet_len, 0);
+    return srtp_unprotect_mki(ctx, srtp_hdr, pkt_octet_len, false);
 }
 
 srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
                                      void *srtp_hdr,
                                      size_t *pkt_octet_len,
-                                     unsigned int use_mki)
+                                     bool use_mki)
 {
     srtp_hdr_t *hdr = (srtp_hdr_t *)srtp_hdr;
     uint8_t *enc_start;       /* pointer to start of encrypted portion  */
@@ -2499,7 +2494,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     size_t mki_size = 0;
     srtp_session_keys_t *session_keys = NULL;
-    int advance_packet_index = 0;
+    bool advance_packet_index = false;
     uint32_t roc_to_set = 0;
     uint16_t seq_to_set = 0;
 
@@ -2553,7 +2548,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
             return status;
 
         if (status == srtp_err_status_pkt_idx_adv) {
-            advance_packet_index = 1;
+            advance_packet_index = true;
             roc_to_set = (uint32_t)(est >> 16);
             seq_to_set = (uint16_t)(est & 0xFFFF);
         }
@@ -3629,7 +3624,7 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
     void *rtcp_hdr,
     size_t *pkt_octet_len,
     srtp_session_keys_t *session_keys,
-    unsigned int use_mki)
+    bool use_mki)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t *)rtcp_hdr;
     uint8_t *enc_start;       /* pointer to start of encrypted portion  */
@@ -3800,7 +3795,7 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
     void *srtcp_hdr,
     size_t *pkt_octet_len,
     srtp_session_keys_t *session_keys,
-    unsigned int use_mki)
+    bool use_mki)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t *)srtcp_hdr;
     uint8_t *enc_start;       /* pointer to start of encrypted portion  */
@@ -3994,13 +3989,13 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
                                     void *rtcp_hdr,
                                     size_t *pkt_octet_len)
 {
-    return srtp_protect_rtcp_mki(ctx, rtcp_hdr, pkt_octet_len, 0, 0);
+    return srtp_protect_rtcp_mki(ctx, rtcp_hdr, pkt_octet_len, false, 0);
 }
 
 srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
                                         void *rtcp_hdr,
                                         size_t *pkt_octet_len,
-                                        unsigned int use_mki,
+                                        bool use_mki,
                                         unsigned int mki_index)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t *)rtcp_hdr;
@@ -4223,13 +4218,13 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
                                       void *srtcp_hdr,
                                       size_t *pkt_octet_len)
 {
-    return srtp_unprotect_rtcp_mki(ctx, srtcp_hdr, pkt_octet_len, 0);
+    return srtp_unprotect_rtcp_mki(ctx, srtcp_hdr, pkt_octet_len, false);
 }
 
 srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
                                           void *srtcp_hdr,
                                           size_t *pkt_octet_len,
-                                          unsigned int use_mki)
+                                          bool use_mki)
 {
     srtcp_hdr_t *hdr = (srtcp_hdr_t *)srtcp_hdr;
     uint8_t *enc_start;       /* pointer to start of encrypted portion  */
@@ -4636,8 +4631,8 @@ size_t srtp_profile_get_master_salt_length(srtp_profile_t profile)
 }
 
 srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
-                                                    uint32_t is_rtp,
-                                                    uint32_t use_mki,
+                                                    bool is_rtp,
+                                                    bool use_mki,
                                                     uint32_t mki_index,
                                                     size_t *length)
 {
@@ -4667,10 +4662,10 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
 }
 
 struct get_protect_trailer_length_data {
-    uint32_t found_stream; /* whether at least one matching stream was found */
-    size_t length;         /* maximum trailer length found so far */
-    uint32_t is_rtp;
-    uint32_t use_mki;
+    bool found_stream; /* whether at least one matching stream was found */
+    size_t length;     /* maximum trailer length found so far */
+    bool is_rtp;
+    bool use_mki;
     uint32_t mki_index;
 };
 
@@ -4683,7 +4678,7 @@ static int get_protect_trailer_length_cb(srtp_stream_t stream, void *raw_data)
     if (stream_get_protect_trailer_length(stream, data->is_rtp, data->use_mki,
                                           data->mki_index,
                                           &temp_length) == srtp_err_status_ok) {
-        data->found_stream = 1;
+        data->found_stream = true;
         if (temp_length > data->length) {
             data->length = temp_length;
         }
@@ -4693,13 +4688,13 @@ static int get_protect_trailer_length_cb(srtp_stream_t stream, void *raw_data)
 }
 
 srtp_err_status_t get_protect_trailer_length(srtp_t session,
-                                             uint32_t is_rtp,
-                                             uint32_t use_mki,
+                                             bool is_rtp,
+                                             bool use_mki,
                                              uint32_t mki_index,
                                              size_t *length)
 {
     srtp_stream_ctx_t *stream;
-    struct get_protect_trailer_length_data data = { 0, 0, is_rtp, use_mki,
+    struct get_protect_trailer_length_data data = { false, 0, is_rtp, use_mki,
                                                     mki_index };
 
     if (session == NULL) {
@@ -4709,7 +4704,7 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
     stream = session->stream_template;
 
     if (stream != NULL) {
-        data.found_stream = 1;
+        data.found_stream = true;
         stream_get_protect_trailer_length(stream, is_rtp, use_mki, mki_index,
                                           &data.length);
     }
@@ -4726,7 +4721,7 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
 }
 
 srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
-                                                  uint32_t use_mki,
+                                                  bool use_mki,
                                                   uint32_t mki_index,
                                                   size_t *length)
 {
@@ -4734,11 +4729,12 @@ srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
 }
 
 srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
-                                                       uint32_t use_mki,
+                                                       bool use_mki,
                                                        uint32_t mki_index,
                                                        size_t *length)
 {
-    return get_protect_trailer_length(session, 0, use_mki, mki_index, length);
+    return get_protect_trailer_length(session, false, use_mki, mki_index,
+                                      length);
 }
 
 /*
