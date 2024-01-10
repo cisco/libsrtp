@@ -709,7 +709,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug_logging
-enable_steam_index
+enable_stream_index
 enable_openssl
 enable_nss
 with_openssl_dir
@@ -5341,8 +5341,8 @@ if test "$enable_stream_index" = "yes"; then
 $as_echo "#define ENABLE_STREAM_INDEX 1" >>confdefs.h
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_steam_index" >&5
-$as_echo "$enable_steam_index" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stream_index" >&5
+$as_echo "$enable_stream_index" >&6; }
 
 
 
