@@ -219,13 +219,13 @@ srtp_debug_module_t mod_driver = {
 int main(int argc, char *argv[])
 {
     int q;
-    unsigned do_timing_test = 0;
-    unsigned do_rejection_test = 0;
-    unsigned do_codec_timing = 0;
-    unsigned do_validation = 0;
-    unsigned do_stream_list = 0;
-    unsigned do_list_mods = 0;
-    unsigned do_log_stdout = 0;
+    bool do_timing_test = false;
+    bool do_rejection_test = false;
+    bool do_codec_timing = false;
+    bool do_validation = false;
+    bool do_stream_list = false;
+    bool do_list_mods = false;
+    bool do_log_stdout = false;
     srtp_err_status_t status;
     const size_t hdr_size = 12;
 
@@ -264,26 +264,26 @@ int main(int argc, char *argv[])
         }
         switch (q) {
         case 't':
-            do_timing_test = 1;
+            do_timing_test = true;
             break;
         case 'r':
-            do_rejection_test = 1;
+            do_rejection_test = true;
             break;
         case 'c':
-            do_codec_timing = 1;
+            do_codec_timing = true;
             break;
         case 'v':
-            do_validation = 1;
-            do_stream_list = 1;
+            do_validation = true;
+            do_stream_list = true;
             break;
         case 's':
-            do_stream_list = 1;
+            do_stream_list = true;
             break;
         case 'o':
-            do_log_stdout = 1;
+            do_log_stdout = true;
             break;
         case 'l':
-            do_list_mods = 1;
+            do_list_mods = true;
             break;
         case 'd':
             status = srtp_set_debug_module(optarg_s, 1);
@@ -652,7 +652,7 @@ int main(int argc, char *argv[])
         policy.ssrc.value = 0xdecafbad;
         policy.key = test_key;
         policy.window_size = 128;
-        policy.allow_repeat_tx = 0;
+        policy.allow_repeat_tx = false;
         policy.next = NULL;
 
         printf("mips estimate: %e\n", mips_value);
@@ -1044,7 +1044,7 @@ srtp_err_status_t srtp_test_call_protect(srtp_t srtp_sender,
     if (mki_index == -1) {
         return srtp_protect(srtp_sender, hdr, len);
     } else {
-        return srtp_protect_mki(srtp_sender, hdr, len, 1, mki_index);
+        return srtp_protect_mki(srtp_sender, hdr, len, true, mki_index);
     }
 }
 
@@ -1056,16 +1056,16 @@ srtp_err_status_t srtp_test_call_protect_rtcp(srtp_t srtp_sender,
     if (mki_index == -1) {
         return srtp_protect_rtcp(srtp_sender, hdr, len);
     } else {
-        return srtp_protect_rtcp_mki(srtp_sender, hdr, len, 1, mki_index);
+        return srtp_protect_rtcp_mki(srtp_sender, hdr, len, true, mki_index);
     }
 }
 
 srtp_err_status_t srtp_test_call_unprotect(srtp_t srtp_sender,
                                            srtp_hdr_t *hdr,
                                            size_t *len,
-                                           int use_mki)
+                                           bool use_mki)
 {
-    if (use_mki == -1) {
+    if (!use_mki) {
         return srtp_unprotect(srtp_sender, hdr, len);
     } else {
         return srtp_unprotect_mki(srtp_sender, hdr, len, use_mki);
@@ -1075,9 +1075,9 @@ srtp_err_status_t srtp_test_call_unprotect(srtp_t srtp_sender,
 srtp_err_status_t srtp_test_call_unprotect_rtcp(srtp_t srtp_sender,
                                                 srtcp_hdr_t *hdr,
                                                 size_t *len,
-                                                int use_mki)
+                                                bool use_mki)
 {
-    if (use_mki == -1) {
+    if (!use_mki) {
         return srtp_unprotect_rtcp(srtp_sender, hdr, len);
     } else {
         return srtp_unprotect_rtcp_mki(srtp_sender, hdr, len, use_mki);
@@ -1102,10 +1102,10 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     srtp_policy_t *rcvr_policy;
     srtp_policy_t tmp_policy;
     int header = 1;
-    int use_mki = 0;
+    bool use_mki = false;
 
     if (mki_index >= 0)
-        use_mki = 1;
+        use_mki = true;
 
     if (extension_header) {
         memcpy(&tmp_policy, policy, sizeof(srtp_policy_t));
@@ -1333,10 +1333,10 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index)
     size_t tag_length;
     uint32_t ssrc;
     srtp_policy_t *rcvr_policy;
-    int use_mki = 0;
+    bool use_mki = false;
 
     if (mki_index >= 0)
-        use_mki = 1;
+        use_mki = true;
 
     err_check(srtp_create(&srtcp_sender, policy));
 
@@ -1806,7 +1806,7 @@ srtp_err_status_t srtp_validate(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&srtp_snd, &policy);
@@ -1965,7 +1965,7 @@ srtp_err_status_t srtp_validate_null(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&srtp_snd, &policy);
@@ -2126,7 +2126,7 @@ srtp_err_status_t srtp_validate_gcm(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_gcm;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&srtp_snd, &policy);
@@ -2288,7 +2288,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_ext_headers;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.enc_xtn_hdr = headers;
     policy.enc_xtn_hdr_count = sizeof(headers) / sizeof(headers[0]);
     policy.next = NULL;
@@ -2408,7 +2408,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_ext_headers;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.enc_xtn_hdr = headers;
     policy.enc_xtn_hdr_count = sizeof(headers) / sizeof(headers[0]);
     policy.next = NULL;
@@ -2523,7 +2523,7 @@ srtp_err_status_t srtp_validate_aes_256(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = aes_256_test_key;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&srtp_snd, &policy);
@@ -2650,7 +2650,7 @@ srtp_err_status_t srtp_test_empty_payload(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&srtp_snd, &policy);
@@ -2725,7 +2725,7 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&srtp_snd, &policy);
@@ -2849,7 +2849,7 @@ srtp_err_status_t srtp_test_remove_stream(void)
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
 
     status = srtp_create(&session, NULL);
@@ -2907,7 +2907,7 @@ srtp_err_status_t srtp_test_update(void)
     srtp_crypto_policy_set_rtp_default(&policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
     policy.key = test_key;
 
@@ -3073,7 +3073,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     srtp_crypto_policy_set_rtp_default(&policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
     policy.window_size = 128;
-    policy.allow_repeat_tx = 0;
+    policy.allow_repeat_tx = false;
     policy.next = NULL;
     policy.ssrc.type = ssrc_any_outbound;
     policy.key = test_key;
@@ -3082,7 +3082,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     srtp_crypto_policy_set_rtp_default(&policy_mki.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy_mki.rtcp);
     policy_mki.window_size = 128;
-    policy_mki.allow_repeat_tx = 0;
+    policy_mki.allow_repeat_tx = false;
     policy_mki.next = NULL;
     policy_mki.ssrc.type = ssrc_any_outbound;
     policy_mki.key = NULL;
@@ -3094,7 +3094,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm.rtp);
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm.rtcp);
     policy_aes_gcm.window_size = 128;
-    policy_aes_gcm.allow_repeat_tx = 0;
+    policy_aes_gcm.allow_repeat_tx = false;
     policy_aes_gcm.next = NULL;
     policy_aes_gcm.ssrc.type = ssrc_any_outbound;
     policy_aes_gcm.key = test_key;
@@ -3103,7 +3103,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm_mki.rtp);
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy_aes_gcm_mki.rtcp);
     policy_aes_gcm_mki.window_size = 128;
-    policy_aes_gcm_mki.allow_repeat_tx = 0;
+    policy_aes_gcm_mki.allow_repeat_tx = false;
     policy_aes_gcm_mki.next = NULL;
     policy_aes_gcm_mki.ssrc.type = ssrc_any_outbound;
     policy_aes_gcm_mki.key = NULL;
