@@ -328,29 +328,29 @@ typedef struct srtp_master_key_t {
  */
 
 typedef struct srtp_policy_t {
-    srtp_ssrc_t ssrc;              /**< The SSRC value of stream, or the    */
-                                   /**< flags SSRC_ANY_INBOUND or           */
-                                   /**< SSRC_ANY_OUTBOUND if key sharing    */
-                                   /**< is used for this policy element.    */
-    srtp_crypto_policy_t rtp;      /**< SRTP crypto policy.                 */
-    srtp_crypto_policy_t rtcp;     /**< SRTCP crypto policy.                */
-    unsigned char *key;            /**< Pointer to the SRTP master key for  */
-                                   /**< this stream.                        */
-    srtp_master_key_t **keys;      /** Array of Master Key structures       */
-    unsigned long num_master_keys; /** Number of master keys                */
-    unsigned long window_size;     /**< The window size to use for replay   */
-                                   /**< protection.                         */
-    bool allow_repeat_tx;          /**< Whether retransmissions of          */
-                                   /**< packets with the same sequence      */
-                                   /**< number are allowed.                 */
-                                   /**< (Note that such repeated            */
-                                   /**< transmissions must have the same    */
-                                   /**< RTP payload, or a severe security   */
-                                   /**< weakness is introduced!)            */
-    int *enc_xtn_hdr;              /**< List of header ids to encrypt.      */
-    int enc_xtn_hdr_count;         /**< Number of entries in list of header */
-                                   /**<  ids.                               */
-    struct srtp_policy_t *next;    /**< Pointer to next stream policy.      */
+    srtp_ssrc_t ssrc;           /**< The SSRC value of stream, or the    */
+                                /**< flags SSRC_ANY_INBOUND or           */
+                                /**< SSRC_ANY_OUTBOUND if key sharing    */
+                                /**< is used for this policy element.    */
+    srtp_crypto_policy_t rtp;   /**< SRTP crypto policy.                 */
+    srtp_crypto_policy_t rtcp;  /**< SRTCP crypto policy.                */
+    unsigned char *key;         /**< Pointer to the SRTP master key for  */
+                                /**< this stream.                        */
+    srtp_master_key_t **keys;   /** Array of Master Key structures       */
+    size_t num_master_keys;     /** Number of master keys                */
+    unsigned long window_size;  /**< The window size to use for replay   */
+                                /**< protection.                         */
+    bool allow_repeat_tx;       /**< Whether retransmissions of          */
+                                /**< packets with the same sequence      */
+                                /**< number are allowed.                 */
+                                /**< (Note that such repeated            */
+                                /**< transmissions must have the same    */
+                                /**< RTP payload, or a severe security   */
+                                /**< weakness is introduced!)            */
+    int *enc_xtn_hdr;           /**< List of header ids to encrypt.      */
+    int enc_xtn_hdr_count;      /**< Number of entries in list of header */
+                                /**<  ids.                               */
+    struct srtp_policy_t *next; /**< Pointer to next stream policy.      */
 } srtp_policy_t;
 
 /**

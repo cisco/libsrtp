@@ -177,7 +177,6 @@ static srtp_err_status_t srtp_stream_dealloc(
     const srtp_stream_ctx_t *stream_template)
 {
     srtp_err_status_t status;
-    unsigned int i = 0;
     srtp_session_keys_t *session_keys = NULL;
     srtp_session_keys_t *template_session_keys = NULL;
 
@@ -187,7 +186,7 @@ static srtp_err_status_t srtp_stream_dealloc(
      * anything else
      */
     if (stream->session_keys) {
-        for (i = 0; i < stream->num_master_keys; i++) {
+        for (size_t i = 0; i < stream->num_master_keys; i++) {
             session_keys = &stream->session_keys[i];
 
             if (stream_template &&
@@ -377,7 +376,7 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
 {
     srtp_stream_ctx_t *str;
     srtp_err_status_t stat;
-    unsigned int i = 0;
+    size_t i = 0;
     srtp_session_keys_t *session_keys = NULL;
 
     stat = srtp_valid_policy(p);
@@ -544,7 +543,6 @@ static srtp_err_status_t srtp_stream_clone(
 {
     srtp_err_status_t status;
     srtp_stream_ctx_t *str;
-    unsigned int i = 0;
     srtp_session_keys_t *session_keys = NULL;
     const srtp_session_keys_t *template_session_keys = NULL;
 
@@ -566,7 +564,7 @@ static srtp_err_status_t srtp_stream_clone(
         return srtp_err_status_alloc_fail;
     }
 
-    for (i = 0; i < stream_template->num_master_keys; i++) {
+    for (size_t i = 0; i < stream_template->num_master_keys; i++) {
         session_keys = &str->session_keys[i];
         template_session_keys = &stream_template->session_keys[i];
 
@@ -914,13 +912,11 @@ size_t srtp_inject_mki(uint8_t *mki_tag_location,
     return mki_size;
 }
 
-srtp_err_status_t srtp_stream_init_all_master_keys(
-    srtp_stream_ctx_t *srtp,
-    unsigned char *key,
-    srtp_master_key_t **keys,
-    const unsigned int max_master_keys)
+srtp_err_status_t srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp,
+                                                   unsigned char *key,
+                                                   srtp_master_key_t **keys,
+                                                   const size_t max_master_keys)
 {
-    unsigned int i = 0;
     srtp_err_status_t status = srtp_err_status_ok;
     srtp_master_key_t single_master_key;
 
@@ -933,8 +929,8 @@ srtp_err_status_t srtp_stream_init_all_master_keys(
     } else {
         srtp->num_master_keys = max_master_keys;
 
-        for (i = 0; i < srtp->num_master_keys && i < SRTP_MAX_NUM_MASTER_KEYS;
-             i++) {
+        for (size_t i = 0;
+             i < srtp->num_master_keys && i < SRTP_MAX_NUM_MASTER_KEYS; i++) {
             status = srtp_stream_init_keys(srtp, keys[i], i);
 
             if (status) {
@@ -948,7 +944,7 @@ srtp_err_status_t srtp_stream_init_all_master_keys(
 
 srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
                                         srtp_master_key_t *master_key,
-                                        const unsigned int current_mki_index)
+                                        const size_t current_mki_index)
 {
     srtp_err_status_t stat;
     srtp_kdf_t kdf;
@@ -1637,7 +1633,6 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
     size_t base_mki_start_location = pkt_octet_len;
     size_t mki_start_location = 0;
     size_t tag_len = 0;
-    unsigned int i = 0;
 
     // Determine the authentication tag size
     if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
@@ -1654,7 +1649,7 @@ srtp_session_keys_t *srtp_get_session_keys(srtp_stream_ctx_t *stream,
 
     base_mki_start_location -= tag_len;
 
-    for (i = 0; i < stream->num_master_keys; i++) {
+    for (size_t i = 0; i < stream->num_master_keys; i++) {
         if (stream->session_keys[i].mki_size != 0 &&
             stream->session_keys[i].mki_size <= base_mki_start_location) {
             *mki_size = stream->session_keys[i].mki_size;

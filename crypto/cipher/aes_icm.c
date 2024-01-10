@@ -300,7 +300,6 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
     unsigned int bytes_to_encr = (unsigned int)*enc_len;
-    unsigned int i;
     uint32_t *b;
 
     /* check that there's enough segment left*/
@@ -313,7 +312,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
     debug_print(srtp_mod_aes_icm, "block index: %d", htons(c->counter.v16[7]));
     if (bytes_to_encr <= (unsigned int)c->bytes_in_buffer) {
         /* deal with odd case of small bytes_to_encr */
-        for (i = (sizeof(v128_t) - c->bytes_in_buffer);
+        for (size_t i = (sizeof(v128_t) - c->bytes_in_buffer);
              i < (sizeof(v128_t) - c->bytes_in_buffer + bytes_to_encr); i++) {
             *buf++ ^= c->keystream_buffer.v8[i];
         }
@@ -325,8 +324,8 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
 
     } else {
         /* encrypt bytes until the remaining data is 16-byte aligned */
-        for (i = (sizeof(v128_t) - c->bytes_in_buffer); i < sizeof(v128_t);
-             i++) {
+        for (size_t i = (sizeof(v128_t) - c->bytes_in_buffer);
+             i < sizeof(v128_t); i++) {
             *buf++ ^= c->keystream_buffer.v8[i];
         }
 
@@ -335,7 +334,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
     }
 
     /* now loop over entire 16-byte blocks of keystream */
-    for (i = 0; i < (bytes_to_encr / sizeof(v128_t)); i++) {
+    for (size_t i = 0; i < (bytes_to_encr / sizeof(v128_t)); i++) {
         /* fill buffer with new keystream */
         srtp_aes_icm_advance(c);
 
@@ -385,12 +384,12 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
         /* fill buffer with new keystream */
         srtp_aes_icm_advance(c);
 
-        for (i = 0; i < (bytes_to_encr & 0xf); i++) {
+        for (size_t i = 0; i < (bytes_to_encr & 0xf); i++) {
             *buf++ ^= c->keystream_buffer.v8[i];
         }
 
         /* reset the keystream buffer size to right value */
-        c->bytes_in_buffer = sizeof(v128_t) - i;
+        c->bytes_in_buffer = sizeof(v128_t) - (bytes_to_encr & 0xf);
     } else {
         /* no tail, so just reset the keystream buffer size to zero */
         c->bytes_in_buffer = 0;
