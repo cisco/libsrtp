@@ -5033,7 +5033,7 @@ void srtp_stream_list_remove(srtp_stream_list_t list,
         if (list->entries[i].ssrc == stream_to_remove->ssrc) {
             size_t entries_to_move = list->size - list->available - i - 1;
             memmove(&list->entries[i], &list->entries[i + 1],
-                    entries_to_move * sizeof(list_entry));
+                    sizeof(list_entry) * entries_to_move);
             list->available++;
 
             break;
