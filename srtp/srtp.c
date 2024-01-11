@@ -4978,10 +4978,17 @@ srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
     return srtp_err_status_ok;
 }
 
+/*
+ * inserting a new entry in the list may require reallocating memory in order
+ * to keep all the items in a contiguous memory block.
+ */
 srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
                                           srtp_stream_t stream)
 {
-    // there is no available index entry, duplicate number of entries
+    /*
+     * there is no space to hold the new entry in the entries buffer,
+     * duplicate the size of the buffer.
+     */
     if (list->available == 0) {
         size_t new_size = list->size * 2;
         list_entry *new_entries =
@@ -4990,13 +4997,13 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
             return srtp_err_status_alloc_fail;
         }
 
-        // copy previous entries into the new ones
+        // copy previous entries into the new buffer
         memcpy(new_entries, list->entries, sizeof(list_entry) * list->size);
         // release previous entries
         srtp_crypto_free(list->entries);
-        // assign new entries to the index
+        // assign new entries to the list
         list->entries = new_entries;
-        // update index info
+        // update list info
         list->size = new_size;
         list->available = new_size / 2;
     }
@@ -5012,21 +5019,11 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
     return srtp_err_status_ok;
 }
 
-srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
-{
-    unsigned int end = list->size - list->available;
-
-    list_entry *entries = list->entries;
-
-    for (unsigned int i = 0; i < end; i++) {
-        if (entries[i].ssrc == ssrc) {
-            return entries[i].stream;
-        }
-    }
-
-    return NULL;
-}
-
+/*
+ * removing an entry from the list performs a memory move of the following
+ * entries one possition back in order to keep all the entries in the buffer
+ * contiguous.
+ */
 void srtp_stream_list_remove(srtp_stream_list_t list,
                              srtp_stream_t stream_to_remove)
 {
@@ -5044,6 +5041,21 @@ void srtp_stream_list_remove(srtp_stream_list_t list,
     }
 }
 
+srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
+{
+    unsigned int end = list->size - list->available;
+
+    list_entry *entries = list->entries;
+
+    for (unsigned int i = 0; i < end; i++) {
+        if (entries[i].ssrc == ssrc) {
+            return entries[i].stream;
+        }
+    }
+
+    return NULL;
+}
+
 void srtp_stream_list_for_each(srtp_stream_list_t list,
                                int (*callback)(srtp_stream_t, void *),
                                void *data)
@@ -5051,13 +5063,20 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
     list_entry *entries = list->entries;
 
     unsigned int ssrc;
+
+    /*
+     * the second statement of the expression needs to be recalculated on each
+     * iteration as the available number of entries may change within the given
+     * callback.
+     * Ie: in case the callback calls srtp_stream_list_remove().
+     */
     for (unsigned int i = 0; i < list->size - list->available;) {
         ssrc = entries[i].ssrc;
         if (callback(entries[i].stream, data)) {
             break;
         }
 
-        // entry was not removed, increase counter.
+        // the entry was not removed, increase the counter.
         if (ssrc == entries[i].ssrc) {
             ++i;
         }
