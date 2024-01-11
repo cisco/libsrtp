@@ -593,9 +593,6 @@ static srtp_err_status_t srtp_stream_clone(
     str->enc_xtn_hdr = stream_template->enc_xtn_hdr;
     str->enc_xtn_hdr_count = stream_template->enc_xtn_hdr_count;
 
-    /* defensive coding */
-    str->next = NULL;
-    str->prev = NULL;
     return srtp_err_status_ok;
 }
 
@@ -4841,94 +4838,6 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 
 #ifndef SRTP_NO_STREAM_LIST
 
-#ifndef ENABLE_STREAM_INDEX
-/* in the default implementation, we have an intrusive doubly-linked list */
-typedef struct srtp_stream_list_ctx_t_ {
-    /* a stub stream that just holds pointers to the beginning and end of the
-     * list */
-    srtp_stream_ctx_t data;
-} srtp_stream_list_ctx_t_;
-
-srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
-{
-    srtp_stream_list_t list =
-        srtp_crypto_alloc(sizeof(srtp_stream_list_ctx_t_));
-    if (list == NULL) {
-        return srtp_err_status_alloc_fail;
-    }
-
-    list->data.next = NULL;
-    list->data.prev = NULL;
-
-    *list_ptr = list;
-    return srtp_err_status_ok;
-}
-
-srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
-{
-    /* list must be empty */
-    if (list->data.next) {
-        return srtp_err_status_fail;
-    }
-    srtp_crypto_free(list);
-    return srtp_err_status_ok;
-}
-
-srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
-                                          srtp_stream_t stream)
-{
-    /* insert at the head of the list */
-    stream->next = list->data.next;
-    if (stream->next != NULL) {
-        stream->next->prev = stream;
-    }
-    list->data.next = stream;
-    stream->prev = &(list->data);
-
-    return srtp_err_status_ok;
-}
-
-srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
-{
-    /* walk down list until ssrc is found */
-    srtp_stream_t stream = list->data.next;
-    while (stream != NULL) {
-        if (stream->ssrc == ssrc) {
-            return stream;
-        }
-        stream = stream->next;
-    }
-
-    /* we haven't found our ssrc, so return a null */
-    return NULL;
-}
-
-void srtp_stream_list_remove(srtp_stream_list_t list,
-                             srtp_stream_t stream_to_remove)
-{
-    (void)list;
-
-    stream_to_remove->prev->next = stream_to_remove->next;
-    if (stream_to_remove->next != NULL) {
-        stream_to_remove->next->prev = stream_to_remove->prev;
-    }
-}
-
-void srtp_stream_list_for_each(srtp_stream_list_t list,
-                               int (*callback)(srtp_stream_t, void *),
-                               void *data)
-{
-    srtp_stream_t stream = list->data.next;
-    while (stream != NULL) {
-        srtp_stream_t tmp = stream;
-        stream = stream->next;
-        if (callback(tmp, data))
-            break;
-    }
-}
-
-#else
-
 #define INITIAL_STREAM_INDEX_SIZE 2
 
 typedef struct list_entry {
@@ -5083,5 +4992,4 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
     }
 }
 
-#endif
 #endif

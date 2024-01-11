@@ -709,7 +709,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_debug_logging
-enable_stream_index
 enable_openssl
 enable_nss
 with_openssl_dir
@@ -5325,24 +5324,6 @@ $as_echo "#define ENABLE_DEBUG_LOGGING 1" >>confdefs.h
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_debug_logging" >&5
 $as_echo "$enable_debug_logging" >&6; }
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable stream index" >&5
-$as_echo_n "checking whether to enable stream index... " >&6; }
-# Check whether --enable-stream-index was given.
-if test "${enable-stream-index+set}" = set; then :
-  enableval=$enable_stream_index;
-else
-  enable_stream_index=no
-fi
-
-if test "$enable_stream_index" = "yes"; then
-
-$as_echo "#define ENABLE_STREAM_INDEX 1" >>confdefs.h
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_stream_index" >&5
-$as_echo "$enable_stream_index" >&6; }
 
 
 

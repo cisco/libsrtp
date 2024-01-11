@@ -58,8 +58,7 @@ extern "C" {
  * the API was extracted to allow downstreams to override its
  * implementation by defining the `SRTP_NO_STREAM_LIST` preprocessor
  * directive, which removes the default implementation of these
- * functions. if this is done, the `next` & `prev` fields are free for
- * the implementation to use.
+ * functions.
  *
  * this is still an internal interface; there is no stability
  * guarantee--downstreams should watch this file for changes in
