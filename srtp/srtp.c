@@ -4971,7 +4971,7 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
 {
     list_entry *entries = list->entries;
 
-    uint32_t ssrc;
+    size_t available = list->available;
 
     /*
      * the second statement of the expression needs to be recalculated on each
@@ -4980,15 +4980,16 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
      * Ie: in case the callback calls srtp_stream_list_remove().
      */
     for (unsigned int i = 0; i < list->size - list->available;) {
-        ssrc = entries[i].ssrc;
         if (callback(entries[i].stream, data)) {
             break;
         }
 
         // the entry was not removed, increase the counter.
-        if (ssrc == entries[i].ssrc) {
+        if (available == list->available) {
             ++i;
         }
+
+        available = list->available;
     }
 }
 
