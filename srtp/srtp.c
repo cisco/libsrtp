@@ -5009,7 +5009,7 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
     }
 
     // fill the first available entry
-    size_t next_index = list->size - list->available;
+    unsigned int next_index = list->size - list->available;
     list->entries[next_index].ssrc = stream->ssrc;
     list->entries[next_index].stream = stream;
 
@@ -5062,7 +5062,7 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
 {
     list_entry *entries = list->entries;
 
-    unsigned int ssrc;
+    uint32_t ssrc;
 
     /*
      * the second statement of the expression needs to be recalculated on each
