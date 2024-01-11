@@ -4918,7 +4918,7 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
     }
 
     // fill the first available entry
-    unsigned int next_index = list->size - list->available;
+    size_t next_index = list->size - list->available;
     list->entries[next_index].ssrc = stream->ssrc;
     list->entries[next_index].stream = stream;
 
@@ -4936,7 +4936,7 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
 void srtp_stream_list_remove(srtp_stream_list_t list,
                              srtp_stream_t stream_to_remove)
 {
-    unsigned int end = list->size - list->available;
+    size_t end = list->size - list->available;
 
     for (unsigned int i = 0; i < end; i++) {
         if (list->entries[i].ssrc == stream_to_remove->ssrc) {
@@ -4952,7 +4952,7 @@ void srtp_stream_list_remove(srtp_stream_list_t list,
 
 srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
 {
-    unsigned int end = list->size - list->available;
+    size_t end = list->size - list->available;
 
     list_entry *entries = list->entries;
 
