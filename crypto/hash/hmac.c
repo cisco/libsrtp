@@ -117,7 +117,6 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
                                         size_t key_len)
 {
     srtp_hmac_ctx_t *state = (srtp_hmac_ctx_t *)statev;
-    size_t i;
     uint8_t ipad[64];
 
     /*
@@ -132,12 +131,12 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
      * set values of ipad and opad by exoring the key into the
      * appropriate constant values
      */
-    for (i = 0; i < key_len; i++) {
+    for (size_t i = 0; i < key_len; i++) {
         ipad[i] = key[i] ^ 0x36;
         state->opad[i] = key[i] ^ 0x5c;
     }
     /* set the rest of ipad, opad to constant values */
-    for (; i < 64; i++) {
+    for (size_t i = key_len; i < 64; i++) {
         ipad[i] = 0x36;
         ((uint8_t *)state->opad)[i] = 0x5c;
     }

@@ -346,7 +346,7 @@ end:
 static srtp_master_key_t **extract_master_keys(const uint8_t **data,
                                                size_t *size,
                                                const size_t key_size,
-                                               unsigned long *num_master_keys)
+                                               size_t *num_master_keys)
 {
     const uint8_t *data_orig = *data;
     size_t size_orig = *size;
