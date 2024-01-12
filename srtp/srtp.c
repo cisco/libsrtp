@@ -4896,7 +4896,7 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
 {
     /*
      * there is no space to hold the new entry in the entries buffer,
-     * duplicate the size of the buffer.
+     * double the size of the buffer.
      */
     if (list->available == 0) {
         size_t new_size = list->size * 2;
