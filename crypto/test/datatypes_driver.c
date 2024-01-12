@@ -152,7 +152,7 @@ void test_hex_string_funcs(void)
 {
     char hex1[] = "abadcafe";
     char hex2[] = "0123456789abcdefqqqqq";
-    char raw[10];
+    uint8_t raw[10];
     size_t len;
 
     len = hex_string_to_octet_string(raw, hex1, strlen(hex1));

@@ -295,7 +295,7 @@ static void srtp_aes_icm_advance(srtp_aes_icm_ctx_t *c)
  */
 
 static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
-                                              unsigned char *buf,
+                                              uint8_t *buf,
                                               size_t *enc_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;

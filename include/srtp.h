@@ -296,8 +296,8 @@ typedef struct {
  * Index Size to correctly read it from a packet.
  */
 typedef struct srtp_master_key_t {
-    unsigned char *key;
-    unsigned char *mki_id;
+    uint8_t *key;
+    uint8_t *mki_id;
     size_t mki_size;
 } srtp_master_key_t;
 
@@ -334,7 +334,7 @@ typedef struct srtp_policy_t {
                                 /**< is used for this policy element.    */
     srtp_crypto_policy_t rtp;   /**< SRTP crypto policy.                 */
     srtp_crypto_policy_t rtcp;  /**< SRTCP crypto policy.                */
-    unsigned char *key;         /**< Pointer to the SRTP master key for  */
+    uint8_t *key;               /**< Pointer to the SRTP master key for  */
                                 /**< this stream.                        */
     srtp_master_key_t **keys;   /** Array of Master Key structures       */
     size_t num_master_keys;     /** Number of master keys                */
@@ -422,7 +422,7 @@ srtp_err_status_t srtp_shutdown(void);
  *    - srtp_err_status_replay_fail   rtp sequence number was non-increasing
  *    - @e other                 failure in cryptographic mechanisms
  */
-srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, size_t *len_ptr);
+srtp_err_status_t srtp_protect(srtp_t ctx, uint8_t *rtp_hdr, size_t *len_ptr);
 
 /**
  * @brief srtp_protect_mki() is the Secure RTP sender-side packet processing
@@ -473,7 +473,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx, void *rtp_hdr, size_t *len_ptr);
  *    - @e other                 failure in cryptographic mechanisms
  */
 srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
-                                   void *rtp_hdr,
+                                   uint8_t *rtp_hdr,
                                    size_t *pkt_octet_len,
                                    bool use_mki,
                                    unsigned int mki_index);
@@ -518,7 +518,9 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
  *    - [other]  if there has been an error in the cryptographic mechanisms.
  *
  */
-srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, size_t *len_ptr);
+srtp_err_status_t srtp_unprotect(srtp_t ctx,
+                                 uint8_t *srtp_hdr,
+                                 size_t *len_ptr);
 
 /**
  * @brief srtp_unprotect_mki() is the Secure RTP receiver-side packet
@@ -567,7 +569,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx, void *srtp_hdr, size_t *len_ptr);
  *
  */
 srtp_err_status_t srtp_unprotect_mki(srtp_t ctx,
-                                     void *srtp_hdr,
+                                     uint8_t *srtp_hdr,
                                      size_t *len_ptr,
                                      bool use_mki);
 
@@ -1266,9 +1268,9 @@ size_t srtp_profile_get_master_salt_length(srtp_profile_t profile);
  *          available at the location pointed to by key.
  *
  */
-void srtp_append_salt_to_key(unsigned char *key,
+void srtp_append_salt_to_key(uint8_t *key,
                              size_t bytes_in_key,
-                             unsigned char *salt,
+                             uint8_t *salt,
                              size_t bytes_in_salt);
 
 /**
@@ -1332,7 +1334,7 @@ void srtp_append_salt_to_key(unsigned char *key,
  *                               the cryptographic mechanisms.
  */
 srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
-                                    void *rtcp_hdr,
+                                    uint8_t *rtcp_hdr,
                                     size_t *pkt_octet_len);
 
 /**
@@ -1381,7 +1383,7 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
  *                               the cryptographic mechanisms.
  */
 srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
-                                        void *rtcp_hdr,
+                                        uint8_t *rtcp_hdr,
                                         size_t *pkt_octet_len,
                                         bool use_mki,
                                         unsigned int mki_index);
@@ -1425,7 +1427,7 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
  *
  */
 srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
-                                      void *srtcp_hdr,
+                                      uint8_t *srtcp_hdr,
                                       size_t *pkt_octet_len);
 
 /**
@@ -1474,7 +1476,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
  *
  */
 srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
-                                          void *srtcp_hdr,
+                                          uint8_t *srtcp_hdr,
                                           size_t *pkt_octet_len,
                                           bool use_mki);
 

@@ -93,7 +93,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
  */
 srtp_err_status_t srtp_stream_init_all_master_keys(
     srtp_stream_ctx_t *srtp,
-    unsigned char *key,
+    uint8_t *key,
     srtp_master_key_t **keys,
     const size_t max_master_keys);
 

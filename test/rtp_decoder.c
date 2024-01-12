@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
     int gcm_on = 0;
     char *input_key = NULL;
     int b64_input = 0;
-    char key[MAX_KEY_LEN];
+    uint8_t key[MAX_KEY_LEN];
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
     char pcap_file[MAX_FILE] = "-";
@@ -520,7 +520,7 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        policy.key = (uint8_t *)key;
+        policy.key = key;
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = false;
@@ -779,14 +779,16 @@ void rtp_decoder_handle_pkt(u_char *arg,
             return;
         }
 
-        status = srtp_unprotect(dcdr->srtp_ctx, &message, &octets_recvd);
+        status =
+            srtp_unprotect(dcdr->srtp_ctx, (uint8_t *)&message, &octets_recvd);
         if (status) {
             dcdr->error_cnt++;
             return;
         }
         dcdr->rtp_cnt++;
     } else {
-        status = srtp_unprotect_rtcp(dcdr->srtp_ctx, &message, &octets_recvd);
+        status = srtp_unprotect_rtcp(dcdr->srtp_ctx, (uint8_t *)&message,
+                                     &octets_recvd);
         if (status) {
             dcdr->error_cnt++;
             return;

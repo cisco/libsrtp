@@ -74,7 +74,8 @@ ssize_t rtp_sendto(rtp_sender_t sender, const void *msg, size_t len)
     sender->message.header.ts = htonl(sender->message.header.ts);
 
     /* apply srtp */
-    stat = srtp_protect(sender->srtp_ctx, &sender->message.header, &pkt_len);
+    stat = srtp_protect(sender->srtp_ctx, (uint8_t *)&sender->message.header,
+                        &pkt_len);
     if (stat) {
 #if PRINT_DEBUG
         fprintf(stderr, "error: srtp protection failed with code %d\n", stat);
@@ -129,8 +130,8 @@ ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
 #endif
 
     /* apply srtp */
-    stat = srtp_unprotect(receiver->srtp_ctx, &receiver->message.header,
-                          &octets_recvd);
+    stat = srtp_unprotect(receiver->srtp_ctx,
+                          (uint8_t *)&receiver->message.header, &octets_recvd);
     if (stat) {
         fprintf(stderr, "error: srtp unprotection failed with code %d%s\n",
                 stat,

@@ -45,14 +45,15 @@
 #define SRTP_TEST_UTIL_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #define MAX_PRINT_STRING_LEN 1024
 
-size_t hex_string_to_octet_string(char *raw, char *hex, size_t len);
-char *octet_string_hex_string(const void *s, size_t length);
-size_t base64_string_to_octet_string(char *raw,
+size_t hex_string_to_octet_string(uint8_t *raw, const char *hex, size_t len);
+const char *octet_string_hex_string(const uint8_t *str, size_t length);
+size_t base64_string_to_octet_string(uint8_t *raw,
                                      int *pad,
-                                     char *base64,
+                                     const char *base64,
                                      size_t len);
 
 #endif
