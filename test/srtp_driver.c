@@ -2373,7 +2373,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
         0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
         0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab
     };
-    uint8_t srtp_plaintext[64] = {
+    uint8_t srtp_plaintext[72] = {
         0x90, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
         0xca, 0xfe, 0xba, 0xbe, 0xBE, 0xDE, 0x00, 0x06,
         0x17, 0x41, 0x42, 0x73, 0xA4, 0x75, 0x26, 0x27,
@@ -2381,9 +2381,10 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
         0x55, 0x99, 0x63, 0x86, 0xB3, 0x95, 0xFB, 0x00,
         0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
         0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
-    uint8_t srtp_ciphertext[64] = {
+    uint8_t srtp_ciphertext[72] = {
         0x90, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
         0xca, 0xfe, 0xba, 0xbe, 0xBE, 0xDE, 0x00, 0x06,
         0x17, 0x12, 0xe0, 0x20, 0x5b, 0xfa, 0x94, 0x9b,
@@ -2391,7 +2392,8 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
         0x73, 0x27, 0x78, 0xd9, 0x92, 0x9a, 0xab, 0x00,
         0x0e, 0xca, 0x0c, 0xf9, 0x5e, 0xe9, 0x55, 0xb2,
         0x6c, 0xd3, 0xd2, 0x88, 0xb4, 0x9f, 0x6c, 0xa9,
-        0xf4, 0xb1, 0xb7, 0x59, 0x71, 0x9e, 0xb5, 0xbc
+        0xf4, 0xb1, 0xb7, 0x59, 0x71, 0x9e, 0xb5, 0xbc,
+        0x11, 0x3b, 0x9f, 0xf1, 0xd4, 0x0c, 0xd2, 0x5a
     };
     // clang-format on
 
@@ -2406,8 +2408,8 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
      * policy and with the SSRC value 0xcafebabe
      */
     memset(&policy, 0, sizeof(policy));
-    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key_ext_headers;
@@ -2429,9 +2431,9 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
     if (status || (len != sizeof(srtp_plaintext)))
         return srtp_err_status_fail;
 
-    debug_print(mod_driver, "ciphertext:\n  %s",
+    debug_print(mod_driver, " ? ciphertext:\n  %s",
                 srtp_octet_string_hex_string(srtp_plaintext, len));
-    debug_print(mod_driver, "ciphertext reference:\n  %s",
+    debug_print(mod_driver, " ? ciphertext reference:\n  %s",
                 srtp_octet_string_hex_string(srtp_ciphertext, len));
 
     if (srtp_octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len))
@@ -2723,8 +2725,8 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
      * policy and with the SSRC value 0xcafebabe
      */
     memset(&policy, 0, sizeof(policy));
-    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
     policy.ssrc.type = ssrc_specific;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
@@ -2745,7 +2747,7 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
     status = srtp_protect(srtp_snd, mesg, &len);
     if (status) {
         return status;
-    } else if (len != 12 + 8) {
+    } else if (len != 12 + 16) {
         return srtp_err_status_fail;
     }
 

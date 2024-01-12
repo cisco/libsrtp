@@ -378,12 +378,12 @@ int main(int argc, char *argv[])
 #ifdef GCM
                 switch (key_size) {
                 case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
                     break;
                 case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
                     break;
                 }
 #else
@@ -427,14 +427,16 @@ int main(int argc, char *argv[])
 #ifdef GCM
                 switch (key_size) {
                 case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_8_only_auth(
-                        &policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                    policy.rtp.sec_serv = sec_serv_auth;
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+                    policy.rtcp.sec_serv = sec_serv_auth;
                     break;
                 case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_8_only_auth(
-                        &policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
+                    policy.rtp.sec_serv = sec_serv_auth;
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
+                    policy.rtcp.sec_serv = sec_serv_auth;
                     break;
                 }
 #else

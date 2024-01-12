@@ -320,9 +320,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (gcm_on && scs.tag_size != 8 && scs.tag_size != 16) {
-        fprintf(stderr, "error: GCM tag size must be 8 or 16 (%d)\n",
-                scs.tag_size);
+    if (gcm_on && scs.tag_size != 16) {
+        fprintf(stderr, "error: GCM tag size must be 16 (%d)\n", scs.tag_size);
         exit(1);
     }
 
@@ -379,24 +378,12 @@ int main(int argc, char *argv[])
 #ifdef OPENSSL
                 switch (scs.key_size) {
                 case 128:
-                    if (scs.tag_size == 16) {
-                        srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
-                        srtp_crypto_policy_set_aes_gcm_128_16_auth(
-                            &policy.rtcp);
-                    } else {
-                        srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
-                        srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
-                    }
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
                     break;
                 case 256:
-                    if (scs.tag_size == 16) {
-                        srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
-                        srtp_crypto_policy_set_aes_gcm_256_16_auth(
-                            &policy.rtcp);
-                    } else {
-                        srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtp);
-                        srtp_crypto_policy_set_aes_gcm_256_8_auth(&policy.rtcp);
-                    }
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
                     break;
                 }
 #else
@@ -495,14 +482,16 @@ int main(int argc, char *argv[])
 #ifdef OPENSSL
                 switch (scs.key_size) {
                 case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_8_only_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_8_only_auth(
-                        &policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                    policy.rtp.sec_serv = sec_serv_auth;
+                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+                    policy.rtcp.sec_serv = sec_serv_auth;
                     break;
                 case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_8_only_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_8_only_auth(
-                        &policy.rtcp);
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
+                    policy.rtp.sec_serv = sec_serv_auth;
+                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
+                    policy.rtcp.sec_serv = sec_serv_auth;
                     break;
                 }
 #else

@@ -150,16 +150,8 @@ const struct fuzz_srtp_crypto_policy_func_ext fuzz_srtp_crypto_policies[] = {
       "srtp_crypto_policy_set_aes_cm_192_null_auth" },
     { srtp_crypto_policy_set_aes_gcm_128_16_auth,
       "srtp_crypto_policy_set_aes_gcm_128_16_auth" },
-    { srtp_crypto_policy_set_aes_gcm_128_8_auth,
-      "srtp_crypto_policy_set_aes_gcm_128_8_auth" },
-    { srtp_crypto_policy_set_aes_gcm_128_8_only_auth,
-      "srtp_crypto_policy_set_aes_gcm_128_8_only_auth" },
     { srtp_crypto_policy_set_aes_gcm_256_16_auth,
       "srtp_crypto_policy_set_aes_gcm_256_16_auth" },
-    { srtp_crypto_policy_set_aes_gcm_256_8_auth,
-      "srtp_crypto_policy_set_aes_gcm_256_8_auth" },
-    { srtp_crypto_policy_set_aes_gcm_256_8_only_auth,
-      "srtp_crypto_policy_set_aes_gcm_256_8_only_auth" },
 #endif
 };
 
