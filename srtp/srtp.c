@@ -1824,7 +1824,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     if (!(enc_start <= rtp_hdr + *pkt_octet_len))
         return srtp_err_status_parse_err;
 
-    enc_octet_len = *pkt_octet_len - (size_t)(enc_start - rtp_hdr);
+    enc_octet_len = *pkt_octet_len - (enc_start - rtp_hdr);
 
     /*
      * estimate the packet index using the start of the replay window
@@ -1895,7 +1895,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     /*
      * Set the AAD over the RTP header
      */
-    aad_len = (size_t)(enc_start - rtp_hdr);
+    aad_len = enc_start - rtp_hdr;
     status = srtp_cipher_set_aad(session_keys->rtp_cipher, rtp_hdr, aad_len);
     if (status) {
         return (srtp_err_status_cipher_fail);
@@ -2005,7 +2005,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     /*
      * We pass the tag down to the cipher when doing GCM mode
      */
-    enc_octet_len = *pkt_octet_len - mki_size - (size_t)(enc_start - srtp_hdr);
+    enc_octet_len = *pkt_octet_len - mki_size - (enc_start - srtp_hdr);
 
     /*
      * Sanity check the encrypted payload length against
@@ -2037,7 +2037,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     /*
      * Set the AAD for AES-GCM, which is the RTP header
      */
-    aad_len = (size_t)(enc_start - srtp_hdr);
+    aad_len = enc_start - srtp_hdr;
     status = srtp_cipher_set_aad(session_keys->rtp_cipher, srtp_hdr, aad_len);
     if (status) {
         return (srtp_err_status_cipher_fail);
@@ -2280,7 +2280,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
         if (!(enc_start <= rtp_hdr + *pkt_octet_len))
             return srtp_err_status_parse_err;
 
-        enc_octet_len = *pkt_octet_len - (size_t)(enc_start - rtp_hdr);
+        enc_octet_len = *pkt_octet_len - (enc_start - rtp_hdr);
     } else {
         enc_start = NULL;
     }
@@ -2649,7 +2649,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
             return srtp_err_status_parse_err;
 
         enc_octet_len = *pkt_octet_len - tag_len - mki_size -
-                        (size_t)(enc_start - srtp_hdr);
+                        (enc_start - srtp_hdr);
     } else {
         enc_start = NULL;
     }

@@ -556,7 +556,7 @@ int main(int argc, char *argv[])
                     expected_len, len);
             exit(1);
         }
-        if (strlen(input_key) > (size_t)policy.rtp.cipher_key_len * 2) {
+        if (strlen(input_key) > policy.rtp.cipher_key_len * 2) {
             fprintf(stderr,
                     "error: too many digits in key/salt "
                     "(should be %zu hexadecimal digits, found %u)\n",
