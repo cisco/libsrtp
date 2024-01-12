@@ -633,9 +633,6 @@ static srtp_err_status_t srtp_stream_clone(
     str->enc_xtn_hdr = stream_template->enc_xtn_hdr;
     str->enc_xtn_hdr_count = stream_template->enc_xtn_hdr_count;
 
-    /* defensive coding */
-    str->next = NULL;
-    str->prev = NULL;
     return srtp_err_status_ok;
 }
 
@@ -4829,11 +4826,17 @@ srtp_err_status_t srtp_stream_get_roc(srtp_t session,
 
 #ifndef SRTP_NO_STREAM_LIST
 
-/* in the default implementation, we have an intrusive doubly-linked list */
+#define INITIAL_STREAM_INDEX_SIZE 2
+
+typedef struct list_entry {
+    uint32_t ssrc;
+    srtp_stream_t stream;
+} list_entry;
+
 typedef struct srtp_stream_list_ctx_t_ {
-    /* a stub stream that just holds pointers to the beginning and end of the
-     * list */
-    srtp_stream_ctx_t data;
+    list_entry *entries;
+    size_t size;
+    size_t available;
 } srtp_stream_list_ctx_t_;
 
 srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
@@ -4844,73 +4847,137 @@ srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
         return srtp_err_status_alloc_fail;
     }
 
-    list->data.next = NULL;
-    list->data.prev = NULL;
+    list->entries =
+        srtp_crypto_alloc(sizeof(list_entry) * INITIAL_STREAM_INDEX_SIZE);
+    if (list->entries == NULL) {
+        srtp_crypto_free(list);
+        return srtp_err_status_alloc_fail;
+    }
+
+    list->size = INITIAL_STREAM_INDEX_SIZE;
+    list->available = INITIAL_STREAM_INDEX_SIZE;
 
     *list_ptr = list;
+
     return srtp_err_status_ok;
 }
 
 srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
 {
     /* list must be empty */
-    if (list->data.next) {
+    if (list->available != list->size) {
         return srtp_err_status_fail;
     }
+
+    srtp_crypto_free(list->entries);
     srtp_crypto_free(list);
+
     return srtp_err_status_ok;
 }
 
+/*
+ * inserting a new entry in the list may require reallocating memory in order
+ * to keep all the items in a contiguous memory block.
+ */
 srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
                                           srtp_stream_t stream)
 {
-    /* insert at the head of the list */
-    stream->next = list->data.next;
-    if (stream->next != NULL) {
-        stream->next->prev = stream;
+    /*
+     * there is no space to hold the new entry in the entries buffer,
+     * double the size of the buffer.
+     */
+    if (list->available == 0) {
+        size_t new_size = list->size * 2;
+        list_entry *new_entries =
+            srtp_crypto_alloc(sizeof(list_entry) * new_size);
+        if (new_entries == NULL) {
+            return srtp_err_status_alloc_fail;
+        }
+
+        // copy previous entries into the new buffer
+        memcpy(new_entries, list->entries, sizeof(list_entry) * list->size);
+        // release previous entries
+        srtp_crypto_free(list->entries);
+        // assign new entries to the list
+        list->entries = new_entries;
+        // update list info
+        list->size = new_size;
+        list->available = new_size / 2;
     }
-    list->data.next = stream;
-    stream->prev = &(list->data);
+
+    // fill the first available entry
+    size_t next_index = list->size - list->available;
+    list->entries[next_index].ssrc = stream->ssrc;
+    list->entries[next_index].stream = stream;
+
+    // update available value
+    list->available--;
 
     return srtp_err_status_ok;
+}
+
+/*
+ * removing an entry from the list performs a memory move of the following
+ * entries one possition back in order to keep all the entries in the buffer
+ * contiguous.
+ */
+void srtp_stream_list_remove(srtp_stream_list_t list,
+                             srtp_stream_t stream_to_remove)
+{
+    size_t end = list->size - list->available;
+
+    for (unsigned int i = 0; i < end; i++) {
+        if (list->entries[i].ssrc == stream_to_remove->ssrc) {
+            size_t entries_to_move = list->size - list->available - i - 1;
+            memmove(&list->entries[i], &list->entries[i + 1],
+                    sizeof(list_entry) * entries_to_move);
+            list->available++;
+
+            break;
+        }
+    }
 }
 
 srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
 {
-    /* walk down list until ssrc is found */
-    srtp_stream_t stream = list->data.next;
-    while (stream != NULL) {
-        if (stream->ssrc == ssrc) {
-            return stream;
+    size_t end = list->size - list->available;
+
+    list_entry *entries = list->entries;
+
+    for (unsigned int i = 0; i < end; i++) {
+        if (entries[i].ssrc == ssrc) {
+            return entries[i].stream;
         }
-        stream = stream->next;
     }
 
-    /* we haven't found our ssrc, so return a null */
     return NULL;
-}
-
-void srtp_stream_list_remove(srtp_stream_list_t list,
-                             srtp_stream_t stream_to_remove)
-{
-    (void)list;
-
-    stream_to_remove->prev->next = stream_to_remove->next;
-    if (stream_to_remove->next != NULL) {
-        stream_to_remove->next->prev = stream_to_remove->prev;
-    }
 }
 
 void srtp_stream_list_for_each(srtp_stream_list_t list,
                                int (*callback)(srtp_stream_t, void *),
                                void *data)
 {
-    srtp_stream_t stream = list->data.next;
-    while (stream != NULL) {
-        srtp_stream_t tmp = stream;
-        stream = stream->next;
-        if (callback(tmp, data))
+    list_entry *entries = list->entries;
+
+    size_t available = list->available;
+
+    /*
+     * the second statement of the expression needs to be recalculated on each
+     * iteration as the available number of entries may change within the given
+     * callback.
+     * Ie: in case the callback calls srtp_stream_list_remove().
+     */
+    for (unsigned int i = 0; i < list->size - list->available;) {
+        if (callback(entries[i].stream, data)) {
             break;
+        }
+
+        // the entry was not removed, increase the counter.
+        if (available == list->available) {
+            ++i;
+        }
+
+        available = list->available;
     }
 }
 

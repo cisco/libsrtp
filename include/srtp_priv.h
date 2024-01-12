@@ -144,14 +144,6 @@ typedef struct srtp_stream_ctx_t_ {
     int *enc_xtn_hdr;
     int enc_xtn_hdr_count;
     uint32_t pending_roc;
-    /*
-    The next and prev pointers are here to allow for a stream list to be
-    implemented as an intrusive doubly-linked list (the former being the
-    default).  Other stream list implementations can ignore these fields or use
-    them for some other purpose specific to the stream list implementation.
-    */
-    struct srtp_stream_ctx_t_ *next;
-    struct srtp_stream_ctx_t_ *prev;
 } strp_stream_ctx_t_;
 
 /*
