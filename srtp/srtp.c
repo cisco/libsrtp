@@ -2648,8 +2648,8 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         if (!(enc_start <= srtp_hdr + (*pkt_octet_len - tag_len - mki_size)))
             return srtp_err_status_parse_err;
 
-        enc_octet_len = *pkt_octet_len - tag_len - mki_size -
-                        (enc_start - srtp_hdr);
+        enc_octet_len =
+            *pkt_octet_len - tag_len - mki_size - (enc_start - srtp_hdr);
     } else {
         enc_start = NULL;
     }
