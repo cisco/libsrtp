@@ -112,7 +112,7 @@ void srtp_do_timing(const srtp_policy_t *policy);
 void srtp_do_rejection_timing(const srtp_policy_t *policy);
 
 srtp_err_status_t srtp_test(const srtp_policy_t *policy,
-                            int extension_header,
+                            bool test_extension_headers,
                             int mki_index);
 
 srtp_err_status_t srtcp_test(const srtp_policy_t *policy, int mki_index);
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
         /* loop over policy array, testing srtp and srtcp for each policy */
         while (*policy != NULL) {
             printf("testing srtp_protect and srtp_unprotect\n");
-            if (srtp_test(*policy, 0, -1) == srtp_err_status_ok) {
+            if (srtp_test(*policy, false, -1) == srtp_err_status_ok) {
                 printf("passed\n\n");
             } else {
                 printf("failed\n");
@@ -335,7 +335,7 @@ int main(int argc, char *argv[])
 
             printf("testing srtp_protect and srtp_unprotect with encrypted "
                    "extensions headers\n");
-            if (srtp_test(*policy, 1, -1) == srtp_err_status_ok) {
+            if (srtp_test(*policy, true, -1) == srtp_err_status_ok) {
                 printf("passed\n\n");
             } else {
                 printf("failed\n");
@@ -350,7 +350,7 @@ int main(int argc, char *argv[])
             }
             printf("testing srtp_protect_rtp and srtp_unprotect_rtp with MKI "
                    "index set to 0\n");
-            if (srtp_test(*policy, 0, 0) == srtp_err_status_ok) {
+            if (srtp_test(*policy, false, 0) == srtp_err_status_ok) {
                 printf("passed\n\n");
             } else {
                 printf("failed\n");
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
             }
             printf("testing srtp_protect_rtp and srtp_unprotect_rtp with MKI "
                    "index set to 1\n");
-            if (srtp_test(*policy, 0, 1) == srtp_err_status_ok) {
+            if (srtp_test(*policy, false, 1) == srtp_err_status_ok) {
                 printf("passed\n\n");
             } else {
                 printf("failed\n");
@@ -406,7 +406,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
         printf("testing srtp_protect and srtp_unprotect with big policy\n");
-        if (srtp_test(big_policy, 0, -1) == srtp_err_status_ok) {
+        if (srtp_test(big_policy, false, -1) == srtp_err_status_ok) {
             printf("passed\n\n");
         } else {
             printf("failed\n");
@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
         }
         printf("testing srtp_protect and srtp_unprotect with big policy and "
                "encrypted extensions headers\n");
-        if (srtp_test(big_policy, 1, -1) == srtp_err_status_ok) {
+        if (srtp_test(big_policy, true, -1) == srtp_err_status_ok) {
             printf("passed\n\n");
         } else {
             printf("failed\n");
@@ -429,7 +429,7 @@ int main(int argc, char *argv[])
         /* run test on wildcard policy */
         printf("testing srtp_protect and srtp_unprotect on "
                "wildcard ssrc policy\n");
-        if (srtp_test(&wildcard_policy, 0, -1) == srtp_err_status_ok) {
+        if (srtp_test(&wildcard_policy, false, -1) == srtp_err_status_ok) {
             printf("passed\n\n");
         } else {
             printf("failed\n");
@@ -437,7 +437,7 @@ int main(int argc, char *argv[])
         }
         printf("testing srtp_protect and srtp_unprotect on "
                "wildcard ssrc policy and encrypted extensions headers\n");
-        if (srtp_test(&wildcard_policy, 1, -1) == srtp_err_status_ok) {
+        if (srtp_test(&wildcard_policy, true, -1) == srtp_err_status_ok) {
             printf("passed\n\n");
         } else {
             printf("failed\n");
@@ -1087,7 +1087,7 @@ srtp_err_status_t srtp_test_call_unprotect_rtcp(srtp_t srtp_sender,
 }
 
 srtp_err_status_t srtp_test(const srtp_policy_t *policy,
-                            int extension_header,
+                            bool test_extension_headers,
                             int mki_index)
 {
     size_t i;
@@ -1109,7 +1109,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     if (mki_index >= 0)
         use_mki = true;
 
-    if (extension_header) {
+    if (test_extension_headers) {
         memcpy(&tmp_policy, policy, sizeof(srtp_policy_t));
         tmp_policy.enc_xtn_hdr = &header;
         tmp_policy.enc_xtn_hdr_count = 1;
@@ -1132,7 +1132,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         ssrc = policy->ssrc.value;
     }
     msg_len_octets = 28;
-    if (extension_header) {
+    if (test_extension_headers) {
         hdr = srtp_create_test_packet_ext_hdr(msg_len_octets, ssrc, &len);
         hdr2 = srtp_create_test_packet_ext_hdr(msg_len_octets, ssrc, &len2);
     } else {
@@ -1233,7 +1233,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         free(hdr2);
         return srtp_err_status_alloc_fail;
     }
-    if (extension_header) {
+    if (test_extension_headers) {
         memcpy(rcvr_policy, &tmp_policy, sizeof(srtp_policy_t));
         if (tmp_policy.ssrc.type == ssrc_any_outbound) {
             rcvr_policy->ssrc.type = ssrc_any_inbound;
@@ -1270,7 +1270,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
      * if the policy includes authentication, then test for false positives
      */
     if (policy->rtp.sec_serv & sec_serv_auth) {
-        uint8_t *data = hdr + (extension_header ? 24 : 12);
+        uint8_t *data = hdr + (test_extension_headers ? 24 : 12);
 
         printf("testing for false positives in replay check...");
 
