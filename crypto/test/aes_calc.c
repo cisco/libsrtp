@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
                 AES_MAX_KEY_LEN * 2, (unsigned)strlen(argv[1]));
         exit(1);
     }
-    len = hex_string_to_octet_string((char *)key, argv[1], AES_MAX_KEY_LEN * 2);
+    len = hex_string_to_octet_string(key, argv[1], AES_MAX_KEY_LEN * 2);
     /* check that hex string is the right length */
     if (len != 32 && len != 48 && len != 64) {
         fprintf(stderr,
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
                 16 * 2, (unsigned)strlen(argv[2]));
         exit(1);
     }
-    len = hex_string_to_octet_string((char *)(&data), argv[2], 16 * 2);
+    len = hex_string_to_octet_string((uint8_t *)&data, argv[2], 16 * 2);
     /* check that hex string is the right length */
     if (len < 16 * 2) {
         fprintf(stderr,

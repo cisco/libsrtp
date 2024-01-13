@@ -213,8 +213,8 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
         break;
     }
 
-    errCode = mbedtls_gcm_setkey(c->ctx, MBEDTLS_CIPHER_ID_AES,
-                                 (const unsigned char *)key, key_len_in_bits);
+    errCode =
+        mbedtls_gcm_setkey(c->ctx, MBEDTLS_CIPHER_ID_AES, key, key_len_in_bits);
     if (errCode != 0) {
         debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", errCode);
         return srtp_err_status_init_fail;
@@ -281,7 +281,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_set_aad(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
-                                                      unsigned char *buf,
+                                                      uint8_t *buf,
                                                       size_t *enc_len)
 {
     FUNC_ENTRY();
@@ -337,7 +337,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_get_tag(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
-                                                      unsigned char *buf,
+                                                      uint8_t *buf,
                                                       size_t *enc_len)
 {
     FUNC_ENTRY();

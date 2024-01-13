@@ -367,7 +367,7 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
         }
 
         /* initialize cipher  */
-        status = srtp_cipher_set_iv(c, (uint8_t *)idx, srtp_direction_encrypt);
+        status = srtp_cipher_set_iv(c, idx, srtp_direction_encrypt);
         if (status)
             return status;
 
@@ -377,7 +377,7 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
             return status;
 
         /* re-initialize cipher */
-        status = srtp_cipher_set_iv(c, (uint8_t *)idx, srtp_direction_encrypt);
+        status = srtp_cipher_set_iv(c, idx, srtp_direction_encrypt);
         if (status)
             return status;
 
@@ -525,7 +525,7 @@ uint64_t cipher_array_bits_per_second(srtp_cipher_t *cipher_array[],
     int i;
     v128_t nonce;
     clock_t timer;
-    unsigned char *enc_buf;
+    uint8_t *enc_buf;
     int cipher_index = srtp_cipher_rand_u32_for_tests() % num_cipher;
 
     /* Over-alloc, for NIST CBC padding */

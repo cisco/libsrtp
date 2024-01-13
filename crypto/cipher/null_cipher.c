@@ -116,7 +116,7 @@ static srtp_err_status_t srtp_null_cipher_set_iv(void *cv,
 }
 
 static srtp_err_status_t srtp_null_cipher_encrypt(void *cv,
-                                                  unsigned char *buf,
+                                                  uint8_t *buf,
                                                   size_t *bytes_to_encr)
 {
     /* srtp_null_cipher_ctx_t *c = (srtp_null_cipher_ctx_t *)cv; */

@@ -293,7 +293,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
-                                                      unsigned char *buf,
+                                                      uint8_t *buf,
                                                       size_t *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -354,7 +354,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
-                                                      unsigned char *buf,
+                                                      uint8_t *buf,
                                                       size_t *enc_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;

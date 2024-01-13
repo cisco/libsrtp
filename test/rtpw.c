@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
     char *input_key = NULL;
     int b64_input = 0;
     char *address = NULL;
-    char key[MAX_KEY_LEN];
+    uint8_t key[MAX_KEY_LEN];
     unsigned short port = 0;
     rtp_sender_t snd;
     srtp_policy_t policy;
@@ -453,7 +453,7 @@ int main(int argc, char *argv[])
         }
         policy.ssrc.type = ssrc_specific;
         policy.ssrc.value = ssrc;
-        policy.key = (uint8_t *)key;
+        policy.key = key;
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = false;

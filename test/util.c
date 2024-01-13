@@ -51,7 +51,7 @@
 /* include space for null terminator */
 static char bit_string[MAX_PRINT_STRING_LEN + 1];
 
-static inline int hex_char_to_nibble(uint8_t c)
+static inline int hex_char_to_nibble(char c)
 {
     switch (c) {
     case ('0'):
@@ -103,7 +103,7 @@ static inline int hex_char_to_nibble(uint8_t c)
     }
 }
 
-uint8_t nibble_to_hex_char(uint8_t nibble)
+char nibble_to_hex_char(uint8_t nibble)
 {
     char buf[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
                      '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
@@ -115,7 +115,7 @@ uint8_t nibble_to_hex_char(uint8_t nibble)
  * hex_string_to_octet_string converts a hexadecimal string
  * of length 2 * len to a raw octet string of length len
  */
-size_t hex_string_to_octet_string(char *raw, char *hex, size_t len)
+size_t hex_string_to_octet_string(uint8_t *raw, const char *hex, size_t len)
 {
     uint8_t x;
     int tmp;
@@ -141,9 +141,8 @@ size_t hex_string_to_octet_string(char *raw, char *hex, size_t len)
     return hex_len;
 }
 
-char *octet_string_hex_string(const void *s, size_t length)
+const char *octet_string_hex_string(const uint8_t *str, size_t length)
 {
-    const uint8_t *str = (const uint8_t *)s;
     size_t i;
 
     /* double length, since one octet takes two hex characters */
@@ -165,16 +164,16 @@ char *octet_string_hex_string(const void *s, size_t length)
 static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                "abcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static size_t base64_block_to_octet_triple(char *out, char *in)
+static size_t base64_block_to_octet_triple(uint8_t *out, const char *in)
 {
-    unsigned char sextets[4] = { 0 };
+    uint8_t sextets[4] = { 0 };
     size_t j = 0;
     size_t i;
 
     for (i = 0; i < 4; i++) {
         char *p = strchr(b64chars, in[i]);
         if (p != NULL) {
-            sextets[i] = (unsigned char)(p - b64chars);
+            sextets[i] = (uint8_t)(p - b64chars);
         } else {
             j++;
         }
@@ -190,7 +189,10 @@ static size_t base64_block_to_octet_triple(char *out, char *in)
     return j;
 }
 
-size_t base64_string_to_octet_string(char *out, int *pad, char *in, size_t len)
+size_t base64_string_to_octet_string(uint8_t *out,
+                                     int *pad,
+                                     const char *in,
+                                     size_t len)
 {
     size_t k = 0;
     size_t i = 0;
