@@ -111,7 +111,7 @@ void srtp_stream_list_remove(srtp_stream_list_t list, srtp_stream_t stream);
  * returning non-zero from callback aborts the iteration.
  */
 void srtp_stream_list_for_each(srtp_stream_list_t list,
-                               int (*callback)(srtp_stream_t, void *),
+                               bool (*callback)(srtp_stream_t, void *),
                                void *data);
 
 #ifdef __cplusplus

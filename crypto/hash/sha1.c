@@ -51,7 +51,7 @@
 #include "sha1.h"
 
 srtp_debug_module_t srtp_mod_sha1 = {
-    0,      /* debugging is off by default */
+    false,  /* debugging is off by default */
     "sha-1" /* printable module name       */
 };
 
@@ -97,7 +97,7 @@ void srtp_sha1_core(const uint32_t M[16], uint32_t hash_value[5])
     uint32_t H4;
     uint32_t W[80];
     uint32_t A, B, C, D, E, TEMP;
-    int t;
+    size_t t;
 
     /* copy hash_value into H0, H1, H2, H3, H4 */
     H0 = hash_value[0];
@@ -286,7 +286,7 @@ void srtp_sha1_final(srtp_sha1_ctx_t *ctx, uint32_t output[5])
      * necessary
      */
     {
-        int tail = ctx->octets_in_buffer % 4;
+        size_t tail = ctx->octets_in_buffer % 4;
 
         /* copy/xor message into array */
         for (i = 0; i < (ctx->octets_in_buffer + 3) / 4; i++) {

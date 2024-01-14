@@ -54,7 +54,7 @@ char *optarg_s;
 
 static int getopt_check_character(char c, const char *string)
 {
-    unsigned int max_string_len = 128;
+    size_t max_string_len = 128;
 
     while (*string != 0) {
         if (max_string_len == 0) {
@@ -81,11 +81,13 @@ int getopt_s(int argc, char *const argv[], const char *optstring)
         optind_s++;
         string = argv[optind_s];
 
-        if (string == NULL)
+        if (string == NULL) {
             return '?'; /* NULL argument string */
+        }
 
-        if (string[0] != '-')
+        if (string[0] != '-') {
             return -1; /* found an unexpected character */
+        }
 
         switch (getopt_check_character(string[1], optstring)) {
         case GETOPT_FOUND_WITH_ARGUMENT:

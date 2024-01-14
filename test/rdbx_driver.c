@@ -58,9 +58,9 @@
 
 #include "ut_sim.h"
 
-srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws);
+srtp_err_status_t test_replay_dbx(size_t num_trials, size_t ws);
 
-double rdbx_check_adds_per_second(int num_trials, unsigned long ws);
+double rdbx_check_adds_per_second(size_t num_trials, size_t ws);
 
 void usage(char *prog_name)
 {
@@ -73,20 +73,21 @@ int main(int argc, char *argv[])
     double rate;
     srtp_err_status_t status;
     int q;
-    unsigned do_timing_test = 0;
-    unsigned do_validation = 0;
+    bool do_timing_test = false;
+    bool do_validation = false;
 
     /* process input arguments */
     while (1) {
         q = getopt_s(argc, argv, "tv");
-        if (q == -1)
+        if (q == -1) {
             break;
+        }
         switch (q) {
         case 't':
-            do_timing_test = 1;
+            do_timing_test = true;
             break;
         case 'v':
-            do_validation = 1;
+            do_validation = true;
             break;
         default:
             usage(argv[0]);
@@ -97,8 +98,9 @@ int main(int argc, char *argv[])
            "David A. McGrew\n"
            "Cisco Systems, Inc.\n");
 
-    if (!do_validation && !do_timing_test)
+    if (!do_validation && !do_timing_test) {
         usage(argv[0]);
+    }
 
     if (do_validation) {
         printf("testing srtp_rdbx_t (ws=128)...\n");
@@ -140,7 +142,7 @@ int main(int argc, char *argv[])
 
 srtp_err_status_t rdbx_check_add(srtp_rdbx_t *rdbx, uint32_t idx)
 {
-    int delta;
+    ssize_t delta;
     srtp_xtd_seq_num_t est;
 
     delta = srtp_index_guess(&rdbx->index, &est, (srtp_sequence_number_t)idx);
@@ -172,7 +174,7 @@ srtp_err_status_t rdbx_check_add(srtp_rdbx_t *rdbx, uint32_t idx)
 
 srtp_err_status_t rdbx_check_expect_failure(srtp_rdbx_t *rdbx, uint32_t idx)
 {
-    int delta;
+    ssize_t delta;
     srtp_xtd_seq_num_t est;
     srtp_err_status_t status;
 
@@ -180,7 +182,7 @@ srtp_err_status_t rdbx_check_expect_failure(srtp_rdbx_t *rdbx, uint32_t idx)
 
     status = srtp_rdbx_check(rdbx, delta);
     if (status == srtp_err_status_ok) {
-        printf("delta: %d ", delta);
+        printf("delta: %zd ", delta);
         printf("replay_check failed at index %u (false positive)\n", idx);
         return srtp_err_status_algo_fail;
     }
@@ -190,7 +192,7 @@ srtp_err_status_t rdbx_check_expect_failure(srtp_rdbx_t *rdbx, uint32_t idx)
 
 srtp_err_status_t rdbx_check_add_unordered(srtp_rdbx_t *rdbx, uint32_t idx)
 {
-    int delta;
+    ssize_t delta;
     srtp_xtd_seq_num_t est;
     srtp_err_status_t rstat;
 
@@ -213,13 +215,13 @@ srtp_err_status_t rdbx_check_add_unordered(srtp_rdbx_t *rdbx, uint32_t idx)
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws)
+srtp_err_status_t test_replay_dbx(size_t num_trials, size_t ws)
 {
     srtp_rdbx_t rdbx;
-    uint32_t idx, ircvd;
+    uint32_t ircvd = 0;
     ut_connection utc;
     srtp_err_status_t status;
-    int num_fp_trials;
+    size_t num_fp_trials;
 
     status = srtp_rdbx_init(&rdbx, ws);
     if (status) {
@@ -231,10 +233,11 @@ srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws)
      *  test sequential insertion
      */
     printf("\ttesting sequential insertion...");
-    for (idx = 0; (int)idx < num_trials; idx++) {
+    for (uint32_t idx = 0; idx < num_trials; idx++) {
         status = rdbx_check_add(&rdbx, idx);
-        if (status)
+        if (status) {
             return status;
+        }
     }
     printf("passed\n");
 
@@ -250,10 +253,11 @@ srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws)
         printf("warning: no false positive tests performed\n");
     }
     printf("\ttesting for false positives...");
-    for (idx = 0; (int)idx < num_fp_trials; idx++) {
+    for (uint32_t idx = 0; idx < num_fp_trials; idx++) {
         status = rdbx_check_expect_failure(&rdbx, idx);
-        if (status)
+        if (status) {
             return status;
+        }
     }
     printf("passed\n");
 
@@ -274,14 +278,16 @@ srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws)
     ut_init(&utc);
 
     printf("\ttesting non-sequential insertion...");
-    for (idx = 0; (int)idx < num_trials; idx++) {
+    for (size_t idx = 0; idx < num_trials; idx++) {
         ircvd = ut_next_index(&utc);
         status = rdbx_check_add_unordered(&rdbx, ircvd);
-        if (status)
+        if (status) {
             return status;
+        }
         status = rdbx_check_expect_failure(&rdbx, ircvd);
-        if (status)
+        if (status) {
             return status;
+        }
     }
     printf("passed\n");
 
@@ -298,14 +304,17 @@ srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws)
      * check for false positives for each insertion.
      */
     printf("\ttesting insertion with large gaps...");
-    for (idx = 0, ircvd = 0; (int)idx < num_trials;
+    ircvd = 0;
+    for (size_t idx = 0; idx < num_trials;
          idx++, ircvd += (1 << (srtp_cipher_rand_u32_for_tests() % 12))) {
         status = rdbx_check_add(&rdbx, ircvd);
-        if (status)
+        if (status) {
             return status;
+        }
         status = rdbx_check_expect_failure(&rdbx, ircvd);
-        if (status)
+        if (status) {
             return status;
+        }
     }
     printf("passed\n");
 
@@ -316,36 +325,35 @@ srtp_err_status_t test_replay_dbx(int num_trials, unsigned long ws)
 
 #include <time.h> /* for clock()  */
 
-double rdbx_check_adds_per_second(int num_trials, unsigned long ws)
+double rdbx_check_adds_per_second(size_t num_trials, size_t ws)
 {
-    uint32_t i;
-    int delta;
+    ssize_t delta;
     srtp_rdbx_t rdbx;
     srtp_xtd_seq_num_t est;
     clock_t timer;
-    int failures; /* count number of failures */
+    size_t failures = 0; /* count number of failures */
 
     if (srtp_rdbx_init(&rdbx, ws) != srtp_err_status_ok) {
         printf("replay_init failed\n");
         exit(1);
     }
 
-    failures = 0;
     timer = clock();
-    for (i = 0; (int)i < num_trials; i++) {
+    for (size_t i = 0; i < num_trials; i++) {
         delta = srtp_index_guess(&rdbx.index, &est, (srtp_sequence_number_t)i);
 
-        if (srtp_rdbx_check(&rdbx, delta) != srtp_err_status_ok)
+        if (srtp_rdbx_check(&rdbx, delta) != srtp_err_status_ok) {
             ++failures;
-        else if (srtp_rdbx_add_index(&rdbx, delta) != srtp_err_status_ok)
+        } else if (srtp_rdbx_add_index(&rdbx, delta) != srtp_err_status_ok) {
             ++failures;
+        }
     }
     timer = clock() - timer;
     if (timer < 1) {
         timer = 1;
     }
 
-    printf("number of failures: %d \n", failures);
+    printf("number of failures: %zd \n", failures);
 
     srtp_rdbx_dealloc(&rdbx);
 

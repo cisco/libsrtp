@@ -52,7 +52,7 @@
 /* the debug module for memory allocation */
 
 srtp_debug_module_t srtp_mod_alloc = {
-    0,      /* debugging is off by default */
+    false,  /* debugging is off by default */
     "alloc" /* printable name for module   */
 };
 

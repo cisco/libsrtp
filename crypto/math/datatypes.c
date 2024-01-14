@@ -88,8 +88,9 @@ char *srtp_octet_string_hex_string(const void *s, size_t length)
     length *= 2;
 
     /* truncate string if it would be too long */
-    if (length > MAX_PRINT_STRING_LEN)
+    if (length > MAX_PRINT_STRING_LEN) {
         length = MAX_PRINT_STRING_LEN - 2;
+    }
 
     for (i = 0; i < length; i += 2) {
         bit_string[i] = srtp_nibble_to_hex_char(*str >> 4);
@@ -101,7 +102,7 @@ char *srtp_octet_string_hex_string(const void *s, size_t length)
 
 char *v128_hex_string(v128_t *x)
 {
-    int i, j;
+    size_t i, j;
 
     for (i = j = 0; i < 16; i++) {
         bit_string[j++] = srtp_nibble_to_hex_char(x->v8[i] >> 4);
@@ -114,15 +115,16 @@ char *v128_hex_string(v128_t *x)
 
 char *v128_bit_string(v128_t *x)
 {
-    int j, i;
+    size_t j, i;
     uint32_t mask;
 
     for (j = i = 0; j < 4; j++) {
         for (mask = 0x80000000; mask > 0; mask >>= 1) {
-            if (x->v32[j] & mask)
+            if (x->v32[j] & mask) {
                 bit_string[i] = '1';
-            else
+            } else {
                 bit_string[i] = '0';
+            }
             ++i;
         }
     }
@@ -200,7 +202,7 @@ static const uint8_t left_shift_masks[4][16] = {
 
 /* clang-format on */
 
-void v128_left_shift(v128_t *x, int shift)
+void v128_left_shift(v128_t *x, size_t shift)
 {
     if (shift > 127) {
         v128_set_to_zero(x);
@@ -225,11 +227,10 @@ void v128_left_shift(v128_t *x, int shift)
 
 #else /* defined(__SSSE3__) */
 
-void v128_left_shift(v128_t *x, int shift)
+void v128_left_shift(v128_t *x, size_t shift)
 {
-    int i;
-    const int base_index = shift >> 5;
-    const int bit_index = shift & 31;
+    const size_t base_index = shift >> 5;
+    const size_t bit_index = shift & 31;
 
     if (shift > 127) {
         v128_set_to_zero(x);
@@ -237,31 +238,33 @@ void v128_left_shift(v128_t *x, int shift)
     }
 
     if (bit_index == 0) {
-        for (i = 0; i < 4 - base_index; i++)
+        for (size_t i = 0; i < 4 - base_index; i++) {
             x->v32[i] = x->v32[i + base_index];
+        }
     } else {
-        for (i = 0; i < 4 - base_index - 1; i++)
+        for (size_t i = 0; i < 4 - base_index - 1; i++) {
             x->v32[i] = (x->v32[i + base_index] >> bit_index) ^
                         (x->v32[i + base_index + 1] << (32 - bit_index));
+        }
         x->v32[4 - base_index - 1] = x->v32[4 - 1] >> bit_index;
     }
 
     /* now wrap up the final portion */
-    for (i = 4 - base_index; i < 4; i++)
+    for (size_t i = 4 - base_index; i < 4; i++) {
         x->v32[i] = 0;
+    }
 }
 
 #endif /* defined(__SSSE3__) */
 
 /* functions manipulating bitvector_t */
 
-int bitvector_alloc(bitvector_t *v, unsigned long length)
+bool bitvector_alloc(bitvector_t *v, size_t length)
 {
-    unsigned long l;
+    size_t l;
 
     /* Round length up to a multiple of bits_per_word */
-    length =
-        (length + bits_per_word - 1) & ~(unsigned long)((bits_per_word - 1));
+    length = (length + bits_per_word - 1) & ~(size_t)((bits_per_word - 1));
 
     l = length / bits_per_word * bytes_per_word;
     l = (l + 15ul) & ~15ul;
@@ -270,12 +273,12 @@ int bitvector_alloc(bitvector_t *v, unsigned long length)
     if (l == 0) {
         v->word = NULL;
         v->length = 0;
-        return -1;
+        return false;
     } else {
         v->word = (uint32_t *)srtp_crypto_alloc(l);
         if (v->word == NULL) {
             v->length = 0;
-            return -1;
+            return false;
         }
     }
     v->length = length;
@@ -283,13 +286,14 @@ int bitvector_alloc(bitvector_t *v, unsigned long length)
     /* initialize bitvector to zero */
     bitvector_set_to_zero(v);
 
-    return 0;
+    return true;
 }
 
 void bitvector_dealloc(bitvector_t *v)
 {
-    if (v->word != NULL)
+    if (v->word != NULL) {
         srtp_crypto_free(v->word);
+    }
     v->word = NULL;
     v->length = 0;
 }
@@ -302,16 +306,16 @@ void bitvector_set_to_zero(bitvector_t *x)
 
 #if defined(__SSSE3__)
 
-void bitvector_left_shift(bitvector_t *x, int shift)
+void bitvector_left_shift(bitvector_t *x, size_t shift)
 {
     if ((uint32_t)shift >= x->length) {
         bitvector_set_to_zero(x);
         return;
     }
 
-    const int base_index = shift >> 5;
-    const int bit_index = shift & 31;
-    const int vec_length = (x->length + 127u) >> 7;
+    const size_t base_index = shift >> 5;
+    const size_t bit_index = shift & 31;
+    const size_t vec_length = (x->length + 127u) >> 7;
     const __m128i *from = ((const __m128i *)x->word) + (base_index >> 2);
     __m128i *to = (__m128i *)x->word;
     __m128i *const end = to + vec_length;
@@ -367,37 +371,39 @@ void bitvector_left_shift(bitvector_t *x, int shift)
 
 #else /* defined(__SSSE3__) */
 
-void bitvector_left_shift(bitvector_t *x, int shift)
+void bitvector_left_shift(bitvector_t *x, size_t shift)
 {
-    int i;
-    const int base_index = shift >> 5;
-    const int bit_index = shift & 31;
-    const int word_length = x->length >> 5;
+    const size_t base_index = shift >> 5;
+    const size_t bit_index = shift & 31;
+    const size_t word_length = x->length >> 5;
 
-    if (shift >= (int)x->length) {
+    if (shift >= x->length) {
         bitvector_set_to_zero(x);
         return;
     }
 
     if (bit_index == 0) {
-        for (i = 0; i < word_length - base_index; i++)
+        for (size_t i = 0; i < word_length - base_index; i++) {
             x->word[i] = x->word[i + base_index];
+        }
     } else {
-        for (i = 0; i < word_length - base_index - 1; i++)
+        for (size_t i = 0; i < word_length - base_index - 1; i++) {
             x->word[i] = (x->word[i + base_index] >> bit_index) ^
                          (x->word[i + base_index + 1] << (32 - bit_index));
+        }
         x->word[word_length - base_index - 1] =
             x->word[word_length - 1] >> bit_index;
     }
 
     /* now wrap up the final portion */
-    for (i = word_length - base_index; i < word_length; i++)
+    for (size_t i = word_length - base_index; i < word_length; i++) {
         x->word[i] = 0;
+    }
 }
 
 #endif /* defined(__SSSE3__) */
 
-int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
+bool srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
 {
     /*
      * We use this somewhat obscure implementation to try to ensure the running
@@ -448,7 +454,7 @@ int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
     accumulator = _mm_cvtsi128_si32(mm_accumulator1);
 #else
     uint32_t accumulator2 = 0;
-    for (int i = 0, n = len >> 3; i < n; ++i, a += 8, b += 8) {
+    for (size_t i = 0, n = len >> 3; i < n; ++i, a += 8, b += 8) {
         uint32_t a_val1, b_val1;
         uint32_t a_val2, b_val2;
         memcpy(&a_val1, a, sizeof(a_val1));
@@ -471,8 +477,9 @@ int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
     }
 #endif
 
-    while (b < end)
+    while (b < end) {
         accumulator |= (*a++ ^ *b++);
+    }
 
     /* Return 1 if *not* equal. */
     return accumulator != 0;
@@ -484,9 +491,10 @@ void srtp_cleanse(void *s, size_t len)
     memset(s, 0, len);
     __asm__ __volatile__("" : : "r"(s) : "memory");
 #else
-    volatile unsigned char *p = (volatile unsigned char *)s;
-    while (len--)
+    volatile uint8_t *p = (volatile uint8_t *)s;
+    while (len--) {
         *p++ = 0;
+    }
 #endif
 }
 

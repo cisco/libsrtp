@@ -81,13 +81,13 @@ int main(int argc, char *argv[])
     uint8_t key[AES_MAX_KEY_LEN];
     srtp_aes_expanded_key_t exp_key;
     size_t key_len, len;
-    int verbose = 0;
+    bool verbose = false;
     srtp_err_status_t status;
 
     /* -v must be last if it's passed */
     if (argc > 0 && strncmp(argv[argc - 1], "-v", 2) == 0) {
         /* we're in verbose mode */
-        verbose = 1;
+        verbose = true;
         --argc;
     }
 
@@ -108,8 +108,8 @@ int main(int argc, char *argv[])
     if (strlen(argv[1]) > AES_MAX_KEY_LEN * 2) {
         fprintf(stderr,
                 "error: too many digits in key "
-                "(should be at most %d hexadecimal digits, found %u)\n",
-                AES_MAX_KEY_LEN * 2, (unsigned)strlen(argv[1]));
+                "(should be at most %d hexadecimal digits, found %zu)\n",
+                AES_MAX_KEY_LEN * 2, strlen(argv[1]));
         exit(1);
     }
     len = hex_string_to_octet_string(key, argv[1], AES_MAX_KEY_LEN * 2);
@@ -127,8 +127,8 @@ int main(int argc, char *argv[])
     if (strlen(argv[2]) > 16 * 2) {
         fprintf(stderr,
                 "error: too many digits in plaintext "
-                "(should be %d hexadecimal digits, found %u)\n",
-                16 * 2, (unsigned)strlen(argv[2]));
+                "(should be %d hexadecimal digits, found %zu)\n",
+                16 * 2, strlen(argv[2]));
         exit(1);
     }
     len = hex_string_to_octet_string((uint8_t *)&data, argv[2], 16 * 2);

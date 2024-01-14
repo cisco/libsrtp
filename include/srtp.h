@@ -338,7 +338,7 @@ typedef struct srtp_policy_t {
                                 /**< this stream.                        */
     srtp_master_key_t **keys;   /** Array of Master Key structures       */
     size_t num_master_keys;     /** Number of master keys                */
-    unsigned long window_size;  /**< The window size to use for replay   */
+    size_t window_size;         /**< The window size to use for replay   */
                                 /**< protection.                         */
     bool allow_repeat_tx;       /**< Whether retransmissions of          */
                                 /**< packets with the same sequence      */
@@ -347,8 +347,8 @@ typedef struct srtp_policy_t {
                                 /**< transmissions must have the same    */
                                 /**< RTP payload, or a severe security   */
                                 /**< weakness is introduced!)            */
-    int *enc_xtn_hdr;           /**< List of header ids to encrypt.      */
-    int enc_xtn_hdr_count;      /**< Number of entries in list of header */
+    uint8_t *enc_xtn_hdr;       /**< List of header ids to encrypt.      */
+    size_t enc_xtn_hdr_count;   /**< Number of entries in list of header */
                                 /**<  ids.                               */
     struct srtp_policy_t *next; /**< Pointer to next stream policy.      */
 } srtp_policy_t;
@@ -476,7 +476,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
                                    uint8_t *rtp_hdr,
                                    size_t *pkt_octet_len,
                                    bool use_mki,
-                                   unsigned int mki_index);
+                                   size_t mki_index);
 
 /**
  * @brief srtp_unprotect() is the Secure RTP receiver-side packet
@@ -1294,7 +1294,7 @@ srtp_err_status_t srtp_protect_rtcp_mki(srtp_t ctx,
                                         uint8_t *rtcp_hdr,
                                         size_t *pkt_octet_len,
                                         bool use_mki,
-                                        unsigned int mki_index);
+                                        size_t mki_index);
 
 /**
  * @brief srtp_unprotect_rtcp() is the Secure RTCP receiver-side packet
@@ -1543,12 +1543,12 @@ unsigned int srtp_get_version(void);
 /**
  * @brief srtp_set_debug_module(mod_name, v)
  *
- * sets dynamic debugging to the value v (0 for off, 1 for on) for the
+ * sets dynamic debugging to the value v (false for off, true for on) for the
  * debug module with the name mod_name
  *
  * returns err_status_ok on success, err_status_fail otherwise
  */
-srtp_err_status_t srtp_set_debug_module(const char *mod_name, int v);
+srtp_err_status_t srtp_set_debug_module(const char *mod_name, bool v);
 
 /**
  * @brief srtp_list_debug_modules() outputs a list of debugging modules
@@ -1614,7 +1614,7 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func,
  */
 srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
                                                   bool use_mki,
-                                                  uint32_t mki_index,
+                                                  size_t mki_index,
                                                   size_t *length);
 
 /**
@@ -1631,7 +1631,7 @@ srtp_err_status_t srtp_get_protect_trailer_length(srtp_t session,
  */
 srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
                                                        bool use_mki,
-                                                       uint32_t mki_index,
+                                                       size_t mki_index,
                                                        size_t *length);
 
 /**

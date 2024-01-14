@@ -63,8 +63,8 @@ typedef uint32_t srtp_rollover_counter_t; /* 32 bit rollover counter */
 
 #else /* use small seq_num and roc datatypes for testing purposes */
 
-typedef unsigned char srtp_sequence_number_t; /* 8 bit sequence number   */
-typedef uint16_t srtp_rollover_counter_t;     /* 16 bit rollover counter */
+typedef uint8_t srtp_sequence_number_t;   /* 8 bit sequence number   */
+typedef uint16_t srtp_rollover_counter_t; /* 16 bit rollover counter */
 
 #endif
 
@@ -92,7 +92,7 @@ typedef struct {
  * initializes the rdbx pointed to by its argument with the window size ws,
  * setting the rollover counter and sequence number to zero
  */
-srtp_err_status_t srtp_rdbx_init(srtp_rdbx_t *rdbx, unsigned long ws);
+srtp_err_status_t srtp_rdbx_init(srtp_rdbx_t *rdbx, size_t ws);
 
 /*
  * srtp_rdbx_dealloc(rdbx_ptr)
@@ -109,7 +109,7 @@ srtp_err_status_t srtp_rdbx_dealloc(srtp_rdbx_t *rdbx);
  * index to which s corresponds, and returns the difference between
  * *guess and the locally stored synch info
  */
-int32_t srtp_rdbx_estimate_index(const srtp_rdbx_t *rdbx,
+ssize_t srtp_rdbx_estimate_index(const srtp_rdbx_t *rdbx,
                                  srtp_xtd_seq_num_t *guess,
                                  srtp_sequence_number_t s);
 
@@ -120,7 +120,7 @@ int32_t srtp_rdbx_estimate_index(const srtp_rdbx_t *rdbx,
  * which is at rdbx->window_start + delta is in the rdb
  *
  */
-srtp_err_status_t srtp_rdbx_check(const srtp_rdbx_t *rdbx, int difference);
+srtp_err_status_t srtp_rdbx_check(const srtp_rdbx_t *rdbx, ssize_t difference);
 
 /*
  * srtp_replay_add_index(rdbx, delta)
@@ -132,7 +132,7 @@ srtp_err_status_t srtp_rdbx_check(const srtp_rdbx_t *rdbx, int difference);
  * indicated that the index does not appear in the rdbx, and a mutex
  * should protect the rdbx between these calls if necessary.
  */
-srtp_err_status_t srtp_rdbx_add_index(srtp_rdbx_t *rdbx, int delta);
+srtp_err_status_t srtp_rdbx_add_index(srtp_rdbx_t *rdbx, ssize_t delta);
 
 /*
  * srtp_rdbx_set_roc(rdbx, roc) initalizes the srtp_rdbx_t at the location rdbx
@@ -162,7 +162,7 @@ srtp_xtd_seq_num_t srtp_rdbx_get_packet_index(const srtp_rdbx_t *rdbx);
  *
  * gets the window size which was used to initialize the rdbx
  */
-unsigned long srtp_rdbx_get_window_size(const srtp_rdbx_t *rdbx);
+size_t srtp_rdbx_get_window_size(const srtp_rdbx_t *rdbx);
 
 /* index_init(&pi) initializes a packet index pi (sets it to zero) */
 void srtp_index_init(srtp_xtd_seq_num_t *pi);
@@ -179,7 +179,7 @@ void srtp_index_advance(srtp_xtd_seq_num_t *pi, srtp_sequence_number_t s);
  * guess of the packet index to which s corresponds, and returns the
  * difference between *guess and *local
  */
-int32_t srtp_index_guess(const srtp_xtd_seq_num_t *local,
+ssize_t srtp_index_guess(const srtp_xtd_seq_num_t *local,
                          srtp_xtd_seq_num_t *guess,
                          srtp_sequence_number_t s);
 
@@ -192,7 +192,7 @@ int32_t srtp_index_guess(const srtp_xtd_seq_num_t *local,
 uint32_t srtp_rdbx_get_roc(const srtp_rdbx_t *rdbx);
 
 /*
- * srtp_rdbx_set_roc_seq(rdbx, roc, seq) initalizes the srtp_rdbx_t at the
+ * srtp_rdbx_set_roc_seq(rdbx, roc, seq) initializes the srtp_rdbx_t at the
  * location rdbx to have the rollover counter value roc and packet sequence
  * number seq.  If the new rollover counter value is less than the current
  * rollover counter value, then the function returns

@@ -57,7 +57,7 @@ extern "C" {
 
 typedef struct {
     v128_t round[15];
-    int num_rounds;
+    size_t num_rounds;
 } srtp_aes_expanded_key_t;
 
 srtp_err_status_t srtp_aes_expand_encryption_key(

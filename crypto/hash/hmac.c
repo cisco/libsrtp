@@ -54,7 +54,7 @@
 /* the debug module for authentiation */
 
 srtp_debug_module_t srtp_mod_hmac = {
-    0,           /* debugging is off by default */
+    false,       /* debugging is off by default */
     "hmac sha-1" /* printable name for module   */
 };
 

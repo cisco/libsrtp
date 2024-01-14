@@ -186,7 +186,7 @@ static srtp_err_status_t fuzz_srtp_protect(srtp_t srtp_sender,
                                            void *hdr,
                                            size_t *len,
                                            uint8_t use_mki,
-                                           unsigned int mki)
+                                           size_t mki)
 {
     return srtp_protect(srtp_sender, hdr, len);
 }
@@ -195,7 +195,7 @@ static srtp_err_status_t fuzz_srtp_unprotect(srtp_t srtp_sender,
                                              void *hdr,
                                              size_t *len,
                                              uint8_t use_mki,
-                                             unsigned int mki)
+                                             size_t mki)
 {
     return srtp_unprotect(srtp_sender, hdr, len);
 }
@@ -204,7 +204,7 @@ static srtp_err_status_t fuzz_srtp_protect_rtcp(srtp_t srtp_sender,
                                                 void *hdr,
                                                 size_t *len,
                                                 uint8_t use_mki,
-                                                unsigned int mki)
+                                                size_t mki)
 {
     return srtp_protect_rtcp(srtp_sender, hdr, len);
 }
@@ -213,7 +213,7 @@ static srtp_err_status_t fuzz_srtp_unprotect_rtcp(srtp_t srtp_sender,
                                                   void *hdr,
                                                   size_t *len,
                                                   uint8_t use_mki,
-                                                  unsigned int mki)
+                                                  size_t mki)
 {
     return srtp_unprotect_rtcp(srtp_sender, hdr, len);
 }
@@ -222,7 +222,7 @@ static srtp_err_status_t fuzz_srtp_protect_mki(srtp_t srtp_sender,
                                                void *hdr,
                                                size_t *len,
                                                uint8_t use_mki,
-                                               unsigned int mki)
+                                               size_t mki)
 {
     return srtp_protect_mki(srtp_sender, hdr, len, use_mki, mki);
 }
@@ -231,7 +231,7 @@ static srtp_err_status_t fuzz_srtp_protect_rtcp_mki(srtp_t srtp_sender,
                                                     void *hdr,
                                                     size_t *len,
                                                     uint8_t use_mki,
-                                                    unsigned int mki)
+                                                    size_t mki)
 {
     return srtp_protect_rtcp_mki(srtp_sender, hdr, len, use_mki, mki);
 }
@@ -240,7 +240,7 @@ static srtp_err_status_t fuzz_srtp_unprotect_mki(srtp_t srtp_sender,
                                                  void *hdr,
                                                  size_t *len,
                                                  uint8_t use_mki,
-                                                 unsigned int mki)
+                                                 size_t mki)
 {
     return srtp_unprotect_mki(srtp_sender, hdr, len, use_mki);
 }
@@ -249,7 +249,7 @@ static srtp_err_status_t fuzz_srtp_unprotect_rtcp_mki(srtp_t srtp_sender,
                                                       void *hdr,
                                                       size_t *len,
                                                       uint8_t use_mki,
-                                                      unsigned int mki)
+                                                      size_t mki)
 {
     return srtp_unprotect_rtcp_mki(srtp_sender, hdr, len, use_mki);
 }
@@ -258,7 +258,7 @@ static srtp_err_status_t fuzz_srtp_unprotect_rtcp_mki(srtp_t srtp_sender,
 
 static srtp_err_status_t fuzz_srtp_get_protect_length(const srtp_t srtp_ctx,
                                                       uint8_t use_mki,
-                                                      unsigned int mki,
+                                                      size_t mki,
                                                       size_t *length)
 {
     return srtp_get_protect_trailer_length(srtp_ctx, 0, 0, length);
@@ -267,7 +267,7 @@ static srtp_err_status_t fuzz_srtp_get_protect_length(const srtp_t srtp_ctx,
 static srtp_err_status_t fuzz_srtp_get_protect_rtcp_length(
     const srtp_t srtp_ctx,
     uint8_t use_mki,
-    unsigned int mki,
+    size_t mki,
     size_t *length)
 {
     return srtp_get_protect_rtcp_trailer_length(srtp_ctx, 0, 0, length);
@@ -275,7 +275,7 @@ static srtp_err_status_t fuzz_srtp_get_protect_rtcp_length(
 
 static srtp_err_status_t fuzz_srtp_get_protect_mki_length(const srtp_t srtp_ctx,
                                                           uint8_t use_mki,
-                                                          unsigned int mki,
+                                                          size_t mki,
                                                           size_t *length)
 {
     return srtp_get_protect_trailer_length(srtp_ctx, use_mki, mki, length);
@@ -284,7 +284,7 @@ static srtp_err_status_t fuzz_srtp_get_protect_mki_length(const srtp_t srtp_ctx,
 static srtp_err_status_t fuzz_srtp_get_protect_rtcp_mki_length(
     const srtp_t srtp_ctx,
     uint8_t use_mki,
-    unsigned int mki,
+    size_t mki,
     size_t *length)
 {
     return srtp_get_protect_rtcp_trailer_length(srtp_ctx, use_mki, mki, length);
@@ -415,7 +415,7 @@ static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
     srtp_policy_t *policy = NULL;
     struct {
         uint8_t srtp_crypto_policy_func;
-        uint64_t window_size;
+        size_t window_size;
         uint8_t allow_repeat_tx;
         uint8_t ssrc_type;
         uint32_t ssrc_value;

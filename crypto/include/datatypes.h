@@ -50,6 +50,7 @@
 #include "alloc.h"
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -70,6 +71,11 @@
 extern "C" {
 #endif
 
+#if defined(_WIN32) || defined(WIN32)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 typedef union {
     uint8_t v8[16];
     uint16_t v16[8];
@@ -87,7 +93,7 @@ char *v128_hex_string(v128_t *x);
 
 void v128_copy_octet_string(v128_t *x, const uint8_t s[16]);
 
-void v128_left_shift(v128_t *x, int shift_index);
+void v128_left_shift(v128_t *x, size_t shift_index);
 
 /*
  * the following macros define the data manipulation functions
@@ -157,13 +163,13 @@ void v128_left_shift(v128_t *x, int shift_index);
     ((((x)->v32[(bit) >> 5]) &= ~((uint32_t)1 << ((bit)&31))))
 
 /*
- * srtp_octet_string_is_eq(a, b, len) returns 1 if the length len strings
- * a and b are not equal. It returns 0 otherwise. The running time of the
+ * srtp_octet_string_is_eq(a, b, len) returns true if the length len strings
+ * a and b are NOT equal. It returns false otherwise. The running time of the
  * comparison depends only on len, making this safe to use for (e.g.)
  * verifying authentication tags.
  */
 
-int srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len);
+bool srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len);
 
 /*
  * A portable way to zero out memory as recommended by
@@ -248,7 +254,7 @@ static inline uint64_t be64_to_cpu(uint64_t v)
 #define bytes_per_word 4
 
 typedef struct {
-    uint32_t length;
+    size_t length;
     uint32_t *word;
 } bitvector_t;
 
@@ -260,13 +266,13 @@ typedef struct {
 
 #define bitvector_get_length(v) (((v)->length))
 
-int bitvector_alloc(bitvector_t *v, unsigned long length);
+bool bitvector_alloc(bitvector_t *v, size_t length);
 
 void bitvector_dealloc(bitvector_t *v);
 
 void bitvector_set_to_zero(bitvector_t *x);
 
-void bitvector_left_shift(bitvector_t *x, int index);
+void bitvector_left_shift(bitvector_t *x, size_t index);
 
 #ifdef __cplusplus
 }

@@ -60,7 +60,7 @@
 #include "rdbx.h"
 #include "ut_sim.h"
 
-srtp_err_status_t roc_test(int num_trials);
+srtp_err_status_t roc_test(size_t num_trials);
 
 int main(void)
 {
@@ -82,12 +82,12 @@ int main(void)
 
 #define ROC_VERBOSE 0
 
-srtp_err_status_t roc_test(int num_trials)
+srtp_err_status_t roc_test(size_t num_trials)
 {
     srtp_xtd_seq_num_t local, est, ref;
     ut_connection utc;
-    int i, num_bad_est = 0;
-    int delta;
+    size_t num_bad_est = 0;
+    ssize_t delta;
     uint32_t ircvd;
     double failure_rate;
 
@@ -96,7 +96,7 @@ srtp_err_status_t roc_test(int num_trials)
     srtp_index_init(&est);
 
     printf("\n\ttesting sequential insertion...");
-    for (i = 0; i < 2048; i++) {
+    for (size_t i = 0; i < 2048; i++) {
         srtp_index_guess(&local, &est, (uint16_t)ref);
 #if ROC_VERBOSE
         printf("%lld, %lld, %d\n", ref, est, i);
@@ -111,8 +111,9 @@ srtp_err_status_t roc_test(int num_trials)
     }
     failure_rate = (double)num_bad_est / num_trials;
     if (failure_rate > 0.01) {
-        printf("error: failure rate too high (%d bad estimates in %d trials)\n",
-               num_bad_est, num_trials);
+        printf(
+            "error: failure rate too high (%zd bad estimates in %zd trials)\n",
+            num_bad_est, num_trials);
         return srtp_err_status_algo_fail;
     }
     printf("done\n");
@@ -123,7 +124,7 @@ srtp_err_status_t roc_test(int num_trials)
     srtp_index_init(&est);
     ut_init(&utc);
 
-    for (i = 0; i < num_trials; i++) {
+    for (size_t i = 0; i < num_trials; i++) {
         /* get next seq num from unreliable transport simulator */
         ircvd = ut_next_index(&utc);
 
@@ -138,14 +139,15 @@ srtp_err_status_t roc_test(int num_trials)
 #endif
 
         if (local + delta != est) {
-            printf(" *bad delta*: local %llu + delta %d != est %llu\n",
+            printf(" *bad delta*: local %llu + delta %zd != est %llu\n",
                    (unsigned long long)local, delta, (unsigned long long)est);
             return srtp_err_status_algo_fail;
         }
 
         /* now update local srtp_xtd_seq_num_t as necessary */
-        if (delta > 0)
+        if (delta > 0) {
             srtp_index_advance(&local, (srtp_sequence_number_t)delta);
+        }
 
         if (ref != est) {
 #if ROC_VERBOSE
@@ -160,8 +162,9 @@ srtp_err_status_t roc_test(int num_trials)
     }
     failure_rate = (double)num_bad_est / num_trials;
     if (failure_rate > 0.01) {
-        printf("error: failure rate too high (%d bad estimates in %d trials)\n",
-               num_bad_est, num_trials);
+        printf(
+            "error: failure rate too high (%zd bad estimates in %zd trials)\n",
+            num_bad_est, num_trials);
         return srtp_err_status_algo_fail;
     }
     printf("done\n");

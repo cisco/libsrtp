@@ -62,8 +62,9 @@ int main(int argc, char *argv[])
     int do_validation = 0;
     srtp_err_status_t status;
 
-    if (argc == 1)
+    if (argc == 1) {
         usage(argv[0]);
+    }
 
     /* initialize kernel - we need to do this before anything else */
     status = srtp_crypto_kernel_init();
@@ -76,14 +77,15 @@ int main(int argc, char *argv[])
     /* process input arguments */
     while (1) {
         q = getopt_s(argc, argv, "vd:");
-        if (q == -1)
+        if (q == -1) {
             break;
+        }
         switch (q) {
         case 'v':
             do_validation = 1;
             break;
         case 'd':
-            status = srtp_crypto_kernel_set_debug_module(optarg_s, 1);
+            status = srtp_crypto_kernel_set_debug_module(optarg_s, true);
             if (status) {
                 printf("error: set debug module (%s) failed\n", optarg_s);
                 exit(1);

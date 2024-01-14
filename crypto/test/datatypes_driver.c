@@ -70,7 +70,6 @@ int main(void)
      * case of future problems
      */
 
-    int i, j;
     v128_t x;
     char *r = "The Moving Finger writes; and, having writ,\n"
               "Moves on: nor all thy Piety nor Wit\n"
@@ -84,7 +83,7 @@ int main(void)
     byte_order();
     test_hex_string_funcs();
 
-    for (j = 0; j < 128; j++) {
+    for (size_t j = 0; j < 128; j++) {
         v128_set_to_zero(&x);
         /*      x.v32[0] = (1 << j); */
         v128_set_bit(&x, j);
@@ -95,7 +94,7 @@ int main(void)
 
     printf("----------------------------------------------\n");
     v128_set_to_zero(&x);
-    for (i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         v128_set_bit(&x, i);
     }
     printf("%s\n", v128_bit_string(&x));
@@ -103,12 +102,12 @@ int main(void)
     printf("----------------------------------------------\n");
     v128_set_to_zero(&x);
     v128_set_bit(&x, 127);
-    for (i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         printf("%s\n", v128_bit_string(&x));
         v128_left_shift(&x, 1);
     }
     printf("----------------------------------------------\n");
-    for (i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         v128_set_to_zero(&x);
         v128_set_bit(&x, 127);
         v128_left_shift(&x, i);
@@ -116,16 +115,17 @@ int main(void)
     }
     printf("----------------------------------------------\n");
     v128_set_to_zero(&x);
-    for (i = 0; i < 128; i += 2) {
+    for (size_t i = 0; i < 128; i += 2) {
         v128_set_bit(&x, i);
     }
     printf("bit_string: { %s }\n", v128_bit_string(&x));
     printf("get_bit:    { ");
-    for (i = 0; i < 128; i++) {
-        if (v128_get_bit(&x, i) == 1)
+    for (size_t i = 0; i < 128; i++) {
+        if (v128_get_bit(&x, i) == 1) {
             printf("1");
-        else
+        } else {
             printf("0");
+        }
     }
     printf(" } \n");
 
@@ -143,8 +143,9 @@ void byte_order(void)
     v128_t e;
 
     printf("byte ordering of crypto/math datatypes:\n");
-    for (i = 0; i < sizeof(e); i++)
+    for (i = 0; i < sizeof(e); i++) {
         e.v8[i] = (uint8_t)i;
+    }
     printf("v128_t: %s\n", v128_hex_string(&e));
 }
 
@@ -170,12 +171,13 @@ void print_string(char *s)
 {
     size_t i;
     printf("%s\n", s);
-    printf("strlen(s) = %u\n", (unsigned)strlen(s));
+    printf("strlen(s) = %zu\n", strlen(s));
     printf("{ ");
     for (i = 0; i < strlen(s); i++) {
         printf("0x%x, ", s[i]);
-        if (((i + 1) % 8) == 0)
+        if (((i + 1) % 8) == 0) {
             printf("\n   ");
+        }
     }
     printf("}\n");
 }

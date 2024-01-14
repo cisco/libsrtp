@@ -223,8 +223,9 @@ static size_t test_print_in_color__(int color, const char *fmt, ...)
             attr = 0;
             break;
         }
-        if (attr != 0)
+        if (attr != 0) {
             SetConsoleTextAttribute(h, attr);
+        }
         n = printf("%s", buffer);
         SetConsoleTextAttribute(h, info.wAttributes);
         return n;
@@ -263,8 +264,9 @@ int test_check__(int cond, const char *file, int line, const char *fmt, ...)
 
         printf("  ");
 
-        if (file != NULL)
+        if (file != NULL) {
             printf("%s:%d: Check ", file, line);
+        }
 
         va_start(args, fmt);
         vprintf(fmt, args);
@@ -284,8 +286,9 @@ static void test_list_names__(void)
     const struct test__ *test;
 
     printf("Unit tests:\n");
-    for (test = &test_list__[0]; test->func != NULL; test++)
+    for (test = &test_list__[0]; test->func != NULL; test++) {
         printf("  %s\n", test->name);
+    }
 }
 
 static const struct test__ *test_by_name__(const char *name)
@@ -293,8 +296,9 @@ static const struct test__ *test_by_name__(const char *name)
     const struct test__ *test;
 
     for (test = &test_list__[0]; test->func != NULL; test++) {
-        if (strcmp(test->name, name) == 0)
+        if (strcmp(test->name, name) == 0) {
             return test;
+        }
     }
 
     return NULL;
@@ -318,8 +322,9 @@ static int test_do_run__(const struct test__ *test)
         n = test_print_in_color__(CUTEST_COLOR_DEFAULT_INTENSIVE__,
                                   "Test %s... ", test->name);
         memset(spaces, ' ', sizeof(spaces));
-        if (n < sizeof(spaces))
+        if (n < sizeof(spaces)) {
             printf("%.*s", (int)(sizeof(spaces) - n), spaces);
+        }
     } else {
         test_current_already_logged__ = 1;
     }
@@ -337,10 +342,11 @@ static int test_do_run__(const struct test__ *test)
 #ifdef __cplusplus
     } catch (std::exception &e) {
         const char *what = e.what();
-        if (what != NULL)
+        if (what != NULL) {
             test_check__(0, NULL, 0, "Threw std::exception: %s", what);
-        else
+        } else {
             test_check__(0, NULL, 0, "Threw std::exception");
+        }
     } catch (...) {
         test_check__(0, NULL, 0, "Threw an exception");
     }
@@ -380,8 +386,9 @@ static void test_error__(const char *fmt, ...)
 {
     va_list args;
 
-    if (test_verbose_level__ == 0)
+    if (test_verbose_level__ == 0) {
         return;
+    }
 
     if (test_verbose_level__ <= 2 && !test_current_already_logged__ &&
         test_current_unit__ != NULL) {
@@ -520,8 +527,9 @@ static void test_run__(const struct test__ *test)
     test_current_unit__ = NULL;
 
     test_stat_run_units__++;
-    if (failed)
+    if (failed) {
         test_stat_failed_units__++;
+    }
 }
 
 #if defined(CUTEST_WIN__)
@@ -646,18 +654,21 @@ int main(int argc, char **argv)
 
     /* Count all test units */
     test_count__ = 0;
-    for (i = 0; test_list__[i].func != NULL; i++)
+    for (i = 0; test_list__[i].func != NULL; i++) {
         test_count__++;
+    }
 
     /* Run the tests */
     if (n == 0) {
         /* Run all tests */
-        for (i = 0; test_list__[i].func != NULL; i++)
+        for (i = 0; test_list__[i].func != NULL; i++) {
             test_run__(&test_list__[i]);
+        }
     } else if (!test_skip_mode__) {
         /* Run the listed tests */
-        for (i = 0; i < n; i++)
+        for (i = 0; i < n; i++) {
             test_run__(tests[i]);
+        }
     } else {
         /* Run all tests except those listed */
         for (i = 0; test_list__[i].func != NULL; i++) {
@@ -668,8 +679,9 @@ int main(int argc, char **argv)
                     break;
                 }
             }
-            if (!want_skip)
+            if (!want_skip) {
                 test_run__(&test_list__[i]);
+            }
         }
     }
 
@@ -698,8 +710,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (tests != NULL)
+    if (tests != NULL) {
         free((void *)tests);
+    }
 
     return (test_stat_failed_units__ == 0) ? 0 : 1;
 }

@@ -53,7 +53,7 @@
 /* the debug module for authentiation */
 
 srtp_debug_module_t srtp_mod_hmac = {
-    0,               /* debugging is off by default */
+    false,           /* debugging is off by default */
     "hmac sha-1 nss" /* printable name for module   */
 };
 
@@ -237,7 +237,6 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
     srtp_hmac_nss_ctx_t *hmac;
     hmac = (srtp_hmac_nss_ctx_t *)statev;
     uint8_t hash_value[SHA1_DIGEST_SIZE];
-    size_t i;
     unsigned int len;
 
     debug_print(srtp_mod_hmac, "input: %s",
@@ -257,11 +256,12 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
         return srtp_err_status_auth_fail;
     }
 
-    if (len < (unsigned int)tag_len)
+    if (len < tag_len) {
         return srtp_err_status_auth_fail;
+    }
 
     /* copy hash_value to *result */
-    for (i = 0; i < tag_len; i++) {
+    for (size_t i = 0; i < tag_len; i++) {
         result[i] = hash_value[i];
     }
 

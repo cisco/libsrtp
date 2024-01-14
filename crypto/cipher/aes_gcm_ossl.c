@@ -57,7 +57,7 @@
 #include "cipher_test_cases.h"
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
-    0,        /* debugging is off by default */
+    false,    /* debugging is off by default */
     "aes gcm" /* printable module name       */
 };
 
@@ -268,7 +268,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
          * OpenSSL copy its content to the context), so we can make
          * aad read-only in this function and all its wrappers.
          */
-        unsigned char dummy_tag[GCM_AUTH_TAG_LEN];
+        uint8_t dummy_tag[GCM_AUTH_TAG_LEN];
         memset(dummy_tag, 0x0, GCM_AUTH_TAG_LEN);
         if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
                                  &dummy_tag)) {

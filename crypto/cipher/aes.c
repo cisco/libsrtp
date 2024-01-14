@@ -1404,18 +1404,15 @@ static const uint32_t U4[256] = {
 static void aes_128_expand_encryption_key(const uint8_t *key,
                                           srtp_aes_expanded_key_t *expanded_key)
 {
-    int i;
-    uint8_t rc;
-
     /* initialize round constant */
-    rc = 1;
+    uint8_t rc = 1;
 
     expanded_key->num_rounds = 10;
 
     v128_copy_octet_string(&expanded_key->round[0], key);
 
     /* loop over round keys */
-    for (i = 1; i < 11; i++) {
+    for (size_t i = 1; i < 11; i++) {
         /* munge first word of round key */
         expanded_key->round[i].v8[0] =
             aes_sbox[expanded_key->round[i - 1].v8[13]] ^ rc;
@@ -1445,14 +1442,11 @@ static void aes_128_expand_encryption_key(const uint8_t *key,
     }
 }
 
-static void aes_256_expand_encryption_key(const unsigned char *key,
+static void aes_256_expand_encryption_key(const uint8_t *key,
                                           srtp_aes_expanded_key_t *expanded_key)
 {
-    int i;
-    uint8_t rc;
-
     /* initialize round constant */
-    rc = 1;
+    uint8_t rc = 1;
 
     expanded_key->num_rounds = 14;
 
@@ -1460,7 +1454,7 @@ static void aes_256_expand_encryption_key(const unsigned char *key,
     v128_copy_octet_string(&expanded_key->round[1], key + 16);
 
     /* loop over rest of round keys */
-    for (i = 2; i < 15; i++) {
+    for (size_t i = 2; i < 15; i++) {
         /* munge first word of round key */
         if ((i & 1) == 0) {
             expanded_key->round[i].v8[0] =
@@ -1525,9 +1519,8 @@ srtp_err_status_t srtp_aes_expand_decryption_key(
     size_t key_len,
     srtp_aes_expanded_key_t *expanded_key)
 {
-    int i;
     srtp_err_status_t status;
-    int num_rounds = expanded_key->num_rounds;
+    size_t num_rounds = expanded_key->num_rounds;
 
     status = srtp_aes_expand_encryption_key(key, key_len, expanded_key);
     if (status) {
@@ -1535,7 +1528,7 @@ srtp_err_status_t srtp_aes_expand_decryption_key(
     }
 
     /* invert the order of the round keys */
-    for (i = 0; i < num_rounds / 2; i++) {
+    for (size_t i = 0; i < num_rounds / 2; i++) {
         v128_t tmp;
         v128_copy(&tmp, &expanded_key->round[num_rounds - i]);
         v128_copy(&expanded_key->round[num_rounds - i],
@@ -1551,7 +1544,7 @@ srtp_err_status_t srtp_aes_expand_decryption_key(
      * followed by the T4 table (which cancels out the use of the sbox
      * in the U-tables)
      */
-    for (i = 1; i < num_rounds; i++) {
+    for (size_t i = 1; i < num_rounds; i++) {
 #ifdef CPU_RISC
         uint32_t tmp;
 

@@ -151,18 +151,18 @@ int main(int argc, char *argv[])
     int c;
     size_t key_size = 128;
     size_t tag_size = 8;
-    int gcm_on = 0;
+    bool gcm_on = false;
     char *input_key = NULL;
-    int b64_input = 0;
+    bool b64_input = false;
     char *address = NULL;
     uint8_t key[MAX_KEY_LEN];
-    unsigned short port = 0;
+    uint16_t port = 0;
     rtp_sender_t snd;
     srtp_policy_t policy;
     srtp_err_status_t status;
     size_t len;
     size_t expected_len;
-    int do_list_mods = 0;
+    bool do_list_mods = false;
     uint32_t ssrc = 0xdeadbeef; /* ssrc value hardcoded for now */
 #ifdef RTPW_USE_WINSOCK2
     WORD wVersionRequested = MAKEWORD(2, 0);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
         }
         switch (c) {
         case 'b':
-            b64_input = 1;
+            b64_input = true;
         /* fall thru */
         case 'k':
             input_key = optarg_s;
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
             sec_servs |= sec_serv_auth;
             break;
         case 'g':
-            gcm_on = 1;
+            gcm_on = true;
             sec_servs |= sec_serv_auth;
             break;
         case 'r':
@@ -234,14 +234,14 @@ int main(int argc, char *argv[])
             prog_type = sender;
             break;
         case 'd':
-            status = srtp_set_debug_module(optarg_s, 1);
+            status = srtp_set_debug_module(optarg_s, true);
             if (status) {
                 printf("error: set debug module (%s) failed\n", optarg_s);
                 exit(1);
             }
             break;
         case 'l':
-            do_list_mods = 1;
+            do_list_mods = true;
             break;
         case 'w':
             dictfile = optarg_s;
@@ -357,12 +357,15 @@ int main(int argc, char *argv[])
 
     /* report security services selected on the command line */
     printf("security services: ");
-    if (sec_servs & sec_serv_conf)
+    if (sec_servs & sec_serv_conf) {
         printf("confidentiality ");
-    if (sec_servs & sec_serv_auth)
+    }
+    if (sec_servs & sec_serv_auth) {
         printf("message authentication");
-    if (sec_servs == sec_serv_none)
+    }
+    if (sec_servs == sec_serv_none) {
         printf("none");
+    }
     printf("\n");
 
     /* set up the srtp policy and master key */
@@ -564,9 +567,9 @@ int main(int argc, char *argv[])
         while (!interrupted && fgets(word, MAX_WORD_LEN, dict) != NULL) {
             len = strlen(word) + 1; /* plus one for null */
 
-            if (len > MAX_WORD_LEN)
+            if (len > MAX_WORD_LEN) {
                 printf("error: word %s too large to send\n", word);
-            else {
+            } else {
                 rtp_sendto(snd, word, len);
                 printf("sending word: %s", word);
             }
@@ -606,8 +609,9 @@ int main(int argc, char *argv[])
         /* get next word and loop */
         while (!interrupted) {
             len = MAX_WORD_LEN;
-            if (rtp_recvfrom(rcvr, word, &len) > -1)
+            if (rtp_recvfrom(rcvr, word, &len) > -1) {
                 printf("\tword: %s\n", word);
+            }
         }
 
         rtp_receiver_deinit_srtp(rcvr);

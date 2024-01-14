@@ -68,7 +68,7 @@
 /* the debug module for authentication */
 
 srtp_debug_module_t srtp_mod_hmac = {
-    0,                   /* debugging is off by default */
+    false,               /* debugging is off by default */
     "hmac sha-1 openssl" /* printable name for module   */
 };
 
@@ -80,7 +80,7 @@ srtp_debug_module_t srtp_mod_hmac = {
  *    so we have to use EVP_MAC_CTX_dup
  * 3. 3.0.3 and later - EVP API is required and supports reinitialization
  *
- * The distingtion between cases 2 & 3 needs to be made at runtime, because in a
+ * The distinction between cases 2 & 3 needs to be made at runtime, because in a
  * shared library context you might end up building against 3.0.3 and running
  * against 3.0.2.
  */
@@ -216,8 +216,9 @@ static srtp_err_status_t srtp_hmac_start(void *statev)
         }
     }
 #else
-    if (HMAC_Init_ex(hmac->ctx, NULL, 0, NULL, NULL) == 0)
+    if (HMAC_Init_ex(hmac->ctx, NULL, 0, NULL, NULL) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #endif
     return srtp_err_status_ok;
 }
@@ -239,8 +240,9 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
         return srtp_err_status_auth_fail;
     }
 #else
-    if (HMAC_Init_ex(hmac->ctx, key, key_len, EVP_sha1(), NULL) == 0)
+    if (HMAC_Init_ex(hmac->ctx, key, key_len, EVP_sha1(), NULL) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #endif
     return srtp_err_status_ok;
 }
@@ -259,8 +261,9 @@ static srtp_err_status_t srtp_hmac_update(void *statev,
         return srtp_err_status_auth_fail;
     }
 #else
-    if (HMAC_Update(hmac->ctx, message, msg_octets) == 0)
+    if (HMAC_Update(hmac->ctx, message, msg_octets) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #endif
     return srtp_err_status_ok;
 }
@@ -273,7 +276,6 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
 {
     srtp_hmac_ossl_ctx_t *hmac = (srtp_hmac_ossl_ctx_t *)statev;
     uint8_t hash_value[SHA1_DIGEST_SIZE];
-    size_t i;
 #ifdef SRTP_OSSL_USE_EVP_MAC
     size_t len;
 #else
@@ -298,17 +300,20 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
         return srtp_err_status_auth_fail;
     }
 #else
-    if (HMAC_Update(hmac->ctx, message, msg_octets) == 0)
+    if (HMAC_Update(hmac->ctx, message, msg_octets) == 0) {
         return srtp_err_status_auth_fail;
+    }
 
-    if (HMAC_Final(hmac->ctx, hash_value, &len) == 0)
+    if (HMAC_Final(hmac->ctx, hash_value, &len) == 0) {
         return srtp_err_status_auth_fail;
+    }
 #endif
-    if (len < tag_len)
+    if (len < tag_len) {
         return srtp_err_status_auth_fail;
+    }
 
     /* copy hash_value to *result */
-    for (i = 0; i < tag_len; i++) {
+    for (size_t i = 0; i < tag_len; i++) {
         result[i] = hash_value[i];
     }
 
