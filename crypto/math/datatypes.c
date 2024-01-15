@@ -403,20 +403,20 @@ void bitvector_left_shift(bitvector_t *x, size_t shift)
 
 #endif /* defined(__SSSE3__) */
 
-bool srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
+bool srtp_octet_string_equal(const uint8_t *a, const uint8_t *b, size_t length)
 {
     /*
      * We use this somewhat obscure implementation to try to ensure the running
      * time only depends on len, even accounting for compiler optimizations.
      * The accumulator ends up zero iff the strings are equal.
      */
-    const uint8_t *end = b + len;
+    const uint8_t *end = b + length;
     uint32_t accumulator = 0;
 
 #if defined(__SSE2__)
     __m128i mm_accumulator1 = _mm_setzero_si128();
     __m128i mm_accumulator2 = _mm_setzero_si128();
-    for (size_t i = 0, n = len >> 5; i < n; ++i, a += 32, b += 32) {
+    for (size_t i = 0, n = length >> 5; i < n; ++i, a += 32, b += 32) {
         __m128i mm_a1 = _mm_loadu_si128((const __m128i *)a);
         __m128i mm_b1 = _mm_loadu_si128((const __m128i *)b);
         __m128i mm_a2 = _mm_loadu_si128((const __m128i *)(a + 16));
@@ -454,7 +454,7 @@ bool srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
     accumulator = _mm_cvtsi128_si32(mm_accumulator1);
 #else
     uint32_t accumulator2 = 0;
-    for (size_t i = 0, n = len >> 3; i < n; ++i, a += 8, b += 8) {
+    for (size_t i = 0, n = length >> 3; i < n; ++i, a += 8, b += 8) {
         uint32_t a_val1, b_val1;
         uint32_t a_val2, b_val2;
         memcpy(&a_val1, a, sizeof(a_val1));
@@ -481,8 +481,8 @@ bool srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len)
         accumulator |= (*a++ ^ *b++);
     }
 
-    /* Return 1 if *not* equal. */
-    return accumulator != 0;
+    /* Return true if equal */
+    return accumulator == 0;
 }
 
 void srtp_cleanse(void *s, size_t len)

@@ -2763,7 +2763,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
             return srtp_err_status_auth_fail;
         }
 
-        if (srtp_octet_string_is_eq(tmp_tag, auth_tag, tag_len)) {
+        if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
             return srtp_err_status_auth_fail;
         }
     }
@@ -4414,7 +4414,7 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
     /* compare the tag just computed with the one in the packet */
     debug_print(mod_srtp, "srtcp tag from packet:    %s",
                 srtp_octet_string_hex_string(auth_tag, tag_len));
-    if (srtp_octet_string_is_eq(tmp_tag, auth_tag, tag_len)) {
+    if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
         return srtp_err_status_auth_fail;
     }
 
