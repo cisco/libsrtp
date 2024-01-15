@@ -145,10 +145,10 @@ ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
     return octets_recvd;
 }
 
-int rtp_sender_init(rtp_sender_t sender,
-                    int sock,
-                    struct sockaddr_in addr,
-                    uint32_t ssrc)
+srtp_err_status_t rtp_sender_init(rtp_sender_t sender,
+                                  int sock,
+                                  struct sockaddr_in addr,
+                                  uint32_t ssrc)
 {
     /* set header values */
     sender->message.header.ssrc = htonl(ssrc);
@@ -165,13 +165,13 @@ int rtp_sender_init(rtp_sender_t sender,
     sender->socket = sock;
     sender->addr = addr;
 
-    return 0;
+    return srtp_err_status_ok;
 }
 
-int rtp_receiver_init(rtp_receiver_t rcvr,
-                      int sock,
-                      struct sockaddr_in addr,
-                      uint32_t ssrc)
+srtp_err_status_t rtp_receiver_init(rtp_receiver_t rcvr,
+                                    int sock,
+                                    struct sockaddr_in addr,
+                                    uint32_t ssrc)
 {
     /* set header values */
     rcvr->message.header.ssrc = htonl(ssrc);
@@ -188,25 +188,27 @@ int rtp_receiver_init(rtp_receiver_t rcvr,
     rcvr->socket = sock;
     rcvr->addr = addr;
 
-    return 0;
+    return srtp_err_status_ok;
 }
 
-int rtp_sender_init_srtp(rtp_sender_t sender, const srtp_policy_t *policy)
+srtp_err_status_t rtp_sender_init_srtp(rtp_sender_t sender,
+                                       const srtp_policy_t *policy)
 {
     return srtp_create(&sender->srtp_ctx, policy);
 }
 
-int rtp_sender_deinit_srtp(rtp_sender_t sender)
+srtp_err_status_t rtp_sender_deinit_srtp(rtp_sender_t sender)
 {
     return srtp_dealloc(sender->srtp_ctx);
 }
 
-int rtp_receiver_init_srtp(rtp_receiver_t sender, const srtp_policy_t *policy)
+srtp_err_status_t rtp_receiver_init_srtp(rtp_receiver_t sender,
+                                         const srtp_policy_t *policy)
 {
     return srtp_create(&sender->srtp_ctx, policy);
 }
 
-int rtp_receiver_deinit_srtp(rtp_receiver_t sender)
+srtp_err_status_t rtp_receiver_deinit_srtp(rtp_receiver_t sender)
 {
     return srtp_dealloc(sender->srtp_ctx);
 }

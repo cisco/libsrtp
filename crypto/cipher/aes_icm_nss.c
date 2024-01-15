@@ -55,7 +55,7 @@
 #include "cipher_test_cases.h"
 
 srtp_debug_module_t srtp_mod_aes_icm = {
-    0,            /* debugging is off by default */
+    false,        /* debugging is off by default */
     "aes icm nss" /* printable module name       */
 };
 

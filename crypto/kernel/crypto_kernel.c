@@ -54,7 +54,7 @@
 /* the debug module for the crypto_kernel */
 
 srtp_debug_module_t srtp_mod_crypto_kernel = {
-    0,              /* debugging is off by default */
+    false,          /* debugging is off by default */
     "crypto kernel" /* printable name for module   */
 };
 
@@ -271,7 +271,7 @@ srtp_err_status_t srtp_crypto_kernel_shutdown(void)
 static inline srtp_err_status_t srtp_crypto_kernel_do_load_cipher_type(
     const srtp_cipher_type_t *new_ct,
     srtp_cipher_type_id_t id,
-    int replace)
+    bool replace)
 {
     srtp_kernel_cipher_type_t *ctype;
     srtp_kernel_cipher_type_t *new_ctype = NULL;
@@ -337,19 +337,19 @@ srtp_err_status_t srtp_crypto_kernel_load_cipher_type(
     const srtp_cipher_type_t *new_ct,
     srtp_cipher_type_id_t id)
 {
-    return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, 0);
+    return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, false);
 }
 
 srtp_err_status_t srtp_replace_cipher_type(const srtp_cipher_type_t *new_ct,
                                            srtp_cipher_type_id_t id)
 {
-    return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, 1);
+    return srtp_crypto_kernel_do_load_cipher_type(new_ct, id, true);
 }
 
 srtp_err_status_t srtp_crypto_kernel_do_load_auth_type(
     const srtp_auth_type_t *new_at,
     srtp_auth_type_id_t id,
-    int replace)
+    bool replace)
 {
     srtp_kernel_auth_type_t *atype;
     srtp_kernel_auth_type_t *new_atype = NULL;
@@ -414,13 +414,13 @@ srtp_err_status_t srtp_crypto_kernel_load_auth_type(
     const srtp_auth_type_t *new_at,
     srtp_auth_type_id_t id)
 {
-    return srtp_crypto_kernel_do_load_auth_type(new_at, id, 0);
+    return srtp_crypto_kernel_do_load_auth_type(new_at, id, false);
 }
 
 srtp_err_status_t srtp_replace_auth_type(const srtp_auth_type_t *new_at,
                                          srtp_auth_type_id_t id)
 {
-    return srtp_crypto_kernel_do_load_auth_type(new_at, id, 1);
+    return srtp_crypto_kernel_do_load_auth_type(new_at, id, true);
 }
 
 const srtp_cipher_type_t *srtp_crypto_kernel_get_cipher_type(
@@ -541,7 +541,7 @@ srtp_err_status_t srtp_crypto_kernel_load_debug_module(
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_crypto_kernel_set_debug_module(const char *name, int on)
+srtp_err_status_t srtp_crypto_kernel_set_debug_module(const char *name, bool on)
 {
     srtp_kernel_debug_module_t *kdm;
 

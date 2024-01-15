@@ -59,8 +59,8 @@
 #define MAX_HASH_OUT_LEN 20
 
 typedef struct hash_test_case_t {
-    unsigned data_len;               /* number of octets in data        */
-    unsigned hash_len;               /* number of octets output by hash */
+    size_t data_len;                 /* number of octets in data        */
+    size_t hash_len;                 /* number of octets output by hash */
     uint8_t data[MAX_HASH_DATA_LEN]; /* message data                    */
     uint8_t hash[MAX_HASH_OUT_LEN];  /* expected hash output            */
     struct hash_test_case_t *next_test_case;
@@ -70,17 +70,18 @@ hash_test_case_t *sha1_test_case_list;
 
 srtp_err_status_t hash_test_case_add(hash_test_case_t **list_ptr,
                                      char *hex_data,
-                                     unsigned data_len,
+                                     size_t data_len,
                                      char *hex_hash,
-                                     unsigned hash_len)
+                                     size_t hash_len)
 {
     hash_test_case_t *list_head = *list_ptr;
     hash_test_case_t *test_case;
     size_t tmp_len;
 
     test_case = malloc(sizeof(hash_test_case_t));
-    if (test_case == NULL)
+    if (test_case == NULL) {
         return srtp_err_status_alloc_fail;
+    }
 
     tmp_len =
         hex_string_to_octet_string(test_case->data, hex_data, data_len * 2);
@@ -111,13 +112,16 @@ srtp_err_status_t sha1_test_case_validate(const hash_test_case_t *test_case)
     srtp_sha1_ctx_t ctx;
     uint32_t hash_value[5];
 
-    if (test_case == NULL)
+    if (test_case == NULL) {
         return srtp_err_status_bad_param;
+    }
 
-    if (test_case->hash_len != 20)
+    if (test_case->hash_len != 20) {
         return srtp_err_status_bad_param;
-    if (test_case->data_len > MAX_HASH_DATA_LEN)
+    }
+    if (test_case->data_len > MAX_HASH_DATA_LEN) {
         return srtp_err_status_bad_param;
+    }
 
     srtp_sha1_init(&ctx);
     srtp_sha1_update(&ctx, test_case->data, test_case->data_len);
@@ -141,14 +145,13 @@ srtp_err_status_t sha1_test_case_validate(const hash_test_case_t *test_case)
 }
 
 struct hex_sha1_test_case_t {
-    unsigned bit_len;
+    size_t bit_len;
     char hex_data[MAX_HASH_DATA_LEN * 2];
     char hex_hash[40 + 1];
 };
 
 srtp_err_status_t sha1_add_test_cases(void)
 {
-    int i;
     srtp_err_status_t err;
 
     /*
@@ -346,7 +349,7 @@ srtp_err_status_t sha1_add_test_cases(void)
           "a3054427cdb13f164a610b348702724c808a0dcc" }
     };
 
-    for (i = 0; i < 65; i++) {
+    for (size_t i = 0; i < 65; i++) {
         err = hash_test_case_add(&sha1_test_case_list, tc[i].hex_data,
                                  tc[i].bit_len / 8, tc[i].hex_hash, 20);
         if (err) {
@@ -383,8 +386,9 @@ srtp_err_status_t sha1_validate(void)
         return err;
     }
 
-    if (sha1_test_case_list == NULL)
+    if (sha1_test_case_list == NULL) {
         return srtp_err_status_cant_check;
+    }
 
     test_case = sha1_test_case_list;
     while (test_case != NULL) {

@@ -502,7 +502,7 @@ srtp_create(&session, &policy);
 // main loop: get rtp packets, send srtp packets
 while (1) {
   char rtp_buffer[2048];
-  unsigned len;
+  size_t len;
 
   len = get_rtp_packet(rtp_buffer);
   srtp_protect(session, rtp_buffer, &len);

@@ -200,13 +200,13 @@ srtp_err_status_t srtp_crypto_kernel_alloc_auth(srtp_auth_type_id_t id,
 /*
  * srtp_crypto_kernel_set_debug_module(mod_name, v)
  *
- * sets dynamic debugging to the value v (0 for off, 1 for on) for the
+ * sets dynamic debugging to the value v (false for off, true for on) for the
  * debug module with the name mod_name
  *
  * returns srtp_err_status_ok on success, srtp_err_status_fail otherwise
  */
 srtp_err_status_t srtp_crypto_kernel_set_debug_module(const char *mod_name,
-                                                      int v);
+                                                      bool v);
 
 #ifdef __cplusplus
 }

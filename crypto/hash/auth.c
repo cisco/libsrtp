@@ -54,7 +54,7 @@
 /* the debug module for authentiation */
 
 srtp_debug_module_t srtp_mod_auth = {
-    0,          /* debugging is off by default */
+    false,      /* debugging is off by default */
     "auth func" /* printable name for module   */
 };
 
@@ -90,7 +90,7 @@ srtp_err_status_t srtp_auth_type_test(const srtp_auth_type_t *at,
     srtp_err_status_t status;
     uint8_t tag[SELF_TEST_TAG_BUF_OCTETS];
     size_t i = 0;
-    unsigned int case_num = 0;
+    size_t case_num = 0;
 
     debug_print(srtp_mod_auth, "running self-test for auth function %s",
                 at->description);
@@ -157,7 +157,7 @@ srtp_err_status_t srtp_auth_type_test(const srtp_auth_type_t *at,
         for (i = 0; i < test_case->tag_length_octets; i++) {
             if (tag[i] != test_case->tag[i]) {
                 status = srtp_err_status_algo_fail;
-                debug_print(srtp_mod_auth, "test case %d failed", case_num);
+                debug_print(srtp_mod_auth, "test case %zu failed", case_num);
                 debug_print(srtp_mod_auth, "  (mismatch at octet %zu)", i);
             }
         }

@@ -58,7 +58,7 @@
 #include <nspr.h>
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
-    0,            /* debugging is off by default */
+    false,        /* debugging is off by default */
     "aes gcm nss" /* printable module name       */
 };
 
@@ -280,7 +280,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_aad(void *cv,
 }
 
 static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
-                                                    int encrypt,
+                                                    bool encrypt,
                                                     uint8_t *buf,
                                                     size_t *enc_len)
 {
@@ -347,7 +347,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
     }
 
     srtp_err_status_t status =
-        srtp_aes_gcm_nss_do_crypto(cv, 1, non_null_buf, enc_len);
+        srtp_aes_gcm_nss_do_crypto(cv, true, non_null_buf, enc_len);
     if (status != srtp_err_status_ok) {
         return status;
     }
@@ -390,7 +390,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_decrypt(void *cv,
                                                   uint8_t *buf,
                                                   size_t *enc_len)
 {
-    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(cv, 0, buf, enc_len);
+    srtp_err_status_t status =
+        srtp_aes_gcm_nss_do_crypto(cv, false, buf, enc_len);
     if (status != srtp_err_status_ok) {
         int err = PR_GetError();
         if (err == SEC_ERROR_BAD_DATA) {

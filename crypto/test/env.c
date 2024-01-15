@@ -48,7 +48,7 @@
 
 int main(void)
 {
-    int err_count = 0;
+    size_t err_count = 0;
 
 #ifdef WORDS_BIGENDIAN
     printf("CPU set to big-endian\t\t\t(WORDS_BIGENDIAN == 1)\n");
@@ -80,10 +80,11 @@ int main(void)
     printf("using stdout for error reporting\t(ERR_REPORTING_STDOUT == 1)\n");
 #endif
 
-    if (err_count)
+    if (err_count) {
         printf("warning: configuration is probably in error "
-               "(found %d problems)\n",
+               "(found %zu problems)\n",
                err_count);
+    }
 
     return err_count;
 }

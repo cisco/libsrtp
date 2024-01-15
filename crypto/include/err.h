@@ -115,7 +115,7 @@ void srtp_err_report(srtp_err_reporting_level_t level, const char *format, ...)
  */
 
 typedef struct {
-    int on;           /* 1 if debugging is on, 0 if it is off */
+    bool on;          /* true if debugging is on, false if it is off */
     const char *name; /* printable name for debug module      */
 } srtp_debug_module_t;
 

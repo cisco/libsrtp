@@ -59,7 +59,7 @@
  * validation functions below
  */
 
-unsigned num_trials = 1 << 16;
+size_t num_trials = 1 << 16;
 
 srtp_err_status_t test_rdb_db(void);
 
@@ -135,7 +135,7 @@ srtp_err_status_t rdb_check_add_unordered(srtp_rdb_t *rdb, uint32_t idx)
 srtp_err_status_t test_rdb_db(void)
 {
     srtp_rdb_t rdb;
-    uint32_t idx, ircvd;
+    uint32_t ircvd;
     ut_connection utc;
     srtp_err_status_t err;
 
@@ -145,17 +145,19 @@ srtp_err_status_t test_rdb_db(void)
     }
 
     /* test sequential insertion */
-    for (idx = 0; idx < num_trials; idx++) {
+    for (uint32_t idx = 0; idx < num_trials; idx++) {
         err = rdb_check_add(&rdb, idx);
-        if (err)
+        if (err) {
             return err;
+        }
     }
 
     /* test for false positives */
-    for (idx = 0; idx < num_trials; idx++) {
+    for (uint32_t idx = 0; idx < num_trials; idx++) {
         err = rdb_check_expect_failure(&rdb, idx);
-        if (err)
+        if (err) {
             return err;
+        }
     }
 
     /* re-initialize */
@@ -167,14 +169,16 @@ srtp_err_status_t test_rdb_db(void)
     /* test non-sequential insertion */
     ut_init(&utc);
 
-    for (idx = 0; idx < num_trials; idx++) {
+    for (uint32_t idx = 0; idx < num_trials; idx++) {
         ircvd = ut_next_index(&utc);
         err = rdb_check_add_unordered(&rdb, ircvd);
-        if (err)
+        if (err) {
             return err;
+        }
         err = rdb_check_expect_failure(&rdb, ircvd);
-        if (err)
+        if (err) {
             return err;
+        }
     }
 
     /* re-initialize */
@@ -184,14 +188,17 @@ srtp_err_status_t test_rdb_db(void)
     }
 
     /* test insertion with large gaps */
-    for (idx = 0, ircvd = 0; idx < num_trials;
+    ircvd = 0;
+    for (size_t idx = 0; idx < num_trials;
          idx++, ircvd += (1 << (srtp_cipher_rand_u32_for_tests() % 10))) {
         err = rdb_check_add(&rdb, ircvd);
-        if (err)
+        if (err) {
             return err;
+        }
         err = rdb_check_expect_failure(&rdb, ircvd);
-        if (err)
+        if (err) {
             return err;
+        }
     }
 
     /* re-initialize */
@@ -201,17 +208,19 @@ srtp_err_status_t test_rdb_db(void)
     }
 
     /* test loss of first 513 packets */
-    for (idx = 0; idx < num_trials; idx++) {
+    for (uint32_t idx = 0; idx < num_trials; idx++) {
         err = rdb_check_add(&rdb, idx + 513);
-        if (err)
+        if (err) {
             return err;
+        }
     }
 
     /* test for false positives */
-    for (idx = 0; idx < num_trials + 513; idx++) {
+    for (uint32_t idx = 0; idx < num_trials + 513; idx++) {
         err = rdb_check_expect_failure(&rdb, idx);
-        if (err)
+        if (err) {
             return err;
+        }
     }
 
     /* test for key expired */
@@ -248,7 +257,6 @@ srtp_err_status_t test_rdb_db(void)
 
 double rdb_check_adds_per_second(void)
 {
-    uint32_t i;
     srtp_rdb_t rdb;
     clock_t timer;
 
@@ -258,7 +266,7 @@ double rdb_check_adds_per_second(void)
     }
 
     timer = clock();
-    for (i = 0; i < REPLAY_NUM_TRIALS; i += 3) {
+    for (uint32_t i = 0; i < REPLAY_NUM_TRIALS; i += 3) {
         srtp_rdb_check(&rdb, i + 2);
         srtp_rdb_add_index(&rdb, i + 2);
         srtp_rdb_check(&rdb, i + 1);

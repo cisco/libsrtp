@@ -55,7 +55,7 @@
 #include "cipher_test_cases.h"
 
 srtp_debug_module_t srtp_mod_aes_icm = {
-    0,        /* debugging is off by default */
+    false,    /* debugging is off by default */
     "aes icm" /* printable module name       */
 };
 
@@ -299,18 +299,18 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
                                               size_t *enc_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
-    unsigned int bytes_to_encr = (unsigned int)*enc_len;
+    size_t bytes_to_encr = *enc_len;
     uint32_t *b;
 
     /* check that there's enough segment left*/
-    unsigned int bytes_of_new_keystream = bytes_to_encr - c->bytes_in_buffer;
-    unsigned int blocks_of_new_keystream = (bytes_of_new_keystream + 15) >> 4;
+    size_t bytes_of_new_keystream = bytes_to_encr - c->bytes_in_buffer;
+    size_t blocks_of_new_keystream = (bytes_of_new_keystream + 15) >> 4;
     if ((blocks_of_new_keystream + htons(c->counter.v16[7])) > 0xffff) {
         return srtp_err_status_terminus;
     }
 
     debug_print(srtp_mod_aes_icm, "block index: %d", htons(c->counter.v16[7]));
-    if (bytes_to_encr <= (unsigned int)c->bytes_in_buffer) {
+    if (bytes_to_encr <= c->bytes_in_buffer) {
         /* deal with odd case of small bytes_to_encr */
         for (size_t i = (sizeof(v128_t) - c->bytes_in_buffer);
              i < (sizeof(v128_t) - c->bytes_in_buffer + bytes_to_encr); i++) {

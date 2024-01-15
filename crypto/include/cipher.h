@@ -169,7 +169,7 @@ typedef struct srtp_cipher_t {
     const srtp_cipher_type_t *type;
     void *state;
     size_t key_len;
-    int algorithm;
+    srtp_cipher_type_id_t algorithm;
 } srtp_cipher_t;
 
 /* some bookkeeping functions */
@@ -204,7 +204,7 @@ srtp_err_status_t srtp_cipher_type_test(
  */
 uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
                                      size_t octets_in_buffer,
-                                     int num_trials);
+                                     size_t num_trials);
 
 srtp_err_status_t srtp_cipher_type_alloc(const srtp_cipher_type_t *ct,
                                          srtp_cipher_t **c,
@@ -214,7 +214,7 @@ srtp_err_status_t srtp_cipher_dealloc(srtp_cipher_t *c);
 srtp_err_status_t srtp_cipher_init(srtp_cipher_t *c, const uint8_t *key);
 srtp_err_status_t srtp_cipher_set_iv(srtp_cipher_t *c,
                                      uint8_t *iv,
-                                     int direction);
+                                     srtp_cipher_direction_t direction);
 srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c,
                                      uint8_t *buffer,
                                      size_t *num_octets_to_output);
