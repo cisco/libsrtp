@@ -163,13 +163,13 @@ void v128_left_shift(v128_t *x, size_t shift_index);
     ((((x)->v32[(bit) >> 5]) &= ~((uint32_t)1 << ((bit)&31))))
 
 /*
- * srtp_octet_string_is_eq(a, b, len) returns true if the length len strings
- * a and b are NOT equal. It returns false otherwise. The running time of the
- * comparison depends only on len, making this safe to use for (e.g.)
+ * srtp_octet_string_equal(a, b, len) returns true if the octet strings
+ * a and b are equal. It returns false otherwise. The running time of the
+ * comparison depends only on length, making this safe to use for (e.g.)
  * verifying authentication tags.
  */
 
-bool srtp_octet_string_is_eq(const uint8_t *a, const uint8_t *b, size_t len);
+bool srtp_octet_string_equal(const uint8_t *a, const uint8_t *b, size_t len);
 
 /*
  * A portable way to zero out memory as recommended by

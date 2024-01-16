@@ -70,5 +70,5 @@ srtp_auth_type_self_test
 srtp_auth_type_test
 srtp_replace_auth_type
 srtp_octet_string_hex_string
-srtp_octet_string_is_eq
+srtp_octet_string_equal
 srtp_rdbx_get_window_size

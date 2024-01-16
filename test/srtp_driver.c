@@ -1837,7 +1837,7 @@ srtp_err_status_t srtp_validate(void)
     debug_print(mod_driver, "ciphertext reference:\n  %s",
                 octet_string_hex_string(srtp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(srtp_plaintext, srtp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -1855,7 +1855,7 @@ srtp_err_status_t srtp_validate(void)
     debug_print(mod_driver, "srtcp ciphertext reference:\n  %s",
                 octet_string_hex_string(srtcp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(rtcp_plaintext, srtcp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(rtcp_plaintext, srtcp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -1877,7 +1877,7 @@ srtp_err_status_t srtp_validate(void)
         return status;
     }
 
-    if (srtp_octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtp_ciphertext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -1890,7 +1890,7 @@ srtp_err_status_t srtp_validate(void)
         return status;
     }
 
-    if (srtp_octet_string_is_eq(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -1996,7 +1996,7 @@ srtp_err_status_t srtp_validate_null(void)
     debug_print(mod_driver, "ciphertext reference:\n  %s",
                 octet_string_hex_string(srtp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(srtp_plaintext, srtp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2014,7 +2014,7 @@ srtp_err_status_t srtp_validate_null(void)
     debug_print(mod_driver, "srtcp ciphertext reference:\n  %s",
                 octet_string_hex_string(srtcp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(rtcp_plaintext, srtcp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(rtcp_plaintext, srtcp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2036,7 +2036,7 @@ srtp_err_status_t srtp_validate_null(void)
         return status;
     }
 
-    if (srtp_octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtp_ciphertext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2049,7 +2049,7 @@ srtp_err_status_t srtp_validate_null(void)
         return status;
     }
 
-    if (srtp_octet_string_is_eq(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2157,7 +2157,7 @@ srtp_err_status_t srtp_validate_gcm(void)
     debug_print(mod_driver, "srtp ciphertext reference:\n  %s",
                 octet_string_hex_string(srtp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(rtp_plaintext, srtp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(rtp_plaintext, srtp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2175,7 +2175,7 @@ srtp_err_status_t srtp_validate_gcm(void)
     debug_print(mod_driver, "srtcp ciphertext reference:\n  %s",
                 octet_string_hex_string(srtcp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(rtcp_plaintext, srtcp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(rtcp_plaintext, srtcp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2198,7 +2198,7 @@ srtp_err_status_t srtp_validate_gcm(void)
         return status;
     }
 
-    if (srtp_octet_string_is_eq(srtp_ciphertext, rtp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtp_ciphertext, rtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2217,7 +2217,7 @@ srtp_err_status_t srtp_validate_gcm(void)
                 octet_string_hex_string(rtcp_plaintext_ref,
                                         sizeof(rtcp_plaintext_ref)));
 
-    if (srtp_octet_string_is_eq(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2321,7 +2321,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
     debug_print(mod_driver, "ciphertext reference:\n  %s",
                 srtp_octet_string_hex_string(srtp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(srtp_plaintext, srtp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2345,7 +2345,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
         return srtp_err_status_fail;
     }
 
-    if (srtp_octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtp_ciphertext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2450,7 +2450,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
     debug_print(mod_driver, " ? ciphertext reference:\n  %s",
                 srtp_octet_string_hex_string(srtp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(srtp_plaintext, srtp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2474,7 +2474,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
         return srtp_err_status_fail;
     }
 
-    if (srtp_octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtp_ciphertext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2570,7 +2570,7 @@ srtp_err_status_t srtp_validate_aes_256(void)
     debug_print(mod_driver, "ciphertext reference:\n  %s",
                 octet_string_hex_string(srtp_ciphertext, len));
 
-    if (srtp_octet_string_is_eq(srtp_plaintext, srtp_ciphertext, len)) {
+    if (!srtp_octet_string_equal(srtp_plaintext, srtp_ciphertext, len)) {
         return srtp_err_status_fail;
     }
 
@@ -2592,7 +2592,7 @@ srtp_err_status_t srtp_validate_aes_256(void)
         return status;
     }
 
-    if (srtp_octet_string_is_eq(srtp_ciphertext, srtp_plaintext_ref, len)) {
+    if (!srtp_octet_string_equal(srtp_ciphertext, srtp_plaintext_ref, len)) {
         return srtp_err_status_fail;
     }
 
