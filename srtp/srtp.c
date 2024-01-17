@@ -4857,8 +4857,8 @@ typedef struct list_entry {
 
 typedef struct srtp_stream_list_ctx_t_ {
     list_entry *entries;
+    size_t capacity;
     size_t size;
-    size_t available;
 } srtp_stream_list_ctx_t_;
 
 srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
@@ -4876,8 +4876,8 @@ srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
         return srtp_err_status_alloc_fail;
     }
 
-    list->size = INITIAL_STREAM_INDEX_SIZE;
-    list->available = INITIAL_STREAM_INDEX_SIZE;
+    list->capacity = INITIAL_STREAM_INDEX_SIZE;
+    list->size = 0;
 
     *list_ptr = list;
 
@@ -4887,7 +4887,7 @@ srtp_err_status_t srtp_stream_list_alloc(srtp_stream_list_t *list_ptr)
 srtp_err_status_t srtp_stream_list_dealloc(srtp_stream_list_t list)
 {
     /* list must be empty */
-    if (list->available != list->size) {
+    if (list->size != 0) {
         return srtp_err_status_fail;
     }
 
@@ -4908,32 +4908,38 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
      * there is no space to hold the new entry in the entries buffer,
      * double the size of the buffer.
      */
-    if (list->available == 0) {
-        size_t new_size = list->size * 2;
+    if (list->size == list->capacity) {
+        size_t new_capacity = list->capacity * 2;
+
+        // check for capacity overflow.
+        if ((sizeof(list_entry) * new_capacity) <=
+            (sizeof(list_entry) * list->capacity)) {
+            return srtp_err_status_alloc_fail;
+        }
+
         list_entry *new_entries =
-            srtp_crypto_alloc(sizeof(list_entry) * new_size);
+            srtp_crypto_alloc(sizeof(list_entry) * new_capacity);
         if (new_entries == NULL) {
             return srtp_err_status_alloc_fail;
         }
 
         // copy previous entries into the new buffer
-        memcpy(new_entries, list->entries, sizeof(list_entry) * list->size);
+        memcpy(new_entries, list->entries, sizeof(list_entry) * list->capacity);
         // release previous entries
         srtp_crypto_free(list->entries);
         // assign new entries to the list
         list->entries = new_entries;
-        // update list info
-        list->size = new_size;
-        list->available = new_size / 2;
+        // update list capacity
+        list->capacity = new_capacity;
     }
 
     // fill the first available entry
-    size_t next_index = list->size - list->available;
+    size_t next_index = list->size;
     list->entries[next_index].ssrc = stream->ssrc;
     list->entries[next_index].stream = stream;
 
-    // update available value
-    list->available--;
+    // update size value
+    list->size++;
 
     return srtp_err_status_ok;
 }
@@ -4946,14 +4952,14 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
 void srtp_stream_list_remove(srtp_stream_list_t list,
                              srtp_stream_t stream_to_remove)
 {
-    size_t end = list->size - list->available;
+    size_t end = list->size;
 
     for (size_t i = 0; i < end; i++) {
         if (list->entries[i].ssrc == stream_to_remove->ssrc) {
-            size_t entries_to_move = list->size - list->available - i - 1;
+            size_t entries_to_move = list->size - i - 1;
             memmove(&list->entries[i], &list->entries[i + 1],
                     sizeof(list_entry) * entries_to_move);
-            list->available++;
+            list->size--;
 
             break;
         }
@@ -4962,7 +4968,7 @@ void srtp_stream_list_remove(srtp_stream_list_t list,
 
 srtp_stream_t srtp_stream_list_get(srtp_stream_list_t list, uint32_t ssrc)
 {
-    size_t end = list->size - list->available;
+    size_t end = list->size;
 
     list_entry *entries = list->entries;
 
@@ -4981,7 +4987,7 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
 {
     list_entry *entries = list->entries;
 
-    size_t available = list->available;
+    size_t size = list->size;
 
     /*
      * the second statement of the expression needs to be recalculated on each
@@ -4989,17 +4995,17 @@ void srtp_stream_list_for_each(srtp_stream_list_t list,
      * callback.
      * Ie: in case the callback calls srtp_stream_list_remove().
      */
-    for (size_t i = 0; i < list->size - list->available;) {
+    for (size_t i = 0; i < list->size;) {
         if (!callback(entries[i].stream, data)) {
             break;
         }
 
         // the entry was not removed, increase the counter.
-        if (available == list->available) {
+        if (size == list->size) {
             ++i;
         }
 
-        available = list->available;
+        size = list->size;
     }
 }
 
