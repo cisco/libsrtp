@@ -104,41 +104,6 @@ extern uint32_t high32(uint64_t value);
 extern uint32_t low32(uint64_t value);
 #endif
 
-/* These macros are to load and store 32-bit values from un-aligned
-   addresses.  This is required for processors that do not allow unaligned
-   loads. */
-#ifdef ALIGNMENT_32BIT_REQUIRED
-/* Note that if it's in a variable, you can memcpy it */
-#ifdef WORDS_BIGENDIAN
-#define PUT_32(addr, value)                                                    \
-    {                                                                          \
-        ((unsigned char *)(addr))[0] = (value >> 24);                          \
-        ((unsigned char *)(addr))[1] = (value >> 16) & 0xff;                   \
-        ((unsigned char *)(addr))[2] = (value >> 8) & 0xff;                    \
-        ((unsigned char *)(addr))[3] = (value)&0xff;                           \
-    }
-#define GET_32(addr)                                                           \
-    ((((unsigned char *)(addr))[0] << 24) |                                    \
-     (((unsigned char *)(addr))[1] << 16) |                                    \
-     (((unsigned char *)(addr))[2] << 8) | (((unsigned char *)(addr))[3]))
-#else
-#define PUT_32(addr, value)                                                    \
-    {                                                                          \
-        ((unsigned char *)(addr))[3] = (value >> 24);                          \
-        ((unsigned char *)(addr))[2] = (value >> 16) & 0xff;                   \
-        ((unsigned char *)(addr))[1] = (value >> 8) & 0xff;                    \
-        ((unsigned char *)(addr))[0] = (value)&0xff;                           \
-    }
-#define GET_32(addr)                                                           \
-    ((((unsigned char *)(addr))[3] << 24) |                                    \
-     (((unsigned char *)(addr))[2] << 16) |                                    \
-     (((unsigned char *)(addr))[1] << 8) | (((unsigned char *)(addr))[0]))
-#endif // WORDS_BIGENDIAN
-#else
-#define PUT_32(addr, value) *(((uint32_t *) (addr)) = (value)
-#define GET_32(addr) (*(((uint32_t *) (addr)))
-#endif
-
 #ifdef __cplusplus
 }
 #endif
