@@ -133,15 +133,8 @@ void v128_left_shift(v128_t *x, size_t shift_index);
      (z)->v32[2] = (x)->v32[2] ^ (y)->v32[2],                                  \
      (z)->v32[3] = (x)->v32[3] ^ (y)->v32[3])
 
-/* ok for NO_64BIT_MATH if it can compare uint64_t's (even as structures) */
-#ifdef NO_64BIT_MATH
-#define v128_xor_eq(z, x)                                                      \
-    ((z)->v32[0] ^= (x)->v32[0], (z)->v32[1] ^= (x)->v32[1],                   \
-     (z)->v32[2] ^= (x)->v32[2], (z)->v32[3] ^= (x)->v32[3])
-#else
 #define v128_xor_eq(z, x)                                                      \
     ((z)->v64[0] ^= (x)->v64[0], (z)->v64[1] ^= (x)->v64[1])
-#endif
 
 #endif /* defined(__SSE2__) */
 
@@ -224,14 +217,11 @@ static inline uint64_t be64_to_cpu(uint64_t v)
 {
 #if defined(__GNUC__)
     v = __builtin_bswap64(v);
-#elif defined(NO_64BIT_MATH)
-    /* use the make64 functions to do 64-bit math */
-    v = make64(htonl(low32(v)), htonl(high32(v)));
-#else  /* NO_64BIT_MATH */
+#else
     /* use the native 64-bit math */
     v = (uint64_t)((be32_to_cpu((uint32_t)(v >> 32))) |
                    (((uint64_t)be32_to_cpu((uint32_t)v)) << 32));
-#endif /* NO_64BIT_MATH */
+#endif
     return v;
 }
 

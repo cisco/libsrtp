@@ -77,7 +77,7 @@ typedef unsigned long uint64_t;
 #elif SIZEOF_UNSIGNED_LONG_LONG == 8
 typedef unsigned long long uint64_t;
 #else
-#define NO_64BIT_MATH 1
+#error "NO_64BIT_MATH"
 #endif
 #endif
 
@@ -94,14 +94,6 @@ typedef unsigned int uint32_t;
 #endif
 #ifndef HAVE_INT32_T
 typedef int int32_t;
-#endif
-
-#if defined(NO_64BIT_MATH) && defined(HAVE_CONFIG_H)
-typedef double uint64_t;
-/* assert that sizeof(double) == 8 */
-extern uint64_t make64(uint32_t high, uint32_t low);
-extern uint32_t high32(uint64_t value);
-extern uint32_t low32(uint64_t value);
 #endif
 
 #ifdef __cplusplus

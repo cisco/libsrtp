@@ -977,16 +977,8 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
      */
     session_keys = &srtp->session_keys[current_mki_index];
 
-/* initialize key limit to maximum value */
-#ifdef NO_64BIT_MATH
-    {
-        uint64_t temp;
-        temp = make64(UINT_MAX, UINT_MAX);
-        srtp_key_limit_set(session_keys->limit, temp);
-    }
-#else
+    /* initialize key limit to maximum value */
     srtp_key_limit_set(session_keys->limit, 0xffffffffffffLL);
-#endif
 
     if (master_key->mki_size != 0) {
         session_keys->mki_id = srtp_crypto_alloc(master_key->mki_size);
@@ -1614,13 +1606,8 @@ static void srtp_calc_aead_iv(srtp_session_keys_t *session_keys,
     v128_t in;
     v128_t salt;
 
-#ifdef NO_64BIT_MATH
-    uint32_t local_roc = ((high32(*seq) << 16) | (low32(*seq) >> 16));
-    uint16_t local_seq = (uint16_t)(low32(*seq));
-#else
     uint32_t local_roc = (uint32_t)(*seq >> 16);
     uint16_t local_seq = (uint16_t)*seq;
-#endif
 
     memset(&in, 0, sizeof(v128_t));
     memset(&salt, 0, sizeof(v128_t));
@@ -1694,69 +1681,19 @@ static srtp_err_status_t srtp_estimate_index(srtp_rdbx_t *rdbx,
                                              srtp_sequence_number_t seq,
                                              ssize_t *delta)
 {
-#ifdef NO_64BIT_MATH
-    uint32_t internal_pkt_idx_reduced;
-    uint32_t external_pkt_idx_reduced;
-    uint32_t internal_roc;
-    uint32_t roc_difference;
-#endif
-
-#ifdef NO_64BIT_MATH
-    *est = (srtp_xtd_seq_num_t)make64(roc >> 16, (roc << 16) | seq);
-    *delta = low32(est) - rdbx->index;
-#else
     *est = (srtp_xtd_seq_num_t)(((uint64_t)roc) << 16) | seq;
     *delta = *est - rdbx->index;
-#endif
 
     if (*est > rdbx->index) {
-#ifdef NO_64BIT_MATH
-        internal_roc = (uint32_t)(rdbx->index >> 16);
-        roc_difference = roc - internal_roc;
-        if (roc_difference > 1) {
-            *delta = 0;
-            return srtp_err_status_pkt_idx_adv;
-        }
-
-        internal_pkt_idx_reduced = (uint32_t)(rdbx->index & 0xFFFF);
-        external_pkt_idx_reduced = (uint32_t)((roc_difference << 16) | seq);
-
-        if (external_pkt_idx_reduced - internal_pkt_idx_reduced >
-            seq_num_median) {
-            *delta = 0;
-            return srtp_err_status_pkt_idx_adv;
-        }
-#else
         if (*est - rdbx->index > seq_num_median) {
             *delta = 0;
             return srtp_err_status_pkt_idx_adv;
         }
-#endif
     } else if (*est < rdbx->index) {
-#ifdef NO_64BIT_MATH
-
-        internal_roc = (uint32_t)(rdbx->index >> 16);
-        roc_difference = internal_roc - roc;
-        if (roc_difference > 1) {
-            *delta = 0;
-            return srtp_err_status_pkt_idx_adv;
-        }
-
-        internal_pkt_idx_reduced =
-            (uint32_t)((roc_difference << 16) | rdbx->index & 0xFFFF);
-        external_pkt_idx_reduced = (uint32_t)(seq);
-
-        if (internal_pkt_idx_reduced - external_pkt_idx_reduced >
-            seq_num_median) {
-            *delta = 0;
-            return srtp_err_status_pkt_idx_old;
-        }
-#else
         if (rdbx->index - *est > seq_num_median) {
             *delta = 0;
             return srtp_err_status_pkt_idx_old;
         }
-#endif
     }
 
     return srtp_err_status_ok;
@@ -1778,12 +1715,8 @@ static srtp_err_status_t srtp_get_est_pkt_index(const srtp_hdr_t *hdr,
             srtp_rdbx_estimate_index(&stream->rtp_rdbx, est, ntohs(hdr->seq));
     }
 
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(*est),
-                 low32(*est));
-#else
     debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, *est);
-#endif
+
     return result;
 }
 
@@ -1877,24 +1810,14 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
 
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated packet index: %08x%08x", high32(est),
-                 low32(est));
-#else
     debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
-#endif
 
     /*
      * AEAD uses a new IV formation method
      */
     srtp_calc_aead_iv(session_keys, &iv, &est, hdr);
-/* shift est, put into network byte order */
-#ifdef NO_64BIT_MATH
-    est = be64_to_cpu(
-        make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
-#else
+    /* shift est, put into network byte order */
     est = be64_to_cpu(est << 16);
-#endif
 
     status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
                                 srtp_direction_encrypt);
@@ -1984,12 +1907,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 
     debug_print0(mod_srtp, "function srtp_unprotect_aead");
 
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
-                 low32(est));
-#else
     debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
-#endif
 
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
@@ -2003,12 +1921,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     if (!status && session_keys->rtp_xtn_hdr_cipher) {
         iv.v32[0] = 0;
         iv.v32[1] = hdr->ssrc;
-#ifdef NO_64BIT_MATH
-        iv.v64[1] = be64_to_cpu(
-            make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
-#else
         iv.v64[1] = be64_to_cpu(est << 16);
-#endif
         status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
                                     (uint8_t *)&iv, srtp_direction_encrypt);
     }
@@ -2360,12 +2273,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
     }
 
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated packet index: %08x%08x", high32(est),
-                 low32(est));
-#else
     debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
-#endif
 
     /*
      * if we're using rindael counter mode, set nonce and seq
@@ -2377,12 +2285,7 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
 
         iv.v32[0] = 0;
         iv.v32[1] = hdr->ssrc;
-#ifdef NO_64BIT_MATH
-        iv.v64[1] = be64_to_cpu(
-            make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
-#else
         iv.v64[1] = be64_to_cpu(est << 16);
-#endif
         status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
                                     srtp_direction_encrypt);
         if (!status && session_keys->rtp_xtn_hdr_cipher) {
@@ -2392,13 +2295,8 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
     } else {
         v128_t iv;
 
-/* otherwise, set the index to est */
-#ifdef NO_64BIT_MATH
-        iv.v32[0] = 0;
-        iv.v32[1] = 0;
-#else
+        /* otherwise, set the index to est */
         iv.v64[0] = 0;
-#endif
         iv.v64[1] = be64_to_cpu(est);
         status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
                                     srtp_direction_encrypt);
@@ -2411,13 +2309,8 @@ srtp_err_status_t srtp_protect_mki(srtp_ctx_t *ctx,
         return srtp_err_status_cipher_fail;
     }
 
-/* shift est, put into network byte order */
-#ifdef NO_64BIT_MATH
-    est = be64_to_cpu(
-        make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
-#else
+    /* shift est, put into network byte order */
     est = be64_to_cpu(est << 16);
-#endif
 
     /*
      * if we're authenticating using a universal hash, put the keystream
@@ -2555,17 +2448,12 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
             debug_print(mod_srtp, "using provisional stream (SSRC: 0x%08x)",
                         ntohl(hdr->ssrc));
 
-/*
- * set estimated packet index to sequence number from header,
- * and set delta equal to the same value
- */
-#ifdef NO_64BIT_MATH
-            est = (srtp_xtd_seq_num_t)make64(0, ntohs(hdr->seq));
-            delta = low32(est);
-#else
+            /*
+             * set estimated packet index to sequence number from header,
+             * and set delta equal to the same value
+             */
             est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
             delta = (int)est;
-#endif
         } else {
             /*
              * no stream corresponding to SSRC found, and we don't do
@@ -2595,12 +2483,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         }
     }
 
-#ifdef NO_64BIT_MATH
-    debug_print2(mod_srtp, "estimated u_packet index: %08x%08x", high32(est),
-                 low32(est));
-#else
     debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
-#endif
 
     /* Determine if MKI is being used and what session keys should be used */
     if (use_mki) {
@@ -2638,12 +2521,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         /* aes counter mode */
         iv.v32[0] = 0;
         iv.v32[1] = hdr->ssrc; /* still in network order */
-#ifdef NO_64BIT_MATH
-        iv.v64[1] = be64_to_cpu(
-            make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
-#else
         iv.v64[1] = be64_to_cpu(est << 16);
-#endif
         status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
                                     srtp_direction_decrypt);
         if (!status && session_keys->rtp_xtn_hdr_cipher) {
@@ -2651,13 +2529,8 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
                                         (uint8_t *)&iv, srtp_direction_decrypt);
         }
     } else {
-/* no particular format - set the iv to the pakcet index */
-#ifdef NO_64BIT_MATH
-        iv.v32[0] = 0;
-        iv.v32[1] = 0;
-#else
+        /* no particular format - set the iv to the packet index */
         iv.v64[0] = 0;
-#endif
         iv.v64[1] = be64_to_cpu(est);
         status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
                                     srtp_direction_decrypt);
@@ -2670,13 +2543,8 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         return srtp_err_status_cipher_fail;
     }
 
-/* shift est, put into network byte order */
-#ifdef NO_64BIT_MATH
-    est = be64_to_cpu(
-        make64((high32(est) << 16) | (low32(est) >> 16), low32(est) << 16));
-#else
+    /* shift est, put into network byte order */
     est = be64_to_cpu(est << 16);
-#endif
 
     /*
      * find starting point for decryption and length of data to be

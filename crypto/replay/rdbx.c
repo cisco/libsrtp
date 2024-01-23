@@ -88,22 +88,12 @@
 
 void srtp_index_init(srtp_xtd_seq_num_t *pi)
 {
-#ifdef NO_64BIT_MATH
-    *pi = make64(0, 0);
-#else
     *pi = 0;
-#endif
 }
 
 void srtp_index_advance(srtp_xtd_seq_num_t *pi, srtp_sequence_number_t s)
 {
-#ifdef NO_64BIT_MATH
-    /* a > ~b means a+b will generate a carry */
-    /* s is uint16 here */
-    *pi = make64(high32(*pi) + (s > ~low32(*pi) ? 1 : 0), low32(*pi) + s);
-#else
     *pi += s;
-#endif
 }
 
 /*
@@ -123,13 +113,8 @@ ssize_t srtp_index_guess(const srtp_xtd_seq_num_t *local,
                          srtp_xtd_seq_num_t *guess,
                          srtp_sequence_number_t s)
 {
-#ifdef NO_64BIT_MATH
-    uint32_t local_roc = ((high32(*local) << 16) | (low32(*local) >> 16));
-    uint16_t local_seq = (uint16_t)(low32(*local));
-#else
     uint32_t local_roc = (uint32_t)(*local >> 16);
     uint16_t local_seq = (uint16_t)*local;
-#endif
     uint32_t guess_roc;
     uint16_t guess_seq;
     ssize_t difference;
@@ -153,12 +138,8 @@ ssize_t srtp_index_guess(const srtp_xtd_seq_num_t *local,
     }
     guess_seq = s;
 
-/* Note: guess_roc is 32 bits, so this generates a 48-bit result! */
-#ifdef NO_64BIT_MATH
-    *guess = make64(guess_roc >> 16, (guess_roc << 16) | guess_seq);
-#else
+    /* Note: guess_roc is 32 bits, so this generates a 48-bit result! */
     *guess = (((uint64_t)guess_roc) << 16) | guess_seq;
-#endif
 
     return difference;
 }
@@ -208,10 +189,6 @@ srtp_err_status_t srtp_rdbx_set_roc(srtp_rdbx_t *rdbx, uint32_t roc)
 {
     bitvector_set_to_zero(&rdbx->bitmask);
 
-#ifdef NO_64BIT_MATH
-#error not yet implemented
-#else
-
     /* make sure that we're not moving backwards */
     if (roc < (rdbx->index >> 16)) {
         return srtp_err_status_replay_old;
@@ -219,7 +196,6 @@ srtp_err_status_t srtp_rdbx_set_roc(srtp_rdbx_t *rdbx, uint32_t roc)
 
     rdbx->index &= 0xffff;                /* retain lowest 16 bits */
     rdbx->index |= ((uint64_t)roc) << 16; /* set ROC */
-#endif
 
     return srtp_err_status_ok;
 }
@@ -313,27 +289,13 @@ ssize_t srtp_rdbx_estimate_index(const srtp_rdbx_t *rdbx,
      * 0xffffffff)
      */
 
-#ifdef NO_64BIT_MATH
-    /* seq_num_median = 0x8000 */
-    if (high32(rdbx->index) > 0 || low32(rdbx->index) > seq_num_median)
-#else
-    if (rdbx->index > seq_num_median)
-#endif
-    {
+    if (rdbx->index > seq_num_median) {
         return srtp_index_guess(&rdbx->index, guess, s);
     }
 
-#ifdef NO_64BIT_MATH
-    *guess = make64(0, (uint32_t)s);
-#else
     *guess = s;
-#endif
 
-#ifdef NO_64BIT_MATH
-    return s - low32(rdbx->index);
-#else
     return s - rdbx->index;
-#endif
 }
 
 /*
@@ -346,11 +308,7 @@ uint32_t srtp_rdbx_get_roc(const srtp_rdbx_t *rdbx)
 {
     uint32_t roc;
 
-#ifdef NO_64BIT_MATH
-    roc = ((high32(rdbx->index) << 16) | (low32(rdbx->index) >> 16));
-#else
     roc = (uint32_t)(rdbx->index >> 16);
-#endif
 
     return roc;
 }
@@ -366,10 +324,6 @@ srtp_err_status_t srtp_rdbx_set_roc_seq(srtp_rdbx_t *rdbx,
                                         uint32_t roc,
                                         uint16_t seq)
 {
-#ifdef NO_64BIT_MATH
-#error not yet implemented
-#else
-
     /* make sure that we're not moving backwards */
     if (roc < (rdbx->index >> 16)) {
         return srtp_err_status_replay_old;
@@ -377,7 +331,6 @@ srtp_err_status_t srtp_rdbx_set_roc_seq(srtp_rdbx_t *rdbx,
 
     rdbx->index = seq;
     rdbx->index |= ((uint64_t)roc) << 16; /* set ROC */
-#endif
 
     bitvector_set_to_zero(&rdbx->bitmask);
 
