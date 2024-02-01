@@ -185,16 +185,14 @@ void fuzz_free(void *ptr)
 static srtp_err_status_t fuzz_srtp_protect(srtp_t srtp_sender,
                                            void *hdr,
                                            size_t *len,
-                                           uint8_t use_mki,
                                            size_t mki)
 {
-    return srtp_protect(srtp_sender, hdr, len);
+    return srtp_protect(srtp_sender, hdr, len, mki);
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect(srtp_t srtp_sender,
                                              void *hdr,
                                              size_t *len,
-                                             uint8_t use_mki,
                                              size_t mki)
 {
     return srtp_unprotect(srtp_sender, hdr, len);
@@ -203,91 +201,34 @@ static srtp_err_status_t fuzz_srtp_unprotect(srtp_t srtp_sender,
 static srtp_err_status_t fuzz_srtp_protect_rtcp(srtp_t srtp_sender,
                                                 void *hdr,
                                                 size_t *len,
-                                                uint8_t use_mki,
                                                 size_t mki)
 {
-    return srtp_protect_rtcp(srtp_sender, hdr, len);
+    return srtp_protect_rtcp(srtp_sender, hdr, len, mki);
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect_rtcp(srtp_t srtp_sender,
                                                   void *hdr,
                                                   size_t *len,
-                                                  uint8_t use_mki,
                                                   size_t mki)
 {
     return srtp_unprotect_rtcp(srtp_sender, hdr, len);
 }
 
-static srtp_err_status_t fuzz_srtp_protect_mki(srtp_t srtp_sender,
-                                               void *hdr,
-                                               size_t *len,
-                                               uint8_t use_mki,
-                                               size_t mki)
-{
-    return srtp_protect_mki(srtp_sender, hdr, len, use_mki, mki);
-}
-
-static srtp_err_status_t fuzz_srtp_protect_rtcp_mki(srtp_t srtp_sender,
-                                                    void *hdr,
-                                                    size_t *len,
-                                                    uint8_t use_mki,
-                                                    size_t mki)
-{
-    return srtp_protect_rtcp_mki(srtp_sender, hdr, len, use_mki, mki);
-}
-
-static srtp_err_status_t fuzz_srtp_unprotect_mki(srtp_t srtp_sender,
-                                                 void *hdr,
-                                                 size_t *len,
-                                                 uint8_t use_mki,
-                                                 size_t mki)
-{
-    return srtp_unprotect_mki(srtp_sender, hdr, len, use_mki);
-}
-
-static srtp_err_status_t fuzz_srtp_unprotect_rtcp_mki(srtp_t srtp_sender,
-                                                      void *hdr,
-                                                      size_t *len,
-                                                      uint8_t use_mki,
-                                                      size_t mki)
-{
-    return srtp_unprotect_rtcp_mki(srtp_sender, hdr, len, use_mki);
-}
-
 /* Get protect length functions */
 
 static srtp_err_status_t fuzz_srtp_get_protect_length(const srtp_t srtp_ctx,
-                                                      uint8_t use_mki,
                                                       size_t mki,
                                                       size_t *length)
 {
-    return srtp_get_protect_trailer_length(srtp_ctx, 0, 0, length);
+    return srtp_get_protect_trailer_length(srtp_ctx, mki, length);
 }
 
 static srtp_err_status_t fuzz_srtp_get_protect_rtcp_length(
     const srtp_t srtp_ctx,
-    uint8_t use_mki,
     size_t mki,
     size_t *length)
 {
-    return srtp_get_protect_rtcp_trailer_length(srtp_ctx, 0, 0, length);
-}
-
-static srtp_err_status_t fuzz_srtp_get_protect_mki_length(const srtp_t srtp_ctx,
-                                                          uint8_t use_mki,
-                                                          size_t mki,
-                                                          size_t *length)
-{
-    return srtp_get_protect_trailer_length(srtp_ctx, use_mki, mki, length);
-}
-
-static srtp_err_status_t fuzz_srtp_get_protect_rtcp_mki_length(
-    const srtp_t srtp_ctx,
-    uint8_t use_mki,
-    size_t mki,
-    size_t *length)
-{
-    return srtp_get_protect_rtcp_trailer_length(srtp_ctx, use_mki, mki, length);
+    return srtp_get_protect_rtcp_trailer_length(srtp_ctx, mki, length);
 }
 
 static uint8_t *extract_key(const uint8_t **data,
@@ -611,21 +552,18 @@ static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
     struct {
         uint16_t size;
         uint8_t srtp_func;
-        uint8_t use_mki;
         uint32_t mki;
         uint8_t stretch;
     } params_1;
 
     struct {
         uint8_t srtp_func;
-        uint8_t use_mki;
         uint32_t mki;
     } params_2;
     size_t ret_size;
 
     EXTRACT_IF(&params_1, *data, *size, sizeof(params_1));
     params_1.srtp_func %= sizeof(srtp_funcs) / sizeof(srtp_funcs[0]);
-    params_1.use_mki %= 2;
 
     if (*size < params_1.size) {
         goto end;
@@ -647,8 +585,7 @@ static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
         size_t alloc_size;
 
         if (srtp_funcs[params_1.srtp_func].get_length(
-                srtp_ctx, params_1.use_mki, params_1.mki, &alloc_size) !=
-            srtp_err_status_ok) {
+                srtp_ctx, params_1.mki, &alloc_size) != srtp_err_status_ok) {
             goto end;
         }
 
@@ -660,8 +597,7 @@ static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
     EXTRACT(copy, *data, *size, params_1.size);
 
     if (srtp_funcs[params_1.srtp_func].srtp_func(
-            srtp_ctx, copy, &ret_size, params_1.use_mki, params_1.mki) !=
-        srtp_err_status_ok) {
+            srtp_ctx, copy, &ret_size, params_1.mki) != srtp_err_status_ok) {
         fuzz_free(copy);
         goto end;
     }
@@ -673,7 +609,6 @@ static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
 
     EXTRACT_IF(&params_2, *data, *size, sizeof(params_2));
     params_2.srtp_func %= sizeof(srtp_funcs) / sizeof(srtp_funcs[0]);
-    params_2.use_mki %= 2;
 
     if (ret_size == 0) {
         goto end;
@@ -685,8 +620,7 @@ static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
         size_t alloc_size;
 
         if (srtp_funcs[params_2.srtp_func].get_length(
-                srtp_ctx, params_2.use_mki, params_2.mki, &alloc_size) !=
-            srtp_err_status_ok) {
+                srtp_ctx, params_2.mki, &alloc_size) != srtp_err_status_ok) {
             goto end;
         }
 
@@ -700,8 +634,7 @@ static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
     copy = copy_2;
 
     if (srtp_funcs[params_2.srtp_func].srtp_func(
-            srtp_ctx, copy, &ret_size, params_2.use_mki, params_2.mki) !=
-        srtp_err_status_ok) {
+            srtp_ctx, copy, &ret_size, params_2.mki) != srtp_err_status_ok) {
         fuzz_free(copy);
         ret = NULL;
         goto end;

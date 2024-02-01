@@ -75,7 +75,7 @@ ssize_t rtp_sendto(rtp_sender_t sender, const void *msg, size_t len)
 
     /* apply srtp */
     stat = srtp_protect(sender->srtp_ctx, (uint8_t *)&sender->message.header,
-                        &pkt_len);
+                        &pkt_len, 0);
     if (stat) {
 #if PRINT_DEBUG
         fprintf(stderr, "error: srtp protection failed with code %d\n", stat);
