@@ -51,6 +51,8 @@
 #include "ut_sim.h"
 #include "cipher_priv.h"
 
+#include <stdlib.h>
+
 int ut_compar(const void *a, const void *b)
 {
     uint8_t r;

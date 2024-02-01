@@ -47,10 +47,12 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <string.h>
 #include "sha1.h"
 #include "util.h"
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define SHA_PASS 0
 #define SHA_FAIL 1

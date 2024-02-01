@@ -46,13 +46,8 @@
 #ifndef DATATYPES_H
 #define DATATYPES_H
 
-#include "integers.h" /* definitions of uint32_t, et cetera   */
-#include "alloc.h"
-
-#include <stdarg.h>
+#include <inttypes.h>
 #include <stdbool.h>
-
-#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #ifdef HAVE_NETINET_IN_H

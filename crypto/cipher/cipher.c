@@ -54,6 +54,8 @@
 #include "err.h"   /* for srtp_debug */
 #include "alloc.h" /* for crypto_alloc(), crypto_free()  */
 
+#include <stdlib.h>
+
 srtp_debug_module_t srtp_mod_cipher = {
     false,   /* debugging is off by default */
     "cipher" /* printable module name       */

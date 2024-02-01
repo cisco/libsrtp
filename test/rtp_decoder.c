@@ -63,11 +63,13 @@
  *
  */
 #include "getopt_s.h" /* for local getopt()  */
-#include <assert.h>   /* for assert()  */
 
 #include <pcap.h>
 #include "rtp_decoder.h"
 #include "util.h"
+
+#include <assert.h> /* for assert()  */
+#include <stdlib.h>
 
 #ifndef timersub
 #define timersub(a, b, result)                                                 \

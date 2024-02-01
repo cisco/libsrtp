@@ -60,6 +60,8 @@
 #include "rdbx.h"
 #include "ut_sim.h"
 
+#include <stdlib.h>
+
 srtp_err_status_t roc_test(size_t num_trials);
 
 int main(void)

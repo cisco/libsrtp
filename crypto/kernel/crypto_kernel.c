@@ -46,10 +46,11 @@
 #include <config.h>
 #endif
 
-#include "alloc.h"
-
 #include "crypto_kernel.h"
 #include "cipher_types.h"
+#include "alloc.h"
+
+#include <stdlib.h>
 
 /* the debug module for the crypto_kernel */
 
