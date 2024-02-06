@@ -46,7 +46,6 @@
 #ifndef REPLAY_DB_H
 #define REPLAY_DB_H
 
-#include "integers.h"  /* for uint32_t     */
 #include "datatypes.h" /* for v128_t       */
 #include "err.h"       /* for srtp_err_status_t */
 

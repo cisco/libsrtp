@@ -47,10 +47,12 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>  /* for printf() */
-#include <string.h> /* for strlen() */
 #include "datatypes.h"
 #include "util.h"
+
+#include <stdio.h>  /* for printf() */
+#include <string.h> /* for strlen() */
+#include <stdlib.h>
 
 void byte_order(void);
 

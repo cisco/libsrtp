@@ -46,9 +46,11 @@
 #include <config.h>
 #endif
 
-#include <stdio.h> /* for printf() */
 #include "getopt_s.h"
 #include "crypto_kernel.h"
+
+#include <stdio.h> /* for printf() */
+#include <stdlib.h>
 
 void usage(char *prog_name)
 {

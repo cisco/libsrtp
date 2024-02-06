@@ -46,11 +46,12 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>    /* for printf()          */
 #include "getopt_s.h" /* for local getopt()    */
-
 #include "rdbx.h"
 #include "cipher_priv.h"
+
+#include <stdio.h> /* for printf()          */
+#include <stdlib.h>
 
 #ifdef ROC_TEST
 #error "srtp_rdbx_t won't work with ROC_TEST - bitmask same size as seq_median"

@@ -220,7 +220,6 @@ set(SOURCES_H
   crypto/include/datatypes.h
   crypto/include/err.h
   crypto/include/hmac.h
-  crypto/include/integers.h
   crypto/include/key.h
   crypto/include/null_auth.h
   crypto/include/null_cipher.h

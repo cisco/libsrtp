@@ -47,12 +47,12 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-
 #include "rdb.h"
 #include "ut_sim.h"
-
 #include "cipher_priv.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 /*
  * num_trials defines the number of trials that are used in the

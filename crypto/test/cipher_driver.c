@@ -47,11 +47,14 @@
 #include <config.h>
 #endif
 
-#include <stdio.h> /* for printf() */
 #include "getopt_s.h"
 #include "cipher.h"
 #include "cipher_priv.h"
 #include "datatypes.h"
+#include "alloc.h"
+
+#include <stdio.h> /* for printf() */
+#include <stdlib.h>
 
 #define PRINT_DEBUG 0
 

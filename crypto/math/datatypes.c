@@ -47,11 +47,12 @@
 #include <config.h>
 #endif
 
+#include "datatypes.h"
+#include "alloc.h"
+
 #ifdef OPENSSL
 #include <openssl/crypto.h>
 #endif
-
-#include "datatypes.h"
 
 #if defined(__SSE2__)
 #include <tmmintrin.h>

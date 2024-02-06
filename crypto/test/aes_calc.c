@@ -61,9 +61,11 @@
 #endif
 
 #include "aes.h"
+#include "util.h"
+
 #include <stdio.h>
 #include <string.h>
-#include "util.h"
+#include <stdlib.h>
 
 void usage(char *prog_name)
 {

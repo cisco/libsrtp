@@ -47,7 +47,7 @@
 #ifndef UT_SIM_H
 #define UT_SIM_H
 
-#include "integers.h" /* for uint32_t */
+#include "datatypes.h"
 
 #ifdef __cplusplus
 extern "C" {
