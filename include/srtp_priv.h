@@ -101,7 +101,6 @@ typedef struct srtp_session_keys_t {
     uint8_t salt[SRTP_AEAD_SALT_LEN];
     uint8_t c_salt[SRTP_AEAD_SALT_LEN];
     uint8_t *mki_id;
-    size_t mki_size;
     srtp_key_limit_ctx_t *limit;
 } srtp_session_keys_t;
 
@@ -117,6 +116,7 @@ typedef struct srtp_stream_ctx_t_ {
     srtp_session_keys_t *session_keys;
     size_t num_master_keys;
     bool use_mki;
+    size_t mki_size;
     srtp_rdbx_t rtp_rdbx;
     srtp_sec_serv_t rtp_services;
     srtp_rdb_t rtcp_rdb;

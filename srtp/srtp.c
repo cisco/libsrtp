@@ -275,7 +275,7 @@ static srtp_err_status_t srtp_stream_dealloc(
 
             if (session_keys->mki_id) {
                 octet_string_set_to_zero(session_keys->mki_id,
-                                         session_keys->mki_size);
+                                         stream->mki_size);
                 srtp_crypto_free(session_keys->mki_id);
                 session_keys->mki_id = NULL;
             }
@@ -368,22 +368,24 @@ static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *policy)
             return srtp_err_status_bad_param;
         }
 
+        if (policy->use_mki) {
+            if (policy->mki_size == 0 || policy->mki_size > SRTP_MAX_MKI_LEN) {
+                return srtp_err_status_bad_param;
+            }
+        } else if (policy->mki_size != 0) {
+            return srtp_err_status_bad_param;
+        }
+
         for (size_t i = 0; i < policy->num_master_keys; i++) {
             if (policy->keys[i]->key == NULL) {
                 return srtp_err_status_bad_param;
             }
-            if (policy->use_mki) {
-                if (policy->keys[i]->mki_size == 0 ||
-                    policy->keys[i]->mki_size > SRTP_MAX_MKI_LEN) {
-                    return srtp_err_status_bad_param;
-                }
-            }
-            if (policy->keys[i]->mki_size && policy->keys[i]->mki_id == NULL) {
+            if (policy->use_mki && policy->keys[i]->mki_id == NULL) {
                 return srtp_err_status_bad_param;
             }
         }
     } else {
-        if (policy->use_mki) {
+        if (policy->use_mki || policy->mki_size != 0) {
             return srtp_err_status_bad_param;
         }
     }
@@ -597,13 +599,11 @@ static srtp_err_status_t srtp_stream_clone(
             template_session_keys->rtp_xtn_hdr_cipher;
         session_keys->rtcp_cipher = template_session_keys->rtcp_cipher;
         session_keys->rtcp_auth = template_session_keys->rtcp_auth;
-        session_keys->mki_size = template_session_keys->mki_size;
 
-        if (template_session_keys->mki_size == 0) {
+        if (stream_template->mki_size == 0) {
             session_keys->mki_id = NULL;
         } else {
-            session_keys->mki_id =
-                srtp_crypto_alloc(template_session_keys->mki_size);
+            session_keys->mki_id = srtp_crypto_alloc(stream_template->mki_size);
 
             if (session_keys->mki_id == NULL) {
                 srtp_stream_dealloc(*str_ptr, stream_template);
@@ -611,7 +611,7 @@ static srtp_err_status_t srtp_stream_clone(
                 return srtp_err_status_init_fail;
             }
             memcpy(session_keys->mki_id, template_session_keys->mki_id,
-                   session_keys->mki_size);
+                   stream_template->mki_size);
         }
         /* Copy the salt values */
         memcpy(session_keys->salt, template_session_keys->salt,
@@ -630,6 +630,7 @@ static srtp_err_status_t srtp_stream_clone(
     }
 
     str->use_mki = stream_template->use_mki;
+    str->mki_size = stream_template->mki_size;
 
     /* initialize replay databases */
     status = srtp_rdbx_init(
@@ -922,18 +923,19 @@ srtp_err_status_t srtp_get_session_keys(srtp_stream_ctx_t *stream,
     return srtp_err_status_ok;
 }
 
-size_t srtp_inject_mki(uint8_t *mki_tag_location,
-                       const srtp_session_keys_t *session_keys)
+void srtp_inject_mki(uint8_t *mki_tag_location,
+                     const srtp_session_keys_t *session_keys,
+                     size_t mki_size)
 {
-    if (session_keys->mki_size > 0) {
+    if (mki_size > 0) {
         // Write MKI into memory
-        memcpy(mki_tag_location, session_keys->mki_id, session_keys->mki_size);
+        memcpy(mki_tag_location, session_keys->mki_id, mki_size);
     }
-    return session_keys->mki_size;
 }
 
 srtp_err_status_t srtp_stream_init_keys(srtp_session_keys_t *session_keys,
-                                        const srtp_master_key_t *master_key)
+                                        const srtp_master_key_t *master_key,
+                                        size_t mki_size)
 {
     srtp_err_status_t stat;
     srtp_kdf_t kdf;
@@ -951,21 +953,19 @@ srtp_err_status_t srtp_stream_init_keys(srtp_session_keys_t *session_keys,
     /* initialize key limit to maximum value */
     srtp_key_limit_set(session_keys->limit, 0xffffffffffffLL);
 
-    if (master_key->mki_size != 0) {
+    if (mki_size != 0) {
         if (master_key->mki_id == NULL) {
             return srtp_err_status_bad_param;
         }
-        session_keys->mki_id = srtp_crypto_alloc(master_key->mki_size);
+        session_keys->mki_id = srtp_crypto_alloc(mki_size);
 
         if (session_keys->mki_id == NULL) {
             return srtp_err_status_init_fail;
         }
-        memcpy(session_keys->mki_id, master_key->mki_id, master_key->mki_size);
+        memcpy(session_keys->mki_id, master_key->mki_id, mki_size);
     } else {
         session_keys->mki_id = NULL;
     }
-
-    session_keys->mki_size = master_key->mki_size;
 
     input_keylen = full_key_length(session_keys->rtp_cipher->type);
     input_keylen_rtcp = full_key_length(session_keys->rtcp_cipher->type);
@@ -1306,24 +1306,26 @@ srtp_err_status_t srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp,
         srtp_master_key_t single_master_key;
         srtp->num_master_keys = 1;
         srtp->use_mki = false;
+        srtp->mki_size = 0;
         single_master_key.key = p->key;
         single_master_key.mki_id = NULL;
-        single_master_key.mki_size = 0;
-        status =
-            srtp_stream_init_keys(&srtp->session_keys[0], &single_master_key);
+        status = srtp_stream_init_keys(&srtp->session_keys[0],
+                                       &single_master_key, 0);
     } else {
         if (p->num_master_keys > SRTP_MAX_NUM_MASTER_KEYS) {
+            return srtp_err_status_bad_param;
+        }
+        if (p->use_mki && p->mki_size == 0) {
             return srtp_err_status_bad_param;
         }
 
         srtp->num_master_keys = p->num_master_keys;
         srtp->use_mki = p->use_mki;
+        srtp->mki_size = p->mki_size;
 
         for (size_t i = 0; i < srtp->num_master_keys; i++) {
-            if (srtp->use_mki && p->keys[i]->mki_size == 0) {
-                return srtp_err_status_bad_param;
-            }
-            status = srtp_stream_init_keys(&srtp->session_keys[i], p->keys[i]);
+            status = srtp_stream_init_keys(&srtp->session_keys[i], p->keys[i],
+                                           srtp->mki_size);
             if (status) {
                 return status;
             }
@@ -1656,8 +1658,7 @@ srtp_err_status_t srtp_get_session_keys_for_packet(
         return srtp_err_status_ok;
     }
 
-    size_t base_mki_start_location = pkt_octet_len;
-    size_t mki_start_location = 0;
+    size_t mki_start_location = pkt_octet_len;
     size_t tag_len = 0;
 
     // Determine the authentication tag size
@@ -1668,24 +1669,25 @@ srtp_err_status_t srtp_get_session_keys_for_packet(
         tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
     }
 
-    if (tag_len > base_mki_start_location) {
+    if (tag_len > mki_start_location) {
         *mki_size = 0;
         return srtp_err_status_bad_mki;
     }
 
-    base_mki_start_location -= tag_len;
+    mki_start_location -= tag_len;
+
+    if (stream->mki_size > mki_start_location) {
+        return srtp_err_status_bad_mki;
+    }
+
+    mki_start_location -= stream->mki_size;
 
     for (size_t i = 0; i < stream->num_master_keys; i++) {
-        if (stream->session_keys[i].mki_size != 0 &&
-            stream->session_keys[i].mki_size <= base_mki_start_location) {
-            *mki_size = stream->session_keys[i].mki_size;
-            mki_start_location = base_mki_start_location - *mki_size;
-
-            if (memcmp(hdr + mki_start_location, stream->session_keys[i].mki_id,
-                       *mki_size) == 0) {
-                *session_keys = &stream->session_keys[i];
-                return srtp_err_status_ok;
-            }
+        if (memcmp(hdr + mki_start_location, stream->session_keys[i].mki_id,
+                   stream->mki_size) == 0) {
+            *mki_size = stream->mki_size;
+            *session_keys = &stream->session_keys[i];
+            return srtp_err_status_ok;
         }
     }
 
@@ -1760,7 +1762,6 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     size_t aad_len;
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     size_t mki_size = 0;
-    uint8_t *mki_location = NULL;
 
     debug_print0(mod_srtp, "function srtp_protect_aead");
 
@@ -1884,9 +1885,10 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         return (srtp_err_status_cipher_fail);
     }
 
-    mki_location = rtp_hdr + *pkt_octet_len + tag_len;
     if (stream->use_mki) {
-        mki_size = srtp_inject_mki(mki_location, session_keys);
+        uint8_t *mki_location = rtp_hdr + *pkt_octet_len + tag_len;
+        srtp_inject_mki(mki_location, session_keys, stream->mki_size);
+        mki_size = stream->mki_size;
     }
 
     /* increase the packet length by the length of the auth tag */
@@ -2114,7 +2116,6 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
     srtp_hdr_xtnd_t *xtn_hdr = NULL;
     size_t mki_size = 0;
     srtp_session_keys_t *session_keys = NULL;
-    uint8_t *mki_location = NULL;
 
     debug_print0(mod_srtp, "function srtp_protect");
 
@@ -2241,9 +2242,10 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
         enc_start = NULL;
     }
 
-    mki_location = rtp_hdr + *pkt_octet_len;
     if (stream->use_mki) {
-        mki_size = srtp_inject_mki(mki_location, session_keys);
+        uint8_t *mki_location = rtp_hdr + *pkt_octet_len;
+        srtp_inject_mki(mki_location, session_keys, stream->mki_size);
+        mki_size = stream->mki_size;
     }
 
     /*
@@ -3052,6 +3054,21 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
     return true;
 }
 
+static srtp_err_status_t is_update_policy_compatable(
+    srtp_stream_t stream,
+    const srtp_policy_t *policy)
+{
+    if (stream->use_mki != policy->use_mki) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (stream->use_mki && stream->mki_size != policy->mki_size) {
+        return srtp_err_status_bad_param;
+    }
+
+    return srtp_err_status_ok;
+}
+
 static srtp_err_status_t update_template_streams(srtp_t session,
                                                  const srtp_policy_t *policy)
 {
@@ -3066,6 +3083,11 @@ static srtp_err_status_t update_template_streams(srtp_t session,
 
     if (session->stream_template == NULL) {
         return srtp_err_status_bad_param;
+    }
+
+    status = is_update_policy_compatable(session->stream_template, policy);
+    if (status != srtp_err_status_ok) {
+        return status;
     }
 
     /* allocate new template stream  */
@@ -3130,6 +3152,11 @@ static srtp_err_status_t stream_update(srtp_t session,
     stream = srtp_get_stream(session, htonl(policy->ssrc.value));
     if (stream == NULL) {
         return srtp_err_status_bad_param;
+    }
+
+    status = is_update_policy_compatable(stream, policy);
+    if (status != srtp_err_status_ok) {
+        return status;
     }
 
     /* save old extendard seq */
@@ -3523,9 +3550,10 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
     }
 
     if (stream->use_mki) {
-        mki_size = srtp_inject_mki(rtcp_hdr + *pkt_octet_len + tag_len +
-                                       sizeof(srtcp_trailer_t),
-                                   session_keys);
+        srtp_inject_mki(rtcp_hdr + *pkt_octet_len + tag_len +
+                            sizeof(srtcp_trailer_t),
+                        session_keys, stream->mki_size);
+        mki_size = stream->mki_size;
     }
 
     /*
@@ -3954,8 +3982,9 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     }
 
     if (stream->use_mki) {
-        mki_size = srtp_inject_mki(
-            rtcp_hdr + *pkt_octet_len + sizeof(srtcp_trailer_t), session_keys);
+        srtp_inject_mki(rtcp_hdr + *pkt_octet_len + sizeof(srtcp_trailer_t),
+                        session_keys, stream->mki_size);
+        mki_size = stream->mki_size;
     }
 
     /*
@@ -4495,7 +4524,7 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
         }
         session_key = &stream->session_keys[mki_index];
 
-        *length += session_key->mki_size;
+        *length += stream->mki_size;
 
     } else {
         session_key = &stream->session_keys[0];

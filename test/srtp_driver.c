@@ -92,6 +92,8 @@ srtp_err_status_t srtp_test_remove_stream(void);
 
 srtp_err_status_t srtp_test_update(void);
 
+srtp_err_status_t srtp_test_update_mki(void);
+
 srtp_err_status_t srtp_test_protect_trailer_length(void);
 
 srtp_err_status_t srtp_test_protect_rtcp_trailer_length(void);
@@ -144,14 +146,12 @@ extern uint8_t test_key_gcm[28];
 // clang-format off
 srtp_master_key_t master_key_1 = {
     test_key,
-    test_mki_id,
-    TEST_MKI_ID_SIZE
+    test_mki_id
 };
 
 srtp_master_key_t master_key_2 = {
     test_key_2,
-    test_mki_id_2,
-    TEST_MKI_ID_SIZE
+    test_mki_id_2
 };
 
 srtp_master_key_t *test_keys[2] = {
@@ -569,6 +569,17 @@ int main(int argc, char *argv[])
          */
         printf("testing srtp_update()...");
         if (srtp_test_update() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        /*
+         * test the function srtp_update()
+         */
+        printf("testing srtp_update_mki()...");
+        if (srtp_test_update_mki() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -1082,14 +1093,16 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     memcpy(&send_policy, policy, sizeof(srtp_policy_t));
 
     send_policy.use_mki = use_mki;
+    if (!use_mki) {
+        send_policy.mki_size = 0;
+    }
 
     if (test_extension_headers) {
         send_policy.enc_xtn_hdr = &header;
         send_policy.enc_xtn_hdr_count = 1;
-        err_check(srtp_create(&srtp_sender, &send_policy));
-    } else {
-        err_check(srtp_create(&srtp_sender, &send_policy));
     }
+
+    err_check(srtp_create(&srtp_sender, &send_policy));
 
     /* print out policy */
     err_check(srtp_session_print_policy(srtp_sender));
@@ -1287,6 +1300,9 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
     memcpy(&send_policy, policy, sizeof(srtp_policy_t));
 
     send_policy.use_mki = use_mki;
+    if (!use_mki) {
+        send_policy.mki_size = 0;
+    }
 
     err_check(srtp_create(&srtcp_sender, &send_policy));
 
@@ -1497,6 +1513,7 @@ bool srtp_session_print_stream(srtp_stream_t stream, void *raw_data)
            "# rtcp services: %s\r\n"
            "# num keys:      %zu\r\n"
            "# use mki:       %s\r\n"
+           "# mki size:      %zu\r\n"
            "# window size:   %zu\r\n"
            "# tx rtx allowed:%s\r\n",
            ssrc_text, session_keys->rtp_cipher->type->description,
@@ -1505,7 +1522,7 @@ bool srtp_session_print_stream(srtp_stream_t stream, void *raw_data)
            session_keys->rtcp_cipher->type->description,
            session_keys->rtcp_auth->type->description,
            serv_descr[stream->rtcp_services], stream->num_master_keys,
-           stream->use_mki ? "true" : "false",
+           stream->use_mki ? "true" : "false", stream->mki_size,
            srtp_rdbx_get_window_size(&stream->rtp_rdbx),
            stream->allow_repeat_tx ? "true" : "false");
 
@@ -1904,6 +1921,7 @@ srtp_err_status_t srtp_validate_mki(void)
     policy.keys = test_keys;
     policy.num_master_keys = 2;
     policy.use_mki = true;
+    policy.mki_size = TEST_MKI_ID_SIZE;
     policy.window_size = 128;
     policy.allow_repeat_tx = false;
     policy.next = NULL;
@@ -3200,6 +3218,58 @@ srtp_err_status_t srtp_test_update(void)
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t srtp_test_update_mki(void)
+{
+    srtp_err_status_t status;
+    srtp_t srtp;
+    srtp_policy_t policy;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type = ssrc_any_outbound;
+    policy.keys = test_keys;
+    policy.num_master_keys = 1;
+    policy.use_mki = true;
+    policy.mki_size = 1;
+
+    status = srtp_create(&srtp, &policy);
+    if (status) {
+        return status;
+    }
+
+    /* can not turn off mki */
+    policy.use_mki = false;
+    policy.mki_size = 0;
+    status = srtp_update(srtp, &policy);
+    if (status == srtp_err_status_ok) {
+        return srtp_err_status_fail;
+    }
+
+    /* update same values still ok*/
+    policy.use_mki = true;
+    policy.mki_size = 1;
+    status = srtp_update(srtp, &policy);
+    if (status) {
+        return status;
+    }
+
+    /* can not change mki size*/
+    policy.use_mki = true;
+    policy.mki_size = 2;
+    status = srtp_update(srtp, &policy);
+    if (status == srtp_err_status_ok) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp);
+    if (status) {
+        return status;
+    }
+
+    return srtp_err_status_ok;
+}
+
 srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     srtp_t *srtp_send,
     srtp_t *srtp_send_mki,
@@ -3238,6 +3308,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     policy_mki.keys = test_keys;
     policy_mki.num_master_keys = 2;
     policy_mki.use_mki = true;
+    policy_mki.mki_size = TEST_MKI_ID_SIZE;
 
 #ifdef GCM
     memset(&policy_aes_gcm, 0, sizeof(policy_aes_gcm));
@@ -3260,6 +3331,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     policy_aes_gcm_mki.keys = test_keys;
     policy_aes_gcm_mki.num_master_keys = 2;
     policy_aes_gcm_mki.use_mki = true;
+    policy_aes_gcm_mki.mki_size = TEST_MKI_ID_SIZE;
 #endif // GCM
 
     /* create a send ctx with defualt profile and test_key */
@@ -3297,8 +3369,11 @@ srtp_err_status_t srtp_test_protect_trailer_length(void)
     size_t length = 0;
     srtp_err_status_t status;
 
-    srtp_test_setup_protect_trailer_streams(
+    status = srtp_test_setup_protect_trailer_streams(
         &srtp_send, &srtp_send_mki, &srtp_send_aes_gcm, &srtp_send_aes_gcm_mki);
+    if (status) {
+        return status;
+    }
 
     status = srtp_get_protect_trailer_length(srtp_send, 0, &length);
     if (status) {
@@ -4145,12 +4220,13 @@ const srtp_policy_t default_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4174,12 +4250,13 @@ const srtp_policy_t aes_only_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4203,12 +4280,13 @@ const srtp_policy_t hmac_only_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* Number of Master keys associated with the policy */
-    false, /* no mki */
-    128,   /* replay window size                               */
-    0,     /* retransmission not allowed                       */
-    NULL,  /* no encrypted extension headers                   */
-    0,     /* list of encrypted extension headers is empty     */
+    2,                /* Number of Master keys associated with the policy */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                               */
+    0,                /* retransmission not allowed                       */
+    NULL,             /* no encrypted extension headers                   */
+    0,                /* list of encrypted extension headers is empty     */
     NULL
 };
 
@@ -4235,12 +4313,13 @@ const srtp_policy_t aes128_gcm_8_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4266,12 +4345,13 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4297,12 +4377,13 @@ const srtp_policy_t aes256_gcm_8_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4328,12 +4409,13 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 #endif
@@ -4358,12 +4440,13 @@ const srtp_policy_t null_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4389,14 +4472,12 @@ uint8_t test_256_key_2[46] = {
 
 srtp_master_key_t master_256_key_1 = {
     test_256_key,
-    test_mki_id,
-    TEST_MKI_ID_SIZE
+    test_mki_id
 };
 
 srtp_master_key_t master_256_key_2 = {
     test_256_key_2,
-    test_mki_id_2,
-    TEST_MKI_ID_SIZE
+    test_mki_id_2
 };
 
 srtp_master_key_t *test_256_keys[2] = {
@@ -4427,12 +4508,13 @@ const srtp_policy_t aes_256_hmac_policy = {
     },
     NULL,
     (srtp_master_key_t **)test_256_keys,
-    2,     /* indicates the number of Master keys          */
-    false, /* no mki */
-    128,   /* replay window size                           */
-    0,     /* retransmission not allowed                   */
-    NULL,  /* no encrypted extension headers               */
-    0,     /* list of encrypted extension headers is empty */
+    2,                /* indicates the number of Master keys          */
+    true,             /* no mki */
+    TEST_MKI_ID_SIZE, /* mki size */
+    128,              /* replay window size                           */
+    0,                /* retransmission not allowed                   */
+    NULL,             /* no encrypted extension headers               */
+    0,                /* list of encrypted extension headers is empty */
     NULL
 };
 
@@ -4458,6 +4540,7 @@ const srtp_policy_t hmac_only_with_no_master_key = {
     NULL,  /* no master keys*/
     0,     /* indicates the number of Master keys          */
     false, /* no mki */
+    0,     /* mki size */
     128,   /* replay window size                           */
     false, /* retransmission not allowed                   */
     NULL,  /* no encrypted extension headers               */
@@ -4521,12 +4604,13 @@ const srtp_policy_t wildcard_policy = {
     },
     test_key,
     NULL,
-    false, /* no mki */
     0,
-    128,  /* replay window size                           */
-    0,    /* retransmission not allowed                   */
-    NULL, /* no encrypted extension headers               */
-    0,    /* list of encrypted extension headers is empty */
+    false, /* no mki */
+    0,     /* mki size */
+    128,   /* replay window size                           */
+    0,     /* retransmission not allowed                   */
+    NULL,  /* no encrypted extension headers               */
+    0,     /* list of encrypted extension headers is empty */
     NULL
 };
 

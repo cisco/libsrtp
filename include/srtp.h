@@ -292,13 +292,11 @@ typedef struct {
 /**
  * @brief srtp_master_key_t represents a master key.  There will
  * be a Master Key Index and the Master Key associated with the
- * Master Key Index.  Need to also keep track of the Master Key
- * Index Size to correctly read it from a packet.
+ * Master Key Index.
  */
 typedef struct srtp_master_key_t {
     uint8_t *key;
     uint8_t *mki_id;
-    size_t mki_size;
 } srtp_master_key_t;
 
 /**
@@ -339,6 +337,7 @@ typedef struct srtp_policy_t {
     srtp_master_key_t **keys;   /** Array of Master Key structures       */
     size_t num_master_keys;     /** Number of master keys                */
     bool use_mki;               /** Whether MKI is in use                */
+    size_t mki_size;            /** Size of MKI when in use              */
     size_t window_size;         /**< The window size to use for replay   */
                                 /**< protection.                         */
     bool allow_repeat_tx;       /**< Whether retransmissions of          */

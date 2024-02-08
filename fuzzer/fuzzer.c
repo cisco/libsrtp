@@ -279,7 +279,6 @@ static srtp_master_key_t *extract_master_key(const uint8_t **data,
 
     EXTRACT(ret->key, *data, *size, key_size);
     EXTRACT(ret->mki_id, *data, *size, mki_id_size);
-    ret->mki_size = mki_id_size;
 end:
     return ret;
 }
