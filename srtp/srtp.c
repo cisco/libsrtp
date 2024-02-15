@@ -88,10 +88,10 @@ static size_t srtp_get_rtp_hdr_len(const srtp_hdr_t *hdr)
  * verified that a header extension is present by checking the x bit of
  * srtp_hdr_t.
  */
-static srtp_hdr_xtnd_t *srtp_get_rtp_xtn_hdr(srtp_hdr_t *hdr)
+static srtp_hdr_xtnd_t *srtp_get_rtp_xtn_hdr(const srtp_hdr_t *hdr,
+                                             uint8_t *rtp)
 {
-    size_t rtp_xtn_hdr_start = srtp_get_rtp_hdr_len(hdr);
-    return (srtp_hdr_xtnd_t *)((uint8_t *)hdr + rtp_xtn_hdr_start);
+    return (srtp_hdr_xtnd_t *)(rtp + srtp_get_rtp_hdr_len(hdr));
 }
 
 /*
@@ -100,15 +100,18 @@ static srtp_hdr_xtnd_t *srtp_get_rtp_xtn_hdr(srtp_hdr_t *hdr)
  * pointer and that the caller has already verified that a header extension is
  * valid by checking the x bit of the RTP header.
  */
-static size_t srtp_get_rtp_xtn_hdr_len(const srtp_hdr_xtnd_t *xtn_hdr)
+static size_t srtp_get_rtp_xtn_hdr_len(const srtp_hdr_t *hdr,
+                                       const uint8_t *rtp)
 {
+    const srtp_hdr_xtnd_t *xtn_hdr =
+        (const srtp_hdr_xtnd_t *)(rtp + srtp_get_rtp_hdr_len(hdr));
     return (ntohs(xtn_hdr->length) + 1u) * 4u;
 }
 
-static srtp_err_status_t srtp_validate_rtp_header(const uint8_t *rtp_hdr,
+static srtp_err_status_t srtp_validate_rtp_header(const uint8_t *rtp,
                                                   size_t pkt_octet_len)
 {
-    const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp_hdr;
+    const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp;
     size_t rtp_header_len;
 
     if (pkt_octet_len < octets_in_rtp_header) {
@@ -127,8 +130,7 @@ static srtp_err_status_t srtp_validate_rtp_header(const uint8_t *rtp_hdr,
             return srtp_err_status_bad_param;
         }
 
-        rtp_header_len += srtp_get_rtp_xtn_hdr_len(
-            (const srtp_hdr_xtnd_t *)(rtp_hdr + rtp_header_len));
+        rtp_header_len += srtp_get_rtp_xtn_hdr_len(hdr, rtp);
         if (pkt_octet_len < rtp_header_len) {
             return srtp_err_status_bad_param;
         }
@@ -1760,7 +1762,6 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     size_t tag_len;
     v128_t iv;
     size_t aad_len;
-    srtp_hdr_xtnd_t *xtn_hdr = NULL;
     size_t mki_size = 0;
 
     debug_print0(mod_srtp, "function srtp_protect_aead");
@@ -1793,8 +1794,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
      */
     enc_start = rtp_hdr + srtp_get_rtp_hdr_len(hdr);
     if (hdr->x == 1) {
-        xtn_hdr = srtp_get_rtp_xtn_hdr(hdr);
-        enc_start += srtp_get_rtp_xtn_hdr_len(xtn_hdr);
+        enc_start += srtp_get_rtp_xtn_hdr_len(hdr, rtp_hdr);
     }
     /* note: the passed size is without the auth tag */
     if (!(enc_start <= rtp_hdr + *pkt_octet_len)) {
@@ -1850,11 +1850,12 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         return srtp_err_status_cipher_fail;
     }
 
-    if (xtn_hdr && session_keys->rtp_xtn_hdr_cipher) {
+    if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
         /*
          * extensions header encryption RFC 6904
          */
-        status = srtp_process_header_encryption(stream, xtn_hdr, session_keys);
+        status = srtp_process_header_encryption(
+            stream, srtp_get_rtp_xtn_hdr(hdr, rtp_hdr), session_keys);
         if (status) {
             return status;
         }
@@ -1924,7 +1925,6 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     srtp_err_status_t status;
     size_t tag_len;
     size_t aad_len;
-    srtp_hdr_xtnd_t *xtn_hdr = NULL;
 
     debug_print0(mod_srtp, "function srtp_unprotect_aead");
 
@@ -1958,8 +1958,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      */
     enc_start = srtp_hdr + srtp_get_rtp_hdr_len(hdr);
     if (hdr->x == 1) {
-        xtn_hdr = srtp_get_rtp_xtn_hdr(hdr);
-        enc_start += srtp_get_rtp_xtn_hdr_len(xtn_hdr);
+        enc_start += srtp_get_rtp_xtn_hdr_len(hdr, srtp_hdr);
     }
     if (!(enc_start <= srtp_hdr + (*pkt_octet_len - tag_len - mki_size))) {
         return srtp_err_status_parse_err;
@@ -2014,11 +2013,12 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         return status;
     }
 
-    if (xtn_hdr && session_keys->rtp_xtn_hdr_cipher) {
+    if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
         /*
          * extensions header encryption RFC 6904
          */
-        status = srtp_process_header_encryption(stream, xtn_hdr, session_keys);
+        status = srtp_process_header_encryption(
+            stream, srtp_get_rtp_xtn_hdr(hdr, srtp_hdr), session_keys);
         if (status) {
             return status;
         }
@@ -2113,7 +2113,6 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
     size_t tag_len;
     srtp_stream_ctx_t *stream;
     size_t prefix_len;
-    srtp_hdr_xtnd_t *xtn_hdr = NULL;
     size_t mki_size = 0;
     srtp_session_keys_t *session_keys = NULL;
 
@@ -2229,8 +2228,7 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
     if (stream->rtp_services & sec_serv_conf) {
         enc_start = rtp_hdr + srtp_get_rtp_hdr_len(hdr);
         if (hdr->x == 1) {
-            xtn_hdr = srtp_get_rtp_xtn_hdr(hdr);
-            enc_start += srtp_get_rtp_xtn_hdr_len(xtn_hdr);
+            enc_start += srtp_get_rtp_xtn_hdr_len(hdr, rtp_hdr);
         }
         /* note: the passed size is without the auth tag */
         if (!(enc_start <= rtp_hdr + *pkt_octet_len)) {
@@ -2342,11 +2340,12 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
         }
     }
 
-    if (xtn_hdr && session_keys->rtp_xtn_hdr_cipher) {
+    if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
         /*
          * extensions header encryption RFC 6904
          */
-        status = srtp_process_header_encryption(stream, xtn_hdr, session_keys);
+        status = srtp_process_header_encryption(
+            stream, srtp_get_rtp_xtn_hdr(hdr, rtp_hdr), session_keys);
         if (status) {
             return status;
         }
@@ -2417,7 +2416,6 @@ srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
     srtp_stream_ctx_t *stream;
     uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
     size_t tag_len, prefix_len;
-    srtp_hdr_xtnd_t *xtn_hdr = NULL;
     size_t mki_size = 0;
     srtp_session_keys_t *session_keys = NULL;
     bool advance_packet_index = false;
@@ -2555,8 +2553,7 @@ srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
     if (stream->rtp_services & sec_serv_conf) {
         enc_start = srtp_hdr + srtp_get_rtp_hdr_len(hdr);
         if (hdr->x == 1) {
-            xtn_hdr = srtp_get_rtp_xtn_hdr(hdr);
-            enc_start += srtp_get_rtp_xtn_hdr_len(xtn_hdr);
+            enc_start += srtp_get_rtp_xtn_hdr_len(hdr, srtp_hdr);
         }
         if (!(enc_start <= srtp_hdr + (*pkt_octet_len - tag_len - mki_size))) {
             return srtp_err_status_parse_err;
@@ -2652,9 +2649,10 @@ srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
         break;
     }
 
-    if (xtn_hdr && session_keys->rtp_xtn_hdr_cipher) {
+    if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
         /* extensions header encryption RFC 6904 */
-        status = srtp_process_header_encryption(stream, xtn_hdr, session_keys);
+        status = srtp_process_header_encryption(
+            stream, srtp_get_rtp_xtn_hdr(hdr, srtp_hdr), session_keys);
         if (status) {
             return status;
         }
