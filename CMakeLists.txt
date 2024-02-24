@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(libsrtp2 VERSION 2.6.0 LANGUAGES C)
+project(libsrtp2 VERSION 2.7.0 LANGUAGES C)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
