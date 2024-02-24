@@ -3,9 +3,9 @@ name: Fuzzer build check
 
 on:
   push:
-    branches: [ main ]
+    branches: [ 2_x_dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ 2_x_dev ]
   workflow_dispatch:
 
 jobs:
