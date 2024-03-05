@@ -97,16 +97,18 @@ typedef srtp_err_status_t (*srtp_cipher_set_aad_func_t)(void *state,
                                                         size_t aad_len);
 
 /* a srtp_cipher_encrypt_func_t encrypts data in-place */
-typedef srtp_err_status_t (*srtp_cipher_encrypt_func_t)(
-    void *state,
-    uint8_t *buffer,
-    size_t *octets_to_encrypt);
+typedef srtp_err_status_t (*srtp_cipher_encrypt_func_t)(void *state,
+                                                        const uint8_t *src,
+                                                        size_t src_len,
+                                                        uint8_t *dst,
+                                                        size_t *dst_len);
 
 /* a srtp_cipher_decrypt_func_t decrypts data in-place */
-typedef srtp_err_status_t (*srtp_cipher_decrypt_func_t)(
-    void *state,
-    uint8_t *buffer,
-    size_t *octets_to_decrypt);
+typedef srtp_err_status_t (*srtp_cipher_decrypt_func_t)(void *state,
+                                                        const uint8_t *src,
+                                                        size_t src_len,
+                                                        uint8_t *dst,
+                                                        size_t *dst_len);
 
 /*
  * a srtp_cipher_set_iv_func_t function sets the current initialization vector
@@ -219,11 +221,15 @@ srtp_err_status_t srtp_cipher_output(srtp_cipher_t *c,
                                      uint8_t *buffer,
                                      size_t *num_octets_to_output);
 srtp_err_status_t srtp_cipher_encrypt(srtp_cipher_t *c,
-                                      uint8_t *buffer,
-                                      size_t *num_octets_to_output);
+                                      const uint8_t *src,
+                                      size_t src_len,
+                                      uint8_t *dst,
+                                      size_t *dst_len);
 srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c,
-                                      uint8_t *buffer,
-                                      size_t *num_octets_to_output);
+                                      const uint8_t *src,
+                                      size_t src_len,
+                                      uint8_t *dst,
+                                      size_t *dst_len);
 srtp_err_status_t srtp_cipher_get_tag(srtp_cipher_t *c,
                                       uint8_t *buffer,
                                       size_t *tag_len);

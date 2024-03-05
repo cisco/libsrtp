@@ -323,8 +323,10 @@ static srtp_err_status_t srtp_aes_icm_nss_set_iv(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
-                                                  uint8_t *buf,
-                                                  size_t *enc_len)
+                                                  const uint8_t *src,
+                                                  size_t src_len,
+                                                  uint8_t *dst,
+                                                  size_t *dst_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
 
@@ -333,8 +335,8 @@ static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
     }
 
     int out_len = 0;
-    int rv = PK11_CipherOp(c->ctx, buf, &out_len, *enc_len, buf, *enc_len);
-    *enc_len = out_len;
+    int rv = PK11_CipherOp(c->ctx, dst, &out_len, *dst_len, src, src_len);
+    *dst_len = out_len;
     srtp_err_status_t status = (srtp_err_status_ok);
     if (rv != SECSuccess) {
         status = (srtp_err_status_cipher_fail);
