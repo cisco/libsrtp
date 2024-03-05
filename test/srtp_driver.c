@@ -160,19 +160,109 @@ srtp_master_key_t *test_keys[2] = {
 };
 // clang-format on
 
+bool use_srtp_not_in_place_io_api = false;
+
+srtp_err_status_t call_srtp_protect(srtp_ctx_t *ctx,
+                                    uint8_t *rtp,
+                                    size_t *rtp_len,
+                                    size_t mki_index)
+{
+    srtp_err_status_t status = srtp_err_status_fail;
+    if (use_srtp_not_in_place_io_api) {
+        uint8_t in_buf[4048];
+        if (*rtp_len > sizeof(in_buf)) {
+            printf("rtp_len greater than in_buf");
+            exit(1);
+        }
+        memcpy(in_buf, rtp, *rtp_len);
+        // an assumption
+        size_t srtp_len = *rtp_len + SRTP_MAX_TRAILER_LEN;
+        status =
+            srtp_protect2(ctx, in_buf, *rtp_len, rtp, &srtp_len, mki_index);
+        *rtp_len = srtp_len;
+    } else {
+        status = srtp_protect(ctx, rtp, rtp_len, mki_index);
+    }
+    return status;
+}
+
+srtp_err_status_t call_srtp_unprotect(srtp_ctx_t *ctx,
+                                      uint8_t *srtp,
+                                      size_t *srtp_len)
+{
+    srtp_err_status_t status = srtp_err_status_fail;
+    if (use_srtp_not_in_place_io_api) {
+        uint8_t in_buf[4048];
+        if (*srtp_len > sizeof(in_buf)) {
+            printf("srtp_len greater than in_buf");
+            exit(1);
+        }
+        memcpy(in_buf, srtp, *srtp_len);
+        status = srtp_unprotect2(ctx, in_buf, *srtp_len, srtp, srtp_len);
+    } else {
+        status = srtp_unprotect(ctx, srtp, srtp_len);
+    }
+    return status;
+}
+
+srtp_err_status_t call_srtp_protect_rtcp(srtp_ctx_t *ctx,
+                                         uint8_t *rtcp,
+                                         size_t *rtcp_len,
+                                         size_t mki_index)
+{
+    srtp_err_status_t status = srtp_err_status_fail;
+    if (use_srtp_not_in_place_io_api) {
+        uint8_t in_buf[4048];
+        if (*rtcp_len > sizeof(in_buf)) {
+            printf("rtcp_len greater than in_buf");
+            exit(1);
+        }
+        memcpy(in_buf, rtcp, *rtcp_len);
+        // an assumption
+        size_t srtcp_len = *rtcp_len + SRTP_MAX_SRTCP_TRAILER_LEN;
+        status = srtp_protect_rtcp2(ctx, in_buf, *rtcp_len, rtcp, &srtcp_len,
+                                    mki_index);
+        *rtcp_len = srtcp_len;
+    } else {
+        status = srtp_protect_rtcp(ctx, rtcp, rtcp_len, mki_index);
+    }
+    return status;
+}
+
+srtp_err_status_t call_srtp_unprotect_rtcp(srtp_ctx_t *ctx,
+                                           uint8_t *srtcp,
+                                           size_t *srtcp_len)
+{
+    srtp_err_status_t status = srtp_err_status_fail;
+    if (use_srtp_not_in_place_io_api) {
+        uint8_t in_buf[4048];
+        if (*srtcp_len > sizeof(in_buf)) {
+            printf("srtcp_len greater than in_buf");
+            exit(1);
+        }
+        memcpy(in_buf, srtcp, *srtcp_len);
+        status =
+            srtp_unprotect_rtcp2(ctx, in_buf, *srtcp_len, srtcp, srtcp_len);
+    } else {
+        status = srtp_unprotect_rtcp(ctx, srtcp, srtcp_len);
+    }
+    return status;
+}
+
 void usage(char *prog_name)
 {
-    printf(
-        "usage: %s [ -t ][ -c ][ -v ][ -s ][ -o ][-d <debug_module> ]* [ -l ]\n"
-        "  -t         run timing test\n"
-        "  -r         run rejection timing test\n"
-        "  -c         run codec timing test\n"
-        "  -v         run validation tests\n"
-        "  -s         run stream list tests only\n"
-        "  -o         output logging to stdout\n"
-        "  -d <mod>   turn on debugging module <mod>\n"
-        "  -l         list debugging modules\n",
-        prog_name);
+    printf("usage: %s [ -t ][ -c ][ -v ][ -s ][ -o ][-d <debug_module> ]* [ -l "
+           "][ -n ]\n"
+           "  -t         run timing test\n"
+           "  -r         run rejection timing test\n"
+           "  -c         run codec timing test\n"
+           "  -v         run validation tests\n"
+           "  -s         run stream list tests only\n"
+           "  -o         output logging to stdout\n"
+           "  -d <mod>   turn on debugging module <mod>\n"
+           "  -l         list debugging modules\n"
+           "  -n         run with not-in-place io api\n",
+           prog_name);
     exit(1);
 }
 
@@ -263,7 +353,7 @@ int main(int argc, char *argv[])
 
     /* process input arguments */
     while (1) {
-        q = getopt_s(argc, argv, "trcvsold:");
+        q = getopt_s(argc, argv, "trcvsold:n");
         if (q == -1) {
             break;
         }
@@ -296,6 +386,10 @@ int main(int argc, char *argv[])
                 printf("error: set debug module (%s) failed\n", optarg_s);
                 exit(1);
             }
+            break;
+        case 'n':
+            printf("using srtp not-in-place io api\n");
+            use_srtp_not_in_place_io_api = true;
             break;
         default:
             usage(argv[0]);
@@ -990,7 +1084,7 @@ double srtp_bits_per_second(size_t msg_len_octets, const srtp_policy_t *policy)
     for (size_t i = 0; i < num_trials; i++) {
         len = input_len;
         /* srtp protect message */
-        status = srtp_protect(srtp, mesg, &len, 0);
+        status = call_srtp_protect(srtp, mesg, &len, 0);
         if (status) {
             printf("error: srtp_protect() failed with error code %d\n", status);
             exit(1);
@@ -1042,12 +1136,12 @@ double srtp_rejections_per_second(size_t msg_len_octets,
     if (mesg == NULL) {
         return 0.0; /* indicate failure by returning zero */
     }
-    srtp_protect(srtp, mesg, &len, 0);
+    call_srtp_protect(srtp, mesg, &len, 0);
 
     timer = clock();
     for (size_t i = 0; i < num_trials; i++) {
         len = msg_len_octets;
-        srtp_unprotect(srtp, mesg, &len);
+        call_srtp_unprotect(srtp, mesg, &len);
     }
     timer = clock() - timer;
 
@@ -1145,7 +1239,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     debug_print(mod_driver, "reference packet before protection:\n%s",
                 octet_string_hex_string(hdr, len));
 #endif
-    err_check(srtp_protect(srtp_sender, hdr, &len, mki_index));
+    err_check(call_srtp_protect(srtp_sender, hdr, &len, mki_index));
 
     debug_print(mod_driver, "after protection:\n%s",
                 srtp_packet_to_string(hdr, len));
@@ -1211,12 +1305,12 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
 
     err_check(srtp_create(&srtp_rcvr, &rcvr_policy));
 
-    err_check(srtp_unprotect(srtp_rcvr, hdr, &len));
+    err_check(call_srtp_unprotect(srtp_rcvr, hdr, &len));
 
     debug_print(mod_driver, "after unprotection:\n%s",
                 srtp_packet_to_string(hdr, len));
 
-    /* verify that the unprotected packet matches the origial one */
+    /* verify that the unprotected packet matches the original one */
     for (i = 0; i < len; i++) {
         if (hdr[i] != hdr2[i]) {
             fprintf(stdout, "mismatch at octet %zu\n", i);
@@ -1238,7 +1332,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         printf("testing for false positives in replay check...");
 
         /* unprotect a second time - should fail with a replay error */
-        status = srtp_unprotect(srtp_rcvr, hdr, &msg_len_enc);
+        status = call_srtp_unprotect(srtp_rcvr, hdr, &msg_len_enc);
         if (status != srtp_err_status_replay_fail) {
             printf("failed with error code %d\n", status);
             free(hdr);
@@ -1254,13 +1348,13 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         ((srtp_hdr_t *)hdr)->seq++;
 
         /* apply protection */
-        err_check(srtp_protect(srtp_sender, hdr, &len, mki_index));
+        err_check(call_srtp_protect(srtp_sender, hdr, &len, mki_index));
 
         /* flip bits in packet */
         data[0] ^= 0xff;
 
         /* unprotect, and check for authentication failure */
-        status = srtp_unprotect(srtp_rcvr, hdr, &len);
+        status = call_srtp_unprotect(srtp_rcvr, hdr, &len);
         if (status != srtp_err_status_auth_fail) {
             printf("failed with error code %d\n", status);
             printf("failed\n");
@@ -1340,7 +1434,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
     debug_print(mod_driver, "reference packet before protection:\n%s",
                 octet_string_hex_string(hdr, len));
 #endif
-    err_check(srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
+    err_check(call_srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
 
     debug_print(mod_driver, "after protection:\n%s",
                 srtp_rtcp_packet_to_string(hdr, len));
@@ -1407,7 +1501,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
 
     err_check(srtp_create(&srtcp_rcvr, &rcvr_policy));
 
-    err_check(srtp_unprotect_rtcp(srtcp_rcvr, hdr, &len));
+    err_check(call_srtp_unprotect_rtcp(srtcp_rcvr, hdr, &len));
 
     debug_print(mod_driver, "after unprotection:\n%s",
                 srtp_rtcp_packet_to_string(hdr, len));
@@ -1434,7 +1528,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
         printf("testing for false positives in replay check...");
 
         /* unprotect a second time - should fail with a replay error */
-        status = srtp_unprotect_rtcp(srtcp_rcvr, hdr, &msg_len_enc);
+        status = call_srtp_unprotect_rtcp(srtcp_rcvr, hdr, &msg_len_enc);
         if (status != srtp_err_status_replay_fail) {
             printf("failed with error code %d\n", status);
             free(hdr);
@@ -1447,13 +1541,13 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
         printf("testing for false positives in auth check...");
 
         /* apply protection */
-        err_check(srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
+        err_check(call_srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
 
         /* flip bits in packet */
         data[0] ^= 0xff;
 
         /* unprotect, and check for authentication failure */
-        status = srtp_unprotect_rtcp(srtcp_rcvr, hdr, &len);
+        status = call_srtp_unprotect_rtcp(srtcp_rcvr, hdr, &len);
         if (status != srtp_err_status_auth_fail) {
             printf("failed with error code %d\n", status);
             printf("failed\n");
@@ -1770,7 +1864,7 @@ srtp_err_status_t srtp_validate(void)
      * protect plaintext, then compare with ciphertext
      */
     len = 28;
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
     if (status || (len != 38)) {
         return srtp_err_status_fail;
     }
@@ -1788,7 +1882,7 @@ srtp_err_status_t srtp_validate(void)
      * protect plaintext rtcp, then compare with srtcp ciphertext
      */
     len = 24;
-    status = srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
+    status = call_srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
     if (status || (len != 38)) {
         return srtp_err_status_fail;
     }
@@ -1815,7 +1909,7 @@ srtp_err_status_t srtp_validate(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status || (len != 28)) {
         return status;
     }
@@ -1828,7 +1922,7 @@ srtp_err_status_t srtp_validate(void)
      * unprotect srtcp ciphertext, then compare with rtcp plaintext
      */
     len = 38;
-    status = srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
+    status = call_srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
     if (status || (len != 24)) {
         return status;
     }
@@ -1935,7 +2029,7 @@ srtp_err_status_t srtp_validate_mki(void)
      * protect plaintext, then compare with ciphertext
      */
     len = 28;
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
     if (status) {
         return status;
     }
@@ -1958,7 +2052,7 @@ srtp_err_status_t srtp_validate_mki(void)
      * protect plaintext rtcp, then compare with srtcp ciphertext
      */
     len = 24;
-    status = srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
+    status = call_srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
     if (status) {
         return status;
     }
@@ -1991,7 +2085,7 @@ srtp_err_status_t srtp_validate_mki(void)
      * unprotect ciphertext, then compare with plaintext
      */
     len = 42;
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status || (len != 28)) {
         return status;
     }
@@ -2004,7 +2098,7 @@ srtp_err_status_t srtp_validate_mki(void)
      * unprotect srtcp ciphertext, then compare with rtcp plaintext
      */
     len = 42;
-    status = srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
+    status = call_srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
     if (status || (len != 24)) {
         return status;
     }
@@ -2105,7 +2199,7 @@ srtp_err_status_t srtp_validate_null(void)
      * protect plaintext, then compare with ciphertext
      */
     len = 28;
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
     if (status || (len != 38)) {
         return srtp_err_status_fail;
     }
@@ -2123,7 +2217,7 @@ srtp_err_status_t srtp_validate_null(void)
      * protect plaintext rtcp, then compare with srtcp ciphertext
      */
     len = 24;
-    status = srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
+    status = call_srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
     if (status || (len != 38)) {
         return srtp_err_status_fail;
     }
@@ -2150,7 +2244,7 @@ srtp_err_status_t srtp_validate_null(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status || (len != 28)) {
         return status;
     }
@@ -2163,7 +2257,7 @@ srtp_err_status_t srtp_validate_null(void)
      * unprotect srtcp ciphertext, then compare with rtcp plaintext
      */
     len = 38;
-    status = srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
+    status = call_srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
     if (status || (len != 24)) {
         return status;
     }
@@ -2266,7 +2360,7 @@ srtp_err_status_t srtp_validate_gcm(void)
      * protect plaintext rtp, then compare with srtp ciphertext
      */
     len = 28;
-    status = srtp_protect(srtp_snd, rtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, rtp_plaintext, &len, 0);
     if (status || (len != 44)) {
         return srtp_err_status_fail;
     }
@@ -2284,7 +2378,7 @@ srtp_err_status_t srtp_validate_gcm(void)
      * protect plaintext rtcp, then compare with srtcp ciphertext
      */
     len = 24;
-    status = srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
+    status = call_srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
     if (status || (len != 44)) {
         return srtp_err_status_fail;
     }
@@ -2312,7 +2406,7 @@ srtp_err_status_t srtp_validate_gcm(void)
      * unprotect srtp ciphertext, then compare with rtp plaintext
      */
     len = 44;
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status || (len != 28)) {
         return status;
     }
@@ -2325,7 +2419,7 @@ srtp_err_status_t srtp_validate_gcm(void)
      * unprotect srtcp ciphertext, then compare with rtcp plaintext
      */
     len = 44;
-    status = srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
+    status = call_srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
     if (status || (len != 24)) {
         return status;
     }
@@ -2430,7 +2524,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
      * protect plaintext, then compare with ciphertext
      */
     len = sizeof(srtp_plaintext_ref);
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
     if (status || (len != sizeof(srtp_plaintext))) {
         return srtp_err_status_fail;
     }
@@ -2457,7 +2551,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status) {
         return status;
     } else if (len != sizeof(srtp_plaintext_ref)) {
@@ -2558,7 +2652,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
      * protect plaintext, then compare with ciphertext
      */
     len = sizeof(srtp_plaintext_ref);
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
     if (status || (len != sizeof(srtp_plaintext))) {
         return srtp_err_status_fail;
     }
@@ -2585,7 +2679,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status) {
         return status;
     } else if (len != sizeof(srtp_plaintext_ref)) {
@@ -2678,7 +2772,7 @@ srtp_err_status_t srtp_validate_aes_256(void)
      * protect plaintext, then compare with ciphertext
      */
     len = 28;
-    status = srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
     if (status || (len != 38)) {
         return srtp_err_status_fail;
     }
@@ -2705,7 +2799,7 @@ srtp_err_status_t srtp_validate_aes_256(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
     if (status || (len != 28)) {
         return status;
     }
@@ -2806,7 +2900,7 @@ srtp_err_status_t srtp_test_empty_payload(void)
         return srtp_err_status_fail;
     }
 
-    status = srtp_protect(srtp_snd, mesg, &len, 0);
+    status = call_srtp_protect(srtp_snd, mesg, &len, 0);
     if (status) {
         return status;
     } else if (len != 12 + 10) {
@@ -2826,7 +2920,7 @@ srtp_err_status_t srtp_test_empty_payload(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, mesg, &len);
+    status = call_srtp_unprotect(srtp_recv, mesg, &len);
     if (status) {
         return status;
     } else if (len != 12) {
@@ -2881,7 +2975,7 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
         return srtp_err_status_fail;
     }
 
-    status = srtp_protect(srtp_snd, mesg, &len, 0);
+    status = call_srtp_protect(srtp_snd, mesg, &len, 0);
     if (status) {
         return status;
     } else if (len != 12 + 16) {
@@ -2901,7 +2995,7 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
     /*
      * unprotect ciphertext, then compare with plaintext
      */
-    status = srtp_unprotect(srtp_recv, mesg, &len);
+    status = call_srtp_unprotect(srtp_recv, mesg, &len);
     if (status) {
         return status;
     } else if (len != 12) {
@@ -3076,12 +3170,12 @@ srtp_err_status_t srtp_test_update(void)
     }
     ((srtp_hdr_t *)msg)->seq = htons(65535);
 
-    status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
+    status = call_srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
     if (status) {
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+    status = call_srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
     if (status) {
         return status;
     }
@@ -3095,12 +3189,12 @@ srtp_err_status_t srtp_test_update(void)
     }
     ((srtp_hdr_t *)msg)->seq = htons(1);
 
-    status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
+    status = call_srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
     if (status) {
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+    status = call_srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
     if (status) {
         return status;
     }
@@ -3122,12 +3216,12 @@ srtp_err_status_t srtp_test_update(void)
     }
     ((srtp_hdr_t *)msg)->seq = htons(2);
 
-    status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
+    status = call_srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
     if (status) {
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+    status = call_srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
     if (status) {
         return status;
     }
@@ -3150,14 +3244,14 @@ srtp_err_status_t srtp_test_update(void)
     }
     ((srtp_hdr_t *)msg)->seq = htons(3);
 
-    status = srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
+    status = call_srtp_protect(srtp_snd, msg, &protected_msg_len_octets, 0);
     if (status) {
         return srtp_err_status_fail;
     }
 
     /* verify that receive ctx will fail to unprotect as it still uses test_key
      */
-    status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+    status = call_srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
     if (status == srtp_err_status_ok) {
         return srtp_err_status_fail;
     }
@@ -3175,8 +3269,8 @@ srtp_err_status_t srtp_test_update(void)
             return status;
         }
 
-        status =
-            srtp_unprotect(srtp_recv_roc_0, msg, &protected_msg_len_octets);
+        status = call_srtp_unprotect(srtp_recv_roc_0, msg,
+                                     &protected_msg_len_octets);
         if (status == srtp_err_status_ok) {
             return srtp_err_status_fail;
         }
@@ -3197,7 +3291,7 @@ srtp_err_status_t srtp_test_update(void)
 
     /* verify that can still unprotect, therfore key is updated and ROC value is
      * preserved */
-    status = srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
+    status = call_srtp_unprotect(srtp_recv, msg, &protected_msg_len_octets);
     if (status) {
         return status;
     }
@@ -3552,7 +3646,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     /* Create and protect packets to get to get roc == 1 */
     pkts[0] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value,
                                                65534, 0, &pkt_len_octets[0]);
-    status = srtp_protect(sender_session, pkts[0], &pkt_len_octets[0], 0);
+    status = call_srtp_protect(sender_session, pkts[0], &pkt_len_octets[0], 0);
     if (status) {
         return status;
     }
@@ -3567,7 +3661,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     pkts[1] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value,
                                                65535, 1, &pkt_len_octets[1]);
-    status = srtp_protect(sender_session, pkts[1], &pkt_len_octets[1], 0);
+    status = call_srtp_protect(sender_session, pkts[1], &pkt_len_octets[1], 0);
     if (status) {
         return status;
     }
@@ -3582,7 +3676,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     pkts[2] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value, 0,
                                                2, &pkt_len_octets[2]);
-    status = srtp_protect(sender_session, pkts[2], &pkt_len_octets[2], 0);
+    status = call_srtp_protect(sender_session, pkts[2], &pkt_len_octets[2], 0);
     if (status) {
         return status;
     }
@@ -3597,7 +3691,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     pkts[3] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value, 1,
                                                3, &pkt_len_octets[3]);
-    status = srtp_protect(sender_session, pkts[3], &pkt_len_octets[3], 0);
+    status = call_srtp_protect(sender_session, pkts[3], &pkt_len_octets[3], 0);
     if (status) {
         return status;
     }
@@ -3612,7 +3706,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     pkts[4] = srtp_create_test_packet_extended(64, sender_policy.ssrc.value, 2,
                                                4, &pkt_len_octets[4]);
-    status = srtp_protect(sender_session, pkts[4], &pkt_len_octets[4], 0);
+    status = call_srtp_protect(sender_session, pkts[4], &pkt_len_octets[4], 0);
     if (status) {
         return status;
     }
@@ -3627,7 +3721,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     /* Unprotect packets in this seq order 65534, 0, 2, 1, 65535 which is
      * equivalent to index 0, 2, 4, 3, 1*/
-    status = srtp_unprotect(receiver_session, pkts[0], &pkt_len_octets[0]);
+    status = call_srtp_unprotect(receiver_session, pkts[0], &pkt_len_octets[0]);
     if (status) {
         return status;
     }
@@ -3640,7 +3734,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(receiver_session, pkts[2], &pkt_len_octets[2]);
+    status = call_srtp_unprotect(receiver_session, pkts[2], &pkt_len_octets[2]);
     if (status) {
         return status;
     }
@@ -3653,7 +3747,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(receiver_session, pkts[4], &pkt_len_octets[4]);
+    status = call_srtp_unprotect(receiver_session, pkts[4], &pkt_len_octets[4]);
     if (status) {
         return status;
     }
@@ -3666,7 +3760,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(receiver_session, pkts[3], &pkt_len_octets[3]);
+    status = call_srtp_unprotect(receiver_session, pkts[3], &pkt_len_octets[3]);
     if (status) {
         return status;
     }
@@ -3679,7 +3773,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
         return srtp_err_status_fail;
     }
 
-    status = srtp_unprotect(receiver_session, pkts[1], &pkt_len_octets[1]);
+    status = call_srtp_unprotect(receiver_session, pkts[1], &pkt_len_octets[1]);
     if (status) {
         return status;
     }
@@ -3746,7 +3840,7 @@ srtp_err_status_t srtp_test_get_roc(void)
         pkt = srtp_create_test_packet_extended(msg_len_octets,
                                                policy.ssrc.value, seq, ts,
                                                &protected_msg_len_octets);
-        status = srtp_protect(session, pkt, &protected_msg_len_octets, 0);
+        status = call_srtp_protect(session, pkt, &protected_msg_len_octets, 0);
         free(pkt);
         if (status) {
             return status;
@@ -3831,7 +3925,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
 
         tmp_pkt = srtp_create_test_packet_extended(
             msg_len_octets, sender_policy.ssrc.value, seq, ts, &tmp_len);
-        status = srtp_protect(sender_session, tmp_pkt, &tmp_len, 0);
+        status = call_srtp_protect(sender_session, tmp_pkt, &tmp_len, 0);
         free(tmp_pkt);
         if (status) {
             return status;
@@ -3850,8 +3944,8 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     pkt_1 = srtp_create_test_packet_extended(msg_len_octets,
                                              sender_policy.ssrc.value, seq, ts,
                                              &protected_msg_len_octets_1);
-    status =
-        srtp_protect(sender_session, pkt_1, &protected_msg_len_octets_1, 0);
+    status = call_srtp_protect(sender_session, pkt_1,
+                               &protected_msg_len_octets_1, 0);
     if (status) {
         return status;
     }
@@ -3862,8 +3956,8 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     pkt_2 = srtp_create_test_packet_extended(msg_len_octets,
                                              sender_policy.ssrc.value, seq, ts,
                                              &protected_msg_len_octets_2);
-    status =
-        srtp_protect(sender_session, pkt_2, &protected_msg_len_octets_2, 0);
+    status = call_srtp_protect(sender_session, pkt_2,
+                               &protected_msg_len_octets_2, 0);
     if (status) {
         return status;
     }
@@ -3910,15 +4004,15 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     }
 
     /* Unprotect the first packet */
-    status = srtp_unprotect(receiver_session, recv_pkt_1,
-                            &protected_msg_len_octets_1);
+    status = call_srtp_unprotect(receiver_session, recv_pkt_1,
+                                 &protected_msg_len_octets_1);
     if (status) {
         return status;
     }
 
     /* Unprotect the second packet */
-    status = srtp_unprotect(receiver_session, recv_pkt_2,
-                            &protected_msg_len_octets_2);
+    status = call_srtp_unprotect(receiver_session, recv_pkt_2,
+                                 &protected_msg_len_octets_2);
     if (status) {
         return status;
     }
@@ -3992,7 +4086,8 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
     pkt = srtp_create_test_packet_extended(msg_len_octets,
                                            sender_policy.ssrc.value, seq, ts,
                                            &protected_msg_len_octets);
-    status = srtp_protect(sender_session, pkt, &protected_msg_len_octets, 0);
+    status =
+        call_srtp_protect(sender_session, pkt, &protected_msg_len_octets, 0);
     if (status) {
         return status;
     }
@@ -4031,8 +4126,8 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
         return status;
     }
 
-    status =
-        srtp_unprotect(receiver_session, recv_pkt, &protected_msg_len_octets);
+    status = call_srtp_unprotect(receiver_session, recv_pkt,
+                                 &protected_msg_len_octets);
     if (status) {
         return status;
     }

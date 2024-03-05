@@ -2185,6 +2185,21 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t srtp_protect2(srtp_t ctx,
+                                const uint8_t *rtp,
+                                size_t rtp_len,
+                                uint8_t *srtp,
+                                size_t *srtp_len,
+                                size_t mki_index)
+{
+    if (*srtp_len < rtp_len) {
+        return srtp_err_status_bad_param;
+    }
+    memcpy(srtp, rtp, rtp_len);
+    *srtp_len = rtp_len;
+    return srtp_protect(ctx, srtp, srtp_len, mki_index);
+}
+
 srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
                                uint8_t *rtp_hdr,
                                size_t *pkt_octet_len,
@@ -2484,6 +2499,21 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
     *pkt_octet_len += stream->mki_size;
 
     return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_unprotect2(srtp_t ctx,
+                                  const uint8_t *srtp,
+                                  size_t srtp_len,
+                                  uint8_t *rtp,
+                                  size_t *rtp_len)
+{
+    if (*rtp_len < srtp_len) {
+        // this is actually expected but for the tests this should not happen
+        return srtp_err_status_bad_param;
+    }
+    memcpy(rtp, srtp, srtp_len);
+    *rtp_len = srtp_len;
+    return srtp_unprotect(ctx, rtp, rtp_len);
 }
 
 srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
@@ -3952,6 +3982,21 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t srtp_protect_rtcp2(srtp_t ctx,
+                                     const uint8_t *rtcp,
+                                     size_t rtcp_len,
+                                     uint8_t *srtcp,
+                                     size_t *srtcp_len,
+                                     size_t mki_index)
+{
+    if (*srtcp_len < rtcp_len) {
+        return srtp_err_status_bad_param;
+    }
+    memcpy(srtcp, rtcp, rtcp_len);
+    *srtcp_len = rtcp_len;
+    return srtp_protect_rtcp(ctx, srtcp, srtcp_len, mki_index);
+}
+
 srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
                                     uint8_t *rtcp_hdr,
                                     size_t *pkt_octet_len,
@@ -4178,6 +4223,21 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     *pkt_octet_len += stream->mki_size;
 
     return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_unprotect_rtcp2(srtp_t ctx,
+                                       const uint8_t *srtcp,
+                                       size_t srtcp_len,
+                                       uint8_t *rtcp,
+                                       size_t *rtcp_len)
+{
+    if (*rtcp_len < srtcp_len) {
+        // this is actually expected but for the tests this should not happen
+        return srtp_err_status_bad_param;
+    }
+    memcpy(rtcp, srtcp, srtcp_len);
+    *rtcp_len = srtcp_len;
+    return srtp_unprotect_rtcp(ctx, rtcp, rtcp_len);
 }
 
 srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,

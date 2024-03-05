@@ -458,6 +458,7 @@ if(LIBSRTP_TEST_APPS)
           ${ENABLE_WARNINGS_AS_ERRORS})
   target_link_libraries(srtp_driver srtp2)
   add_test(srtp_driver srtp_driver -v)
+  add_test(srtp_driver_not_in_place_io srtp_driver -v -n)
 
   if(NOT (BUILD_SHARED_LIBS AND WIN32))
     add_executable(test_srtp test/test_srtp.c)
