@@ -293,8 +293,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
@@ -304,7 +306,8 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
     /*
      * Encrypt the data
      */
-    EVP_Cipher(c->ctx, buf, buf, *enc_len);
+    EVP_Cipher(c->ctx, dst, src, src_len);
+    *dst_len = src_len;
 
     return (srtp_err_status_ok);
 }
@@ -354,8 +357,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_get_tag(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
@@ -364,12 +369,15 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
 
     /*
      * Set the tag before decrypting
+     *
+     * explicitly cast away const of src
      */
-    if (!EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
-                             buf + (*enc_len - c->tag_len))) {
+    if (!EVP_CIPHER_CTX_ctrl(
+            c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
+            (void *)(uintptr_t)(src + (src_len - c->tag_len)))) {
         return (srtp_err_status_auth_fail);
     }
-    EVP_Cipher(c->ctx, buf, buf, *enc_len - c->tag_len);
+    EVP_Cipher(c->ctx, dst, src, src_len - c->tag_len);
 
     /*
      * Check the tag
@@ -382,7 +390,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
      * Reduce the buffer size by the tag length since the tag
      * is not part of the original payload
      */
-    *enc_len -= c->tag_len;
+    *dst_len = src_len -= c->tag_len;
 
     return (srtp_err_status_ok);
 }

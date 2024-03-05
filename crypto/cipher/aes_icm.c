@@ -295,12 +295,20 @@ static void srtp_aes_icm_advance(srtp_aes_icm_ctx_t *c)
  */
 
 static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
-                                              uint8_t *buf,
-                                              size_t *enc_len)
+                                              const uint8_t *src,
+                                              size_t src_len,
+                                              uint8_t *dst,
+                                              size_t *dst_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
-    size_t bytes_to_encr = *enc_len;
+    size_t bytes_to_encr = src_len;
     uint32_t *b;
+    const uint32_t *s;
+
+    // check out length if not equal or greater bail!
+    *dst_len = src_len;
+
+    unsigned char *buf = dst;
 
     /* check that there's enough segment left*/
     size_t bytes_of_new_keystream = bytes_to_encr - c->bytes_in_buffer;
@@ -314,7 +322,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
         /* deal with odd case of small bytes_to_encr */
         for (size_t i = (sizeof(v128_t) - c->bytes_in_buffer);
              i < (sizeof(v128_t) - c->bytes_in_buffer + bytes_to_encr); i++) {
-            *buf++ ^= c->keystream_buffer.v8[i];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[i];
         }
 
         c->bytes_in_buffer -= bytes_to_encr;
@@ -326,7 +334,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
         /* encrypt bytes until the remaining data is 16-byte aligned */
         for (size_t i = (sizeof(v128_t) - c->bytes_in_buffer);
              i < sizeof(v128_t); i++) {
-            *buf++ ^= c->keystream_buffer.v8[i];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[i];
         }
 
         bytes_to_encr -= c->bytes_in_buffer;
@@ -345,36 +353,40 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
 
 #if ALIGN_32
         b = (uint32_t *)buf;
-        *b++ ^= c->keystream_buffer.v32[0];
-        *b++ ^= c->keystream_buffer.v32[1];
-        *b++ ^= c->keystream_buffer.v32[2];
-        *b++ ^= c->keystream_buffer.v32[3];
+        s = (const uint32_t *)src;
+        *b++ = *s++ ^ c->keystream_buffer.v32[0];
+        *b++ = *s++ ^ c->keystream_buffer.v32[1];
+        *b++ = *s++ ^ c->keystream_buffer.v32[2];
+        *b++ = *s++ ^ c->keystream_buffer.v32[3];
         buf = (uint8_t *)b;
+        src = (const uint8_t *)s;
 #else
         if ((((uintptr_t)buf) & 0x03) != 0) {
-            *buf++ ^= c->keystream_buffer.v8[0];
-            *buf++ ^= c->keystream_buffer.v8[1];
-            *buf++ ^= c->keystream_buffer.v8[2];
-            *buf++ ^= c->keystream_buffer.v8[3];
-            *buf++ ^= c->keystream_buffer.v8[4];
-            *buf++ ^= c->keystream_buffer.v8[5];
-            *buf++ ^= c->keystream_buffer.v8[6];
-            *buf++ ^= c->keystream_buffer.v8[7];
-            *buf++ ^= c->keystream_buffer.v8[8];
-            *buf++ ^= c->keystream_buffer.v8[9];
-            *buf++ ^= c->keystream_buffer.v8[10];
-            *buf++ ^= c->keystream_buffer.v8[11];
-            *buf++ ^= c->keystream_buffer.v8[12];
-            *buf++ ^= c->keystream_buffer.v8[13];
-            *buf++ ^= c->keystream_buffer.v8[14];
-            *buf++ ^= c->keystream_buffer.v8[15];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[0];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[1];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[2];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[3];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[4];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[5];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[6];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[7];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[8];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[9];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[10];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[11];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[12];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[13];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[14];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[15];
         } else {
             b = (uint32_t *)buf;
-            *b++ ^= c->keystream_buffer.v32[0];
-            *b++ ^= c->keystream_buffer.v32[1];
-            *b++ ^= c->keystream_buffer.v32[2];
-            *b++ ^= c->keystream_buffer.v32[3];
+            s = (const uint32_t *)src;
+            *b++ = *s++ ^ c->keystream_buffer.v32[0];
+            *b++ = *s++ ^ c->keystream_buffer.v32[1];
+            *b++ = *s++ ^ c->keystream_buffer.v32[2];
+            *b++ = *s++ ^ c->keystream_buffer.v32[3];
             buf = (uint8_t *)b;
+            src = (const uint8_t *)s;
         }
 #endif /* #if ALIGN_32 */
     }
@@ -385,7 +397,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
         srtp_aes_icm_advance(c);
 
         for (size_t i = 0; i < (bytes_to_encr & 0xf); i++) {
-            *buf++ ^= c->keystream_buffer.v8[i];
+            *buf++ = *src++ ^ c->keystream_buffer.v8[i];
         }
 
         /* reset the keystream buffer size to right value */

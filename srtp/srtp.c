@@ -839,7 +839,7 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf,
 
     /* generate keystream output */
     octet_string_set_to_zero(key, length);
-    status = srtp_cipher_encrypt(kdf->cipher, key, &length);
+    status = srtp_cipher_encrypt(kdf->cipher, key, length, key, &length);
     if (status) {
         return status;
     }
@@ -1871,7 +1871,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
 
     /* Encrypt the payload  */
     status = srtp_cipher_encrypt(session_keys->rtp_cipher, enc_start,
-                                 &enc_octet_len);
+                                 enc_octet_len, enc_start, &enc_octet_len);
     if (status) {
         return srtp_err_status_cipher_fail;
     }
@@ -2009,7 +2009,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     /* Decrypt the ciphertext.  This also checks the auth tag based
      * on the AAD we just specified above */
     status = srtp_cipher_decrypt(session_keys->rtp_cipher, enc_start,
-                                 &enc_octet_len);
+                                 enc_octet_len, enc_start, &enc_octet_len);
     if (status) {
         return status;
     }
@@ -2355,7 +2355,7 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
     /* if we're encrypting, exor keystream into the message */
     if (enc_start) {
         status = srtp_cipher_encrypt(session_keys->rtp_cipher, enc_start,
-                                     &enc_octet_len);
+                                     enc_octet_len, enc_start, &enc_octet_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -2663,7 +2663,7 @@ srtp_err_status_t srtp_unprotect(srtp_ctx_t *ctx,
     /* if we're decrypting, add keystream into ciphertext */
     if (enc_start) {
         status = srtp_cipher_decrypt(session_keys->rtp_cipher, enc_start,
-                                     &enc_octet_len);
+                                     enc_octet_len, enc_start, &enc_octet_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -3629,7 +3629,7 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
     /* if we're encrypting, exor keystream into the message */
     if (enc_start) {
         status = srtp_cipher_encrypt(session_keys->rtcp_cipher, enc_start,
-                                     &enc_octet_len);
+                                     enc_octet_len, enc_start, &enc_octet_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -3648,7 +3648,8 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
          * to run the cipher to get the auth tag.
          */
         size_t nolen = 0;
-        status = srtp_cipher_encrypt(session_keys->rtcp_cipher, NULL, &nolen);
+        status = srtp_cipher_encrypt(session_keys->rtcp_cipher, NULL, nolen,
+                                     NULL, &nolen);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -3792,7 +3793,7 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
     /* if we're decrypting, exor keystream into the message */
     if (enc_start) {
         status = srtp_cipher_decrypt(session_keys->rtcp_cipher, enc_start,
-                                     &enc_octet_len);
+                                     enc_octet_len, enc_start, &enc_octet_len);
         if (status) {
             return status;
         }
@@ -3801,8 +3802,8 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
          * Still need to run the cipher to check the tag
          */
         tmp_len = tag_len;
-        status =
-            srtp_cipher_decrypt(session_keys->rtcp_cipher, auth_tag, &tmp_len);
+        status = srtp_cipher_decrypt(session_keys->rtcp_cipher, auth_tag,
+                                     tmp_len, auth_tag, &tmp_len);
         if (status) {
             return status;
         }
@@ -4062,7 +4063,7 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     /* if we're encrypting, exor keystream into the message */
     if (enc_start) {
         status = srtp_cipher_encrypt(session_keys->rtcp_cipher, enc_start,
-                                     &enc_octet_len);
+                                     enc_octet_len, enc_start, &enc_octet_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
@@ -4303,7 +4304,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
     /* if we're decrypting, exor keystream into the message */
     if (enc_start) {
         status = srtp_cipher_decrypt(session_keys->rtcp_cipher, enc_start,
-                                     &enc_octet_len);
+                                     enc_octet_len, enc_start, &enc_octet_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
