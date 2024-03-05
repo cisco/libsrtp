@@ -431,6 +431,13 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
                                size_t *pkt_octet_len,
                                size_t mki_index);
 
+srtp_err_status_t srtp_protect2(srtp_t ctx,
+                                const uint8_t *rtp,
+                                size_t rtp_len,
+                                uint8_t *srtp,
+                                size_t *srtp_len,
+                                size_t mki_index);
+
 /**
  * @brief srtp_unprotect() is the Secure RTP receiver-side packet
  * processing function.
@@ -476,9 +483,15 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
                                  uint8_t *srtp_hdr,
                                  size_t *len_ptr);
 
+srtp_err_status_t srtp_unprotect2(srtp_t ctx,
+                                  const uint8_t *srtp,
+                                  size_t srtp_len,
+                                  uint8_t *rtp,
+                                  size_t *rtp_len);
+
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
-
+ *
  * The function call srtp_create(session, policy) allocates and
  * initializes an SRTP session context, applying the given policy.
  *
@@ -1152,6 +1165,13 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
                                     size_t *pkt_octet_len,
                                     size_t mki_index);
 
+srtp_err_status_t srtp_protect_rtcp2(srtp_t ctx,
+                                     const uint8_t *rtcp,
+                                     size_t rtcp_len,
+                                     uint8_t *srtcp,
+                                     size_t *srtcp_len,
+                                     size_t mki_index);
+
 /**
  * @brief srtp_unprotect_rtcp() is the Secure RTCP receiver-side packet
  * processing function.
@@ -1196,9 +1216,11 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
                                       uint8_t *srtcp_hdr,
                                       size_t *pkt_octet_len);
 
-/**
- * @}
- */
+srtp_err_status_t srtp_unprotect_rtcp2(srtp_t ctx,
+                                       const uint8_t *srtcp,
+                                       size_t srtcp_len,
+                                       uint8_t *rtcp,
+                                       size_t *rtcp_len);
 
 /**
  * @defgroup User data associated to a SRTP session.
