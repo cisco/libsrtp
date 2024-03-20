@@ -2482,7 +2482,6 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
 }
 
 #ifdef GCM
-
 /*
  * Headers of test vectors taken from RFC 6904, Appendix A
  */

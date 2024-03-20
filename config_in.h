@@ -171,6 +171,12 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Define this to use wolfSSL crypto. */
+#undef WOLFSSL
+
+/* Define this to use wolfSSL KDF for SRTP. */
+#undef WOLFSSL_KDF
+
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD
