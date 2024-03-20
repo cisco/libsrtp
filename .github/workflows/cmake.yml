@@ -14,10 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        crypto: [internal, openssl, openssl3, nss, mbedtls]
+        crypto: [internal, openssl, openssl3, wolfssl, nss, mbedtls]
         exclude:
           - os: windows-latest
             crypto: openssl
+          - os: windows-latest
+            crypto: wolfssl
           - os: windows-latest
             crypto: openssl3
           - os: windows-latest
@@ -33,6 +35,8 @@ jobs:
             cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
           - crypto: openssl3
             cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
+          - crypto: wolfssl
+            cmake-crypto-enable: "-DENABLE_WOLFSSL=ON"
           - crypto: nss
             cmake-crypto-enable: "-DENABLE_NSS=ON"
           - crypto: mbedtls
@@ -44,6 +48,17 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: 1
 
     steps:
+    - name: Setup Ubuntu wolfSSL
+      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'wolfssl'
+      run: |
+        git clone https://github.com/wolfSSL/wolfssl
+        cd wolfssl
+        ./autogen.sh
+        ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        make
+        sudo make install
+        cd ..
+
     - name: Setup Ubuntu NSS
       if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
       run: |
@@ -63,6 +78,18 @@ jobs:
       run: |
         brew install openssl@3
         echo "cmake-crypto-dir=-DOPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+
+    - name: Setup macOS wolfSSL
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'wolfssl'
+      run: |
+        brew install autoconf automake libtool
+        git clone https://github.com/wolfSSL/wolfssl
+        cd wolfssl
+        ./autogen.sh
+        ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        make
+        sudo make install
+        cd ..
 
     - name: Setup macOS NSS
       if:  matrix.os == 'macos-latest' && matrix.crypto == 'nss'

@@ -18,6 +18,12 @@
 /* Define this to use OpenSSL crypto. */
 #cmakedefine OPENSSL 1
 
+/* Define this to use wolfSSL crypto. */
+#cmakedefine WOLFSSL 1
+
+/* Define this to use wolfSSL SRTP-KDF. */
+#cmakedefine WOLFSSL_KDF 1
+
 /* Define this to use MBEDTLS. */
 #cmakedefine MBEDTLS 1
 

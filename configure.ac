@@ -210,6 +210,12 @@ AC_ARG_ENABLE([openssl],
   [], [enable_openssl=no])
 AC_MSG_RESULT([$enable_openssl])
 
+AC_MSG_CHECKING([whether to leverage wolfSSL crypto])
+AC_ARG_ENABLE([wolfssl],
+  [AS_HELP_STRING([--enable-wolfssl], [compile in wolfSSL crypto engine])],
+  [], [enable_wolfssl=no])
+AC_MSG_RESULT([$enable_wolfssl])
+
 AC_MSG_CHECKING([whether to leverage NSS crypto])
 AC_ARG_ENABLE([nss],
   [AS_HELP_STRING([--enable-nss], [compile in NSS crypto engine])],
@@ -275,6 +281,36 @@ if test "$enable_openssl" = "yes"; then
        [], [AC_MSG_FAILURE([can't find openssl KDF lib])])
      AC_DEFINE([OPENSSL_KDF], [1], [Define this to use OpenSSL KDF for SRTP.])
    fi
+elif test "$enable_wolfssl" = "yes"; then
+   AC_MSG_CHECKING([for user specified wolfSSL directory])
+   AC_ARG_WITH([wolfssl-dir],
+      [AS_HELP_STRING([--with-wolfssl-dir], [Location of wolfSSL installation])],
+       [if test -d $with_wolfssl_dir/lib; then
+         CFLAGS="$CFLAGS -I$with_wolfssl_dir/include -I$with_wolfssl_dir/include/wolfssl"
+         if test "x$LDFLAGS" = "x"; then
+           LDFLAGS="-L$with_wolfssl_dir/lib"
+         else
+           LDFLAGS="$LDFLAGS -L$with_wolfssl_dir/lib"
+         fi
+         AC_MSG_RESULT([$with_wolfssl_dir])
+       else
+         AC_MSG_RESULT([invalid])
+         AC_MSG_FAILURE([Invalid wolfSSL location: $with_wolfssl_dir])
+       fi],
+      [AC_MSG_RESULT([no])])
+
+   AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([can't find libdl])])
+
+   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([WOLFSSL], [1], [Define this to use wolfSSL crypto.])
+   AES_ICM_OBJS="crypto/cipher/aes_icm_wssl.o crypto/cipher/aes_gcm_wssl.o"
+   HMAC_OBJS=crypto/hash/hmac_wssl.o
+   AC_SUBST([USE_EXTERNAL_CRYPTO], [1])
+
+   AC_MSG_CHECKING([whether to leverage wolfSSL KDF algorithm])
+   AC_SEARCH_LIBS([wc_SRTCP_KDF], [wolfssl],
+     [], [AC_MSG_FAILURE([can't find wolfssl KDF lib])])
+   AC_DEFINE([WOLFSSL_KDF], [1], [Define this to use wolfSSL KDF for SRTP.])
 elif test "$enable_nss" = "yes"; then
    AC_MSG_CHECKING([for user specified NSS directory])
    AC_ARG_WITH([nss-dir],
