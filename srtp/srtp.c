@@ -4263,6 +4263,21 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
         return srtp_err_status_cipher_fail;
     }
 
+    /*
+     * if we're authenticating using a universal hash, put the keystream
+     * prefix into the authentication tag
+     */
+    prefix_len = srtp_auth_get_prefix_length(session_keys->rtcp_auth);
+    if (prefix_len) {
+        status =
+            srtp_cipher_output(session_keys->rtcp_cipher, tmp_tag, &prefix_len);
+        debug_print(mod_srtp, "keystream prefix: %s",
+                    srtp_octet_string_hex_string(tmp_tag, prefix_len));
+        if (status) {
+            return srtp_err_status_cipher_fail;
+        }
+    }
+
     /* initialize auth func context */
     status = srtp_auth_start(session_keys->rtcp_auth);
     if (status) {
@@ -4283,21 +4298,6 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
                 srtp_octet_string_hex_string(auth_tag, tag_len));
     if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
         return srtp_err_status_auth_fail;
-    }
-
-    /*
-     * if we're authenticating using a universal hash, put the keystream
-     * prefix into the authentication tag
-     */
-    prefix_len = srtp_auth_get_prefix_length(session_keys->rtcp_auth);
-    if (prefix_len) {
-        status = srtp_cipher_output(session_keys->rtcp_cipher, auth_tag,
-                                    &prefix_len);
-        debug_print(mod_srtp, "keystream prefix: %s",
-                    srtp_octet_string_hex_string(auth_tag, prefix_len));
-        if (status) {
-            return srtp_err_status_cipher_fail;
-        }
     }
 
     /* if we're decrypting, exor keystream into the message */
