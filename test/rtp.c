@@ -62,7 +62,8 @@ ssize_t rtp_sendto(rtp_sender_t sender, const void *msg, size_t len)
 {
     size_t octets_sent;
     srtp_err_status_t stat;
-    size_t pkt_len = len + RTP_HEADER_LEN;
+    size_t msg_len = len + RTP_HEADER_LEN;
+    size_t pkt_len = RTP_HEADER_LEN + RTP_MAX_BUF_LEN;
 
     /* marshal data */
     strncpy(sender->message.body, msg, len);
@@ -74,8 +75,9 @@ ssize_t rtp_sendto(rtp_sender_t sender, const void *msg, size_t len)
     sender->message.header.ts = htonl(sender->message.header.ts);
 
     /* apply srtp */
-    stat = srtp_protect(sender->srtp_ctx, (uint8_t *)&sender->message.header,
-                        &pkt_len, 0);
+    stat =
+        srtp_protect(sender->srtp_ctx, (uint8_t *)&sender->message.header,
+                     msg_len, (uint8_t *)&sender->message.header, &pkt_len, 0);
     if (stat) {
 #if PRINT_DEBUG
         fprintf(stderr, "error: srtp protection failed with code %d\n", stat);
@@ -131,6 +133,7 @@ ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
 
     /* apply srtp */
     stat = srtp_unprotect(receiver->srtp_ctx,
+                          (uint8_t *)&receiver->message.header, octets_recvd,
                           (uint8_t *)&receiver->message.header, &octets_recvd);
     if (stat) {
         fprintf(stderr, "error: srtp unprotection failed with code %d%s\n",
