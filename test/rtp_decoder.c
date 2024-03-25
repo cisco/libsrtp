@@ -776,7 +776,8 @@ void rtp_decoder_handle_pkt(u_char *arg,
         }
 
         status =
-            srtp_unprotect(dcdr->srtp_ctx, (uint8_t *)&message, &octets_recvd);
+            srtp_unprotect(dcdr->srtp_ctx, (uint8_t *)&message, octets_recvd,
+                           (uint8_t *)&message, &octets_recvd);
         if (status) {
             dcdr->error_cnt++;
             return;
@@ -784,6 +785,7 @@ void rtp_decoder_handle_pkt(u_char *arg,
         dcdr->rtp_cnt++;
     } else {
         status = srtp_unprotect_rtcp(dcdr->srtp_ctx, (uint8_t *)&message,
+                                     octets_recvd, (uint8_t *)&message,
                                      &octets_recvd);
         if (status) {
             dcdr->error_cnt++;

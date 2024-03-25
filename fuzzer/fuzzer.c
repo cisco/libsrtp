@@ -187,7 +187,11 @@ static srtp_err_status_t fuzz_srtp_protect(srtp_t srtp_sender,
                                            size_t *len,
                                            size_t mki)
 {
-    return srtp_protect(srtp_sender, hdr, len, mki);
+    size_t out_len = *len + SRTP_MAX_TRAILER_LEN;
+    srtp_err_status_t s =
+        srtp_protect(srtp_sender, hdr, *len, hdr, &out_len, mki);
+    *len = out_len;
+    return s;
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect(srtp_t srtp_sender,
@@ -195,7 +199,7 @@ static srtp_err_status_t fuzz_srtp_unprotect(srtp_t srtp_sender,
                                              size_t *len,
                                              size_t mki)
 {
-    return srtp_unprotect(srtp_sender, hdr, len);
+    return srtp_unprotect(srtp_sender, hdr, *len, hdr, len);
 }
 
 static srtp_err_status_t fuzz_srtp_protect_rtcp(srtp_t srtp_sender,
@@ -203,7 +207,11 @@ static srtp_err_status_t fuzz_srtp_protect_rtcp(srtp_t srtp_sender,
                                                 size_t *len,
                                                 size_t mki)
 {
-    return srtp_protect_rtcp(srtp_sender, hdr, len, mki);
+    size_t out_len = *len + SRTP_MAX_SRTCP_TRAILER_LEN;
+    srtp_err_status_t s =
+        srtp_protect_rtcp(srtp_sender, hdr, *len, hdr, &out_len, mki);
+    *len = out_len;
+    return s;
 }
 
 static srtp_err_status_t fuzz_srtp_unprotect_rtcp(srtp_t srtp_sender,
@@ -211,7 +219,7 @@ static srtp_err_status_t fuzz_srtp_unprotect_rtcp(srtp_t srtp_sender,
                                                   size_t *len,
                                                   size_t mki)
 {
-    return srtp_unprotect_rtcp(srtp_sender, hdr, len);
+    return srtp_unprotect_rtcp(srtp_sender, hdr, *len, hdr, len);
 }
 
 /* Get protect length functions */
