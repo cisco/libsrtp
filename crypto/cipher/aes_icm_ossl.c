@@ -298,23 +298,25 @@ static srtp_err_status_t srtp_aes_icm_openssl_set_iv(
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_icm_openssl_encrypt(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
     int len = 0;
 
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
-    if (!EVP_EncryptUpdate(c->ctx, buf, &len, buf, *enc_len)) {
+    if (!EVP_EncryptUpdate(c->ctx, dst, &len, src, src_len)) {
         return srtp_err_status_cipher_fail;
     }
-    *enc_len = len;
+    *dst_len = len;
 
-    if (!EVP_EncryptFinal_ex(c->ctx, buf + len, &len)) {
+    if (!EVP_EncryptFinal_ex(c->ctx, dst + len, &len)) {
         return srtp_err_status_cipher_fail;
     }
-    *enc_len += len;
+    *dst_len += len;
 
     return srtp_err_status_ok;
 }

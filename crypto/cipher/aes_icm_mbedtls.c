@@ -290,21 +290,29 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
 
     int errCode = 0;
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     errCode =
-        mbedtls_aes_crypt_ctr(c->ctx, *enc_len, &(c->nc_off), c->counter.v8,
-                              c->stream_block.v8, buf, buf);
+        mbedtls_aes_crypt_ctr(c->ctx, src_len, &(c->nc_off), c->counter.v8,
+                              c->stream_block.v8, src, dst);
     if (errCode != 0) {
         debug_print(srtp_mod_aes_icm, "encrypt error: %d", errCode);
         return srtp_err_status_cipher_fail;
     }
+
+    *dst_len = src_len;
 
     return srtp_err_status_ok;
 }

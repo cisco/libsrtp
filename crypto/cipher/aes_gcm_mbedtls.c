@@ -281,8 +281,10 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_set_aad(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -292,15 +294,21 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
         return (srtp_err_status_bad_param);
     }
 
-    errCode = mbedtls_gcm_crypt_and_tag(c->ctx, MBEDTLS_GCM_ENCRYPT, *enc_len,
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
+    errCode = mbedtls_gcm_crypt_and_tag(c->ctx, MBEDTLS_GCM_ENCRYPT, src_len,
                                         c->iv, c->iv_len, c->aad, c->aad_size,
-                                        buf, buf, c->tag_len, c->tag);
+                                        src, dst, c->tag_len, c->tag);
 
     c->aad_size = 0;
     if (errCode != 0) {
         debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", errCode);
         return srtp_err_status_bad_param;
     }
+
+    *dst_len = src_len;
 
     return (srtp_err_status_ok);
 }
@@ -337,8 +345,10 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_get_tag(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -348,12 +358,16 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
         return (srtp_err_status_bad_param);
     }
 
+    if (*dst_len < (src_len - c->tag_len)) {
+        return srtp_err_status_buffer_small;
+    }
+
     debug_print(srtp_mod_aes_gcm, "AAD: %s",
                 srtp_octet_string_hex_string(c->aad, c->aad_size));
 
     errCode = mbedtls_gcm_auth_decrypt(
-        c->ctx, (*enc_len - c->tag_len), c->iv, c->iv_len, c->aad, c->aad_size,
-        buf + (*enc_len - c->tag_len), c->tag_len, buf, buf);
+        c->ctx, (src_len - c->tag_len), c->iv, c->iv_len, c->aad, c->aad_size,
+        src + (src_len - c->tag_len), c->tag_len, src, dst);
     c->aad_size = 0;
     if (errCode != 0) {
         return (srtp_err_status_auth_fail);
@@ -363,7 +377,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
      * Reduce the buffer size by the tag length since the tag
      * is not part of the original payload
      */
-    *enc_len -= c->tag_len;
+    *dst_len = (src_len - c->tag_len);
 
     return (srtp_err_status_ok);
 }
