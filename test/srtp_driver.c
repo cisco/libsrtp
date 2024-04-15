@@ -190,11 +190,6 @@ srtp_master_key_t *test_keys[2] = {
 
 bool use_srtp_not_in_place_io_api = false;
 
-void overrun_check_prepare(uint8_t *buffer, size_t offset, size_t buffer_len)
-{
-    memset(buffer + offset, 0xff, buffer_len - offset);
-}
-
 srtp_err_status_t call_srtp_protect2(srtp_ctx_t *ctx,
                                      uint8_t *rtp,
                                      size_t rtp_len,
@@ -1239,90 +1234,6 @@ double srtp_rejections_per_second(size_t msg_len_octets,
     return (double)num_trials * CLOCKS_PER_SEC / timer;
 }
 
-void err_check(srtp_err_status_t s)
-{
-    if (s != srtp_err_status_ok) {
-        fprintf(stderr, "error: unexpected srtp failure (code %d)\n", s);
-        exit(1);
-    }
-}
-
-void check_ok(srtp_err_status_t s, const char *msg)
-{
-    if (s != srtp_err_status_ok) {
-        fprintf(stderr, "error: unexpected srtp failure (code %d) - %s\n", s,
-                msg);
-        exit(1);
-    }
-}
-
-void check_return(srtp_err_status_t actual,
-                  srtp_err_status_t expected,
-                  const char *msg)
-{
-    if (actual != expected) {
-        fprintf(stderr, "error: unexpected srtp status (code %d != %d) - %s\n",
-                actual, expected, msg);
-        exit(1);
-    }
-}
-
-void check_ok_impl(srtp_err_status_t status, const char *file, int line)
-{
-    if (status != srtp_err_status_ok) {
-        fprintf(stderr, "error at %s:%d, unexpected srtp failure (code %d)\n",
-                file, line, status);
-        exit(1);
-    }
-}
-
-void check_return_impl(srtp_err_status_t status,
-                       srtp_err_status_t expected,
-                       const char *file,
-                       int line)
-{
-    if (status != expected) {
-        fprintf(stderr,
-                "error at %s:%d, unexpected srtp status (code %d != %d)\n",
-                file, line, status, expected);
-        exit(1);
-    }
-}
-
-void check_impl(bool condition,
-                const char *file,
-                int line,
-                const char *condition_str)
-{
-    if (!condition) {
-        fprintf(stderr, "error at %s:%d, %s)\n", file, line, condition_str);
-        exit(1);
-    }
-}
-
-void check_overrun_impl(const uint8_t *buffer,
-                        size_t offset,
-                        size_t buffer_length,
-                        const char *file,
-                        int line)
-{
-    for (size_t i = offset; i < buffer_length; i++) {
-        if (buffer[i] != 0xff) {
-            printf("error at %s:%d, overrun detected in buffer at index %zu "
-                   "(expected %x, found %x)\n",
-                   file, line, i, 0xff, buffer[i]);
-            exit(1);
-        }
-    }
-}
-
-#define CHECK_OK(status) check_ok_impl((status), __FILE__, __LINE__)
-#define CHECK_RETURN(status, expected)                                         \
-    check_return_impl((status), (expected), __FILE__, __LINE__)
-#define CHECK(condition) check_impl((condition), __FILE__, __LINE__, #condition)
-#define CHECK_OVERRUN(buffer, offset, length)                                  \
-    check_overrun_impl((buffer), (offset), (length), __FILE__, __LINE__)
-
 srtp_err_status_t srtp_test(const srtp_policy_t *policy,
                             bool test_extension_headers,
                             bool use_mki,
@@ -1355,10 +1266,10 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         send_policy.enc_xtn_hdr_count = 1;
     }
 
-    err_check(srtp_create(&srtp_sender, &send_policy));
+    CHECK_OK(srtp_create(&srtp_sender, &send_policy));
 
     /* print out policy */
-    err_check(srtp_session_print_policy(srtp_sender));
+    CHECK_OK(srtp_session_print_policy(srtp_sender));
 
     /*
      * initialize data buffer, using the ssrc in the policy unless that
@@ -1398,7 +1309,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     debug_print(mod_driver, "reference packet before protection:\n%s",
                 octet_string_hex_string(hdr, len));
 #endif
-    err_check(call_srtp_protect(srtp_sender, hdr, &len, mki_index));
+    CHECK_OK(call_srtp_protect(srtp_sender, hdr, &len, mki_index));
 
     debug_print(mod_driver, "after protection:\n%s",
                 srtp_packet_to_string(hdr, len));
@@ -1414,24 +1325,14 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     /*
      * check for overrun of the srtp_protect() function
      *
-     * The packet is followed by a value of 0xfffff; if the value of the
+     * The packet is followed by a value of 0xffffffff; if the value of the
      * data following the packet is different, then we know that the
      * protect function is overwriting the end of the packet.
      */
-    err_check(
+    CHECK_OK(
         srtp_get_protect_trailer_length(srtp_sender, mki_index, &tag_length));
     pkt_end = hdr + msg_len + tag_length;
-    for (i = 0; i < 4; i++) {
-        if (pkt_end[i] != 0xff) {
-            fprintf(stdout,
-                    "overwrite in srtp_protect() function "
-                    "(expected %x, found %x in trailing octet %zu)\n",
-                    0xff, hdr[i], i);
-            free(hdr);
-            free(hdr2);
-            return srtp_err_status_algo_fail;
-        }
-    }
+    CHECK_OVERRUN(pkt_end, 0, 4);
 
     /*
      * if the policy includes confidentiality, check that ciphertext is
@@ -1462,9 +1363,9 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
     memcpy(&rcvr_policy, &send_policy, sizeof(srtp_policy_t));
     rcvr_policy.ssrc.type = ssrc_any_inbound;
 
-    err_check(srtp_create(&srtp_rcvr, &rcvr_policy));
+    CHECK_OK(srtp_create(&srtp_rcvr, &rcvr_policy));
 
-    err_check(call_srtp_unprotect(srtp_rcvr, hdr, &len));
+    CHECK_OK(call_srtp_unprotect(srtp_rcvr, hdr, &len));
 
     debug_print(mod_driver, "after unprotection:\n%s",
                 srtp_packet_to_string(hdr, len));
@@ -1507,7 +1408,7 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         ((srtp_hdr_t *)hdr)->seq++;
 
         /* apply protection */
-        err_check(call_srtp_protect(srtp_sender, hdr, &len, mki_index));
+        CHECK_OK(call_srtp_protect(srtp_sender, hdr, &len, mki_index));
 
         /* flip bits in packet */
         data[0] ^= 0xff;
@@ -1525,8 +1426,8 @@ srtp_err_status_t srtp_test(const srtp_policy_t *policy,
         }
     }
 
-    err_check(srtp_dealloc(srtp_sender));
-    err_check(srtp_dealloc(srtp_rcvr));
+    CHECK_OK(srtp_dealloc(srtp_sender));
+    CHECK_OK(srtp_dealloc(srtp_rcvr));
 
     free(hdr);
     free(hdr2);
@@ -1762,10 +1663,10 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
         send_policy.mki_size = 0;
     }
 
-    err_check(srtp_create(&srtcp_sender, &send_policy));
+    CHECK_OK(srtp_create(&srtcp_sender, &send_policy));
 
     /* print out policy */
-    err_check(srtp_session_print_policy(srtcp_sender));
+    CHECK_OK(srtp_session_print_policy(srtcp_sender));
 
     /*
      * initialize data buffer, using the ssrc in the policy unless that
@@ -1798,7 +1699,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
     debug_print(mod_driver, "reference packet before protection:\n%s",
                 octet_string_hex_string(hdr, len));
 #endif
-    err_check(call_srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
+    CHECK_OK(call_srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
 
     debug_print(mod_driver, "after protection:\n%s",
                 srtp_rtcp_packet_to_string(hdr, len));
@@ -1814,23 +1715,13 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
     /*
      * check for overrun of the srtp_protect_rtcp() function
      *
-     * The packet is followed by a value of 0xfffff; if the value of the
+     * The packet is followed by a value of 0xffffffff; if the value of the
      * data following the packet is different, then we know that the
      * protect function is overwriting the end of the packet.
      */
     srtp_get_protect_rtcp_trailer_length(srtcp_sender, mki_index, &tag_length);
     pkt_end = hdr + msg_len + tag_length;
-    for (size_t i = 0; i < 4; i++) {
-        if (pkt_end[i] != 0xff) {
-            fprintf(stdout,
-                    "overwrite in srtp_protect_rtcp() function "
-                    "(expected %x, found %x in trailing octet %zu)\n",
-                    0xff, hdr[i], i);
-            free(hdr);
-            free(hdr2);
-            return srtp_err_status_algo_fail;
-        }
-    }
+    CHECK_OVERRUN(pkt_end, 0, 4);
 
     /*
      * if the policy includes confidentiality, check that ciphertext is
@@ -1863,9 +1754,9 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
         rcvr_policy.ssrc.type = ssrc_any_inbound;
     }
 
-    err_check(srtp_create(&srtcp_rcvr, &rcvr_policy));
+    CHECK_OK(srtp_create(&srtcp_rcvr, &rcvr_policy));
 
-    err_check(call_srtp_unprotect_rtcp(srtcp_rcvr, hdr, &len));
+    CHECK_OK(call_srtp_unprotect_rtcp(srtcp_rcvr, hdr, &len));
 
     debug_print(mod_driver, "after unprotection:\n%s",
                 srtp_rtcp_packet_to_string(hdr, len));
@@ -1905,7 +1796,7 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
         printf("testing for false positives in auth check...");
 
         /* apply protection */
-        err_check(call_srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
+        CHECK_OK(call_srtp_protect_rtcp(srtcp_sender, hdr, &len, mki_index));
 
         /* flip bits in packet */
         data[0] ^= 0xff;
@@ -1923,8 +1814,8 @@ srtp_err_status_t srtcp_test(const srtp_policy_t *policy,
         }
     }
 
-    err_check(srtp_dealloc(srtcp_sender));
-    err_check(srtp_dealloc(srtcp_rcvr));
+    CHECK_OK(srtp_dealloc(srtcp_sender));
+    CHECK_OK(srtp_dealloc(srtcp_rcvr));
 
     free(hdr);
     free(hdr2);
