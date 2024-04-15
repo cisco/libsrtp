@@ -44,8 +44,31 @@
 #ifndef SRTP_TEST_UTIL_H
 #define SRTP_TEST_UTIL_H
 
-#include <stddef.h>
-#include <stdint.h>
+#include "srtp.h"
+
+// test check macros and functions
+void check_ok_impl(srtp_err_status_t status, const char *file, int line);
+void check_return_impl(srtp_err_status_t status,
+                       srtp_err_status_t expected,
+                       const char *file,
+                       int line);
+void check_impl(bool condition,
+                const char *file,
+                int line,
+                const char *condition_str);
+void check_overrun_impl(const uint8_t *buffer,
+                        size_t offset,
+                        size_t buffer_length,
+                        const char *file,
+                        int line);
+void overrun_check_prepare(uint8_t *buffer, size_t offset, size_t buffer_len);
+
+#define CHECK_OK(status) check_ok_impl((status), __FILE__, __LINE__)
+#define CHECK_RETURN(status, expected)                                         \
+    check_return_impl((status), (expected), __FILE__, __LINE__)
+#define CHECK(condition) check_impl((condition), __FILE__, __LINE__, #condition)
+#define CHECK_OVERRUN(buffer, offset, length)                                  \
+    check_overrun_impl((buffer), (offset), (length), __FILE__, __LINE__)
 
 #define MAX_PRINT_STRING_LEN 1024
 
