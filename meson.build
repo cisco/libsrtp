@@ -154,7 +154,7 @@ elif crypto_library == 'nss'
     error('KDF support has not been implemented for NSS')
   endif
 elif crypto_library == 'mbedtls'
-  mbedtls_dep = dependency('mbedtls', required: false)
+  mbedtls_dep = dependency('mbedcrypto', required: false)
   if not mbedtls_dep.found()
     mbedtls_dep = cc.find_library('mbedcrypto', has_headers: ['mbedtls/aes.h'], required: true)
   endif
