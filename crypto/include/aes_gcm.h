@@ -64,6 +64,33 @@ typedef struct {
 
 #endif /* OPENSSL */
 
+#ifdef WOLFSSL
+#define MAX_AD_SIZE 2048
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifndef WOLFSSL_USER_SETTINGS
+#include <wolfssl/options.h>
+#endif
+#include <wolfssl/wolfcrypt/settings.h>
+#include <wolfssl/wolfcrypt/aes.h>
+
+typedef struct {
+    int key_size;
+    int tag_len;
+#ifndef WOLFSSL_AESGCM_STREAM
+    int aad_size;
+    int iv_len;
+    uint8_t iv[GCM_NONCE_MID_SZ];
+    uint8_t tag[AES_BLOCK_SIZE];
+    uint8_t aad[MAX_AD_SIZE];
+#endif
+    Aes *ctx;
+    srtp_cipher_direction_t dir;
+} srtp_aes_gcm_ctx_t;
+
+#endif /* WOLFSSL */
+
 #ifdef MBEDTLS
 #define MAX_AD_SIZE 2048
 #include <mbedtls/aes.h>

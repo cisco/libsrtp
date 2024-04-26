@@ -60,6 +60,19 @@
 #include "aes_icm_ext.h"
 #endif
 
+#ifdef WOLFSSL
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifndef WOLFSSL_USER_SETTINGS
+#include <wolfssl/options.h>
+#endif
+#include <wolfssl/wolfcrypt/settings.h>
+#ifdef WOLFSSL_KDF
+#include <wolfssl/wolfcrypt/kdf.h>
+#endif
+#endif
+
 #include <limits.h>
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -776,7 +789,87 @@ static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf)
     return srtp_err_status_ok;
 }
 
-#else  /* if OPENSSL_KDF */
+#elif defined(WOLFSSL) && defined(WOLFSSL_KDF)
+#define MAX_SRTP_AESKEY_LEN AES_256_KEY_SIZE
+#define MAX_SRTP_SALT_LEN WC_SRTP_MAX_SALT
+
+/*
+ * srtp_kdf_t represents a key derivation function.  The SRTP
+ * default KDF is the only one implemented at present.
+ */
+typedef struct {
+    uint8_t master_key[MAX_SRTP_AESKEY_LEN];
+    int master_key_len;
+    uint8_t master_salt[MAX_SRTP_SALT_LEN];
+} srtp_kdf_t;
+
+static srtp_err_status_t srtp_kdf_init(srtp_kdf_t *kdf,
+                                       const uint8_t *key,
+                                       size_t key_len)
+{
+    size_t salt_len;
+
+    memset(kdf, 0x0, sizeof(srtp_kdf_t));
+
+    switch (key_len) {
+    case SRTP_AES_ICM_256_KEY_LEN_WSALT:
+        kdf->master_key_len = AES_256_KEY_SIZE;
+        break;
+    case SRTP_AES_ICM_192_KEY_LEN_WSALT:
+        kdf->master_key_len = AES_192_KEY_SIZE;
+        break;
+    case SRTP_AES_ICM_128_KEY_LEN_WSALT:
+        kdf->master_key_len = AES_128_KEY_SIZE;
+        break;
+    default:
+        return srtp_err_status_bad_param;
+        break;
+    }
+
+    memcpy(kdf->master_key, key, kdf->master_key_len);
+    salt_len = key_len - kdf->master_key_len;
+    memcpy(kdf->master_salt, key + kdf->master_key_len, salt_len);
+    memset(kdf->master_salt + salt_len, 0, MAX_SRTP_SALT_LEN - salt_len);
+
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf,
+                                           srtp_prf_label label,
+                                           uint8_t *key,
+                                           size_t length)
+{
+    int err;
+
+    if (length == 0) {
+        return srtp_err_status_ok;
+    }
+    if (kdf->master_key_len == 0) {
+        return srtp_err_status_ok;
+    }
+    octet_string_set_to_zero(key, length);
+
+    err = wc_SRTP_KDF_label(kdf->master_key, kdf->master_key_len,
+                            kdf->master_salt, MAX_SRTP_SALT_LEN, -1, NULL,
+                            label, key, length);
+    if (err < 0) {
+        debug_print(mod_srtp, "wolfSSL SRTP KDF error: %d", err);
+        return (srtp_err_status_algo_fail);
+    }
+
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf)
+{
+    octet_string_set_to_zero(kdf->master_key, MAX_SRTP_AESKEY_LEN);
+    kdf->master_key_len = 0;
+    octet_string_set_to_zero(kdf->master_salt, MAX_SRTP_SALT_LEN);
+
+    return srtp_err_status_ok;
+}
+
+#else  /* if OPENSSL_KDF || WOLFSSL_KDF */
 
 /*
  * srtp_kdf_t represents a key derivation function.  The SRTP
@@ -859,7 +952,7 @@ static srtp_err_status_t srtp_kdf_clear(srtp_kdf_t *kdf)
     kdf->cipher = NULL;
     return srtp_err_status_ok;
 }
-#endif /* else OPENSSL_KDF */
+#endif /* else OPENSSL_KDF || WOLFSSL_KDF */
 
 /*
  *  end of key derivation functions

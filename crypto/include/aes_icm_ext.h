@@ -63,6 +63,18 @@ typedef struct {
 
 #endif /* OPENSSL */
 
+#ifdef WOLFSSL
+
+#include <wolfssl/wolfcrypt/aes.h>
+typedef struct {
+    v128_t counter; /* holds the counter value          */
+    v128_t offset;  /* initial offset value             */
+    int key_size;
+    Aes *ctx;
+} srtp_aes_icm_ctx_t;
+
+#endif /* WOLFSSL */
+
 #ifdef MBEDTLS
 
 #include <mbedtls/aes.h>

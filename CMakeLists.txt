@@ -82,27 +82,38 @@ set(ENABLE_DEBUG_LOGGING OFF CACHE BOOL "Enable debug logging in all modules")
 set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 set(ENABLE_OPENSSL OFF CACHE BOOL "Enable OpenSSL crypto engine")
+set(ENABLE_WOLFSSL OFF CACHE BOOL "Enable wolfSSL crypto engine")
 set(ENABLE_MBEDTLS OFF CACHE BOOL "Enable MbedTLS crypto engine")
 set(ENABLE_NSS OFF CACHE BOOL "Enable NSS crypto engine")
 
-if(ENABLE_OPENSSL OR ENABLE_MBEDTLS OR ENABLE_NSS)
+if(ENABLE_OPENSSL OR ENABLE_WOLFSSL OR ENABLE_MBEDTLS OR ENABLE_NSS)
   set(USE_EXTERNAL_CRYPTO TRUE)
 else()
   set(USE_EXTERNAL_CRYPTO FALSE)
 endif()
 
 if(ENABLE_OPENSSL)
-  if(ENABLE_NSS OR ENABLE_MBEDTLS)
-    message(FATAL_ERROR "ssl conflict. can not enable openssl and mbedtls or nss simultaneously.")
+  if(ENABLE_WOLFSSL OR ENABLE_NSS OR ENABLE_MBEDTLS)
+    message(FATAL_ERROR "ssl conflict. can not enable openssl and wolfssl, mbedtls or nss simultaneously.")
   endif()
   find_package(OpenSSL 1.1.0 REQUIRED)
   set(OPENSSL ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
   set(GCM ${ENABLE_OPENSSL} CACHE BOOL INTERNAL)
 endif()
 
+if(ENABLE_WOLFSSL)
+  if(ENABLE_OPENSSL OR ENABLE_NSS OR ENABLE_MBEDTLS)
+    message(FATAL_ERROR "ssl conflict. can not enable wolfssl and openssl, mbedtls or nss simultaneously.")
+  endif()
+  find_package(wolfSSL REQUIRED)
+  set(WOLFSSL ${ENABLE_WOLFSSL} CACHE BOOL INTERNAL)
+  set(WOLFSSL_KDF ${ENABLE_WOLFSSL} CACHE BOOL INTERNAL)
+  set(GCM ${ENABLE_WOLFSSL} CACHE BOOL INTERNAL)
+endif()
+
 if(ENABLE_MBEDTLS)
-  if(ENABLE_OPENSSL OR ENABLE_NSS)
-    message(FATAL_ERROR "ssl conflict. can not enable mbedtls and openssl or nss simultaneously.")
+  if(ENABLE_OPENSSL OR ENABLE_WOLFSSL OR ENABLE_NSS)
+    message(FATAL_ERROR "ssl conflict. can not enable mbedtls and openssl, wolfssl or nss simultaneously.")
   endif()
   find_package(MbedTLS REQUIRED)
   set(MBEDTLS ${ENABLE_MBEDTLS} CACHE BOOL INTERNAL)
@@ -110,8 +121,8 @@ if(ENABLE_MBEDTLS)
 endif()
 
 if(ENABLE_NSS)
-  if(ENABLE_OPENSSL OR ENABLE_MBEDTLS)
-    message(FATAL_ERROR "ssl conflict. can not enable nss and openssl or mbedtls simultaneously.")
+  if(ENABLE_OPENSSL OR ENABLE_WOLFSSL OR ENABLE_MBEDTLS)
+    message(FATAL_ERROR "ssl conflict. can not enable nss and openssl, wolfssl or mbedtls simultaneously.")
   endif()
   find_package(NSS REQUIRED)
   set(NSS ${ENABLE_NSS} CACHE BOOL INTERNAL)
@@ -149,6 +160,11 @@ if(ENABLE_OPENSSL)
     crypto/cipher/aes_icm_ossl.c
     crypto/cipher/aes_gcm_ossl.c
   )
+elseif(ENABLE_WOLFSSL)
+  list(APPEND CIPHERS_SOURCES_C
+    crypto/cipher/aes_icm_wssl.c
+    crypto/cipher/aes_gcm_wssl.c
+  )
 elseif(ENABLE_MBEDTLS)
   list(APPEND CIPHERS_SOURCES_C
     crypto/cipher/aes_icm_mbedtls.c
@@ -176,6 +192,10 @@ set(HASHES_SOURCES_C
 if(ENABLE_OPENSSL)
   list(APPEND HASHES_SOURCES_C
     crypto/hash/hmac_ossl.c
+  )
+elseif(ENABLE_WOLFSSL)
+  list(APPEND HASHES_SOURCES_C
+    crypto/hash/hmac_wssl.c
   )
 elseif(ENABLE_MBEDTLS)
   list(APPEND HASHES_SOURCES_C
@@ -285,6 +305,9 @@ target_include_directories(srtp2 PUBLIC
 if(ENABLE_OPENSSL)
   target_include_directories(srtp2 PRIVATE ${OPENSSL_INCLUDE_DIR})
   target_link_libraries(srtp2 OpenSSL::Crypto)
+elseif(ENABLE_WOLFSSL)
+  target_include_directories(srtp2 PRIVATE ${WOLFSSL_INCLUDE_DIR})
+  target_link_libraries(srtp2 ${WOLFSSL_LIBRARY})
 elseif(ENABLE_MBEDTLS)
   target_include_directories(srtp2 PRIVATE ${MBEDTLS_INCLUDE_DIRS})
   target_link_libraries(srtp2 ${MBEDTLS_LIBRARIES})
@@ -443,6 +466,8 @@ if(LIBSRTP_TEST_APPS)
             ${ENABLE_WARNINGS_AS_ERRORS})
     if(ENABLE_OPENSSL)
       target_include_directories(test_srtp PRIVATE ${OPENSSL_INCLUDE_DIR})
+    elseif(ENABLE_WOLFSSL)
+      target_include_directories(test_srtp PRIVATE ${WOLFSSL_INCLUDE_DIR})
     elseif(ENABLE_MBEDTLS)
       target_include_directories(test_srtp PRIVATE ${MBEDTLS_INCLUDE_DIRS})
     elseif(ENABLE_NSS)

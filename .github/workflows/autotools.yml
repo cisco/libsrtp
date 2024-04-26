@@ -12,12 +12,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        crypto: [internal, openssl, nss]
+        crypto: [internal, openssl, wolfssl, nss]
         include:
           - crypto: internal
             configure-crypto-enable: ""
           - crypto: openssl
             configure-crypto-enable: "--enable-openssl"
+          - crypto: wolfssl
+            configure-crypto-enable: "--enable-wolfssl"
           - crypto: nss
             configure-crypto-enable: "--enable-nss"
 
@@ -30,6 +32,18 @@ jobs:
         sudo apt-get update
         sudo apt-get install valgrind
 
+    - name: Setup Ubuntu wolfSSL
+      if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'wolfssl'
+      run: |
+        git clone https://github.com/wolfSSL/wolfssl
+        cd wolfssl
+        ./autogen.sh
+        ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        make
+        sudo make install
+        sudo ldconfig
+        cd ..
+
     - name: Setup Ubuntu NSS
       if: matrix.os == 'ubuntu-latest' && matrix.crypto == 'nss'
       run: sudo apt-get install libnss3-dev
@@ -37,6 +51,18 @@ jobs:
     - name: Setup macOS OpenSSL
       if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
       run: echo "configure-env=PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig" >> $GITHUB_ENV
+
+    - name: Setup macOS wolfSSL
+      if: matrix.os == 'macos-latest' && matrix.crypto == 'wolfssl'
+      run: |
+        brew install autoconf automake libtool
+        git clone https://github.com/wolfSSL/wolfssl
+        cd wolfssl
+        ./autogen.sh
+        ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        make
+        sudo make install
+        cd ..
 
     - name: Setup macOS NSS
       if:  matrix.os == 'macos-latest' && matrix.crypto == 'nss'
