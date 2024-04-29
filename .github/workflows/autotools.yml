@@ -59,7 +59,12 @@ jobs:
         git clone https://github.com/wolfSSL/wolfssl
         cd wolfssl
         ./autogen.sh
-        ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        CPU=`sysctl -n machdep.cpu.brand_string`
+        if [[ "$CPU" =~ Intel ]]; then
+          ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        else
+          ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-armasm' '--enable-aesgcm-stream'
+        fi
         make
         sudo make install
         cd ..
