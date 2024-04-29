@@ -37,6 +37,7 @@ jobs:
       run: |
         git clone https://github.com/wolfSSL/wolfssl
         cd wolfssl
+        git checkout v5.7.0-stable
         ./autogen.sh
         ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
         make
@@ -58,8 +59,14 @@ jobs:
         brew install autoconf automake libtool
         git clone https://github.com/wolfSSL/wolfssl
         cd wolfssl
+        git checkout v5.7.0-stable
         ./autogen.sh
-        ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        CPU=`sysctl -n machdep.cpu.brand_string`
+        if [[ "$CPU" =~ Intel ]]; then
+          ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-intelasm' '--enable-aesgcm-stream'
+        else
+          ./configure '--enable-srtp-kdf' '--enable-aesctr' '--enable-armasm' '--enable-aesgcm-stream'
+        fi
         make
         sudo make install
         cd ..
