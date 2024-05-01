@@ -120,6 +120,7 @@ if get_option('debug-logging')
 endif
 
 use_openssl = false
+use_wolfssl = false
 use_nss = false
 use_mbedtls = false
 
@@ -141,6 +142,22 @@ if crypto_library == 'openssl'
     cdata.set('OPENSSL_KDF', true)
   elif get_option('crypto-library-kdf').enabled()
     error('KDF support has been enabled, but OpenSSL does not provide it')
+  endif
+elif crypto_library == 'wolfssl'
+  wolfssl_dep = dependency('wolfssl', version: '>= 5.7.0', required: true)
+  srtp2_deps += [wolfssl_dep]
+  cdata.set('GCM', true)
+  cdata.set('WOLFSSL', true)
+  cdata.set('USE_EXTERNAL_CRYPTO', true)
+  use_wolfssl = true
+  if (
+    wolfssl_dep.type_name() != 'internal' and
+    not get_option('crypto-library-kdf').disabled() and
+    cc.has_function('wc_SRTCP_KDF', dependencies: wolfssl_dep)
+  )
+    cdata.set('WOLFSSL_KDF', true)
+  elif get_option('crypto-library-kdf').enabled()
+    error('KDF support has been enabled, but wolfSSL does not provide it')
   endif
 elif crypto_library == 'nss'
   nss_dep = dependency('nss', version: '>= 1.0.1', required: true)
@@ -199,6 +216,11 @@ if use_openssl
     'crypto/cipher/aes_icm_ossl.c',
     'crypto/cipher/aes_gcm_ossl.c',
   )
+elif use_wolfssl
+  ciphers_sources += files(
+    'crypto/cipher/aes_icm_wssl.c',
+    'crypto/cipher/aes_gcm_wssl.c',
+  )
 elif use_nss
   ciphers_sources += files(
     'crypto/cipher/aes_icm_nss.c',
@@ -225,6 +247,10 @@ hashes_sources = files(
 if use_openssl
   hashes_sources += files(
     'crypto/hash/hmac_ossl.c',
+  )
+elif use_wolfssl
+  hashes_sources += files(
+    'crypto/hash/hmac_wssl.c',
   )
 elif use_nss
   hashes_sources += files(
