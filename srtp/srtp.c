@@ -3111,7 +3111,7 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
     old_rtcp_rdb = stream->rtcp_rdb;
 
     /* remove stream */
-    data->status = srtp_stream_remove(session, ssrc);
+    data->status = srtp_stream_remove(session, ntohl(ssrc));
     if (data->status) {
         return false;
     }
