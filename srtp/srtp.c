@@ -849,9 +849,11 @@ static srtp_err_status_t srtp_kdf_generate(srtp_kdf_t *kdf,
     }
     octet_string_set_to_zero(key, length);
 
+    PRIVATE_KEY_UNLOCK();
     err = wc_SRTP_KDF_label(kdf->master_key, kdf->master_key_len,
                             kdf->master_salt, MAX_SRTP_SALT_LEN, -1, NULL,
                             label, key, length);
+    PRIVATE_KEY_LOCK();
     if (err < 0) {
         debug_print(mod_srtp, "wolfSSL SRTP KDF error: %d", err);
         return (srtp_err_status_algo_fail);
