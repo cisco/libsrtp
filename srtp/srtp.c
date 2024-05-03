@@ -3247,7 +3247,7 @@ static srtp_err_status_t stream_update(srtp_t session,
     old_index = stream->rtp_rdbx.index;
     old_rtcp_rdb = stream->rtcp_rdb;
 
-    status = srtp_stream_remove(session, htonl(policy->ssrc.value));
+    status = srtp_stream_remove(session, policy->ssrc.value);
     if (status) {
         return status;
     }
