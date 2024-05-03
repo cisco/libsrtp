@@ -33,6 +33,10 @@ include(CheckTypeSize)
 include(CheckCSourceCompiles)
 include(ConfigSafeGuards)
 
+if(NOT PROJECT_IS_TOP_LEVEL)
+  set(LIBSRTP_TEST_APPS OFF)
+endif()
+
 if(ENABLE_WARNINGS)
     include(Warnings)
 endif()
