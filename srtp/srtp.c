@@ -3113,7 +3113,7 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
     old_rtcp_rdb = stream->rtcp_rdb;
 
     /* remove stream */
-    data->status = srtp_stream_remove(session, ssrc);
+    data->status = srtp_stream_remove(session, ntohl(ssrc));
     if (data->status) {
         return false;
     }
@@ -3247,7 +3247,7 @@ static srtp_err_status_t stream_update(srtp_t session,
     old_index = stream->rtp_rdbx.index;
     old_rtcp_rdb = stream->rtcp_rdb;
 
-    status = srtp_stream_remove(session, htonl(policy->ssrc.value));
+    status = srtp_stream_remove(session, policy->ssrc.value);
     if (status) {
         return status;
     }
