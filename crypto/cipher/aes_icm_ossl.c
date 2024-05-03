@@ -306,7 +306,7 @@ static srtp_err_status_t srtp_aes_icm_openssl_encrypt(void *cv,
 
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
-    if (!EVP_EncryptUpdate(c->ctx, buf, &len, buf, *enc_len)) {
+    if (!EVP_EncryptUpdate(c->ctx, buf, &len, buf, (int)*enc_len)) {
         return srtp_err_status_cipher_fail;
     }
     *enc_len = len;
