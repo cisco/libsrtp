@@ -306,7 +306,6 @@ libsrtp2_static = static_library('srtp2', sources, ciphers_sources, hashes_sourc
 
 if default_library != 'static'
   libsrtp2 = shared_library('srtp2',
-    dependencies: [srtp2_deps, syslibs],
     soversion : soversion,
     vs_module_defs: 'srtp.def',
     link_whole: libsrtp2_static,
