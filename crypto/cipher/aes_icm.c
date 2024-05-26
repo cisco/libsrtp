@@ -305,7 +305,10 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
     uint32_t *b;
     const uint32_t *s;
 
-    // check out length if not equal or greater bail!
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     *dst_len = src_len;
 
     unsigned char *buf = dst;
