@@ -337,12 +337,6 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
-    //#todo, this might need som looking at
-    // nss requires space for tag, currently we assume that ther is space, this
-    // should change, the best would be to merge the cipher encrypt and get_tag
-    // api
-    *dst_len += 16;
-
     // When we get a non-NULL buffer, we know that the caller is
     // prepared to also take the tag.  When we get a NULL buffer,
     // even though there's no data, we need to give NSS a buffer
