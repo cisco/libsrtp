@@ -9,7 +9,7 @@ option('crypto-library', type: 'combo', choices : ['none', 'openssl', 'wolfssl',
 option('crypto-library-kdf', type : 'feature', value : 'auto',
   description : 'Use the external crypto library for Key Derivation Function support')
 option('fuzzer', type : 'feature', value : 'disabled',
-  description : 'Build libsrtp2 fuzzer (requires build with clang)')
+  description : 'Build libsrtp fuzzer (requires build with clang)')
 option('tests', type : 'feature', value : 'auto', yield : true,
   description : 'Build test applications')
 option('pcap-tests', type : 'feature', value : 'auto',

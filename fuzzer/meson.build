@@ -22,10 +22,10 @@ threads = dependency('threads')
 if libfuzzer.found()
   executable('srtp-fuzzer',
     'fuzzer.c', 'testmem.c', 'mt19937.cpp',
-    include_directories: [config_incs, crypto_incs, srtp2_incs],
+    include_directories: [config_incs, crypto_incs, srtp3_incs],
     cpp_args: ['-fsanitize=fuzzer'],
     override_options : ['cpp_std=c++11'],
     dependencies: [libfuzzer, threads],
-    link_with: libsrtp2,
+    link_with: libsrtp3,
     install: false)
 endif

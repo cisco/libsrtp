@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([libsrtp2], [3.0.0-pre], [https://github.com/cisco/libsrtp/issues])
+AC_INIT([libsrtp3],[3.0.0-pre],[https://github.com/cisco/libsrtp/issues])
 
 dnl Must come before AC_PROG_CC
 EMPTY_CFLAGS="no"
@@ -425,7 +425,7 @@ AS_IF([test "x$EXTRA_CFLAGS" != "x"],
 
 AC_CONFIG_HEADER([crypto/include/config.h:config_in.h])
 
-AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile fuzzer/Makefile libsrtp2.pc])
+AC_CONFIG_FILES([Makefile crypto/Makefile doc/Makefile fuzzer/Makefile libsrtp3.pc])
 AC_OUTPUT
 
 # This is needed when building outside the source dir.

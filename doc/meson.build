@@ -19,4 +19,4 @@ doxygen_html_docs = custom_target('doc',
   command: [doxygen, doxyfile],
   output: ['html'])
 
-alias_target('libsrtp2doc', doxygen_html_docs)
+alias_target('libsrtp3doc', doxygen_html_docs)
