@@ -337,8 +337,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
-    // When we get a non-NULL buffer, we know that the caller is
-    // prepared to also take the tag.  When we get a NULL buffer,
+    // When we get a non-NULL src buffer, we know that the caller is
+    // prepared to also take the tag.  When we get a NULL src buffer,
     // even though there's no data, we need to give NSS a buffer
     // where it can write the tag.  We can't just use c->tag because
     // memcpy has undefined behavior on overlapping ranges.
@@ -357,6 +357,10 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
         cv, true, non_null_buf, src_len, non_null_dst_buf, dst_len);
     if (status != srtp_err_status_ok) {
         return status;
+    }
+
+    if (*dst_len < c->tag_size) {
+        return srtp_err_status_bad_param;
     }
 
     memcpy(c->tag, non_null_dst_buf + (*dst_len - c->tag_size), c->tag_size);
