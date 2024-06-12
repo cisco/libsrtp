@@ -62,6 +62,8 @@ void cipher_driver_test_throughput(srtp_cipher_t *c);
 
 srtp_err_status_t cipher_driver_self_test(srtp_cipher_type_t *ct);
 
+srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct, int key_len);
+
 /*
  * cipher_driver_test_buffering(ct) tests the cipher's output
  * buffering for correctness by checking the consistency of successive
@@ -217,6 +219,8 @@ int main(int argc, char *argv[])
         cipher_driver_self_test(&srtp_aes_gcm_128);
         cipher_driver_self_test(&srtp_aes_gcm_256);
 #endif
+        cipher_driver_test_api(&srtp_aes_icm_128,
+                               SRTP_AES_ICM_128_KEY_LEN_WSALT);
     }
 
     /* do timing and/or buffer_test on srtp_null_cipher */
@@ -353,6 +357,56 @@ srtp_err_status_t cipher_driver_self_test(srtp_cipher_type_t *ct)
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct, int key_len)
+{
+    srtp_err_status_t status;
+    srtp_cipher_t *c = NULL;
+
+    /* clang-format off */
+    uint8_t test_key[48] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+        0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+        0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+    };
+    uint8_t iv[16] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+    /* clang-format on */
+
+    printf("testing cipher api for %s...", ct->description);
+
+    if (key_len > (int)sizeof(test_key)) {
+        return srtp_err_status_bad_param;
+    }
+
+    status = srtp_cipher_type_alloc(&srtp_aes_icm_256, &c, key_len, 0);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_cipher_init(c, test_key);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_cipher_set_iv(c, iv, srtp_direction_encrypt);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_cipher_dealloc(c);
+    if (status) {
+        return status;
+    }
+
+    printf("passed\n");
+
+    return srtp_err_status_ok;
+}
+
 /*
  * cipher_driver_test_buffering(ct) tests the cipher's output
  * buffering for correctness by checking the consistency of succesive
@@ -384,7 +438,7 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
         }
 
         /* generate 'reference' value by encrypting all at once */
-        status = srtp_cipher_encrypt(c, buffer0, &buflen);
+        status = srtp_cipher_encrypt(c, buffer0, buflen, buffer0, &buflen);
         if (status) {
             return status;
         }
@@ -407,7 +461,7 @@ srtp_err_status_t cipher_driver_test_buffering(srtp_cipher_t *c)
                 len = end - current;
             }
 
-            status = srtp_cipher_encrypt(c, current, &len);
+            status = srtp_cipher_encrypt(c, current, len, current, &len);
             if (status) {
                 return status;
             }
@@ -569,7 +623,7 @@ uint64_t cipher_array_bits_per_second(srtp_cipher_t *cipher_array[],
         srtp_cipher_set_iv(cipher_array[cipher_index], (uint8_t *)&nonce,
                            srtp_direction_encrypt);
         srtp_cipher_encrypt(cipher_array[cipher_index], enc_buf,
-                            &octets_to_encrypt);
+                            octets_to_encrypt, enc_buf, &octets_to_encrypt);
 
         /* choose a cipher at random from the array*/
         cipher_index = (*((size_t *)enc_buf)) % num_cipher;

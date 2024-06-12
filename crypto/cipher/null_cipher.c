@@ -116,13 +116,19 @@ static srtp_err_status_t srtp_null_cipher_set_iv(void *cv,
 }
 
 static srtp_err_status_t srtp_null_cipher_encrypt(void *cv,
-                                                  uint8_t *buf,
-                                                  size_t *bytes_to_encr)
+                                                  const uint8_t *src,
+                                                  size_t src_len,
+                                                  uint8_t *dst,
+                                                  size_t *dst_len)
 {
-    /* srtp_null_cipher_ctx_t *c = (srtp_null_cipher_ctx_t *)cv; */
     (void)cv;
-    (void)buf;
-    (void)bytes_to_encr;
+    if (src != dst) {
+        if (*dst_len < src_len) {
+            return srtp_err_status_buffer_small;
+        }
+        memcpy(dst, src, src_len);
+    }
+    *dst_len = src_len;
     return srtp_err_status_ok;
 }
 
@@ -143,7 +149,7 @@ static const srtp_cipher_test_case_t srtp_null_cipher_test_0 = {
 };
 
 /*
- * note: the decrypt function is idential to the encrypt function
+ * note: the decrypt function is identical to the encrypt function
  */
 
 const srtp_cipher_type_t srtp_null_cipher = {

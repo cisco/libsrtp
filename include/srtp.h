@@ -213,8 +213,9 @@ typedef enum {
                                         /**< invalid                         */
     srtp_err_status_pkt_idx_old = 26,   /**< packet index is too old to      */
                                         /**< consider                        */
-    srtp_err_status_pkt_idx_adv = 27    /**< packet index advanced, reset    */
+    srtp_err_status_pkt_idx_adv = 27,   /**< packet index advanced, reset    */
                                         /**< needed                          */
+    srtp_err_status_buffer_small = 28,  /**< out buffer is too small         */
 } srtp_err_status_t;
 
 typedef struct srtp_ctx_t_ srtp_ctx_t;
@@ -386,10 +387,10 @@ srtp_err_status_t srtp_shutdown(void);
  * @brief srtp_protect() is the Secure RTP sender-side packet processing
  * function.
  *
- * The function call srtp_protect(ctx, rtp_hdr, len_ptr) applies SRTP
- * protection to the RTP packet rtp_hdr (which has length *len_ptr) using
- * the SRTP context ctx.  If srtp_err_status_ok is returned, then rtp_hdr
- * points to the resulting SRTP packet and *len_ptr is the number of
+ * The function call srtp_protect(ctx, rtp, rtp_len, srtp, srtp_len, mki_index)
+ * applies SRTP protection to the RTP packet rtp (which has length rtp_len)
+ * using the SRTP context ctx.  If srtp_err_status_ok is returned, then srtp
+ * points to the resulting SRTP packet and *srtp_len is the number of
  * octets in that packet; otherwise, no assumptions should be made
  * about the value of either data elements.
  *
@@ -397,25 +398,24 @@ srtp_err_status_t srtp_shutdown(void);
  * need not be consecutive, but they @b must be out of order by less
  * than 2^15 = 32,768 packets.
  *
- * @warning This function assumes that it can write the authentication
- * tag into the location in memory immediately following the RTP
- * packet, and assumes that the RTP packet is aligned on a 32-bit
+ * @warning This function assumes that the RTP packet is aligned on a 32-bit
  * boundary.
- *
- * @warning This function assumes that it can write SRTP_MAX_TRAILER_LEN
- * into the location in memory immediately following the RTP packet.
- * Callers MUST ensure that this much writable memory is available in
- * the buffer that holds the RTP packet.
  *
  * @param ctx is the SRTP context to use in processing the packet.
  *
- * @param rtp_hdr is a pointer to the RTP packet (before the call); after
- * the function returns, it points to the srtp packet.
+ * @param rtp is a pointer to the RTP packet.
  *
- * @param len_ptr is a pointer to the length in octets of the complete
- * RTP packet (header and body) before the function call, and of the
- * complete SRTP packet after the call, if srtp_err_status_ok was returned.
- * Otherwise, the value of the data to which it points is undefined.
+ * @param rtp_len is the length in octets of the complete RTP
+ * packet (header and body).
+ *
+ * @param srtp is a pointer to a buffer that after the function returns will
+ * contain the complete SRTP packet. The value of srtp can be the same as rtp to
+ * support in-place io.
+ *
+ * @param srtp_len is a pointer to the length in octets of the srtp buffer
+ * before the function call, and of the complete SRTP packet after the call, if
+ * srtp_err_status_ok was returned. Otherwise, the value of the data to which it
+ * points is undefined.
  *
  * @param mki_index integer value specifying which set of session keys should be
  * used if use_mki in the policy was set to true. Otherwise ignored.
@@ -423,22 +423,26 @@ srtp_err_status_t srtp_shutdown(void);
  * @return
  *    - srtp_err_status_ok            no problems
  *    - srtp_err_status_replay_fail   rtp sequence number was non-increasing
+ *    - srtp_err_status_buffer_small  the srtp buffer is too small for the SRTP
+ * packet
  *    - @e other                 failure in cryptographic mechanisms
  */
-srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
-                               uint8_t *rtp_hdr,
-                               size_t *pkt_octet_len,
+srtp_err_status_t srtp_protect(srtp_t ctx,
+                               const uint8_t *rtp,
+                               size_t rtp_len,
+                               uint8_t *srtp,
+                               size_t *srtp_len,
                                size_t mki_index);
 
 /**
  * @brief srtp_unprotect() is the Secure RTP receiver-side packet
  * processing function.
  *
- * The function call srtp_unprotect(ctx, srtp_hdr, len_ptr) verifies
- * the Secure RTP protection of the SRTP packet pointed to by srtp_hdr
- * (which has length *len_ptr), using the SRTP context ctx.  If
- * srtp_err_status_ok is returned, then srtp_hdr points to the resulting
- * RTP packet and *len_ptr is the number of octets in that packet;
+ * The function call srtp_unprotect(ctx, srtp, srtp_len, rtp, rtp_len) verifies
+ * the Secure RTP protection of the SRTP packet pointed to by srtp
+ * (which has length srtp_len), using the SRTP context ctx.  If
+ * srtp_err_status_ok is returned, then rtp points to the resulting
+ * RTP packet and *rtp_len is the number of octets in that packet;
  * otherwise, no assumptions should be made about the value of either
  * data elements.
  *
@@ -451,15 +455,19 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
  *
  * @param ctx is the SRTP session which applies to the particular packet.
  *
- * @param srtp_hdr is a pointer to the header of the SRTP packet
- * (before the call).  after the function returns, it points to the
- * rtp packet if srtp_err_status_ok was returned; otherwise, the value of
- * the data to which it points is undefined.
+ * @param srtp is a pointer to the header of the SRTP packet.
  *
- * @param len_ptr is a pointer to the length in octets of the complete
- * srtp packet (header and body) before the function call, and of the
- * complete rtp packet after the call, if srtp_err_status_ok was returned.
- * Otherwise, the value of the data to which it points is undefined.
+ * @param srtp_len is the length in octets of the complete
+ * srtp packet (header and body).
+ *
+ * @param rtp is a pointer to a buffer that after the function returns will
+ * contain the complete RTP packet. The value of rtp can be the same as srtp
+ * to support in-place io.
+ *
+ * @param srtp_len is a pointer to the length of the rtp buffer before the
+ * function call, and of the complete RTP packet after the call, if
+ * srtp_err_status_ok was returned. Otherwise, the value of the data to which
+ * it points is undefined.
  *
  * @return
  *    - srtp_err_status_ok          if the RTP packet is valid.
@@ -472,12 +480,14 @@ srtp_err_status_t srtp_protect(srtp_ctx_t *ctx,
  *
  */
 srtp_err_status_t srtp_unprotect(srtp_t ctx,
-                                 uint8_t *srtp_hdr,
-                                 size_t *len_ptr);
+                                 const uint8_t *srtp,
+                                 size_t srtp_len,
+                                 uint8_t *rtp,
+                                 size_t *rtp_len);
 
 /**
  * @brief srtp_create() allocates and initializes an SRTP session.
-
+ *
  * The function call srtp_create(session, policy) allocates and
  * initializes an SRTP session context, applying the given policy.
  *
@@ -1110,56 +1120,58 @@ void srtp_append_salt_to_key(uint8_t *key,
  * @brief srtp_protect_rtcp() is the Secure RTCP sender-side packet
  * processing function.
  *
- * The function call srtp_protect_rtcp(ctx, rtp_hdr, len_ptr) applies
- * SRTCP protection to the RTCP packet rtcp_hdr (which has length
- * *len_ptr) using the SRTP session context ctx.  If srtp_err_status_ok is
- * returned, then rtp_hdr points to the resulting SRTCP packet and
- * *len_ptr is the number of octets in that packet; otherwise, no
+ * The function call srtp_protect_rtcp(ctx, rtcp, rtcp_len, srtcp, srtcp_len,
+ * mki_index) applies SRTCP protection to the RTCP packet rtcp (which has length
+ * rtcp_len) using the SRTP session context ctx. If srtp_err_status_ok is
+ * returned, then srtcp points to the resulting SRTCP packet and
+ * *srtcp_len is the number of octets in that packet; otherwise, no
  * assumptions should be made about the value of either data elements.
  *
- * @warning This function assumes that it can write the authentication
- * tag into the location in memory immediately following the RTCP
- * packet, and assumes that the RTCP packet is aligned on a 32-bit
+ * @warning This function assumes that the RTCP packet is aligned on a 32-bit
  * boundary.
- *
- * @warning This function assumes that it can write SRTP_MAX_SRTCP_TRAILER_LEN
- * into the location in memory immediately following the RTCP packet.
- * Callers MUST ensure that this much writable memory is available in
- * the buffer that holds the RTCP packet.
  *
  * @param ctx is the SRTP context to use in processing the packet.
  *
- * @param rtcp_hdr is a pointer to the RTCP packet (before the call); after
- * the function returns, it points to the srtp packet.
+ * @param rtcp is a pointer to the RTCP packet (before the call).
  *
- * @param pkt_octet_len is a pointer to the length in octets of the
- * complete RTCP packet (header and body) before the function call,
- * and of the complete SRTCP packet after the call, if srtp_err_status_ok
- * was returned.  Otherwise, the value of the data to which it points
- * is undefined.
+ * @param rtcp_len is the length in octets of the complete RTCP packet (header
+ * and body).
+ *
+ * @param srtcp is a pointer to a buffer that after the function returns will
+ * contain the complete SRTCP packet. The value of srtcp can be the same as rtcp
+ * to support in-place io.
+ *
+ * @param srtcp_len is a pointer to the length in octets of the srtcp buffer
+ * before the function call, and of the complete SRTCP packet after the call, if
+ * srtp_err_status_ok was returned. Otherwise, the value of the data to which it
+ * points is undefined.
  *
  * @param mki_index integer value specifying which set of session keys should be
  * used if use_mki was set to true. Otherwise ignored.
  *
  * @return
  *    - srtp_err_status_ok            if there were no problems.
+ *    - srtp_err_status_buffer_small  the srtcp buffer is too small for the
+ * SRTCP packet
  *    - [other]                  if there was a failure in
  *                               the cryptographic mechanisms.
  */
 srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
-                                    uint8_t *rtcp_hdr,
-                                    size_t *pkt_octet_len,
+                                    const uint8_t *rtcp,
+                                    size_t rtcp_len,
+                                    uint8_t *srtcp,
+                                    size_t *srtcp_len,
                                     size_t mki_index);
 
 /**
  * @brief srtp_unprotect_rtcp() is the Secure RTCP receiver-side packet
  * processing function.
  *
- * The function call srtp_unprotect_rtcp(ctx, srtp_hdr, len_ptr)
+ * The function call srtp_unprotect_rtcp(ctx, srtcp, srtcp_len, rtcp, rtcp_len)
  * verifies the Secure RTCP protection of the SRTCP packet pointed to
- * by srtcp_hdr (which has length *len_ptr), using the SRTP session
- * context ctx.  If srtp_err_status_ok is returned, then srtcp_hdr points
- * to the resulting RTCP packet and *len_ptr is the number of octets
+ * by srtcp (which has length srtcp_len), using the SRTP session
+ * context ctx.  If srtp_err_status_ok is returned, then rtcp points
+ * to the resulting RTCP packet and *rtcp_len is the number of octets
  * in that packet; otherwise, no assumptions should be made about the
  * value of either data elements.
  *
@@ -1169,16 +1181,19 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
  * @param ctx is a pointer to the srtp_t which applies to the
  * particular packet.
  *
- * @param srtcp_hdr is a pointer to the header of the SRTCP packet
- * (before the call).  After the function returns, it points to the
- * rtp packet if srtp_err_status_ok was returned; otherwise, the value of
- * the data to which it points is undefined.
+ * @param srtcp is a pointer to the header of the SRTCP packet.
  *
- * @param pkt_octet_len is a pointer to the length in octets of the
- * complete SRTCP packet (header and body) before the function call,
- * and of the complete rtp packet after the call, if srtp_err_status_ok was
- * returned.  Otherwise, the value of the data to which it points is
- * undefined.
+ * @param srtcp_len is the length in octets of the complete SRTCP packet (header
+ * and body).
+ *
+ * @param rtcp is a pointer to a buffer that after the function returns will
+ * contain the complete RTCP packet. The value of rtcp can be the same as srtcp
+ * to support in-place io.
+ *
+ * @param rtcp_len is a pointer to the length of the rtcp buffer before the
+ * function call, and of the complete RTCP packet after the call, if
+ * srtp_err_status_ok was returned. Otherwise, the value of the data to which
+ * it points is undefined.
  *
  * @return
  *    - srtp_err_status_ok          if the RTCP packet is valid.
@@ -1192,12 +1207,10 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
  *
  */
 srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
-                                      uint8_t *srtcp_hdr,
-                                      size_t *pkt_octet_len);
-
-/**
- * @}
- */
+                                      const uint8_t *srtcp,
+                                      size_t srtcp_len,
+                                      uint8_t *rtcp,
+                                      size_t *rtcp_len);
 
 /**
  * @defgroup User data associated to a SRTP session.

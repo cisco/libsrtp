@@ -321,8 +321,10 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_set_aad(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_wolfssl_encrypt(void *cv,
-                                                      unsigned char *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -333,17 +335,18 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_encrypt(void *cv,
     }
 
 #ifndef WOLFSSL_AESGCM_STREAM
-    err = wc_AesGcmEncrypt(c->ctx, buf, buf, *enc_len, c->iv, c->iv_len, c->tag,
+    err = wc_AesGcmEncrypt(c->ctx, dst, src, src_len, c->iv, c->iv_len, c->tag,
                            c->tag_len, c->aad, c->aad_size);
 
     c->aad_size = 0;
 #else
-    err = wc_AesGcmEncryptUpdate(c->ctx, buf, buf, *enc_len, NULL, 0);
+    err = wc_AesGcmEncryptUpdate(c->ctx, dst, src, src_len, NULL, 0);
 #endif
     if (err < 0) {
         debug_print(srtp_mod_aes_gcm, "wolfSSL error code:  %d", err);
         return srtp_err_status_bad_param;
     }
+    *dst_len = src_len;
 
     return (srtp_err_status_ok);
 }
@@ -392,8 +395,10 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_get_tag(void *cv,
  *	enc_len	length of encrypt buffer
  */
 static srtp_err_status_t srtp_aes_gcm_wolfssl_decrypt(void *cv,
-                                                      unsigned char *buf,
-                                                      size_t *enc_len)
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len)
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
@@ -407,19 +412,19 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_decrypt(void *cv,
     debug_print(srtp_mod_aes_gcm, "AAD: %s",
                 srtp_octet_string_hex_string(c->aad, c->aad_size));
 
-    err = wc_AesGcmDecrypt(c->ctx, buf, buf, (*enc_len - c->tag_len), c->iv,
-                           c->iv_len, buf + (*enc_len - c->tag_len), c->tag_len,
+    err = wc_AesGcmDecrypt(c->ctx, dst, src, (src_len - c->tag_len), c->iv,
+                           c->iv_len, src + (src_len - c->tag_len), c->tag_len,
                            c->aad, c->aad_size);
     c->aad_size = 0;
 #else
-    err = wc_AesGcmDecryptUpdate(c->ctx, buf, buf, (*enc_len - c->tag_len),
-                                 NULL, 0);
+    err = wc_AesGcmDecryptUpdate(c->ctx, dst, src, (src_len - c->tag_len), NULL,
+                                 0);
     if (err < 0) {
         debug_print(srtp_mod_aes_gcm, "wolfSSL error code:  %d", err);
         return (srtp_err_status_algo_fail);
     }
-    err = wc_AesGcmDecryptFinal(c->ctx, buf + (*enc_len - c->tag_len),
-                                c->tag_len);
+    err =
+        wc_AesGcmDecryptFinal(c->ctx, src + (src_len - c->tag_len), c->tag_len);
 #endif
     if (err < 0) {
         debug_print(srtp_mod_aes_gcm, "wolfSSL error code:  %d", err);
@@ -430,7 +435,7 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_decrypt(void *cv,
      * Reduce the buffer size by the tag length since the tag
      * is not part of the original payload
      */
-    *enc_len -= c->tag_len;
+    *dst_len = src_len -= c->tag_len;
 
     return (srtp_err_status_ok);
 }
