@@ -8,8 +8,8 @@
 # runtest       runs test applications
 # runtest-valgrind runs test applications with valgrind
 # test		builds test applications
-# libsrtp2.a	static library implementing srtp
-# libsrtp2.so	shared library implementing srtp
+# libsrtp3.a	static library implementing srtp
+# libsrtp3.so	shared library implementing srtp
 # clean		removes objects, libs, and executables
 # distribution  cleans and builds a .tgz
 # tags          builds etags file from all .c and .h files
@@ -43,7 +43,7 @@ endif
 all: test
 
 runtest: test
-	@echo "running libsrtp2 test applications..."
+	@echo "running libsrtp3 test applications..."
 	$(FIND_LIBRARIES) crypto/test/cipher_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) crypto/test/kernel_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) test/test_srtp$(EXE) >/dev/null
@@ -55,14 +55,14 @@ runtest: test
 ifeq (1, $(USE_EXTERNAL_CRYPTO))
 	cd test; $(CRYPTO_LIBDIR_FORWARD) $(abspath $(srcdir))/test/rtpw_test_gcm.sh -w $(abspath $(srcdir))/test/words.txt >/dev/null
 endif
-	@echo "libsrtp2 test applications passed."
+	@echo "libsrtp3 test applications passed."
 	$(MAKE) -C crypto runtest
 
 runtest-valgrind: test
-	@echo "running libsrtp2 test applications... (valgrind)"
+	@echo "running libsrtp3 test applications... (valgrind)"
 	valgrind --error-exitcode=1 --leak-check=full test/test_srtp$(EXE) -v >/dev/null
 	valgrind --error-exitcode=1 --leak-check=full test/srtp_driver$(EXE) -v >/dev/null
-	@echo "libsrtp2 test applications passed. (valgrind)"
+	@echo "libsrtp3 test applications passed. (valgrind)"
 
 # makefile variables
 
@@ -78,7 +78,7 @@ srtp-fuzzer: CXXFLAGS += -g
 LIBS	= @LIBS@
 LDFLAGS	= -L. @LDFLAGS@
 COMPILE = $(CC) $(DEFS) $(INCDIR) $(CPPFLAGS) $(CFLAGS)
-SRTPLIB	= -lsrtp2
+SRTPLIB	= -lsrtp3
 PCAP_LIB = @PCAP_LIB@
 
 AR      = @AR@
@@ -103,7 +103,7 @@ libdir = @libdir@
 bindir = @bindir@
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libsrtp2.pc
+pkgconfig_DATA = libsrtp3.pc
 
 SHAREDLIBVERSION = 1
 ifneq (,$(or $(findstring linux,@host@), $(findstring gnu,@host@)))
@@ -113,7 +113,7 @@ SHAREDLIBSUFFIXNOVER = so
 SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER).$(SHAREDLIBVERSION)
 else ifneq (,$(or $(findstring cygwin,@host@), $(findstring mingw,@host@)))
 SHAREDLIB_DIR = $(bindir)
-SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp2.dll.a
+SHAREDLIB_LDFLAGS = -shared -Wl,--out-implib,libsrtp3.dll.a
 SHAREDLIBVERSION =
 SHAREDLIBSUFFIXNOVER = dll
 SHAREDLIBSUFFIX = $(SHAREDLIBSUFFIXNOVER)
@@ -154,26 +154,26 @@ kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
 
 cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
-# libsrtp2.a (implements srtp processing)
+# libsrtp3.a (implements srtp processing)
 
 srtpobj = srtp/srtp.o
 
-libsrtp2.a: $(srtpobj) $(cryptobj) $(gdoi)
-	$(AR) cr libsrtp2.a $^
-	$(RANLIB) libsrtp2.a
+libsrtp3.a: $(srtpobj) $(cryptobj) $(gdoi)
+	$(AR) cr libsrtp3.a $^
+	$(RANLIB) libsrtp3.a
 
-libsrtp2.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
+libsrtp3.$(SHAREDLIBSUFFIX): $(srtpobj) $(cryptobj) $(gdoi)
 	$(CC) -shared -o $@ $(SHAREDLIB_LDFLAGS) \
 				$^ $(LDFLAGS) $(LIBS)
 	if [ -n "$(SHAREDLIBVERSION)" ]; then \
-		ln -sfn $@ libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
+		ln -sfn $@ libsrtp3.$(SHAREDLIBSUFFIXNOVER); \
 	fi
 
-shared_library: libsrtp2.$(SHAREDLIBSUFFIX)
+shared_library: libsrtp3.$(SHAREDLIBSUFFIX)
 
-libsrtp2.so: $(srtpobj) $(cryptobj)
-	$(CC) -shared -Wl,-soname,libsrtp2.so \
-		-o libsrtp2.so $^ $(LDFLAGS)
+libsrtp3.so: $(srtpobj) $(cryptobj)
+	$(CC) -shared -Wl,-soname,libsrtp3.so \
+		-o libsrtp3.so $^ $(LDFLAGS)
 
 # test applications
 ifneq (1, $(USE_EXTERNAL_CRYPTO))
@@ -193,7 +193,7 @@ ifeq (1, $(HAVE_PCAP))
 testapp += test/rtp_decoder$(EXE)
 endif
 
-$(testapp): libsrtp2.a
+$(testapp): libsrtp3.a
 
 test/rtpw$(EXE): test/rtpw.c test/rtp.c test/util.c test/getopt_s.c \
 		crypto/math/datatypes.c
@@ -264,47 +264,47 @@ tags:
 	etags */*.[ch] */*/*.[ch]
 
 
-# documentation - the target libsrtp2doc builds html documentation
+# documentation - the target libsrtp3doc builds html documentation
 
-libsrtp2doc:
+libsrtp3doc:
 	$(MAKE) -C doc
 
 # fuzzer
 
-srtp-fuzzer: libsrtp2.a
+srtp-fuzzer: libsrtp3.a
 	$(MAKE) -C fuzzer
 
 .PHONY: clean superclean distclean install
 
 install:
-	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp2
+	$(INSTALL) -d $(DESTDIR)$(includedir)/srtp3
 	$(INSTALL) -d $(DESTDIR)$(libdir)
-	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp2
-	cp $(srcdir)/crypto/include/cipher.h $(DESTDIR)$(includedir)/srtp2
-	cp $(srcdir)/crypto/include/auth.h $(DESTDIR)$(includedir)/srtp2
-	cp $(srcdir)/crypto/include/crypto_types.h $(DESTDIR)$(includedir)/srtp2
-	if [ -f libsrtp2.a ]; then cp libsrtp2.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp2.dll.a ]; then cp libsrtp2.dll.a $(DESTDIR)$(libdir)/; fi
-	if [ -f libsrtp2.$(SHAREDLIBSUFFIX) ]; then \
+	cp $(srcdir)/include/srtp.h $(DESTDIR)$(includedir)/srtp3
+	cp $(srcdir)/crypto/include/cipher.h $(DESTDIR)$(includedir)/srtp3
+	cp $(srcdir)/crypto/include/auth.h $(DESTDIR)$(includedir)/srtp3
+	cp $(srcdir)/crypto/include/crypto_types.h $(DESTDIR)$(includedir)/srtp3
+	if [ -f libsrtp3.a ]; then cp libsrtp3.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp3.dll.a ]; then cp libsrtp3.dll.a $(DESTDIR)$(libdir)/; fi
+	if [ -f libsrtp3.$(SHAREDLIBSUFFIX) ]; then \
 		$(INSTALL) -d $(DESTDIR)$(SHAREDLIB_DIR); \
-		cp libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
-		cp libsrtp2.$(SHAREDLIBSUFFIXNOVER) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		cp libsrtp3.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/; \
+		cp libsrtp3.$(SHAREDLIBSUFFIXNOVER) $(DESTDIR)$(SHAREDLIB_DIR)/; \
 		if [ -n "$(SHAREDLIBVERSION)" ]; then \
-			ln -sfn libsrtp2.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp2.$(SHAREDLIBSUFFIXNOVER); \
+			ln -sfn libsrtp3.$(SHAREDLIBSUFFIX) $(DESTDIR)$(SHAREDLIB_DIR)/libsrtp3.$(SHAREDLIBSUFFIXNOVER); \
 		fi; \
 	fi
 	$(INSTALL) -d $(DESTDIR)$(pkgconfigdir)
 	cp $(top_builddir)/$(pkgconfig_DATA) $(DESTDIR)$(pkgconfigdir)/
 
 uninstall:
-	rm -f $(DESTDIR)$(includedir)/srtp2/*.h
-	rm -f $(DESTDIR)$(libdir)/libsrtp2.*
-	-rmdir $(DESTDIR)$(includedir)/srtp2
+	rm -f $(DESTDIR)$(includedir)/srtp3/*.h
+	rm -f $(DESTDIR)$(libdir)/libsrtp3.*
+	-rmdir $(DESTDIR)$(includedir)/srtp3
 	rm -f $(DESTDIR)$(pkgconfigdir)/$(pkgconfig_DATA)
 
 clean:
 	rm -rf $(cryptobj) $(srtpobj) TAGS \
-		libsrtp2.a libsrtp2.so libsrtp2.dll.a core *.core test/core
+		libsrtp3.a libsrtp3.so libsrtp3.dll.a core *.core test/core
 	for a in * */* */*/*; do			\
 			  if [ -f "$$a~" ] ; then rm -f $$a~; fi;	\
 		done;
