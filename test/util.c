@@ -46,10 +46,67 @@
 #include "util.h"
 
 #include <string.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 /* include space for null terminator */
 static char bit_string[MAX_PRINT_STRING_LEN + 1];
+
+void check_ok_impl(srtp_err_status_t status, const char *file, int line)
+{
+    if (status != srtp_err_status_ok) {
+        fprintf(stderr, "error at %s:%d, unexpected srtp failure (code %d)\n",
+                file, line, status);
+        exit(1);
+    }
+}
+
+void check_return_impl(srtp_err_status_t status,
+                       srtp_err_status_t expected,
+                       const char *file,
+                       int line)
+{
+    if (status != expected) {
+        fprintf(stderr,
+                "error at %s:%d, unexpected srtp status (code %d != %d)\n",
+                file, line, status, expected);
+        exit(1);
+    }
+}
+
+void check_impl(bool condition,
+                const char *file,
+                int line,
+                const char *condition_str)
+{
+    if (!condition) {
+        fprintf(stderr, "error at %s:%d, %s)\n", file, line, condition_str);
+        exit(1);
+    }
+}
+
+#define OVERRUN_CHECK_BYTE 0xf1
+
+void overrun_check_prepare(uint8_t *buffer, size_t offset, size_t buffer_len)
+{
+    memset(buffer + offset, OVERRUN_CHECK_BYTE, buffer_len - offset);
+}
+
+void check_overrun_impl(const uint8_t *buffer,
+                        size_t offset,
+                        size_t buffer_length,
+                        const char *file,
+                        int line)
+{
+    for (size_t i = offset; i < buffer_length; i++) {
+        if (buffer[i] != OVERRUN_CHECK_BYTE) {
+            printf("error at %s:%d, overrun detected in buffer at index %zu "
+                   "(expected %x, found %x)\n",
+                   file, line, i, OVERRUN_CHECK_BYTE, buffer[i]);
+            exit(1);
+        }
+    }
+}
 
 static inline int hex_char_to_nibble(char c)
 {
