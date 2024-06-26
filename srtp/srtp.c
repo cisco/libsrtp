@@ -1895,7 +1895,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     enc_octet_len = rtp_len - enc_start;
 
     /* check output length */
-    if (*srtp_len < rtp_len + stream->mki_size + tag_len) {
+    if (*srtp_len < rtp_len + tag_len + stream->mki_size) {
         return srtp_err_status_buffer_small;
     }
 
@@ -1979,25 +1979,13 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     if (status) {
         return srtp_err_status_cipher_fail;
     }
-    /*
-     * If we're doing GCM, we need to get the tag
-     * and append that to the output
-     */
-    status = srtp_cipher_get_tag(session_keys->rtp_cipher,
-                                 srtp + enc_start + enc_octet_len, &tag_len);
-    if (status) {
-        return (srtp_err_status_cipher_fail);
-    }
 
     if (stream->use_mki) {
-        srtp_inject_mki(srtp + enc_start + enc_octet_len + tag_len,
-                        session_keys, stream->mki_size);
+        srtp_inject_mki(srtp + enc_start + enc_octet_len, session_keys,
+                        stream->mki_size);
     }
 
     *srtp_len = enc_start + enc_octet_len;
-
-    /* increase the packet length by the length of the auth tag */
-    *srtp_len += tag_len;
 
     /* increase the packet length by the length of the mki_size */
     *srtp_len += stream->mki_size;
@@ -3626,7 +3614,6 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
     uint8_t *trailer_p;       /* pointer to start of trailer            */
     uint32_t trailer;         /* trailer value                          */
     size_t enc_octet_len = 0; /* number of octets in encrypted portion  */
-    uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     srtp_err_status_t status;
     size_t tag_len;
     uint32_t seq_num;
@@ -3661,7 +3648,7 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
     if (stream->rtcp_services & sec_serv_conf) {
         trailer = htonl(SRTCP_E_BIT); /* set encrypt bit */
     } else {
-        /* 0 is network-order independant */
+        /* 0 is network-order independent */
         trailer = 0x00000000; /* set encrypt bit */
     }
 
@@ -3669,14 +3656,6 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
         srtp_inject_mki(srtcp + rtcp_len + tag_len + sizeof(srtcp_trailer_t),
                         session_keys, stream->mki_size);
     }
-
-    /*
-     * set the auth_tag pointer to the proper location, which is after
-     * the payload, but before the trailer
-     * (note that srtcp *always* provides authentication, unlike srtp)
-     */
-    /* Note: This would need to change for optional mikey data */
-    auth_tag = srtcp + rtcp_len;
 
     /*
      * check sequence number for overruns, and copy it into the packet
@@ -3740,21 +3719,13 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
 
     /* if we're encrypting, exor keystream into the message */
     if (stream->rtcp_services & sec_serv_conf) {
-        size_t outlen = *srtcp_len - enc_start;
+        size_t out_len = *srtcp_len - enc_start;
         status =
             srtp_cipher_encrypt(session_keys->rtcp_cipher, rtcp + enc_start,
-                                enc_octet_len, srtcp + enc_start, &outlen);
-        enc_octet_len = outlen;
+                                enc_octet_len, srtcp + enc_start, &out_len);
+        enc_octet_len = out_len;
         if (status) {
             return srtp_err_status_cipher_fail;
-        }
-        /*
-         * Get the tag and append that to the output
-         */
-        status =
-            srtp_cipher_get_tag(session_keys->rtcp_cipher, auth_tag, &tag_len);
-        if (status) {
-            return (srtp_err_status_cipher_fail);
         }
     } else {
         /* if no encryption and not-inplace then need to copy rest of packet */
@@ -3766,26 +3737,20 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
          * Even though we're not encrypting the payload, we need
          * to run the cipher to get the auth tag.
          */
-        size_t nolen = 0;
-        status = srtp_cipher_encrypt(session_keys->rtcp_cipher, NULL, 0, NULL,
-                                     &nolen);
+        uint8_t *auth_tag = srtcp + enc_start + enc_octet_len;
+        size_t out_len = *srtcp_len - enc_start - enc_octet_len;
+        status = srtp_cipher_encrypt(session_keys->rtcp_cipher, NULL, 0,
+                                     auth_tag, &out_len);
         if (status) {
             return srtp_err_status_cipher_fail;
         }
-        /*
-         * Get the tag and append that to the output
-         */
-        status =
-            srtp_cipher_get_tag(session_keys->rtcp_cipher, auth_tag, &tag_len);
-        if (status) {
-            return (srtp_err_status_cipher_fail);
-        }
+        enc_octet_len += out_len;
     }
 
     *srtcp_len = octets_in_rtcp_header + enc_octet_len;
 
-    /* increase the packet length by the length of the auth tag and seq_num*/
-    *srtcp_len += (tag_len + sizeof(srtcp_trailer_t));
+    /* increase the packet length by the length of the seq_num*/
+    *srtcp_len += sizeof(srtcp_trailer_t);
 
     /* increase the packet by the mki_size */
     *srtcp_len += stream->mki_size;

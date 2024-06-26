@@ -82,7 +82,6 @@ typedef struct {
     int aad_size;
     int iv_len;
     uint8_t iv[GCM_NONCE_MID_SZ];
-    uint8_t tag[AES_BLOCK_SIZE];
     uint8_t aad[MAX_AD_SIZE];
 #endif
     Aes *ctx;
@@ -102,7 +101,6 @@ typedef struct {
     size_t aad_size;
     size_t iv_len;
     uint8_t iv[12];
-    uint8_t tag[16];
     uint8_t aad[MAX_AD_SIZE];
     mbedtls_gcm_context *ctx;
     srtp_cipher_direction_t dir;
@@ -129,7 +127,6 @@ typedef struct {
     uint8_t aad[MAX_AD_SIZE];
     size_t aad_size;
     CK_GCM_PARAMS params;
-    uint8_t tag[16];
 } srtp_aes_gcm_ctx_t;
 
 #endif /* NSS */

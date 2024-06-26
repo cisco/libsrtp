@@ -137,20 +137,6 @@ srtp_err_status_t srtp_cipher_decrypt(srtp_cipher_t *c,
     return (((c)->type)->decrypt(((c)->state), src, src_len, dst, dst_len));
 }
 
-srtp_err_status_t srtp_cipher_get_tag(srtp_cipher_t *c,
-                                      uint8_t *buffer,
-                                      size_t *tag_len)
-{
-    if (!c || !c->type || !c->state) {
-        return (srtp_err_status_bad_param);
-    }
-    if (!((c)->type)->get_tag) {
-        return (srtp_err_status_no_such_op);
-    }
-
-    return (((c)->type)->get_tag(((c)->state), buffer, tag_len));
-}
-
 srtp_err_status_t srtp_cipher_set_aad(srtp_cipher_t *c,
                                       const uint8_t *aad,
                                       size_t aad_len)
@@ -218,7 +204,6 @@ srtp_err_status_t srtp_cipher_type_test(
     srtp_err_status_t status;
     uint8_t buffer[SELF_TEST_BUF_OCTETS];
     uint8_t buffer2[SELF_TEST_BUF_OCTETS];
-    size_t tag_len;
     size_t len;
     size_t case_num = 0;
 
@@ -303,19 +288,6 @@ srtp_err_status_t srtp_cipher_type_test(
         if (status) {
             srtp_cipher_dealloc(c);
             return status;
-        }
-
-        if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
-            /*
-             * Get the GCM tag
-             */
-            status = srtp_cipher_get_tag(c, buffer + len, &tag_len);
-            if (status) {
-                srtp_cipher_dealloc(c);
-                return status;
-            }
-            len += tag_len;
         }
 
         debug_print(srtp_mod_cipher, "ciphertext:   %s",
@@ -406,7 +378,7 @@ srtp_err_status_t srtp_cipher_type_test(
             return status;
         }
 
-        debug_print(srtp_mod_cipher, "plaintext:   %s",
+        debug_print(srtp_mod_cipher, "plaintext:     %s",
                     srtp_octet_string_hex_string(
                         buffer, test_case->plaintext_length_octets));
 
@@ -530,18 +502,7 @@ srtp_err_status_t srtp_cipher_type_test(
             srtp_cipher_dealloc(c);
             return status;
         }
-        if (c->algorithm == SRTP_AES_GCM_128 ||
-            c->algorithm == SRTP_AES_GCM_256) {
-            /*
-             * Get the GCM tag
-             */
-            status = srtp_cipher_get_tag(c, buffer + encrypted_len, &tag_len);
-            if (status) {
-                srtp_cipher_dealloc(c);
-                return status;
-            }
-            encrypted_len += tag_len;
-        }
+
         debug_print(srtp_mod_cipher, "ciphertext:   %s",
                     srtp_octet_string_hex_string(buffer, encrypted_len));
 
@@ -641,6 +602,7 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
     clock_t timer;
     uint8_t *enc_buf;
     size_t len = octets_in_buffer;
+    size_t out_len;
     size_t tag_len = SRTP_MAX_TAG_LEN;
     uint8_t aad[4] = { 0, 0, 0, 0 };
     size_t aad_len = 4;
@@ -669,19 +631,11 @@ uint64_t srtp_cipher_bits_per_second(srtp_cipher_t *c,
         }
 
         // Encrypt the buffer
-        if (srtp_cipher_encrypt(c, enc_buf, len, enc_buf, &len) !=
+        out_len = octets_in_buffer + tag_len;
+        if (srtp_cipher_encrypt(c, enc_buf, len, enc_buf, &out_len) !=
             srtp_err_status_ok) {
             srtp_crypto_free(enc_buf);
             return 0;
-        }
-
-        // Get tag if supported by the cipher
-        if (c->type->get_tag) {
-            if (srtp_cipher_get_tag(c, enc_buf + len, &tag_len) !=
-                srtp_err_status_ok) {
-                srtp_crypto_free(enc_buf);
-                return 0;
-            }
         }
     }
     timer = clock() - timer;
