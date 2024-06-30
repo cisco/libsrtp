@@ -160,7 +160,6 @@ const srtp_cipher_type_t srtp_null_cipher = {
     srtp_null_cipher_encrypt,     /* */
     srtp_null_cipher_encrypt,     /* */
     srtp_null_cipher_set_iv,      /* */
-    0,                            /* get_tag */
     srtp_null_cipher_description, /* */
     &srtp_null_cipher_test_0,     /* */
     SRTP_NULL_CIPHER              /* */

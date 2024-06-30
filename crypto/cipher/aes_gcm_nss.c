@@ -319,11 +319,6 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
 /*
  * This function encrypts a buffer using AES GCM mode
  *
- * XXX(rlb@ipv.sx): We're required to break off and cache the tag
- * here, because the get_tag() method is separate and the tests expect
- * encrypt() not to change the size of the plaintext.  It might be
- * good to update the calling API so that this is cleaner.
- *
  * Parameters:
  *	c	Crypto context
  *	buf	data to encrypt
@@ -335,58 +330,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_encrypt(void *cv,
                                                   uint8_t *dst,
                                                   size_t *dst_len)
 {
-    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-
-    // When we get a non-NULL src buffer, we know that the caller is
-    // prepared to also take the tag.  When we get a NULL src buffer,
-    // even though there's no data, we need to give NSS a buffer
-    // where it can write the tag.  We can't just use c->tag because
-    // memcpy has undefined behavior on overlapping ranges.
-    uint8_t tagbuf[16];
-    const uint8_t *non_null_buf = src;
-    uint8_t *non_null_dst_buf = dst;
-    if (!non_null_buf && (src_len == 0)) {
-        non_null_buf = tagbuf;
-        non_null_dst_buf = tagbuf;
-        *dst_len = sizeof(tagbuf);
-    } else if (!non_null_buf) {
-        return srtp_err_status_bad_param;
-    }
-
-    srtp_err_status_t status = srtp_aes_gcm_nss_do_crypto(
-        cv, true, non_null_buf, src_len, non_null_dst_buf, dst_len);
-    if (status != srtp_err_status_ok) {
-        return status;
-    }
-
-    if (*dst_len < c->tag_size) {
-        return srtp_err_status_bad_param;
-    }
-
-    memcpy(c->tag, non_null_dst_buf + (*dst_len - c->tag_size), c->tag_size);
-    *dst_len -= c->tag_size;
-    return srtp_err_status_ok;
-}
-
-/*
- * This function calculates and returns the GCM tag for a given context.
- * This should be called after encrypting the data.  The *len value
- * is increased by the tag size.  The caller must ensure that *buf has
- * enough room to accept the appended tag.
- *
- * Parameters:
- *	c	Crypto context
- *	buf	data to encrypt
- *	len	length of encrypt buffer
- */
-static srtp_err_status_t srtp_aes_gcm_nss_get_tag(void *cv,
-                                                  uint8_t *buf,
-                                                  size_t *len)
-{
-    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    *len = c->tag_size;
-    memcpy(buf, c->tag, c->tag_size);
-    return (srtp_err_status_ok);
+    return srtp_aes_gcm_nss_do_crypto(cv, true, src, src_len, dst, dst_len);
 }
 
 /*
@@ -442,7 +386,6 @@ const srtp_cipher_type_t srtp_aes_gcm_128 = {
     srtp_aes_gcm_nss_encrypt,
     srtp_aes_gcm_nss_decrypt,
     srtp_aes_gcm_nss_set_iv,
-    srtp_aes_gcm_nss_get_tag,
     srtp_aes_gcm_128_nss_description,
     &srtp_aes_gcm_128_test_case_0,
     SRTP_AES_GCM_128
@@ -461,7 +404,6 @@ const srtp_cipher_type_t srtp_aes_gcm_256 = {
     srtp_aes_gcm_nss_encrypt,
     srtp_aes_gcm_nss_decrypt,
     srtp_aes_gcm_nss_set_iv,
-    srtp_aes_gcm_nss_get_tag,
     srtp_aes_gcm_256_nss_description,
     &srtp_aes_gcm_256_test_case_0,
     SRTP_AES_GCM_256

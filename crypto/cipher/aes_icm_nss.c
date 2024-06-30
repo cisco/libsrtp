@@ -367,7 +367,6 @@ const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                /* get_tag */
     srtp_aes_icm_128_nss_description, /* */
     &srtp_aes_icm_128_test_case_0,    /* */
     SRTP_AES_ICM_128                  /* */
@@ -385,7 +384,6 @@ const srtp_cipher_type_t srtp_aes_icm_192 = {
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                /* get_tag */
     srtp_aes_icm_192_nss_description, /* */
     &srtp_aes_icm_192_test_case_0,    /* */
     SRTP_AES_ICM_192                  /* */
@@ -403,7 +401,6 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                /* get_tag */
     srtp_aes_icm_256_nss_description, /* */
     &srtp_aes_icm_256_test_case_0,    /* */
     SRTP_AES_ICM_256                  /* */

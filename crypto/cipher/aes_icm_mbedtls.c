@@ -339,7 +339,6 @@ const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_mbedtls_encrypt,         /* */
     srtp_aes_icm_mbedtls_encrypt,         /* */
     srtp_aes_icm_mbedtls_set_iv,          /* */
-    0,                                    /* get_tag */
     srtp_aes_icm_128_mbedtls_description, /* */
     &srtp_aes_icm_128_test_case_0,        /* */
     SRTP_AES_ICM_128                      /* */
@@ -357,7 +356,6 @@ const srtp_cipher_type_t srtp_aes_icm_192 = {
     srtp_aes_icm_mbedtls_encrypt,         /* */
     srtp_aes_icm_mbedtls_encrypt,         /* */
     srtp_aes_icm_mbedtls_set_iv,          /* */
-    0,                                    /* get_tag */
     srtp_aes_icm_192_mbedtls_description, /* */
     &srtp_aes_icm_192_test_case_0,        /* */
     SRTP_AES_ICM_192                      /* */
@@ -375,7 +373,6 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     srtp_aes_icm_mbedtls_encrypt,         /* */
     srtp_aes_icm_mbedtls_encrypt,         /* */
     srtp_aes_icm_mbedtls_set_iv,          /* */
-    0,                                    /* get_tag */
     srtp_aes_icm_256_mbedtls_description, /* */
     &srtp_aes_icm_256_test_case_0,        /* */
     SRTP_AES_ICM_256                      /* */

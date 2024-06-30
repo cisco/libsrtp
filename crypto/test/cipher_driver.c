@@ -337,8 +337,14 @@ void cipher_driver_test_throughput(srtp_cipher_t *c)
            c->key_len);
     fflush(stdout);
     for (size_t i = min_enc_len; i <= max_enc_len; i = i * 2) {
+        uint64_t bits_per_second =
+            srtp_cipher_bits_per_second(c, i, num_trials);
+        if (bits_per_second == 0) {
+            printf("error: throughput test failed\n");
+            exit(1);
+        }
         printf("msg len: %zu\tgigabits per second: %f\n", i,
-               srtp_cipher_bits_per_second(c, i, num_trials) / 1e9);
+               bits_per_second / 1e9);
     }
 }
 
@@ -409,7 +415,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct, int key_len)
 
 /*
  * cipher_driver_test_buffering(ct) tests the cipher's output
- * buffering for correctness by checking the consistency of succesive
+ * buffering for correctness by checking the consistency of successive
  * calls
  */
 
