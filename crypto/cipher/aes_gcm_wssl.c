@@ -330,7 +330,7 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_encrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int err;
 
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
+    if (c->dir != srtp_direction_encrypt) {
         return srtp_err_status_bad_param;
     }
 
@@ -385,7 +385,11 @@ static srtp_err_status_t srtp_aes_gcm_wolfssl_decrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int err;
 
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
+    if (c->dir != srtp_direction_decrypt) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (src_len < c->tag_len) {
         return srtp_err_status_bad_param;
     }
 

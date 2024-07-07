@@ -301,16 +301,36 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
     SECItem param = { siBuffer, (unsigned char *)&c->params,
                       sizeof(CK_GCM_PARAMS) };
     if (encrypt) {
+        if (c->dir != srtp_direction_encrypt) {
+            return srtp_err_status_bad_param;
+        }
+
+        if (*dst_len < src_len + c->tag_size) {
+            return srtp_err_status_buffer_small;
+        }
+
         rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, dst, &out_len, *dst_len,
                           src, src_len);
     } else {
+        if (c->dir != srtp_direction_decrypt) {
+            return srtp_err_status_bad_param;
+        }
+
+        if (src_len < c->tag_size) {
+            return srtp_err_status_bad_param;
+        }
+
+        if (*dst_len < src_len - c->tag_size) {
+            return srtp_err_status_buffer_small;
+        }
+
         rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, dst, &out_len, *dst_len,
                           src, src_len);
     }
     *dst_len = out_len;
-    srtp_err_status_t status = (srtp_err_status_ok);
+    srtp_err_status_t status = srtp_err_status_ok;
     if (rv != SECSuccess) {
-        status = (srtp_err_status_cipher_fail);
+        status = srtp_err_status_cipher_fail;
     }
 
     return status;

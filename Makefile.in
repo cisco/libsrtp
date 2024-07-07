@@ -229,7 +229,7 @@ test/roc_driver$(EXE): test/roc_driver.c test/ut_sim.c
 test/replay_driver$(EXE): test/replay_driver.c test/ut_sim.c
 	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
-crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c
+crypto/test/cipher_driver$(EXE): crypto/test/cipher_driver.c test/getopt_s.c test/util.c
 	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 crypto/test/kernel_driver$(EXE): crypto/test/kernel_driver.c test/getopt_s.c

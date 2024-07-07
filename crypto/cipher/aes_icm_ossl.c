@@ -308,6 +308,14 @@ static srtp_err_status_t srtp_aes_icm_openssl_encrypt(void *cv,
 
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
+    if (dst_len == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     if (!EVP_EncryptUpdate(c->ctx, dst, &len, src, src_len)) {
         return srtp_err_status_cipher_fail;
     }

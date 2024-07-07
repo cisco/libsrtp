@@ -386,7 +386,7 @@ if(LIBSRTP_TEST_APPS)
     target_link_libraries(datatypes_driver srtp3)
     add_test(datatypes_driver datatypes_driver -v)
 
-    add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c)
+    add_executable(cipher_driver crypto/test/cipher_driver.c test/getopt_s.c test/util.c)
     target_set_warnings(
             TARGET
             cipher_driver

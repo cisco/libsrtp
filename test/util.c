@@ -52,11 +52,52 @@
 /* include space for null terminator */
 static char bit_string[MAX_PRINT_STRING_LEN + 1];
 
+#define ERR_STATUS_STRING(STATUS)                                              \
+    case srtp_err_status_##STATUS:                                             \
+        return #STATUS
+
+const char *err_status_string(srtp_err_status_t status)
+{
+    switch (status) {
+        ERR_STATUS_STRING(ok);
+        ERR_STATUS_STRING(fail);
+        ERR_STATUS_STRING(bad_param);
+        ERR_STATUS_STRING(alloc_fail);
+        ERR_STATUS_STRING(dealloc_fail);
+        ERR_STATUS_STRING(init_fail);
+        ERR_STATUS_STRING(terminus);
+        ERR_STATUS_STRING(auth_fail);
+        ERR_STATUS_STRING(cipher_fail);
+        ERR_STATUS_STRING(replay_fail);
+        ERR_STATUS_STRING(replay_old);
+        ERR_STATUS_STRING(algo_fail);
+        ERR_STATUS_STRING(no_such_op);
+        ERR_STATUS_STRING(no_ctx);
+        ERR_STATUS_STRING(cant_check);
+        ERR_STATUS_STRING(key_expired);
+        ERR_STATUS_STRING(socket_err);
+        ERR_STATUS_STRING(signal_err);
+        ERR_STATUS_STRING(nonce_bad);
+        ERR_STATUS_STRING(read_fail);
+        ERR_STATUS_STRING(write_fail);
+        ERR_STATUS_STRING(parse_err);
+        ERR_STATUS_STRING(encode_err);
+        ERR_STATUS_STRING(semaphore_err);
+        ERR_STATUS_STRING(pfkey_err);
+        ERR_STATUS_STRING(bad_mki);
+        ERR_STATUS_STRING(pkt_idx_old);
+        ERR_STATUS_STRING(pkt_idx_adv);
+        ERR_STATUS_STRING(buffer_small);
+    }
+    return "unkown srtp_err_status";
+}
+
 void check_ok_impl(srtp_err_status_t status, const char *file, int line)
 {
     if (status != srtp_err_status_ok) {
-        fprintf(stderr, "error at %s:%d, unexpected srtp failure (code %d)\n",
-                file, line, status);
+        fprintf(stderr,
+                "\nerror at %s:%d, unexpected srtp failure: %d (\"%s\")\n",
+                file, line, status, err_status_string(status));
         exit(1);
     }
 }
@@ -68,8 +109,10 @@ void check_return_impl(srtp_err_status_t status,
 {
     if (status != expected) {
         fprintf(stderr,
-                "error at %s:%d, unexpected srtp status (code %d != %d)\n",
-                file, line, status, expected);
+                "\nerror at %s:%d, unexpected srtp status: %d != %d (\"%s\" != "
+                "\"%s\")\n",
+                file, line, status, expected, err_status_string(status),
+                err_status_string(expected));
         exit(1);
     }
 }
@@ -80,7 +123,7 @@ void check_impl(bool condition,
                 const char *condition_str)
 {
     if (!condition) {
-        fprintf(stderr, "error at %s:%d, %s)\n", file, line, condition_str);
+        fprintf(stderr, "\nerror at %s:%d, %s)\n", file, line, condition_str);
         exit(1);
     }
 }
@@ -92,6 +135,27 @@ void overrun_check_prepare(uint8_t *buffer, size_t offset, size_t buffer_len)
     memset(buffer + offset, OVERRUN_CHECK_BYTE, buffer_len - offset);
 }
 
+void check_buffer_equal_impl(const uint8_t *buffer1,
+                             const uint8_t *buffer2,
+                             size_t buffer_length,
+                             const char *file,
+                             int line)
+{
+    for (size_t i = 0; i < buffer_length; i++) {
+        if (buffer1[i] != buffer2[i]) {
+            fprintf(stderr,
+                    "\nerror at %s:%d, buffer1 != buffer2 at index: %zu (%x != "
+                    "%x)\n",
+                    file, line, i, buffer1[i], buffer2[i]);
+            fprintf(stderr, "buffer1 = %s\n",
+                    octet_string_hex_string(buffer1, buffer_length));
+            fprintf(stderr, "buffer2 = %s\n",
+                    octet_string_hex_string(buffer2, buffer_length));
+            exit(1);
+        }
+    }
+}
+
 void check_overrun_impl(const uint8_t *buffer,
                         size_t offset,
                         size_t buffer_length,
@@ -100,7 +164,7 @@ void check_overrun_impl(const uint8_t *buffer,
 {
     for (size_t i = offset; i < buffer_length; i++) {
         if (buffer[i] != OVERRUN_CHECK_BYTE) {
-            printf("error at %s:%d, overrun detected in buffer at index %zu "
+            printf("\nerror at %s:%d, overrun detected in buffer at index %zu "
                    "(expected %x, found %x)\n",
                    file, line, i, OVERRUN_CHECK_BYTE, buffer[i]);
             exit(1);

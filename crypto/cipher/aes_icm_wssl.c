@@ -318,6 +318,14 @@ static srtp_err_status_t srtp_aes_icm_wolfssl_encrypt(void *cv,
     int err;
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
+    if (dst_len == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     err = wc_AesCtrEncrypt(c->ctx, dst, src, src_len);
     if (err < 0) {
         debug_print(srtp_mod_aes_icm, "wolfSSL encrypt error: %d", err);

@@ -290,7 +290,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int errCode = 0;
 
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
+    if (c->dir != srtp_direction_encrypt) {
         return srtp_err_status_bad_param;
     }
 
@@ -331,8 +331,12 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int errCode = 0;
 
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
-        return (srtp_err_status_bad_param);
+    if (c->dir != srtp_direction_decrypt) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (src_len < c->tag_len) {
+        return srtp_err_status_bad_param;
     }
 
     if (*dst_len < (src_len - c->tag_len)) {
@@ -347,7 +351,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
         src + (src_len - c->tag_len), c->tag_len, src, dst);
     c->aad_size = 0;
     if (errCode != 0) {
-        return (srtp_err_status_auth_fail);
+        return srtp_err_status_auth_fail;
     }
 
     /*
@@ -356,7 +360,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
      */
     *dst_len = (src_len - c->tag_len);
 
-    return (srtp_err_status_ok);
+    return srtp_err_status_ok;
 }
 
 /*

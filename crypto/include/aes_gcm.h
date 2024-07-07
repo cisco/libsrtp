@@ -76,11 +76,11 @@ typedef struct {
 #include <wolfssl/wolfcrypt/aes.h>
 
 typedef struct {
-    int key_size;
-    int tag_len;
+    size_t key_size;
+    size_t tag_len;
 #ifndef WOLFSSL_AESGCM_STREAM
-    int aad_size;
-    int iv_len;
+    size_t aad_size;
+    size_t iv_len;
     uint8_t iv[GCM_NONCE_MID_SZ];
     uint8_t aad[MAX_AD_SIZE];
 #endif
