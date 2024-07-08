@@ -56,7 +56,6 @@ srtp_cipher_set_iv
 srtp_cipher_output
 srtp_cipher_encrypt
 srtp_cipher_decrypt
-srtp_cipher_get_tag
 srtp_cipher_set_aad
 srtp_replace_cipher_type
 srtp_auth_get_key_length

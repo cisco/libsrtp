@@ -290,17 +290,17 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int errCode = 0;
 
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
-        return (srtp_err_status_bad_param);
+    if (c->dir != srtp_direction_encrypt) {
+        return srtp_err_status_bad_param;
     }
 
-    if (*dst_len < src_len) {
+    if (*dst_len < src_len + c->tag_len) {
         return srtp_err_status_buffer_small;
     }
 
     errCode = mbedtls_gcm_crypt_and_tag(c->ctx, MBEDTLS_GCM_ENCRYPT, src_len,
                                         c->iv, c->iv_len, c->aad, c->aad_size,
-                                        src, dst, c->tag_len, c->tag);
+                                        src, dst, c->tag_len, dst + src_len);
 
     c->aad_size = 0;
     if (errCode != 0) {
@@ -308,32 +308,9 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
         return srtp_err_status_bad_param;
     }
 
-    *dst_len = src_len;
+    *dst_len = src_len + c->tag_len;
 
-    return (srtp_err_status_ok);
-}
-
-/*
- * This function calculates and returns the GCM tag for a given context.
- * This should be called after encrypting the data.  The *len value
- * is increased by the tag size.  The caller must ensure that *buf has
- * enough room to accept the appended tag.
- *
- * Parameters:
- *	c	Crypto context
- *	buf	data to encrypt
- *	len	length of encrypt buffer
- */
-static srtp_err_status_t srtp_aes_gcm_mbedtls_get_tag(void *cv,
-                                                      uint8_t *buf,
-                                                      size_t *len)
-{
-    FUNC_ENTRY();
-    srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    debug_print(srtp_mod_aes_gcm, "appended tag size:  %zu", c->tag_len);
-    *len = c->tag_len;
-    memcpy(buf, c->tag, c->tag_len);
-    return (srtp_err_status_ok);
+    return srtp_err_status_ok;
 }
 
 /*
@@ -354,8 +331,12 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     int errCode = 0;
 
-    if (c->dir != srtp_direction_encrypt && c->dir != srtp_direction_decrypt) {
-        return (srtp_err_status_bad_param);
+    if (c->dir != srtp_direction_decrypt) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (src_len < c->tag_len) {
+        return srtp_err_status_bad_param;
     }
 
     if (*dst_len < (src_len - c->tag_len)) {
@@ -370,7 +351,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
         src + (src_len - c->tag_len), c->tag_len, src, dst);
     c->aad_size = 0;
     if (errCode != 0) {
-        return (srtp_err_status_auth_fail);
+        return srtp_err_status_auth_fail;
     }
 
     /*
@@ -379,7 +360,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
      */
     *dst_len = (src_len - c->tag_len);
 
-    return (srtp_err_status_ok);
+    return srtp_err_status_ok;
 }
 
 /*
@@ -393,6 +374,7 @@ static const char srtp_aes_gcm_256_mbedtls_description[] =
 /*
  * This is the vector function table for this crypto engine.
  */
+/* clang-format off */
 const srtp_cipher_type_t srtp_aes_gcm_128 = {
     srtp_aes_gcm_mbedtls_alloc,
     srtp_aes_gcm_mbedtls_dealloc,
@@ -401,15 +383,16 @@ const srtp_cipher_type_t srtp_aes_gcm_128 = {
     srtp_aes_gcm_mbedtls_encrypt,
     srtp_aes_gcm_mbedtls_decrypt,
     srtp_aes_gcm_mbedtls_set_iv,
-    srtp_aes_gcm_mbedtls_get_tag,
     srtp_aes_gcm_128_mbedtls_description,
     &srtp_aes_gcm_128_test_case_0,
     SRTP_AES_GCM_128
 };
+/* clang-format on */
 
 /*
  * This is the vector function table for this crypto engine.
  */
+/* clang-format off */
 const srtp_cipher_type_t srtp_aes_gcm_256 = {
     srtp_aes_gcm_mbedtls_alloc,
     srtp_aes_gcm_mbedtls_dealloc,
@@ -418,8 +401,8 @@ const srtp_cipher_type_t srtp_aes_gcm_256 = {
     srtp_aes_gcm_mbedtls_encrypt,
     srtp_aes_gcm_mbedtls_decrypt,
     srtp_aes_gcm_mbedtls_set_iv,
-    srtp_aes_gcm_mbedtls_get_tag,
     srtp_aes_gcm_256_mbedtls_description,
     &srtp_aes_gcm_256_test_case_0,
     SRTP_AES_GCM_256
 };
+/* clang-format on */

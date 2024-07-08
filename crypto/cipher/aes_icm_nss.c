@@ -334,12 +334,20 @@ static srtp_err_status_t srtp_aes_icm_nss_encrypt(void *cv,
         return srtp_err_status_bad_param;
     }
 
+    if (dst_len == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     int out_len = 0;
     int rv = PK11_CipherOp(c->ctx, dst, &out_len, *dst_len, src, src_len);
     *dst_len = out_len;
-    srtp_err_status_t status = (srtp_err_status_ok);
+    srtp_err_status_t status = srtp_err_status_ok;
     if (rv != SECSuccess) {
-        status = (srtp_err_status_cipher_fail);
+        status = srtp_err_status_cipher_fail;
     }
 
     return status;
@@ -367,7 +375,6 @@ const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                /* get_tag */
     srtp_aes_icm_128_nss_description, /* */
     &srtp_aes_icm_128_test_case_0,    /* */
     SRTP_AES_ICM_128                  /* */
@@ -385,7 +392,6 @@ const srtp_cipher_type_t srtp_aes_icm_192 = {
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                /* get_tag */
     srtp_aes_icm_192_nss_description, /* */
     &srtp_aes_icm_192_test_case_0,    /* */
     SRTP_AES_ICM_192                  /* */
@@ -403,7 +409,6 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_encrypt,         /* */
     srtp_aes_icm_nss_set_iv,          /* */
-    0,                                /* get_tag */
     srtp_aes_icm_256_nss_description, /* */
     &srtp_aes_icm_256_test_case_0,    /* */
     SRTP_AES_ICM_256                  /* */

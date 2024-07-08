@@ -308,6 +308,14 @@ static srtp_err_status_t srtp_aes_icm_openssl_encrypt(void *cv,
 
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
 
+    if (dst_len == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (*dst_len < src_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     if (!EVP_EncryptUpdate(c->ctx, dst, &len, src, src_len)) {
         return srtp_err_status_cipher_fail;
     }
@@ -343,7 +351,6 @@ const srtp_cipher_type_t srtp_aes_icm_128 = {
     srtp_aes_icm_openssl_encrypt,         /* */
     srtp_aes_icm_openssl_encrypt,         /* */
     srtp_aes_icm_openssl_set_iv,          /* */
-    0,                                    /* get_tag */
     srtp_aes_icm_128_openssl_description, /* */
     &srtp_aes_icm_128_test_case_0,        /* */
     SRTP_AES_ICM_128                      /* */
@@ -361,7 +368,6 @@ const srtp_cipher_type_t srtp_aes_icm_192 = {
     srtp_aes_icm_openssl_encrypt,         /* */
     srtp_aes_icm_openssl_encrypt,         /* */
     srtp_aes_icm_openssl_set_iv,          /* */
-    0,                                    /* get_tag */
     srtp_aes_icm_192_openssl_description, /* */
     &srtp_aes_icm_192_test_case_0,        /* */
     SRTP_AES_ICM_192                      /* */
@@ -379,7 +385,6 @@ const srtp_cipher_type_t srtp_aes_icm_256 = {
     srtp_aes_icm_openssl_encrypt,         /* */
     srtp_aes_icm_openssl_encrypt,         /* */
     srtp_aes_icm_openssl_set_iv,          /* */
-    0,                                    /* get_tag */
     srtp_aes_icm_256_openssl_description, /* */
     &srtp_aes_icm_256_test_case_0,        /* */
     SRTP_AES_ICM_256                      /* */

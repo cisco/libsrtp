@@ -56,6 +56,11 @@ void check_impl(bool condition,
                 const char *file,
                 int line,
                 const char *condition_str);
+void check_buffer_equal_impl(const uint8_t *buffer1,
+                             const uint8_t *buffer2,
+                             size_t buffer_length,
+                             const char *file,
+                             int line);
 void check_overrun_impl(const uint8_t *buffer,
                         size_t offset,
                         size_t buffer_length,
@@ -67,6 +72,8 @@ void overrun_check_prepare(uint8_t *buffer, size_t offset, size_t buffer_len);
 #define CHECK_RETURN(status, expected)                                         \
     check_return_impl((status), (expected), __FILE__, __LINE__)
 #define CHECK(condition) check_impl((condition), __FILE__, __LINE__, #condition)
+#define CHECK_BUFFER_EQUAL(buffer1, buffer2, length)                           \
+    check_buffer_equal_impl((buffer1), (buffer2), (length), __FILE__, __LINE__)
 #define CHECK_OVERRUN(buffer, offset, length)                                  \
     check_overrun_impl((buffer), (offset), (length), __FILE__, __LINE__)
 
