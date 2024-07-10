@@ -54,8 +54,6 @@
 #include <netinet/in.h>
 #elif defined HAVE_WINSOCK2_H
 #include <winsock2.h>
-#else
-#error "Platform not recognized"
 #endif
 
 #if defined(__SSE2__)
