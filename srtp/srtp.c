@@ -1507,28 +1507,28 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 
 void srtp_event_reporter(srtp_event_data_t *data)
 {
-    debug_print(srtp_err_level_warning,
-                "srtp: in stream 0x%x: ", data->ssrc);
+    srtp_err_report(srtp_err_level_warning,
+                    "srtp: in stream 0x%x: ", data->ssrc);
 
     switch (data->event) {
     case event_ssrc_collision:
-        debug_print0(srtp_err_level_warning, "\tSSRC collision\n");
+        srtp_err_report(srtp_err_level_warning, "\tSSRC collision\n");
         break;
     case event_key_soft_limit:
-        debug_print0(srtp_err_level_warning,
-                     "\tkey usage soft limit reached\n");
+        srtp_err_report(srtp_err_level_warning,
+                     	"\tkey usage soft limit reached\n");
         break;
     case event_key_hard_limit:
-        debug_print0(srtp_err_level_warning,
-                     "\tkey usage hard limit reached\n");
+        srtp_err_report(srtp_err_level_warning,
+                        "\tkey usage hard limit reached\n");
         break;
     case event_packet_index_limit:
-        debug_print0(srtp_err_level_warning,
-                     "\tpacket index limit reached\n");
+        srtp_err_report(srtp_err_level_warning,
+                        "\tpacket index limit reached\n");
         break;
     default:
-        debug_print0(srtp_err_level_warning,
-                     "\tunknown event reported to handler\n");
+        srtp_err_report(srtp_err_level_warning,
+                        "\tunknown event reported to handler\n");
     }
 }
 
