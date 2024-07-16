@@ -584,7 +584,8 @@ static srtp_err_status_t srtp_stream_clone(
     srtp_session_keys_t *session_keys = NULL;
     const srtp_session_keys_t *template_session_keys = NULL;
 
-    debug_print(mod_srtp, "cloning stream (SSRC: 0x%08x)", ntohl(ssrc));
+    debug_print(mod_srtp, "cloning stream (SSRC: 0x%08x)",
+                (unsigned int)ntohl(ssrc));
 
     /* allocate srtp stream and set str_ptr */
     str = (srtp_stream_ctx_t *)srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
@@ -1442,7 +1443,8 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
         return err;
     }
 
-    debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)", p->ssrc.value);
+    debug_print(mod_srtp, "initializing stream (SSRC: 0x%08x)",
+                (unsigned int)p->ssrc.value);
 
     /* initialize replay database */
     /*
@@ -1508,7 +1510,7 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 void srtp_event_reporter(srtp_event_data_t *data)
 {
     srtp_err_report(srtp_err_level_warning,
-                    "srtp: in stream 0x%x: ", data->ssrc);
+                    "srtp: in stream 0x%x: ", (unsigned int)data->ssrc);
 
     switch (data->event) {
     case event_ssrc_collision:
@@ -2548,7 +2550,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         if (ctx->stream_template != NULL) {
             stream = ctx->stream_template;
             debug_print(mod_srtp, "using provisional stream (SSRC: 0x%08x)",
-                        ntohl(hdr->ssrc));
+                        (unsigned int)ntohl(hdr->ssrc));
 
             /*
              * set estimated packet index to sequence number from header,
@@ -3667,7 +3669,7 @@ static srtp_err_status_t srtp_protect_rtcp_aead(
     }
     seq_num = srtp_rdb_get_value(&stream->rtcp_rdb);
     trailer |= htonl(seq_num);
-    debug_print(mod_srtp, "srtcp index: %x", seq_num);
+    debug_print(mod_srtp, "srtcp index: %x", (unsigned int)seq_num);
 
     memcpy(trailer_p, &trailer, sizeof(trailer));
 
@@ -3814,7 +3816,7 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
      */
     /* this is easier than dealing with bitfield access */
     seq_num = ntohl(trailer) & SRTCP_INDEX_MASK;
-    debug_print(mod_srtp, "srtcp index: %x", seq_num);
+    debug_print(mod_srtp, "srtcp index: %x", (unsigned int)seq_num);
     status = srtp_rdb_check(&stream->rtcp_rdb, seq_num);
     if (status) {
         return status;
@@ -4112,7 +4114,7 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     }
     seq_num = srtp_rdb_get_value(&stream->rtcp_rdb);
     trailer |= htonl(seq_num);
-    debug_print(mod_srtp, "srtcp index: %x", seq_num);
+    debug_print(mod_srtp, "srtcp index: %x", (unsigned int)seq_num);
 
     memcpy(trailer_p, &trailer, sizeof(trailer));
 
@@ -4255,7 +4257,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
 
             debug_print(mod_srtp,
                         "srtcp using provisional stream (SSRC: 0x%08x)",
-                        ntohl(hdr->ssrc));
+                        (unsigned int)ntohl(hdr->ssrc));
         } else {
             /* no template stream, so we return an error */
             return srtp_err_status_no_ctx;
@@ -4335,7 +4337,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
      */
     /* this is easier than dealing with bitfield access */
     seq_num = ntohl(trailer) & SRTCP_INDEX_MASK;
-    debug_print(mod_srtp, "srtcp index: %x", seq_num);
+    debug_print(mod_srtp, "srtcp index: %x", (unsigned int)seq_num);
     status = srtp_rdb_check(&stream->rtcp_rdb, seq_num);
     if (status) {
         return status;

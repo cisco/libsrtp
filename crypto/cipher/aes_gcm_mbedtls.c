@@ -90,6 +90,84 @@ srtp_debug_module_t srtp_mod_aes_gcm = {
 #define GCM_AUTH_TAG_LEN_8 8
 
 #define FUNC_ENTRY() debug_print(srtp_mod_aes_gcm, "%s entry", __func__);
+
+/*
+ * static function declarations.
+ */
+static srtp_err_status_t srtp_aes_gcm_mbedtls_alloc(srtp_cipher_t **c,
+                                                    size_t key_len,
+                                                    size_t tlen);
+
+static srtp_err_status_t srtp_aes_gcm_mbedtls_dealloc(srtp_cipher_t *c);
+
+static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
+                                                           const uint8_t *key);
+
+static srtp_err_status_t srtp_aes_gcm_mbedtls_set_iv(
+    void *cv,
+    uint8_t *iv,
+    srtp_cipher_direction_t direction);
+
+static srtp_err_status_t srtp_aes_gcm_mbedtls_set_aad(void *cv,
+                                                      const uint8_t *aad,
+                                                      size_t aad_len);
+
+static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len);
+
+static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len);
+
+/*
+ * Name of this crypto engine
+ */
+static const char srtp_aes_gcm_128_mbedtls_description[] =
+    "AES-128 GCM using mbedtls";
+static const char srtp_aes_gcm_256_mbedtls_description[] =
+    "AES-256 GCM using mbedtls";
+
+/*
+ * This is the vector function table for this crypto engine.
+ */
+/* clang-format off */
+const srtp_cipher_type_t srtp_aes_gcm_128 = {
+    srtp_aes_gcm_mbedtls_alloc,
+    srtp_aes_gcm_mbedtls_dealloc,
+    srtp_aes_gcm_mbedtls_context_init,
+    srtp_aes_gcm_mbedtls_set_aad,
+    srtp_aes_gcm_mbedtls_encrypt,
+    srtp_aes_gcm_mbedtls_decrypt,
+    srtp_aes_gcm_mbedtls_set_iv,
+    srtp_aes_gcm_128_mbedtls_description,
+    &srtp_aes_gcm_128_test_case_0,
+    SRTP_AES_GCM_128
+};
+/* clang-format on */
+
+/*
+ * This is the vector function table for this crypto engine.
+ */
+/* clang-format off */
+const srtp_cipher_type_t srtp_aes_gcm_256 = {
+    srtp_aes_gcm_mbedtls_alloc,
+    srtp_aes_gcm_mbedtls_dealloc,
+    srtp_aes_gcm_mbedtls_context_init,
+    srtp_aes_gcm_mbedtls_set_aad,
+    srtp_aes_gcm_mbedtls_encrypt,
+    srtp_aes_gcm_mbedtls_decrypt,
+    srtp_aes_gcm_mbedtls_set_iv,
+    srtp_aes_gcm_256_mbedtls_description,
+    &srtp_aes_gcm_256_test_case_0,
+    SRTP_AES_GCM_256
+};
+/* clang-format on */
+
 /*
  * This function allocates a new instance of this crypto engine.
  * The key_len parameter should be one of 28 or 44 for
@@ -362,47 +440,3 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
 
     return srtp_err_status_ok;
 }
-
-/*
- * Name of this crypto engine
- */
-static const char srtp_aes_gcm_128_mbedtls_description[] =
-    "AES-128 GCM using mbedtls";
-static const char srtp_aes_gcm_256_mbedtls_description[] =
-    "AES-256 GCM using mbedtls";
-
-/*
- * This is the vector function table for this crypto engine.
- */
-/* clang-format off */
-const srtp_cipher_type_t srtp_aes_gcm_128 = {
-    srtp_aes_gcm_mbedtls_alloc,
-    srtp_aes_gcm_mbedtls_dealloc,
-    srtp_aes_gcm_mbedtls_context_init,
-    srtp_aes_gcm_mbedtls_set_aad,
-    srtp_aes_gcm_mbedtls_encrypt,
-    srtp_aes_gcm_mbedtls_decrypt,
-    srtp_aes_gcm_mbedtls_set_iv,
-    srtp_aes_gcm_128_mbedtls_description,
-    &srtp_aes_gcm_128_test_case_0,
-    SRTP_AES_GCM_128
-};
-/* clang-format on */
-
-/*
- * This is the vector function table for this crypto engine.
- */
-/* clang-format off */
-const srtp_cipher_type_t srtp_aes_gcm_256 = {
-    srtp_aes_gcm_mbedtls_alloc,
-    srtp_aes_gcm_mbedtls_dealloc,
-    srtp_aes_gcm_mbedtls_context_init,
-    srtp_aes_gcm_mbedtls_set_aad,
-    srtp_aes_gcm_mbedtls_encrypt,
-    srtp_aes_gcm_mbedtls_decrypt,
-    srtp_aes_gcm_mbedtls_set_iv,
-    srtp_aes_gcm_256_mbedtls_description,
-    &srtp_aes_gcm_256_test_case_0,
-    SRTP_AES_GCM_256
-};
-/* clang-format on */

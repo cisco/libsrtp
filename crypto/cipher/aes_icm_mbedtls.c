@@ -59,6 +59,90 @@ srtp_debug_module_t srtp_mod_aes_icm = {
 };
 
 /*
+ * static function declarations.
+ */
+static srtp_err_status_t srtp_aes_icm_mbedtls_alloc(srtp_cipher_t **c,
+                                                    size_t key_len,
+                                                    size_t tlen);
+
+static srtp_err_status_t srtp_aes_icm_mbedtls_dealloc(srtp_cipher_t *c);
+
+static srtp_err_status_t srtp_aes_icm_mbedtls_context_init(void *cv,
+                                                           const uint8_t *key);
+
+static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
+    void *cv,
+    uint8_t *iv,
+    srtp_cipher_direction_t dir);
+
+static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
+                                                      const uint8_t *src,
+                                                      size_t src_len,
+                                                      uint8_t *dst,
+                                                      size_t *dst_len);
+
+/*
+ * Name of this crypto engine
+ */
+static const char srtp_aes_icm_128_mbedtls_description[] =
+    "AES-128 counter mode using mbedtls";
+static const char srtp_aes_icm_192_mbedtls_description[] =
+    "AES-192 counter mode using mbedtls";
+static const char srtp_aes_icm_256_mbedtls_description[] =
+    "AES-256 counter mode using mbedtls";
+
+/*
+ * This is the function table for this crypto engine.
+ * note: the encrypt function is identical to the decrypt function
+ */
+const srtp_cipher_type_t srtp_aes_icm_128 = {
+    srtp_aes_icm_mbedtls_alloc,           /* */
+    srtp_aes_icm_mbedtls_dealloc,         /* */
+    srtp_aes_icm_mbedtls_context_init,    /* */
+    0,                                    /* set_aad */
+    srtp_aes_icm_mbedtls_encrypt,         /* */
+    srtp_aes_icm_mbedtls_encrypt,         /* */
+    srtp_aes_icm_mbedtls_set_iv,          /* */
+    srtp_aes_icm_128_mbedtls_description, /* */
+    &srtp_aes_icm_128_test_case_0,        /* */
+    SRTP_AES_ICM_128                      /* */
+};
+
+/*
+ * This is the function table for this crypto engine.
+ * note: the encrypt function is identical to the decrypt function
+ */
+const srtp_cipher_type_t srtp_aes_icm_192 = {
+    srtp_aes_icm_mbedtls_alloc,           /* */
+    srtp_aes_icm_mbedtls_dealloc,         /* */
+    srtp_aes_icm_mbedtls_context_init,    /* */
+    0,                                    /* set_aad */
+    srtp_aes_icm_mbedtls_encrypt,         /* */
+    srtp_aes_icm_mbedtls_encrypt,         /* */
+    srtp_aes_icm_mbedtls_set_iv,          /* */
+    srtp_aes_icm_192_mbedtls_description, /* */
+    &srtp_aes_icm_192_test_case_0,        /* */
+    SRTP_AES_ICM_192                      /* */
+};
+
+/*
+ * This is the function table for this crypto engine.
+ * note: the encrypt function is identical to the decrypt function
+ */
+const srtp_cipher_type_t srtp_aes_icm_256 = {
+    srtp_aes_icm_mbedtls_alloc,           /* */
+    srtp_aes_icm_mbedtls_dealloc,         /* */
+    srtp_aes_icm_mbedtls_context_init,    /* */
+    0,                                    /* set_aad */
+    srtp_aes_icm_mbedtls_encrypt,         /* */
+    srtp_aes_icm_mbedtls_encrypt,         /* */
+    srtp_aes_icm_mbedtls_set_iv,          /* */
+    srtp_aes_icm_256_mbedtls_description, /* */
+    &srtp_aes_icm_256_test_case_0,        /* */
+    SRTP_AES_ICM_256                      /* */
+};
+
+/*
  * integer counter mode works as follows:
  *
  * https://tools.ietf.org/html/rfc3711#section-4.1.1
@@ -316,64 +400,3 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
 
     return srtp_err_status_ok;
 }
-
-/*
- * Name of this crypto engine
- */
-static const char srtp_aes_icm_128_mbedtls_description[] =
-    "AES-128 counter mode using mbedtls";
-static const char srtp_aes_icm_192_mbedtls_description[] =
-    "AES-192 counter mode using mbedtls";
-static const char srtp_aes_icm_256_mbedtls_description[] =
-    "AES-256 counter mode using mbedtls";
-
-/*
- * This is the function table for this crypto engine.
- * note: the encrypt function is identical to the decrypt function
- */
-const srtp_cipher_type_t srtp_aes_icm_128 = {
-    srtp_aes_icm_mbedtls_alloc,           /* */
-    srtp_aes_icm_mbedtls_dealloc,         /* */
-    srtp_aes_icm_mbedtls_context_init,    /* */
-    0,                                    /* set_aad */
-    srtp_aes_icm_mbedtls_encrypt,         /* */
-    srtp_aes_icm_mbedtls_encrypt,         /* */
-    srtp_aes_icm_mbedtls_set_iv,          /* */
-    srtp_aes_icm_128_mbedtls_description, /* */
-    &srtp_aes_icm_128_test_case_0,        /* */
-    SRTP_AES_ICM_128                      /* */
-};
-
-/*
- * This is the function table for this crypto engine.
- * note: the encrypt function is identical to the decrypt function
- */
-const srtp_cipher_type_t srtp_aes_icm_192 = {
-    srtp_aes_icm_mbedtls_alloc,           /* */
-    srtp_aes_icm_mbedtls_dealloc,         /* */
-    srtp_aes_icm_mbedtls_context_init,    /* */
-    0,                                    /* set_aad */
-    srtp_aes_icm_mbedtls_encrypt,         /* */
-    srtp_aes_icm_mbedtls_encrypt,         /* */
-    srtp_aes_icm_mbedtls_set_iv,          /* */
-    srtp_aes_icm_192_mbedtls_description, /* */
-    &srtp_aes_icm_192_test_case_0,        /* */
-    SRTP_AES_ICM_192                      /* */
-};
-
-/*
- * This is the function table for this crypto engine.
- * note: the encrypt function is identical to the decrypt function
- */
-const srtp_cipher_type_t srtp_aes_icm_256 = {
-    srtp_aes_icm_mbedtls_alloc,           /* */
-    srtp_aes_icm_mbedtls_dealloc,         /* */
-    srtp_aes_icm_mbedtls_context_init,    /* */
-    0,                                    /* set_aad */
-    srtp_aes_icm_mbedtls_encrypt,         /* */
-    srtp_aes_icm_mbedtls_encrypt,         /* */
-    srtp_aes_icm_mbedtls_set_iv,          /* */
-    srtp_aes_icm_256_mbedtls_description, /* */
-    &srtp_aes_icm_256_test_case_0,        /* */
-    SRTP_AES_ICM_256                      /* */
-};
