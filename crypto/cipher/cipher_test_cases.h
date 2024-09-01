@@ -34,8 +34,8 @@
  *
  */
 
-#ifndef CHIPHER_TEST_CASES_H
-#define CHIPHER_TEST_CASES_H
+#ifndef CIPHER_TEST_CASES_H
+#define CIPHER_TEST_CASES_H
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

@@ -96,7 +96,7 @@ static size_t srtp_get_rtp_hdr_len(const srtp_hdr_t *hdr)
 }
 
 /*
- * Returns the location of the header extention cast too a srtp_hdr_xtnd_t
+ * Returns the location of the header extention cast to a srtp_hdr_xtnd_t
  * struct. Will always return a value and assumes that the caller has already
  * verified that a header extension is present by checking the x bit of
  * srtp_hdr_t.
