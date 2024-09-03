@@ -96,7 +96,7 @@ static size_t srtp_get_rtp_hdr_len(const srtp_hdr_t *hdr)
 }
 
 /*
- * Returns the location of the header extention cast too a srtp_hdr_xtnd_t
+ * Returns the location of the header extention cast to a srtp_hdr_xtnd_t
  * struct. Will always return a value and assumes that the caller has already
  * verified that a header extension is present by checking the x bit of
  * srtp_hdr_t.
@@ -1848,7 +1848,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
                                            srtp_session_keys_t *session_keys)
 {
     const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp;
-    size_t enc_start;         /* offset to start of encrypted portion  */
+    size_t enc_start;         /* offset to start of encrypted portion   */
     size_t enc_octet_len = 0; /* number of octets in encrypted portion  */
     srtp_xtd_seq_num_t est;   /* estimated xtd_seq_num_t of *hdr        */
     ssize_t delta;            /* delta of local pkt idx and that in hdr */
@@ -2202,7 +2202,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
                                size_t mki_index)
 {
     const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp;
-    size_t enc_start;         /* offset to start of encrypted portion  */
+    size_t enc_start;         /* offset to start of encrypted portion   */
     uint8_t *auth_start;      /* pointer to start of auth. portion      */
     size_t enc_octet_len = 0; /* number of octets in encrypted portion  */
     srtp_xtd_seq_num_t est;   /* estimated xtd_seq_num_t of *hdr        */
@@ -2511,7 +2511,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     const srtp_hdr_t *hdr = (const srtp_hdr_t *)srtp;
     size_t enc_start;               /* pointer to start of encrypted portion  */
     const uint8_t *auth_start;      /* pointer to start of auth. portion      */
-    size_t enc_octet_len = 0;       /* number of octets in encrypted portion */
+    size_t enc_octet_len = 0;       /* number of octets in encrypted portion  */
     const uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     srtp_xtd_seq_num_t est;         /* estimated xtd_seq_num_t of *hdr        */
     ssize_t delta;                  /* delta of local pkt idx and that in hdr */
@@ -3779,7 +3779,7 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
     size_t enc_start;               /* pointer to start of encrypted portion  */
     const uint8_t *trailer_p;       /* pointer to start of trailer            */
     uint32_t trailer;               /* trailer value                          */
-    size_t enc_octet_len = 0;       /* number of octets in encrypted portion */
+    size_t enc_octet_len = 0;       /* number of octets in encrypted portion  */
     const uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     srtp_err_status_t status;
     size_t tag_len;
@@ -3980,7 +3980,7 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     uint8_t *auth_start;      /* pointer to start of auth. portion      */
     uint8_t *trailer_p;       /* pointer to start of trailer            */
     uint32_t trailer;         /* trailer value                          */
-    size_t enc_octet_len = 0; /* number of octets in encrypted portion */
+    size_t enc_octet_len = 0; /* number of octets in encrypted portion  */
     uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     srtp_err_status_t status;
     size_t tag_len;
@@ -4221,7 +4221,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
     const uint8_t *auth_start;      /* pointer to start of auth. portion      */
     const uint8_t *trailer_p;       /* pointer to start of trailer            */
     uint32_t trailer;               /* trailer value                          */
-    size_t enc_octet_len = 0;       /* number of octets in encrypted portion */
+    size_t enc_octet_len = 0;       /* number of octets in encrypted portion  */
     const uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
     srtp_err_status_t status;
