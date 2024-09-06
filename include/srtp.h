@@ -351,6 +351,8 @@ typedef struct srtp_policy_t {
     uint8_t *enc_xtn_hdr;       /**< List of header ids to encrypt.      */
     size_t enc_xtn_hdr_count;   /**< Number of entries in list of header */
                                 /**<  ids.                               */
+    bool use_cryptex;           /**< Encrypt header block and CSRCS with */
+                                /**< cryptex.                            */
     struct srtp_policy_t *next; /**< Pointer to next stream policy.      */
 } srtp_policy_t;
 
