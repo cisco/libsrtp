@@ -104,6 +104,8 @@ srtp_err_status_t srtp_test_get_roc(void);
 
 srtp_err_status_t srtp_test_set_receiver_roc(void);
 
+srtp_err_status_t srtp_test_roc_mismatch(void);
+
 srtp_err_status_t srtp_test_set_sender_roc(void);
 
 double srtp_bits_per_second(size_t msg_len_octets, const srtp_policy_t *policy);
@@ -835,6 +837,14 @@ int main(int argc, char *argv[])
 
         printf("testing srtp_test_set_receiver_roc()...");
         if (srtp_test_set_receiver_roc() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_test_roc_mismatch()...");
+        if (srtp_test_roc_mismatch() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -4021,7 +4031,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
     uint32_t i;
     uint32_t stream_roc;
 
-    /* Create sender */
+    /* Create the sender */
     memset(&sender_policy, 0, sizeof(sender_policy));
 #ifdef GCM
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
@@ -4311,7 +4321,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
     size_t protected_msg_len_octets_1;
     size_t protected_msg_len_octets_2;
 
-    /* Create sender */
+    /* Create the sender */
     memset(&sender_policy, 0, sizeof(sender_policy));
 #ifdef GCM
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
@@ -4472,7 +4482,7 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
     size_t msg_len_octets = 32;
     size_t protected_msg_len_octets;
 
-    /* Create sender */
+    /* Create the sender */
     memset(&sender_policy, 0, sizeof(sender_policy));
 #ifdef GCM
     srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
@@ -4667,6 +4677,95 @@ srtp_err_status_t srtp_test_set_sender_roc(void)
         return status;
     }
 
+    return srtp_err_status_ok;
+}
+
+/* This test illustrates how the ROC can be mismatched between
+ * sender and receiver when a packets are lost before the initial
+ * sequence number wraparound. In a nutshell:
+ * - Sender encrypts sequence numbers 65535, 0, 1, ...
+ * - Receiver only receives 1 initially.
+ * In that state the receiver will assume the sender used ROC=0 to
+ * encrypt the packet with sequence number 0.
+ * This is a long-standing problem that is best avoided by a choice
+ * of initial sequence number in the lower half of the sequence number
+ * space.
+ */
+srtp_err_status_t srtp_test_roc_mismatch(void)
+{
+    srtp_policy_t sender_policy;
+    srtp_t sender_session;
+
+    srtp_policy_t receiver_policy;
+    srtp_t receiver_session;
+
+    const uint32_t num_pkts = 3;
+    uint8_t *pkts[3];
+    size_t pkt_len_octets[3];
+
+    const uint16_t seq = 0xffff;
+    uint32_t i;
+
+    /* Create the sender */
+    memset(&sender_policy, 0, sizeof(sender_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&sender_policy.rtcp);
+    sender_policy.key = test_key_gcm;
+#else
+    srtp_crypto_policy_set_rtp_default(&sender_policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&sender_policy.rtcp);
+    sender_policy.key = test_key;
+#endif
+    sender_policy.ssrc.type = ssrc_specific;
+    sender_policy.ssrc.value = 0xcafebabe;
+    sender_policy.window_size = 128;
+
+    CHECK_OK(srtp_create(&sender_session, &sender_policy));
+
+    /* Create the receiver */
+    memset(&receiver_policy, 0, sizeof(receiver_policy));
+#ifdef GCM
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&receiver_policy.rtcp);
+    receiver_policy.key = test_key_gcm;
+#else
+    srtp_crypto_policy_set_rtp_default(&receiver_policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&receiver_policy.rtcp);
+    receiver_policy.key = test_key;
+#endif
+    receiver_policy.ssrc.type = ssrc_specific;
+    receiver_policy.ssrc.value = sender_policy.ssrc.value;
+    receiver_policy.window_size = 128;
+
+    CHECK_OK(srtp_create(&receiver_session, &receiver_policy));
+
+    /* Create and protect packets to get to get ROC == 1 */
+    for (i = 0; i < num_pkts; i++) {
+        pkts[i] = create_rtp_test_packet(64, sender_policy.ssrc.value,
+                                         (uint16_t)(seq + i), 0, false,
+                                         &pkt_len_octets[i], NULL);
+        CHECK_OK(
+            call_srtp_protect(sender_session, pkts[i], &pkt_len_octets[i], 0));
+    }
+
+    /* Decrypt in reverse order (1, 65535) */
+    CHECK_RETURN(
+        call_srtp_unprotect(receiver_session, pkts[2], &pkt_len_octets[2]),
+        srtp_err_status_auth_fail);
+    CHECK_OK(
+        call_srtp_unprotect(receiver_session, pkts[0], &pkt_len_octets[0]));
+    /* After decryption of the previous ROC rollover will work as expected */
+    /* Only pkts[1] is checked since that is not modified by the attempt to
+     * decryption. */
+    CHECK_OK(
+        call_srtp_unprotect(receiver_session, pkts[1], &pkt_len_octets[1]));
+
+    for (i = 0; i < num_pkts; i++) {
+        free(pkts[i]);
+    }
+    CHECK_OK(srtp_dealloc(sender_session));
+    CHECK_OK(srtp_dealloc(receiver_session));
     return srtp_err_status_ok;
 }
 
