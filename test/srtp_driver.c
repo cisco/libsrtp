@@ -4749,20 +4749,17 @@ srtp_err_status_t srtp_test_roc_mismatch(void)
             call_srtp_protect(sender_session, pkts[i], &pkt_len_octets[i], 0));
     }
 
-    /* Decrypt in reverse order (1, 0, 65535) */
+    /* Decrypt in reverse order (1, 65535) */
     CHECK_RETURN(
         call_srtp_unprotect(receiver_session, pkts[2], &pkt_len_octets[2]),
-        srtp_err_status_auth_fail);
-    CHECK_RETURN(
-        call_srtp_unprotect(receiver_session, pkts[1], &pkt_len_octets[1]),
         srtp_err_status_auth_fail);
     CHECK_OK(
         call_srtp_unprotect(receiver_session, pkts[0], &pkt_len_octets[0]));
     /* After decryption of the previous ROC rollover will work as expected */
+    /* Only pkts[1] is checked since that is not modified by the attempt to
+     * decryption. */
     CHECK_OK(
         call_srtp_unprotect(receiver_session, pkts[1], &pkt_len_octets[1]));
-    CHECK_OK(
-        call_srtp_unprotect(receiver_session, pkts[2], &pkt_len_octets[2]));
 
     for (i = 0; i < num_pkts; i++) {
         free(pkts[i]);
