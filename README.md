@@ -261,7 +261,8 @@ described in [RFC 7714](https://tools.ietf.org/html/rfc7714)
     forward to that number at its first invocation. An earlier
     version of this library used initial sequence numbers that are
     less than 32,768; this trick is no longer required as the
-    `rdbx_estimate_index(...)` function has been made smarter.
+    `rdbx_estimate_index(...)` function has been made smarter as of
+    version 1.0.1.
 
   * The replay window for (S)RTCP is hardcoded to 128 bits in length.
 
