@@ -4899,8 +4899,12 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
         size_t new_capacity = list->capacity * 2;
 
         // check for capacity overflow.
-        if ((sizeof(list_entry) * new_capacity) <=
-            (sizeof(list_entry) * list->capacity)) {
+        // Fix: Ensure new_capacity does not regress below current capacity
+        // and prevent integer overflow during memory allocation.
+        // The multiplication (sizeof(list_entry) * new_capacity) is validated
+        // by checking that new_capacity is less than SIZE_MAX / sizeof(list_entry).
+        if (new_capacity < list->capacity || 
+            new_capacity > SIZE_MAX / sizeof(list_entry)) {
             return srtp_err_status_alloc_fail;
         }
 
