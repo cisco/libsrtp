@@ -706,7 +706,6 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-#if 0
         printf("testing srtp_protect and srtp_unprotect against "
                "reference cryptex packet\n");
         if (srtp_validate_cryptex() == srtp_err_status_ok) {
@@ -715,7 +714,6 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
-#endif
 
 #ifdef GCM
         printf("testing srtp_protect and srtp_unprotect against "
@@ -727,7 +725,6 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-#if 0
         printf("testing srtp_protect and srtp_unprotect against "
                "reference cryptex packet using GCM\n");
         if (srtp_validate_gcm_cryptex() == srtp_err_status_ok) {
@@ -736,7 +733,6 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
-#endif
 #endif
 
         printf("testing srtp_protect and srtp_unprotect against "
@@ -2732,7 +2728,7 @@ srtp_err_status_t srtp_validate_null(void)
  * some computed packets against some pre-computed reference values.
  * These packets were made with the default SRTP policy.
  */
-srtp_err_status_t srtp_validate_cryptex()
+srtp_err_status_t srtp_validate_cryptex(void)
 {
     // clang-format off
     /* Plaintext packet with 1-byte header extension */
@@ -2923,7 +2919,6 @@ srtp_err_status_t srtp_validate_cryptex()
     };
 
     srtp_t srtp_snd, srtp_recv;
-    srtp_err_status_t status;
     size_t len, ref_len, enc_len;
     srtp_policy_t policy;
 
@@ -2939,15 +2934,10 @@ srtp_err_status_t srtp_validate_cryptex()
     policy.key = test_key;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
-    policy.use_cryptex = 1;
+    policy.use_cryptex = true;
     policy.next = NULL;
 
-    status = srtp_create(&srtp_snd, &policy);
-    if (status) {
-        return status;
-    }
-
-    for (int i = 0; i < 6; ++i) {
+    for (size_t i = 0; i < 6; ++i) {
         uint8_t packet[1400];
         uint8_t reference[1400];
         uint8_t ciphertext[1400];
@@ -2969,51 +2959,31 @@ srtp_err_status_t srtp_validate_cryptex()
          */
         debug_print(mod_driver, "test vector: %s\n", vectors[i].name);
 
-        status = call_srtp_protect(srtp_snd, packet, &len, 0);
-        if (status || (len != enc_len)) {
-            return srtp_err_status_fail;
-        }
+        CHECK_OK(srtp_create(&srtp_snd, &policy));
+
+        CHECK_OK(call_srtp_protect(srtp_snd, packet, &len, 0));
+        CHECK(len == enc_len);
 
         debug_print(mod_driver, "ciphertext:\n  %s",
                     octet_string_hex_string(packet, len));
         debug_print(mod_driver, "ciphertext reference:\n  %s",
                     octet_string_hex_string(ciphertext, len));
 
-        if (srtp_octet_string_equal(packet, ciphertext, len)) {
-            return srtp_err_status_fail;
-        }
+        CHECK_BUFFER_EQUAL(packet, ciphertext, len);
 
-        /*
-         * create a receiver session context comparable to the one created
-         * above - we need to do this so that the replay checking doesn't
-         * complain
-         */
-        status = srtp_create(&srtp_recv, &policy);
-        if (status) {
-            return status;
-        }
+        CHECK_OK(srtp_dealloc(srtp_snd));
+
+        CHECK_OK(srtp_create(&srtp_recv, &policy));
 
         /*
          * unprotect ciphertext, then compare with plaintext
          */
-        status = call_srtp_unprotect(srtp_recv, packet, &len);
-        if (status || (len != ref_len)) {
-            return status;
-        }
+        CHECK_OK(call_srtp_unprotect(srtp_recv, packet, &len));
+        CHECK(len == ref_len);
 
-        if (srtp_octet_string_equal(packet, reference, len)) {
-            return srtp_err_status_fail;
-        }
+        CHECK_BUFFER_EQUAL(packet, reference, len);
 
-        status = srtp_dealloc(srtp_recv);
-        if (status) {
-            return status;
-        }
-    }
-
-    status = srtp_dealloc(srtp_snd);
-    if (status) {
-        return status;
+        CHECK_OK(srtp_dealloc(srtp_recv));
     }
 
     return srtp_err_status_ok;
@@ -3191,7 +3161,7 @@ srtp_err_status_t srtp_validate_gcm(void)
  * srtp_validate_gcm() verifies the correctness of libsrtp by comparing
  * an computed packet against the known ciphertext for the plaintext.
  */
-srtp_err_status_t srtp_validate_gcm_cryptex()
+srtp_err_status_t srtp_validate_gcm_cryptex(void)
 {
     // clang-format off
     unsigned char test_key_gcm_cryptex[28] = {
@@ -3272,7 +3242,8 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
         "abababab";
 
     const char *srtp_1bytehdrext_cc_cryptex_gcm =
-    "920f1238decafbad"
+        "920f1238"
+        "decafbad"
         "cafebabe"
         "63bbccc4"
         "a7f695c4"
@@ -3396,7 +3367,6 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
     };
 
     srtp_t srtp_snd, srtp_recv;
-    srtp_err_status_t status;
     size_t len, ref_len, enc_len;
     srtp_policy_t policy;
 
@@ -3412,13 +3382,10 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
     policy.key = test_key_gcm_cryptex;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
-    policy.use_cryptex = 1;
+    policy.use_cryptex = true;
     policy.next = NULL;
 
-    status = srtp_create(&srtp_snd, &policy);
-    if (status) {
-        return status;
-    }
+    CHECK_OK(srtp_create(&srtp_snd, &policy));
 
     for (int i = 0; i < 6; ++i) {
         uint8_t packet[1400];
@@ -3442,52 +3409,43 @@ srtp_err_status_t srtp_validate_gcm_cryptex()
          */
         debug_print(mod_driver, "test vector: %s\n", vectors[i].name);
 
-        status = call_srtp_protect(srtp_snd, packet, &len, 0);
-        if (status || (len != enc_len)) {
-            return srtp_err_status_fail;
+        const srtp_hdr_t *hdr = (const srtp_hdr_t *)reference;
+        if (use_srtp_not_in_place_io_api && hdr->cc) {
+            // the combination of cryptex, cc, GCM & not inplace is not
+            // supported
+            CHECK_RETURN(call_srtp_protect(srtp_snd, packet, &len, 0),
+                         srtp_err_status_bad_param);
+            continue;
         }
+        CHECK_OK(call_srtp_protect(srtp_snd, packet, &len, 0));
+        CHECK(len == enc_len);
 
         debug_print(mod_driver, "ciphertext:\n  %s",
                     octet_string_hex_string(packet, len));
         debug_print(mod_driver, "ciphertext reference:\n  %s",
                     octet_string_hex_string(ciphertext, len));
 
-        if (srtp_octet_string_equal(packet, ciphertext, len)) {
-            return srtp_err_status_fail;
-        }
+        CHECK_BUFFER_EQUAL(packet, ciphertext, len);
 
         /*
          * create a receiver session context comparable to the one created
          * above - we need to do this so that the replay checking doesn't
          * complain
          */
-        status = srtp_create(&srtp_recv, &policy);
-        if (status) {
-            return status;
-        }
+        CHECK_OK(srtp_create(&srtp_recv, &policy));
 
         /*
          * unprotect ciphertext, then compare with plaintext
          */
-        status = call_srtp_unprotect(srtp_recv, packet, &len);
-        if (status || (len != ref_len)) {
-            return status;
-        }
+        CHECK_OK(call_srtp_unprotect(srtp_recv, packet, &len));
+        CHECK(len == ref_len);
 
-        if (srtp_octet_string_equal(packet, reference, len)) {
-            return srtp_err_status_fail;
-        }
+        CHECK_BUFFER_EQUAL(packet, reference, len);
 
-        status = srtp_dealloc(srtp_recv);
-        if (status) {
-            return status;
-        }
+        CHECK_OK(srtp_dealloc(srtp_recv));
     }
 
-    status = srtp_dealloc(srtp_snd);
-    if (status) {
-        return status;
-    }
+    CHECK_OK(srtp_dealloc(srtp_snd));
 
     return srtp_err_status_ok;
 }
