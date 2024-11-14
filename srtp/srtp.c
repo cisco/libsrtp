@@ -4898,9 +4898,9 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
     if (list->size == list->capacity) {
         size_t new_capacity = list->capacity * 2;
 
-        // check for capacity overflow.
-        if ((sizeof(list_entry) * new_capacity) <=
-            (sizeof(list_entry) * list->capacity)) {
+        // Check for capacity overflow.
+        if (new_capacity < list->capacity ||
+            new_capacity > SIZE_MAX / sizeof(list_entry)) {
             return srtp_err_status_alloc_fail;
         }
 
@@ -4910,13 +4910,16 @@ srtp_err_status_t srtp_stream_list_insert(srtp_stream_list_t list,
             return srtp_err_status_alloc_fail;
         }
 
-        // copy previous entries into the new buffer
+        // Copy previous entries into the new buffer.
         memcpy(new_entries, list->entries, sizeof(list_entry) * list->capacity);
-        // release previous entries
+
+        // Release previous entries.
         srtp_crypto_free(list->entries);
-        // assign new entries to the list
+
+        // Assign new entries to the list.
         list->entries = new_entries;
-        // update list capacity
+
+        // Update list capacity.
         list->capacity = new_capacity;
     }
 
