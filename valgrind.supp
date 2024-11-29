@@ -1,0 +1,9 @@
+{
+   https://github.com/openssl/openssl/issues/19719
+   Memcheck:Cond
+   obj:*libcrypto.so.3
+   obj:*libcrypto.so.3
+   fun:EVP_DecryptFinal_ex
+   fun:srtp_aes_gcm_openssl_decrypt
+   ...
+}
