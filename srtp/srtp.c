@@ -1744,10 +1744,11 @@ static void srtp_calc_aead_iv(srtp_session_keys_t *session_keys,
     v128_xor(iv, &in, &salt);
 }
 
-srtp_err_status_t srtp_get_session_keys_for_packet(
+static srtp_err_status_t srtp_get_session_keys_for_packet(
     srtp_stream_ctx_t *stream,
     const uint8_t *hdr,
     size_t pkt_octet_len,
+    size_t tag_len,
     srtp_session_keys_t **session_keys)
 {
     if (!stream->use_mki) {
@@ -1756,15 +1757,6 @@ srtp_err_status_t srtp_get_session_keys_for_packet(
     }
 
     size_t mki_start_location = pkt_octet_len;
-    size_t tag_len = 0;
-
-    // Determine the authentication tag size
-    if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
-        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
-        tag_len = 0;
-    } else {
-        tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
-    }
 
     if (tag_len > mki_start_location) {
         return srtp_err_status_bad_mki;
@@ -1787,6 +1779,46 @@ srtp_err_status_t srtp_get_session_keys_for_packet(
     }
 
     return srtp_err_status_bad_mki;
+}
+
+static srtp_err_status_t srtp_get_session_keys_for_rtp_packet(
+    srtp_stream_ctx_t *stream,
+    const uint8_t *hdr,
+    size_t pkt_octet_len,
+    srtp_session_keys_t **session_keys)
+{
+    size_t tag_len = 0;
+
+    // Determine the authentication tag size
+    if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
+        stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
+        tag_len = 0;
+    } else {
+        tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
+    }
+
+    return srtp_get_session_keys_for_packet(stream, hdr, pkt_octet_len, tag_len,
+                                            session_keys);
+}
+
+static srtp_err_status_t srtp_get_session_keys_for_rtcp_packet(
+    srtp_stream_ctx_t *stream,
+    const uint8_t *hdr,
+    size_t pkt_octet_len,
+    srtp_session_keys_t **session_keys)
+{
+    size_t tag_len = 0;
+
+    // Determine the authentication tag size
+    if (stream->session_keys[0].rtcp_cipher->algorithm == SRTP_AES_GCM_128 ||
+        stream->session_keys[0].rtcp_cipher->algorithm == SRTP_AES_GCM_256) {
+        tag_len = 0;
+    } else {
+        tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtcp_auth);
+    }
+
+    return srtp_get_session_keys_for_packet(stream, hdr, pkt_octet_len, tag_len,
+                                            session_keys);
 }
 
 static srtp_err_status_t srtp_estimate_index(srtp_rdbx_t *rdbx,
@@ -2590,8 +2622,8 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
 
     /* Determine if MKI is being used and what session keys should be used */
-    status =
-        srtp_get_session_keys_for_packet(stream, srtp, srtp_len, &session_keys);
+    status = srtp_get_session_keys_for_rtp_packet(stream, srtp, srtp_len,
+                                                  &session_keys);
     if (status) {
         return status;
     }
@@ -4267,8 +4299,8 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
     /*
      * Determine if MKI is being used and what session keys should be used
      */
-    status = srtp_get_session_keys_for_packet(stream, srtcp, srtcp_len,
-                                              &session_keys);
+    status = srtp_get_session_keys_for_rtcp_packet(stream, srtcp, srtcp_len,
+                                                   &session_keys);
     if (status) {
         return status;
     }
