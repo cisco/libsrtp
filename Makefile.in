@@ -60,8 +60,8 @@ endif
 
 runtest-valgrind: test
 	@echo "running libsrtp3 test applications... (valgrind)"
-	valgrind --error-exitcode=1 --leak-check=full test/test_srtp$(EXE) -v >/dev/null
-	valgrind --error-exitcode=1 --leak-check=full test/srtp_driver$(EXE) -v >/dev/null
+	valgrind --error-exitcode=1 --leak-check=full --suppressions=./valgrind.supp test/test_srtp$(EXE) -v >/dev/null
+	valgrind --error-exitcode=1 --leak-check=full --suppressions=./valgrind.supp test/srtp_driver$(EXE) -v >/dev/null
 	@echo "libsrtp3 test applications passed. (valgrind)"
 
 # makefile variables

@@ -173,6 +173,10 @@ int main(int argc, char *argv[])
     char *input_key = NULL;
     int b64_input = 0;
     uint8_t key[MAX_KEY_LEN];
+    size_t mki_size = 0;
+    uint8_t mki[SRTP_MAX_MKI_LEN];
+    srtp_master_key_t masterKey;
+    srtp_master_key_t *masterKeys[1];
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
     char pcap_file[MAX_FILE] = "-";
@@ -207,7 +211,7 @@ int main(int argc, char *argv[])
 
     /* check args */
     while (1) {
-        c = getopt_s(argc, argv, "b:k:gt:ae:ld:f:c:m:p:o:s:r:");
+        c = getopt_s(argc, argv, "b:k:i:gt:ae:ld:f:c:m:p:o:s:r:");
         if (c == -1) {
             break;
         }
@@ -217,6 +221,10 @@ int main(int argc, char *argv[])
         /* fall thru */
         case 'k':
             input_key = optarg_s;
+            break;
+        case 'i':
+            mki_size =
+                hex_string_to_octet_string(mki, optarg_s, strlen(optarg_s)) / 2;
             break;
         case 'e':
             scs.key_size = atoi(optarg_s);
@@ -514,7 +522,18 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        policy.key = key;
+        masterKey.key = key;
+
+        if (mki_size) {
+            policy.use_mki = true;
+            policy.mki_size = mki_size;
+            masterKey.mki_id = mki;
+        }
+
+        masterKeys[0] = &masterKey;
+        policy.keys = masterKeys;
+        policy.num_master_keys = 1;
+
         policy.next = NULL;
         policy.window_size = 128;
         policy.allow_repeat_tx = false;
@@ -564,6 +583,11 @@ int main(int argc, char *argv[])
                 octet_string_hex_string(key, key_octets));
         fprintf(stderr, "%s\n",
                 octet_string_hex_string(key + key_octets, salt_octets));
+
+        if (mki_size) {
+            fprintf(stderr, "set mki to %s\n",
+                    octet_string_hex_string(mki, mki_size));
+        }
 
     } else {
         fprintf(stderr,
@@ -642,6 +666,7 @@ void usage(char *string)
         "       -t <tag size> Tag size to use (in GCM mode use 8 or 16)\n"
         "       -k <key>  sets the srtp master key given in hexadecimal\n"
         "       -b <key>  sets the srtp master key given in base64\n"
+        "       -i <mki>  sets master key index in hexadecimal\n"
         "       -l list debug modules\n"
         "       -f \"<pcap filter>\" to filter only the desired SRTP packets\n"
         "       -d <debug> turn on debugging for module <debug>\n"
