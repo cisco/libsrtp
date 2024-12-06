@@ -4279,6 +4279,38 @@ const srtp_policy_t aes_256_hmac_policy = {
     NULL
 };
 
+const srtp_policy_t aes_256_hmac_32_policy = {
+    { ssrc_any_outbound, 0 }, /* SSRC */
+    {
+        /* SRTP policy */
+        SRTP_AES_ICM_256,               /* cipher type                 */
+        SRTP_AES_ICM_256_KEY_LEN_WSALT, /* cipher key length in octets */
+        SRTP_HMAC_SHA1,                 /* authentication func type    */
+        20,                             /* auth key length in octets   */
+        4,                              /* auth tag length in octets   */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    {
+        /* SRTCP policy */
+        SRTP_AES_ICM_256,               /* cipher type                 */
+        SRTP_AES_ICM_256_KEY_LEN_WSALT, /* cipher key length in octets */
+        SRTP_HMAC_SHA1,                 /* authentication func type    */
+        20,                             /* auth key length in octets   */
+        10,                             /* auth tag length in octets.
+                                           80 bits per RFC 3711. */
+        sec_serv_conf_and_auth          /* security services flag      */
+    },
+    NULL,
+    (srtp_master_key_t **)test_256_keys,
+    2,    /* indicates the number of Master keys          */
+    NULL, /* indicates that EKT is not in use             */
+    128,  /* replay window size                           */
+    0,    /* retransmission not allowed                   */
+    NULL, /* no encrypted extension headers               */
+    0,    /* list of encrypted extension headers is empty */
+    NULL
+};
+
 char ekt_test_policy = 'x';
 
 const srtp_policy_t hmac_only_with_ekt_policy = {
@@ -4333,6 +4365,7 @@ const srtp_policy_t *policy_array[] = {
 #endif
     &null_policy,
     &aes_256_hmac_policy,
+    &aes_256_hmac_32_policy,
     NULL
 };
 // clang-format on
