@@ -256,12 +256,11 @@ static srtp_err_status_t srtp_aes_icm_wolfssl_context_init(void *cv,
         break;
     }
 
-    /* Counter mode always encrypts. */
-    err = wc_AesSetKey(c->ctx, key, c->key_size, NULL, AES_ENCRYPTION);
-    if (err < 0) {
-        debug_print(srtp_mod_aes_icm, "wolfSSL error code: %d", err);
-        return srtp_err_status_fail;
+    /* Store key. */
+    if (c->key_size > sizeof(c->key)) {
+        return srtp_err_status_bad_param;
     }
+    memcpy(c->key, key, c->key_size);
 
     return srtp_err_status_ok;
 }
@@ -290,7 +289,9 @@ static srtp_err_status_t srtp_aes_icm_wolfssl_set_iv(
     debug_print(srtp_mod_aes_icm, "set_counter: %s",
                 v128_hex_string(&c->counter));
 
-    err = wc_AesSetIV(c->ctx, c->counter.v8);
+    /* Counter mode always encrypts. */
+    err = wc_AesSetKey(c->ctx, c->key, c->key_size, c->counter.v8,
+                       AES_ENCRYPTION);
     if (err < 0) {
         debug_print(srtp_mod_aes_icm, "wolfSSL error code: %d", err);
         return srtp_err_status_fail;

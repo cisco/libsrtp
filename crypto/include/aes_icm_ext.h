@@ -69,7 +69,8 @@ typedef struct {
 typedef struct {
     v128_t counter; /* holds the counter value          */
     v128_t offset;  /* initial offset value             */
-    int key_size;
+    uint8_t key[SRTP_AES_256_KEY_LEN];
+    size_t key_size;
     Aes *ctx;
 } srtp_aes_icm_ctx_t;
 
