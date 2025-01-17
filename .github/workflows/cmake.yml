@@ -17,8 +17,6 @@ jobs:
         crypto: [internal, openssl, openssl3, wolfssl, nss, mbedtls]
         exclude:
           - os: windows-latest
-            crypto: openssl
-          - os: windows-latest
             crypto: wolfssl
           - os: windows-latest
             crypto: openssl3
@@ -145,4 +143,56 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       shell: bash
+      run: ctest
+
+  # Clang builds on ubuntu to catch issues that the main matrix does not compile.
+  build-clang-extra:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Clang wolfSSL without AES-GCM stream
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=wolfssl"
+            wolfssl: true
+          - name: Clang SSSE3
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=internal"
+            c-flags: "-mssse3"
+
+    runs-on: ubuntu-latest
+
+    env:
+      CC: clang
+      CTEST_OUTPUT_ON_FAILURE: 1
+
+    steps:
+    - name: Setup wolfSSL without AES-GCM stream
+      if: matrix.wolfssl
+      run: |
+        git clone https://github.com/wolfSSL/wolfssl
+        cd wolfssl
+        git checkout v5.9.2-stable
+        ./autogen.sh
+        ./configure '--enable-srtp-kdf' '--enable-aesctr'
+        make
+        sudo make install
+        cd ..
+
+    - uses: actions/checkout@v2
+
+    - name: Configure CMake
+      run: |
+        cmake -S . -B build \
+          -DLIBSRTP_TEST_APPS=ON \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DENABLE_SANITIZE_ADDR=ON \
+          -DENABLE_SANITIZE_UNDEF=ON \
+          "-DCMAKE_C_FLAGS=${{ matrix.c-flags }}" \
+          ${{ matrix.cmake-crypto-enable }}
+
+    - name: Build
+      run: cmake --build build
+
+    - name: Test
+      working-directory: build
       run: ctest

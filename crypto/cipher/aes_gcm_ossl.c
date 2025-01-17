@@ -258,6 +258,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
     debug_print(srtp_mod_aes_gcm, "setting AAD: %s",
                 srtp_octet_string_hex_string(aad, aad_len));
 
+    if (aad_len > INT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
     if (c->dir == srtp_direction_encrypt) {
         if (EVP_EncryptUpdate(c->ctx, NULL, &len, aad, (int)aad_len) != 1) {
             return srtp_err_status_algo_fail;
@@ -298,6 +302,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
 
     if (*dst_len < src_len + c->tag_len) {
         return srtp_err_status_buffer_small;
+    }
+
+    if (src_len > INT_MAX) {
+        return srtp_err_status_bad_param;
     }
 
     /*
@@ -355,6 +363,10 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
 
     if (*dst_len < src_len - c->tag_len) {
         return srtp_err_status_buffer_small;
+    }
+
+    if (src_len > INT_MAX) {
+        return srtp_err_status_bad_param;
     }
 
     /*
