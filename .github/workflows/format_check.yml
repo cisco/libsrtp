@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Clang Format
-        run: sudo apt install clang-format-12
+        run: sudo apt install clang-format-14
       - name: Run clang format
         run: ./format.sh -d

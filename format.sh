@@ -7,7 +7,7 @@
 # assumes git tree is clean when reporting status
 
 if [ -z "${CLANG_FORMAT}" ]; then
-    CLANG_FORMAT=clang-format-12
+    CLANG_FORMAT=clang-format-14
 fi
 
 a=`git ls-files '*.h' '*.c'`
