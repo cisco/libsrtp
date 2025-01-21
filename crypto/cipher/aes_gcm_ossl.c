@@ -360,7 +360,8 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
     /*
      * Decrypt the data
      */
-    if (EVP_DecryptUpdate(c->ctx, dst, &len, src, (int)(src_len - c->tag_len)) != 1) {
+    if (EVP_DecryptUpdate(c->ctx, dst, &len, src,
+                          (int)(src_len - c->tag_len)) != 1) {
         return srtp_err_status_algo_fail;
     }
     *dst_len = len;
