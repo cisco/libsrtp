@@ -259,11 +259,11 @@ static srtp_err_status_t srtp_aes_gcm_openssl_set_aad(void *cv,
                 srtp_octet_string_hex_string(aad, aad_len));
 
     if (c->dir == srtp_direction_encrypt) {
-        if (EVP_EncryptUpdate(c->ctx, NULL, &len, aad, aad_len) != 1) {
+        if (EVP_EncryptUpdate(c->ctx, NULL, &len, aad, (int)aad_len) != 1) {
             return srtp_err_status_algo_fail;
         }
     } else {
-        if (EVP_DecryptUpdate(c->ctx, NULL, &len, aad, aad_len) != 1) {
+        if (EVP_DecryptUpdate(c->ctx, NULL, &len, aad, (int)aad_len) != 1) {
             return srtp_err_status_algo_fail;
         }
     }
@@ -303,7 +303,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
     /*
      * Encrypt the data
      */
-    if (EVP_EncryptUpdate(c->ctx, dst, &len, src, src_len) != 1) {
+    if (EVP_EncryptUpdate(c->ctx, dst, &len, src, (int)src_len) != 1) {
         return srtp_err_status_algo_fail;
     }
     *dst_len = len;
@@ -319,7 +319,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_encrypt(void *cv,
     /*
      * Retrieve the tag
      */
-    if (EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_GET_TAG, c->tag_len,
+    if (EVP_CIPHER_CTX_ctrl(c->ctx, EVP_CTRL_GCM_GET_TAG, (int)c->tag_len,
                             dst + *dst_len) != 1) {
         return srtp_err_status_algo_fail;
     }
@@ -360,7 +360,8 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
     /*
      * Decrypt the data
      */
-    if (EVP_DecryptUpdate(c->ctx, dst, &len, src, src_len - c->tag_len) != 1) {
+    if (EVP_DecryptUpdate(c->ctx, dst, &len, src,
+                          (int)(src_len - c->tag_len)) != 1) {
         return srtp_err_status_algo_fail;
     }
     *dst_len = len;
@@ -371,7 +372,7 @@ static srtp_err_status_t srtp_aes_gcm_openssl_decrypt(void *cv,
      * explicitly cast away const of src
      */
     if (EVP_CIPHER_CTX_ctrl(
-            c->ctx, EVP_CTRL_GCM_SET_TAG, c->tag_len,
+            c->ctx, EVP_CTRL_GCM_SET_TAG, (int)c->tag_len,
             (void *)(uintptr_t)(src + (src_len - c->tag_len))) != 1) {
         return srtp_err_status_algo_fail;
     }
