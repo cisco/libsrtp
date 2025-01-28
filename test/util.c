@@ -95,9 +95,11 @@ const char *err_status_string(srtp_err_status_t status)
 void check_ok_impl(srtp_err_status_t status, const char *file, int line)
 {
     if (status != srtp_err_status_ok) {
+        fflush(stdout);
         fprintf(stderr,
                 "\nerror at %s:%d, unexpected srtp failure: %d (\"%s\")\n",
                 file, line, status, err_status_string(status));
+        fflush(stderr);
         exit(1);
     }
 }
@@ -108,11 +110,13 @@ void check_return_impl(srtp_err_status_t status,
                        int line)
 {
     if (status != expected) {
+        fflush(stdout);
         fprintf(stderr,
                 "\nerror at %s:%d, unexpected srtp status: %d != %d (\"%s\" != "
                 "\"%s\")\n",
                 file, line, status, expected, err_status_string(status),
                 err_status_string(expected));
+        fflush(stderr);
         exit(1);
     }
 }
@@ -123,7 +127,9 @@ void check_impl(bool condition,
                 const char *condition_str)
 {
     if (!condition) {
+        fflush(stdout);
         fprintf(stderr, "\nerror at %s:%d, %s)\n", file, line, condition_str);
+        fflush(stderr);
         exit(1);
     }
 }
@@ -143,6 +149,7 @@ void check_buffer_equal_impl(const uint8_t *buffer1,
 {
     for (size_t i = 0; i < buffer_length; i++) {
         if (buffer1[i] != buffer2[i]) {
+            fflush(stdout);
             fprintf(stderr,
                     "\nerror at %s:%d, buffer1 != buffer2 at index: %zu (%x != "
                     "%x)\n",
@@ -151,6 +158,7 @@ void check_buffer_equal_impl(const uint8_t *buffer1,
                     octet_string_hex_string(buffer1, buffer_length));
             fprintf(stderr, "buffer2 = %s\n",
                     octet_string_hex_string(buffer2, buffer_length));
+            fflush(stderr);
             exit(1);
         }
     }
@@ -164,9 +172,11 @@ void check_overrun_impl(const uint8_t *buffer,
 {
     for (size_t i = offset; i < buffer_length; i++) {
         if (buffer[i] != OVERRUN_CHECK_BYTE) {
+            fflush(stdout);
             printf("\nerror at %s:%d, overrun detected in buffer at index %zu "
                    "(expected %x, found %x)\n",
                    file, line, i, OVERRUN_CHECK_BYTE, buffer[i]);
+            fflush(stderr);
             exit(1);
         }
     }
