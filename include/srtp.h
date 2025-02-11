@@ -631,7 +631,7 @@ srtp_err_status_t srtp_add_stream(srtp_t session, const srtp_policy_t *policy);
  *    - [other]           otherwise.
  *
  */
-srtp_err_status_t srtp_remove_stream(srtp_t session, unsigned int ssrc);
+srtp_err_status_t srtp_remove_stream(srtp_t session, uint32_t ssrc);
 
 /**
  * @brief srtp_update() updates all streams in the session.
