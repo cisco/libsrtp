@@ -126,7 +126,7 @@ use_mbedtls = false
 
 crypto_library = get_option('crypto-library')
 if crypto_library == 'openssl'
-  openssl_dep = dependency('openssl', version: '>= 1.1.0', required: true)
+  openssl_dep = dependency('openssl', required: true)
   srtp3_deps += [openssl_dep]
   cdata.set('GCM', true)
   cdata.set('OPENSSL', true)

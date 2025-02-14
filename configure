@@ -4789,6 +4789,118 @@ done
 
 CFLAGS="$supported_cflags"
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
+$as_echo_n "checking for ANSI C header files... " >&6; }
+if ${ac_cv_header_stdc+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <float.h>
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ac_cv_header_stdc=yes
+else
+  ac_cv_header_stdc=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+if test $ac_cv_header_stdc = yes; then
+  # SunOS 4.x string.h does not declare mem*, contrary to ANSI.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <string.h>
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "memchr" >/dev/null 2>&1; then :
+
+else
+  ac_cv_header_stdc=no
+fi
+rm -f conftest*
+
+fi
+
+if test $ac_cv_header_stdc = yes; then
+  # ISC 2.0.2 stdlib.h does not declare free, contrary to ANSI.
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <stdlib.h>
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "free" >/dev/null 2>&1; then :
+
+else
+  ac_cv_header_stdc=no
+fi
+rm -f conftest*
+
+fi
+
+if test $ac_cv_header_stdc = yes; then
+  # /bin/cc in Irix-4.0.5 gets non-ANSI ctype macros unless using -ansi.
+  if test "$cross_compiling" = yes; then :
+  :
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <ctype.h>
+#include <stdlib.h>
+#if ((' ' & 0x0FF) == 0x020)
+# define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
+# define TOUPPER(c) (ISLOWER(c) ? 'A' + ((c) - 'a') : (c))
+#else
+# define ISLOWER(c) \
+		   (('a' <= (c) && (c) <= 'i') \
+		     || ('j' <= (c) && (c) <= 'r') \
+		     || ('s' <= (c) && (c) <= 'z'))
+# define TOUPPER(c) (ISLOWER(c) ? ((c) | 0x40) : (c))
+#endif
+
+#define XOR(e, f) (((e) && !(f)) || (!(e) && (f)))
+int
+main ()
+{
+  int i;
+  for (i = 0; i < 256; i++)
+    if (XOR (islower (i), ISLOWER (i))
+	|| toupper (i) != TOUPPER (i))
+      return 2;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+
+else
+  ac_cv_header_stdc=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_header_stdc" >&5
+$as_echo "$ac_cv_header_stdc" >&6; }
+if test $ac_cv_header_stdc = yes; then
+
+$as_echo "#define STDC_HEADERS 1" >>confdefs.h
+
+fi
+
 for ac_header in unistd.h byteswap.h stdint.h sys/uio.h inttypes.h sys/types.h machine/types.h sys/int_types.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -5424,12 +5536,12 @@ if test -n "$crypto_CFLAGS"; then
     pkg_cv_crypto_CFLAGS="$crypto_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.1.0") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libcrypto") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_crypto_CFLAGS=`$PKG_CONFIG --cflags "libcrypto >= 1.1.0" 2>/dev/null`
+  pkg_cv_crypto_CFLAGS=`$PKG_CONFIG --cflags "libcrypto" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -5441,12 +5553,12 @@ if test -n "$crypto_LIBS"; then
     pkg_cv_crypto_LIBS="$crypto_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto >= 1.1.0\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto >= 1.1.0") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libcrypto") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_crypto_LIBS=`$PKG_CONFIG --libs "libcrypto >= 1.1.0" 2>/dev/null`
+  pkg_cv_crypto_LIBS=`$PKG_CONFIG --libs "libcrypto" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -5467,14 +5579,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto >= 1.1.0" 2>&1`
+	        crypto_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto" 2>&1`
         else
-	        crypto_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto >= 1.1.0" 2>&1`
+	        crypto_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$crypto_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (libcrypto >= 1.1.0) were not met:
+	as_fn_error $? "Package requirements (libcrypto) were not met:
 
 $crypto_PKG_ERRORS
 
@@ -5663,7 +5775,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
+as_fn_error $? "can't find compatible openssl crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -5724,7 +5836,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
+as_fn_error $? "can't find compatible openssl crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -5785,7 +5897,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
+as_fn_error $? "can't find compatible openssl crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
@@ -5846,7 +5958,7 @@ if test "$ac_res" != no; then :
 else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "can't find openssl >= 1.1.0 crypto lib
+as_fn_error $? "can't find compatible openssl crypto lib
 See \`config.log' for more details" "$LINENO" 5; }
 fi
 
