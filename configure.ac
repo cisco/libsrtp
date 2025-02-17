@@ -248,7 +248,7 @@ if test "$enable_openssl" = "yes"; then
       [AC_MSG_RESULT([no])])
 
    if test "x$PKG_CONFIG" != "x"; then
-     PKG_CHECK_MODULES([crypto], [libcrypto >= 1.1.0],
+     PKG_CHECK_MODULES([crypto], [libcrypto],
        [CFLAGS="$CFLAGS $crypto_CFLAGS"
         LIBS="$crypto_LIBS $LIBS"])
    else
@@ -257,13 +257,13 @@ if test "$enable_openssl" = "yes"; then
    fi
 
    AC_SEARCH_LIBS([EVP_EncryptInit], [crypto],
-     [], [AC_MSG_FAILURE([can't find openssl >= 1.1.0 crypto lib])])
+     [], [AC_MSG_FAILURE([can't find compatible openssl crypto lib])])
    AC_SEARCH_LIBS([EVP_aes_128_ctr], [crypto],
-     [], [AC_MSG_FAILURE([can't find openssl >= 1.1.0 crypto lib])])
+     [], [AC_MSG_FAILURE([can't find compatible openssl crypto lib])])
    AC_SEARCH_LIBS([EVP_aes_128_gcm], [crypto],
-     [], [AC_MSG_FAILURE([can't find openssl >= 1.1.0 crypto lib])])
+     [], [AC_MSG_FAILURE([can't find compatible openssl crypto lib])])
    AC_SEARCH_LIBS([EVP_CIPHER_CTX_reset], [crypto],
-     [], [AC_MSG_FAILURE([can't find openssl >= 1.1.0 crypto lib])])
+     [], [AC_MSG_FAILURE([can't find compatible openssl crypto lib])])
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
