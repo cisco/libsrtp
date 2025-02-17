@@ -112,6 +112,8 @@ srtp_err_status_t srtp_test_roc_mismatch(void);
 
 srtp_err_status_t srtp_test_set_sender_roc(void);
 
+srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void);
+
 double srtp_bits_per_second(size_t msg_len_octets, const srtp_policy_t *policy);
 
 double srtp_rejections_per_second(size_t msg_len_octets,
@@ -881,6 +883,15 @@ int main(int argc, char *argv[])
 
         printf("testing srtp_test_set_sender_roc()...");
         if (srtp_test_set_sender_roc() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing cryptex_csrc_but_no_extension_header()...");
+        if (srtp_test_cryptex_csrc_but_no_extension_header() ==
+            srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -2152,7 +2163,7 @@ char *srtp_packet_to_string(uint8_t *packet, size_t pkt_octet_len)
     srtp_hdr_t *hdr = (srtp_hdr_t *)packet;
     size_t octets_in_rtp_header = 12;
     uint8_t *data = packet + octets_in_rtp_header;
-    size_t hex_len = pkt_octet_len - octets_in_rtp_header;
+    size_t data_len = pkt_octet_len - octets_in_rtp_header;
 
     /* sanity checking */
     if ((hdr == NULL) || (pkt_octet_len > MTU)) {
@@ -2160,22 +2171,50 @@ char *srtp_packet_to_string(uint8_t *packet, size_t pkt_octet_len)
     }
 
     /* write packet into string */
-    snprintf(packet_string, sizeof(packet_string),
-             "(s)rtp packet: {\n"
-             "   version:\t%d\n"
-             "   p:\t\t%d\n"
-             "   x:\t\t%d\n"
-             "   cc:\t\t%d\n"
-             "   m:\t\t%d\n"
-             "   pt:\t\t%x\n"
-             "   seq:\t\t%x\n"
-             "   ts:\t\t%x\n"
-             "   ssrc:\t%x\n"
-             "   data:\t%s\n"
+    int offset = snprintf(packet_string, sizeof(packet_string),
+                          "(s)rtp packet: {\n"
+                          "   version:\t%d\n"
+                          "   p:\t\t%d\n"
+                          "   x:\t\t%d\n"
+                          "   cc:\t\t%d\n"
+                          "   m:\t\t%d\n"
+                          "   pt:\t\t%x\n"
+                          "   seq:\t\t%x\n"
+                          "   ts:\t\t%x\n"
+                          "   ssrc:\t%x",
+                          hdr->version, hdr->p, hdr->x, hdr->cc, hdr->m,
+                          hdr->pt, hdr->seq, hdr->ts, hdr->ssrc);
+
+    if (hdr->cc) {
+        offset += snprintf(packet_string + offset,
+                           sizeof(packet_string) - offset, "\n   csrc:\t");
+        for (int i = 0; i < hdr->cc; i++) {
+            offset +=
+                snprintf(packet_string + offset, sizeof(packet_string) - offset,
+                         "%x ", *((&hdr->ssrc) + 1 + i));
+        }
+        data += 4 * hdr->cc;
+        data_len -= 4 * hdr->cc;
+    }
+
+    if (hdr->x) {
+        uint16_t profile = *((uint16_t *)data);
+        data += 2;
+        data_len -= 2;
+        uint16_t length = ntohs(*((uint16_t *)data)) * 4;
+        data += 2;
+        data_len -= 2;
+        offset += snprintf(packet_string + offset,
+                           sizeof(packet_string) - offset, "\n   xtn:\t\t%x %s",
+                           profile, octet_string_hex_string(data, length));
+        data += length;
+        data_len -= length;
+    }
+
+    snprintf(packet_string + offset, sizeof(packet_string) - offset,
+             "\n   data:\t%s\n"
              "} (%zu octets in total)\n",
-             hdr->version, hdr->p, hdr->x, hdr->cc, hdr->m, hdr->pt, hdr->seq,
-             hdr->ts, hdr->ssrc, octet_string_hex_string(data, hex_len),
-             pkt_octet_len);
+             octet_string_hex_string(data, data_len), pkt_octet_len);
 
     return packet_string;
 }
@@ -2913,7 +2952,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
 
     // clang-format on
 
-    struct test_vectors_t vectors[6] = {
+    const struct test_vectors_t vectors[6] = {
         { "Plaintext packet with 1-byte header extension", srtp_1bytehdrext_ref,
           srtp_1bytehdrext_cryptex },
         { "Plaintext packet with 2-byte header extension", srtp_2bytehdrext_ref,
@@ -2927,6 +2966,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
         { "Plaintext packet with empty 2-byte header extension and CSRC fields",
           srtp_2byte_empty_hdrext_cc_ref, srtp_2byte_empty_hdrext_cc_cryptex },
     };
+    const size_t num_vectors = sizeof(vectors) / sizeof(vectors[0]);
 
     srtp_t srtp_snd, srtp_recv;
     size_t len, ref_len, enc_len;
@@ -2947,7 +2987,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
     policy.use_cryptex = true;
     policy.next = NULL;
 
-    for (size_t i = 0; i < 6; ++i) {
+    for (size_t i = 0; i < num_vectors; ++i) {
         uint8_t packet[1400];
         uint8_t reference[1400];
         uint8_t ciphertext[1400];
@@ -2995,6 +3035,53 @@ srtp_err_status_t srtp_validate_cryptex(void)
 
         CHECK_OK(srtp_dealloc(srtp_recv));
     }
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void)
+{
+    // clang-format off
+    /* Plaintext packet with no header extension but CSRC fields. */
+    const char *srtp_cc_ref =
+        "820f1238"
+        "decafbad"
+        "cafebabe"
+        "0001e240"
+        "0000b26e"
+        "abababab"
+        "abababab"
+        "abababab"
+        "abababab";
+    // clang-format on
+
+    /*
+     * create a session with a single stream using the default srtp
+     * policy and with the SSRC value 0xcafebabe
+     */
+    srtp_policy_t policy;
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.use_cryptex = true;
+    policy.next = NULL;
+
+    srtp_t srtp_snd;
+    CHECK_OK(srtp_create(&srtp_snd, &policy));
+
+    uint8_t packet[1400];
+    size_t packet_len =
+        hex_string_to_octet_string(packet, srtp_cc_ref, sizeof(packet)) / 2;
+
+    CHECK_RETURN(call_srtp_protect(srtp_snd, packet, &packet_len, 0),
+                 srtp_err_status_cryptex_err);
+
+    CHECK_OK(srtp_dealloc(srtp_snd));
 
     return srtp_err_status_ok;
 }
@@ -3359,7 +3446,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
         "8b5207d8";
     // clang-format on
 
-    struct test_vectors_t vectors[6] = {
+    const struct test_vectors_t vectors[6] = {
         { "Plaintext packet with 1-byte header extension", srtp_1bytehdrext_ref,
           srtp_1bytehdrext_cryptex_gcm },
         { "Plaintext packet with 2-byte header extension", srtp_2bytehdrext_ref,
@@ -3375,6 +3462,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
           srtp_2byte_empty_hdrext_cc_ref,
           srtp_2byte_empty_hdrext_cc_cryptex_gcm },
     };
+    const size_t num_vectors = sizeof(vectors) / sizeof(vectors[0]);
 
     srtp_t srtp_snd, srtp_recv;
     size_t len, ref_len, enc_len;
@@ -3397,7 +3485,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
 
     CHECK_OK(srtp_create(&srtp_snd, &policy));
 
-    for (int i = 0; i < 6; ++i) {
+    for (size_t i = 0; i < num_vectors; ++i) {
         uint8_t packet[1400];
         uint8_t reference[1400];
         uint8_t ciphertext[1400];
@@ -3424,7 +3512,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
             // the combination of cryptex, cc, GCM & not inplace is not
             // supported
             CHECK_RETURN(call_srtp_protect(srtp_snd, packet, &len, 0),
-                         srtp_err_status_bad_param);
+                         srtp_err_status_cryptex_err);
             continue;
         }
         CHECK_OK(call_srtp_protect(srtp_snd, packet, &len, 0));

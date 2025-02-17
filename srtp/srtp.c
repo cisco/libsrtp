@@ -168,10 +168,10 @@ static srtp_err_status_t srtp_cryptex_protect_init(
     bool *inplace,
     size_t *enc_start)
 {
-    if (stream->use_cryptex && stream->rtp_services & sec_serv_conf) {
+    if (stream->use_cryptex && (stream->rtp_services & sec_serv_conf)) {
         if (hdr->cc && hdr->x == 0) {
             /* Cryptex can only encrypt CSRCS if header extension is present */
-            return srtp_err_status_parse_err;
+            return srtp_err_status_cryptex_err;
         }
         *inuse = hdr->x == 1;
     } else {
@@ -2122,7 +2122,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     if (cryptex_inuse && !cryptex_inplace && hdr->cc) {
         debug_print0(mod_srtp,
                      "unsupported cryptex mode, AEAD, CC and not inplace io");
-        return srtp_err_status_bad_param;
+        return srtp_err_status_cryptex_err;
     }
 
     /* note: the passed size is without the auth tag */
@@ -2302,7 +2302,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     if (cryptex_inuse && !cryptex_inplace && hdr->cc) {
         debug_print0(mod_srtp,
                      "unsupported cryptex mode, AEAD, CC and not inplace io");
-        return srtp_err_status_bad_param;
+        return srtp_err_status_cryptex_err;
     }
 
     if (enc_start > srtp_len - tag_len - stream->mki_size) {

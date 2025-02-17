@@ -88,6 +88,7 @@ const char *err_status_string(srtp_err_status_t status)
         ERR_STATUS_STRING(pkt_idx_old);
         ERR_STATUS_STRING(pkt_idx_adv);
         ERR_STATUS_STRING(buffer_small);
+        ERR_STATUS_STRING(cryptex_err);
     }
     return "unkown srtp_err_status";
 }

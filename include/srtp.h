@@ -216,6 +216,7 @@ typedef enum {
     srtp_err_status_pkt_idx_adv = 27,   /**< packet index advanced, reset    */
                                         /**< needed                          */
     srtp_err_status_buffer_small = 28,  /**< out buffer is too small         */
+    srtp_err_status_cryptex_err = 29,   /**< unsupported cryptex operation   */
 } srtp_err_status_t;
 
 typedef struct srtp_ctx_t_ srtp_ctx_t;
