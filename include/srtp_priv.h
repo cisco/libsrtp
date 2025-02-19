@@ -125,6 +125,7 @@ typedef struct srtp_stream_ctx_t_ {
     uint8_t *enc_xtn_hdr;
     size_t enc_xtn_hdr_count;
     uint32_t pending_roc;
+    bool use_cryptex;
 } strp_stream_ctx_t_;
 
 /*
