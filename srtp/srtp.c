@@ -137,26 +137,28 @@ static uint16_t srtp_get_rtp_xtn_hdr_profile(const srtp_hdr_t *hdr,
 
 static void srtp_cryptex_adjust_buffer(const srtp_hdr_t *hdr, uint8_t *rtp)
 {
-    uint8_t tmp[4];
-    uint8_t *ptr = rtp + srtp_get_rtp_hdr_len(hdr);
-    memcpy(tmp, ptr, 4);
-    for (size_t i = hdr->cc; i > 0; --i) {
-        memcpy(ptr, ptr - 4, 4);
-        ptr -= 4;
+    if (hdr->cc) {
+        uint8_t tmp[4];
+        uint8_t *ptr = rtp + srtp_get_rtp_hdr_len(hdr);
+        size_t cc_list_size = hdr->cc * 4;
+        memcpy(tmp, ptr, 4);
+        ptr -= cc_list_size;
+        memmove(ptr + 4, ptr, cc_list_size);
+        memcpy(ptr, tmp, 4);
     }
-    memcpy(ptr, tmp, 4);
 }
 
 static void srtp_cryptex_restore_buffer(const srtp_hdr_t *hdr, uint8_t *rtp)
 {
-    uint8_t tmp[4];
-    uint8_t *ptr = rtp + octets_in_rtp_header;
-    memcpy(tmp, ptr, 4);
-    for (size_t i = 0; i < hdr->cc; ++i) {
-        memcpy(ptr, ptr + 4, 4);
-        ptr += 4;
+    if (hdr->cc) {
+        uint8_t tmp[4];
+        uint8_t *ptr = rtp + octets_in_rtp_header;
+        size_t cc_list_size = hdr->cc * 4;
+        memcpy(tmp, ptr, 4);
+        memmove(ptr, ptr + 4, cc_list_size);
+        ptr += cc_list_size;
+        memcpy(ptr, tmp, 4);
     }
-    memcpy(ptr, tmp, 4);
 }
 
 static srtp_err_status_t srtp_cryptex_protect_init(
@@ -170,7 +172,7 @@ static srtp_err_status_t srtp_cryptex_protect_init(
 {
     if (stream->use_cryptex && (stream->rtp_services & sec_serv_conf)) {
         if (hdr->cc && hdr->x == 0) {
-            /* Cryptex can only encrypt CSRCS if header extension is present */
+            /* Cryptex can only encrypt CSRCs if header extension is present */
             return srtp_err_status_cryptex_err;
         }
         *inuse = hdr->x == 1;
