@@ -90,6 +90,12 @@ static const size_t octets_in_rtp_header = 12;
 static const size_t octets_in_rtcp_header = 8;
 static const size_t octets_in_rtp_xtn_hdr = 4;
 
+static const uint16_t xtn_hdr_one_byte_profile = 0xbede;
+static const uint16_t xtn_hdr_two_byte_profile = 0x1000;
+
+static const uint16_t cryptex_one_byte_profile = 0xc0de;
+static const uint16_t cryptex_two_byte_profile = 0xc2de;
+
 static size_t srtp_get_rtp_hdr_len(const srtp_hdr_t *hdr)
 {
     return octets_in_rtp_header + 4 * hdr->cc;
@@ -119,6 +125,184 @@ static size_t srtp_get_rtp_xtn_hdr_len(const srtp_hdr_t *hdr,
     const srtp_hdr_xtnd_t *xtn_hdr =
         (const srtp_hdr_xtnd_t *)(rtp + srtp_get_rtp_hdr_len(hdr));
     return (ntohs(xtn_hdr->length) + 1u) * 4u;
+}
+
+static uint16_t srtp_get_rtp_xtn_hdr_profile(const srtp_hdr_t *hdr,
+                                             const uint8_t *rtp)
+{
+    const srtp_hdr_xtnd_t *xtn_hdr =
+        (const srtp_hdr_xtnd_t *)(rtp + srtp_get_rtp_hdr_len(hdr));
+    return ntohs(xtn_hdr->profile_specific);
+}
+
+static void srtp_cryptex_adjust_buffer(const srtp_hdr_t *hdr, uint8_t *rtp)
+{
+    if (hdr->cc) {
+        uint8_t tmp[4];
+        uint8_t *ptr = rtp + srtp_get_rtp_hdr_len(hdr);
+        size_t cc_list_size = hdr->cc * 4;
+        memcpy(tmp, ptr, 4);
+        ptr -= cc_list_size;
+        memmove(ptr + 4, ptr, cc_list_size);
+        memcpy(ptr, tmp, 4);
+    }
+}
+
+static void srtp_cryptex_restore_buffer(const srtp_hdr_t *hdr, uint8_t *rtp)
+{
+    if (hdr->cc) {
+        uint8_t tmp[4];
+        uint8_t *ptr = rtp + octets_in_rtp_header;
+        size_t cc_list_size = hdr->cc * 4;
+        memcpy(tmp, ptr, 4);
+        memmove(ptr, ptr + 4, cc_list_size);
+        ptr += cc_list_size;
+        memcpy(ptr, tmp, 4);
+    }
+}
+
+static srtp_err_status_t srtp_cryptex_protect_init(
+    const srtp_stream_ctx_t *stream,
+    const srtp_hdr_t *hdr,
+    const uint8_t *rtp,
+    const uint8_t *srtp,
+    bool *inuse,
+    bool *inplace,
+    size_t *enc_start)
+{
+    if (stream->use_cryptex && (stream->rtp_services & sec_serv_conf)) {
+        if (hdr->cc && hdr->x == 0) {
+            /* Cryptex can only encrypt CSRCs if header extension is present */
+            return srtp_err_status_cryptex_err;
+        }
+        *inuse = hdr->x == 1;
+    } else {
+        *inuse = false;
+    }
+
+    *inplace = *inuse && rtp == srtp;
+
+    if (*inuse) {
+        *enc_start -=
+            (srtp_get_rtp_xtn_hdr_len(hdr, rtp) - octets_in_rtp_xtn_hdr);
+        if (*inplace) {
+            *enc_start -= (hdr->cc * 4);
+        }
+    }
+
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_cryptex_protect(bool inplace,
+                                              const srtp_hdr_t *hdr,
+                                              uint8_t *srtp,
+                                              srtp_cipher_t *rtp_cipher)
+{
+    srtp_hdr_xtnd_t *xtn_hdr = srtp_get_rtp_xtn_hdr(hdr, srtp);
+    uint16_t profile = ntohs(xtn_hdr->profile_specific);
+    if (profile == xtn_hdr_one_byte_profile) {
+        xtn_hdr->profile_specific = htons(cryptex_one_byte_profile);
+    } else if (profile == xtn_hdr_two_byte_profile) {
+        xtn_hdr->profile_specific = htons(cryptex_two_byte_profile);
+    } else {
+        return srtp_err_status_parse_err;
+    }
+
+    if (inplace) {
+        srtp_cryptex_adjust_buffer(hdr, srtp);
+    } else {
+        if (hdr->cc) {
+            uint8_t *cc_list = srtp + octets_in_rtp_header;
+            size_t cc_list_size = hdr->cc * 4;
+            /* CSRCs are in dst header already, enc in place */
+            srtp_err_status_t status = srtp_cipher_encrypt(
+                rtp_cipher, cc_list, cc_list_size, cc_list, &cc_list_size);
+            if (status) {
+                return srtp_err_status_cipher_fail;
+            }
+        }
+    }
+
+    return srtp_err_status_ok;
+}
+
+static void srtp_cryptex_protect_cleanup(bool inplace,
+                                         const srtp_hdr_t *hdr,
+                                         uint8_t *srtp)
+{
+    if (inplace) {
+        srtp_cryptex_restore_buffer(hdr, srtp);
+    }
+}
+
+static srtp_err_status_t srtp_cryptex_unprotect_init(
+    const srtp_stream_ctx_t *stream,
+    const srtp_hdr_t *hdr,
+    const uint8_t *srtp,
+    const uint8_t *rtp,
+    bool *inuse,
+    bool *inplace,
+    size_t *enc_start)
+{
+    if (stream->use_cryptex && hdr->x == 1) {
+        uint16_t profile = srtp_get_rtp_xtn_hdr_profile(hdr, rtp);
+        *inuse = profile == cryptex_one_byte_profile ||
+                 profile == cryptex_two_byte_profile;
+    } else {
+        *inuse = false;
+    }
+
+    *inplace = *inuse && srtp == rtp;
+
+    if (*inuse) {
+        *enc_start -=
+            (srtp_get_rtp_xtn_hdr_len(hdr, rtp) - octets_in_rtp_xtn_hdr);
+        if (*inplace) {
+            *enc_start -= (hdr->cc * 4);
+        }
+    }
+
+    return srtp_err_status_ok;
+}
+
+static srtp_err_status_t srtp_cryptex_unprotect(bool inplace,
+                                                const srtp_hdr_t *hdr,
+                                                uint8_t *rtp,
+                                                srtp_cipher_t *rtp_cipher)
+{
+    if (inplace) {
+        srtp_cryptex_adjust_buffer(hdr, rtp);
+    } else {
+        if (hdr->cc) {
+            uint8_t *cc_list = rtp + octets_in_rtp_header;
+            size_t cc_list_size = hdr->cc * 4;
+            /* CSRCs are in dst header already, enc in place */
+            srtp_err_status_t status = srtp_cipher_decrypt(
+                rtp_cipher, cc_list, cc_list_size, cc_list, &cc_list_size);
+            if (status) {
+                return srtp_err_status_cipher_fail;
+            }
+        }
+    }
+
+    return srtp_err_status_ok;
+}
+
+static void srtp_cryptex_unprotect_cleanup(bool inplace,
+                                           const srtp_hdr_t *hdr,
+                                           uint8_t *rtp)
+{
+    if (inplace) {
+        srtp_cryptex_restore_buffer(hdr, rtp);
+    }
+
+    srtp_hdr_xtnd_t *xtn_hdr = srtp_get_rtp_xtn_hdr(hdr, rtp);
+    uint16_t profile = ntohs(xtn_hdr->profile_specific);
+    if (profile == cryptex_one_byte_profile) {
+        xtn_hdr->profile_specific = htons(xtn_hdr_one_byte_profile);
+    } else if (profile == cryptex_two_byte_profile) {
+        xtn_hdr->profile_specific = htons(xtn_hdr_two_byte_profile);
+    }
 }
 
 static srtp_err_status_t srtp_validate_rtp_header(const uint8_t *rtp,
@@ -563,6 +747,8 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
         str->enc_xtn_hdr_count = 0;
     }
 
+    str->use_cryptex = p->use_cryptex;
+
     return srtp_err_status_ok;
 }
 
@@ -673,7 +859,7 @@ static srtp_err_status_t srtp_stream_clone(
     /* copy information about extensions header encryption */
     str->enc_xtn_hdr = stream_template->enc_xtn_hdr;
     str->enc_xtn_hdr_count = stream_template->enc_xtn_hdr_count;
-
+    str->use_cryptex = stream_template->use_cryptex;
     return srtp_err_status_ok;
 }
 
@@ -1598,7 +1784,7 @@ static srtp_err_status_t srtp_process_header_encryption(
     uint8_t *xtn_hdr_end =
         xtn_hdr_data + (ntohs(xtn_hdr->length) * sizeof(uint32_t));
 
-    if (ntohs(xtn_hdr->profile_specific) == 0xbede) {
+    if (ntohs(xtn_hdr->profile_specific) == xtn_hdr_one_byte_profile) {
         /* RFC 5285, section 4.2. One-Byte Header */
         while (xtn_hdr_data < xtn_hdr_end) {
             uint8_t xid = (*xtn_hdr_data & 0xf0) >> 4;
@@ -1637,7 +1823,8 @@ static srtp_err_status_t srtp_process_header_encryption(
                 xtn_hdr_data++;
             }
         }
-    } else if ((ntohs(xtn_hdr->profile_specific) & 0xfff0) == 0x1000) {
+    } else if ((ntohs(xtn_hdr->profile_specific) & 0xfff0) ==
+               xtn_hdr_two_byte_profile) {
         /* RFC 5285, section 4.3. Two-Byte Header */
         while (xtn_hdr_data + 1 < xtn_hdr_end) {
             uint8_t xid = *xtn_hdr_data;
@@ -1911,6 +2098,11 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
 
+    /* check output length */
+    if (*srtp_len < rtp_len + tag_len + stream->mki_size) {
+        return srtp_err_status_buffer_small;
+    }
+
     /*
      * find starting point for encryption and length of data to be
      * encrypted - the encrypted portion starts after the rtp header
@@ -1922,16 +2114,24 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         enc_start += srtp_get_rtp_xtn_hdr_len(hdr, rtp);
     }
 
+    bool cryptex_inuse, cryptex_inplace;
+    status = srtp_cryptex_protect_init(stream, hdr, rtp, srtp, &cryptex_inuse,
+                                       &cryptex_inplace, &enc_start);
+    if (status) {
+        return status;
+    }
+
+    if (cryptex_inuse && !cryptex_inplace && hdr->cc) {
+        debug_print0(mod_srtp,
+                     "unsupported cryptex mode, AEAD, CC and not inplace io");
+        return srtp_err_status_cryptex_err;
+    }
+
     /* note: the passed size is without the auth tag */
     if (enc_start > rtp_len) {
         return srtp_err_status_parse_err;
     }
     enc_octet_len = rtp_len - enc_start;
-
-    /* check output length */
-    if (*srtp_len < rtp_len + tag_len + stream->mki_size) {
-        return srtp_err_status_buffer_small;
-    }
 
     /* if not-inplace then need to copy full rtp header */
     if (rtp != srtp) {
@@ -1996,6 +2196,14 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         }
     }
 
+    if (cryptex_inuse) {
+        status = srtp_cryptex_protect(cryptex_inplace, hdr, srtp,
+                                      session_keys->rtp_cipher);
+        if (status) {
+            return status;
+        }
+    }
+
     /*
      * Set the AAD over the RTP header
      */
@@ -2017,6 +2225,10 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     if (stream->use_mki) {
         srtp_inject_mki(srtp + enc_start + enc_octet_len, session_keys,
                         stream->mki_size);
+    }
+
+    if (cryptex_inuse) {
+        srtp_cryptex_protect_cleanup(cryptex_inplace, hdr, srtp);
     }
 
     *srtp_len = enc_start + enc_octet_len;
@@ -2082,6 +2294,19 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         enc_start += srtp_get_rtp_xtn_hdr_len(hdr, srtp);
     }
 
+    bool cryptex_inuse, cryptex_inplace;
+    status = srtp_cryptex_unprotect_init(stream, hdr, srtp, rtp, &cryptex_inuse,
+                                         &cryptex_inplace, &enc_start);
+    if (status) {
+        return status;
+    }
+
+    if (cryptex_inuse && !cryptex_inplace && hdr->cc) {
+        debug_print0(mod_srtp,
+                     "unsupported cryptex mode, AEAD, CC and not inplace io");
+        return srtp_err_status_cryptex_err;
+    }
+
     if (enc_start > srtp_len - tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
@@ -2128,6 +2353,14 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         break;
     }
 
+    if (cryptex_inuse) {
+        status = srtp_cryptex_unprotect(cryptex_inplace, hdr, rtp,
+                                        session_keys->rtp_cipher);
+        if (status) {
+            return status;
+        }
+    }
+
     /*
      * Set the AAD for AES-GCM, which is the RTP header
      */
@@ -2155,6 +2388,10 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         if (status) {
             return status;
         }
+    }
+
+    if (cryptex_inuse) {
+        srtp_cryptex_unprotect_cleanup(cryptex_inplace, hdr, rtp);
     }
 
     /*
@@ -2347,6 +2584,11 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
 
+    /* check output length */
+    if (*srtp_len < rtp_len + stream->mki_size + tag_len) {
+        return srtp_err_status_buffer_small;
+    }
+
     /*
      * find starting point for encryption and length of data to be
      * encrypted - the encrypted portion starts after the rtp header
@@ -2358,15 +2600,17 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
         enc_start += srtp_get_rtp_xtn_hdr_len(hdr, rtp);
     }
 
+    bool cryptex_inuse, cryptex_inplace;
+    status = srtp_cryptex_protect_init(stream, hdr, rtp, srtp, &cryptex_inuse,
+                                       &cryptex_inplace, &enc_start);
+    if (status) {
+        return status;
+    }
+
     if (enc_start > rtp_len) {
         return srtp_err_status_parse_err;
     }
     enc_octet_len = rtp_len - enc_start;
-
-    /* check output length */
-    if (*srtp_len < rtp_len + stream->mki_size + tag_len) {
-        return srtp_err_status_buffer_small;
-    }
 
     /* if not-inplace then need to copy full rtp header */
     if (rtp != srtp) {
@@ -2482,6 +2726,14 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
         }
     }
 
+    if (cryptex_inuse) {
+        status = srtp_cryptex_protect(cryptex_inplace, hdr, srtp,
+                                      session_keys->rtp_cipher);
+        if (status) {
+            return status;
+        }
+    }
+
     /* if we're encrypting, exor keystream into the message */
     if (stream->rtp_services & sec_serv_conf) {
         status = srtp_cipher_encrypt(session_keys->rtp_cipher, rtp + enc_start,
@@ -2493,6 +2745,10 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     } else if (rtp != srtp) {
         /* if no encryption and not-inplace then need to copy rest of packet */
         memcpy(srtp + enc_start, rtp + enc_start, enc_octet_len);
+    }
+
+    if (cryptex_inuse) {
+        srtp_cryptex_protect_cleanup(cryptex_inplace, hdr, srtp);
     }
 
     /*
@@ -2681,6 +2937,13 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         enc_start += srtp_get_rtp_xtn_hdr_len(hdr, srtp);
     }
 
+    bool cryptex_inuse, cryptex_inplace;
+    status = srtp_cryptex_unprotect_init(stream, hdr, srtp, rtp, &cryptex_inuse,
+                                         &cryptex_inplace, &enc_start);
+    if (status) {
+        return status;
+    }
+
     if (enc_start > srtp_len - tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
@@ -2789,6 +3052,14 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         }
     }
 
+    if (cryptex_inuse) {
+        status = srtp_cryptex_unprotect(cryptex_inplace, hdr, rtp,
+                                        session_keys->rtp_cipher);
+        if (status) {
+            return status;
+        }
+    }
+
     /* if we're decrypting, add keystream into ciphertext */
     if (stream->rtp_services & sec_serv_conf) {
         status =
@@ -2800,6 +3071,10 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     } else if (rtp != srtp) {
         /* if no encryption and not-inplace then need to copy rest of packet */
         memcpy(rtp + enc_start, srtp + enc_start, enc_octet_len);
+    }
+
+    if (cryptex_inuse) {
+        srtp_cryptex_unprotect_cleanup(cryptex_inplace, hdr, rtp);
     }
 
     /*
