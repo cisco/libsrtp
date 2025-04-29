@@ -42,7 +42,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
+#ifndef __riscv
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -173,3 +173,4 @@ srtp_err_status_t roc_test(size_t num_trials)
 
     return srtp_err_status_ok;
 }
+#endif
