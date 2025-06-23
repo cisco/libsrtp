@@ -1193,7 +1193,7 @@ static inline size_t full_key_length(const srtp_cipher_type_t *cipher)
 }
 
 /* Get the key length that the application should supply for the given auth */
-static inline int full_auth_key_length(const srtp_auth_type_t *auth)
+static inline size_t full_auth_key_length(const srtp_auth_type_t *auth)
 {
     switch (auth->id) {
     case SRTP_NULL_AUTH:

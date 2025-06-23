@@ -2681,8 +2681,8 @@ srtp_err_status_t srtp_validate_null_sha1_80(void)
     srtp_policy_t policy;
 
     /*
-     * create a session with a single stream using the default srtp
-     * policy and with the SSRC value 0xcafebabe
+     * create a session with a single stream using the null cipher
+     * and sha1_80 policy and with the SSRC value 0xcafebabe
      */
     memset(&policy, 0, sizeof(policy));
     srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
@@ -2836,8 +2836,8 @@ srtp_err_status_t srtp_validate_null_null(void)
     srtp_policy_t policy;
 
     /*
-     * create a session with a single stream using the default srtp
-     * policy and with the SSRC value 0xcafebabe
+     * create a session with a single stream using the null cipher
+     * and null hmac policy and with the SSRC value 0xcafebabe
      */
     memset(&policy, 0, sizeof(policy));
     srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtp);
