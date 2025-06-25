@@ -847,6 +847,7 @@ static inline int full_key_length(const srtp_cipher_type_t *cipher)
 {
     switch (cipher->id) {
     case SRTP_NULL_CIPHER:
+        return 0;
     case SRTP_AES_ICM_128:
         return SRTP_AES_ICM_128_KEY_LEN_WSALT;
     case SRTP_AES_ICM_192:
@@ -857,6 +858,19 @@ static inline int full_key_length(const srtp_cipher_type_t *cipher)
         return SRTP_AES_GCM_128_KEY_LEN_WSALT;
     case SRTP_AES_GCM_256:
         return SRTP_AES_GCM_256_KEY_LEN_WSALT;
+    default:
+        return 0;
+    }
+}
+
+/* Get the key length that the application should supply for the given auth */
+static inline int full_auth_key_length(const srtp_auth_type_t *auth)
+{
+    switch (auth->id) {
+    case SRTP_NULL_AUTH:
+        return 0;
+    case SRTP_HMAC_SHA1:
+        return SRTP_AES_ICM_128_KEY_LEN_WSALT;
     default:
         return 0;
     }
@@ -957,7 +971,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     srtp_err_status_t stat;
     srtp_kdf_t kdf;
     uint8_t tmp_key[MAX_SRTP_KEY_LEN];
-    int input_keylen, input_keylen_rtcp;
+    int input_keylen, full_keylen;
     int kdf_keylen = 30, rtp_keylen, rtcp_keylen;
     int rtp_base_key_len, rtp_salt_len;
     int rtcp_base_key_len, rtcp_salt_len;
@@ -995,9 +1009,17 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     session_keys->mki_size = master_key->mki_size;
 
     input_keylen = full_key_length(session_keys->rtp_cipher->type);
-    input_keylen_rtcp = full_key_length(session_keys->rtcp_cipher->type);
-    if (input_keylen_rtcp > input_keylen) {
-        input_keylen = input_keylen_rtcp;
+    full_keylen = full_auth_key_length(session_keys->rtp_auth->type);
+    if (full_keylen > input_keylen) {
+        input_keylen = full_keylen;
+    }
+    full_keylen = full_key_length(session_keys->rtcp_cipher->type);
+    if (full_keylen > input_keylen) {
+        input_keylen = full_keylen;
+    }
+    full_keylen = full_auth_key_length(session_keys->rtcp_auth->type);
+    if (full_keylen > input_keylen) {
+        input_keylen = full_keylen;
     }
 
     rtp_keylen = srtp_cipher_get_key_length(session_keys->rtp_cipher);
@@ -3410,8 +3432,7 @@ void srtp_crypto_policy_set_null_cipher_hmac_null(srtp_crypto_policy_t *p)
      */
 
     p->cipher_type = SRTP_NULL_CIPHER;
-    p->cipher_key_len =
-        SRTP_AES_ICM_128_KEY_LEN_WSALT; /* 128 bit key, 112 bit salt */
+    p->cipher_key_len = 0;
     p->auth_type = SRTP_NULL_AUTH;
     p->auth_key_len = 0;
     p->auth_tag_len = 0;
