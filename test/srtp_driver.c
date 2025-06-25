@@ -64,7 +64,9 @@ srtp_err_status_t srtp_validate(void);
 
 srtp_err_status_t srtp_validate_mki(void);
 
-srtp_err_status_t srtp_validate_null(void);
+srtp_err_status_t srtp_validate_null_sha1_80(void);
+
+srtp_err_status_t srtp_validate_null_null(void);
 
 srtp_err_status_t srtp_validate_cryptex(void);
 
@@ -702,8 +704,17 @@ int main(int argc, char *argv[])
         }
 
         printf("testing srtp_protect and srtp_unprotect against "
-               "reference packet using null cipher and HMAC\n");
-        if (srtp_validate_null() == srtp_err_status_ok) {
+               "reference packet using null cipher and SHA1-80 HMAC\n");
+        if (srtp_validate_null_sha1_80() == srtp_err_status_ok) {
+            printf("passed\n\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_protect and srtp_unprotect against "
+               "reference packet using null cipher and null HMAC\n");
+        if (srtp_validate_null_null() == srtp_err_status_ok) {
             printf("passed\n\n");
         } else {
             printf("failed\n");
@@ -2614,13 +2625,13 @@ srtp_err_status_t srtp_validate_mki(void)
 }
 
 /*
- * srtp_validate_null() verifies the correctness of libsrtp by comparing
+ * srtp_validate_null_sha1_80() verifies the correctness of libsrtp by comparing
  * some computed packets against some pre-computed reference values.
  * These packets were made with a policy that applies null encryption
  * and HMAC authentication.
  */
 
-srtp_err_status_t srtp_validate_null(void)
+srtp_err_status_t srtp_validate_null_sha1_80(void)
 {
     // clang-format off
     uint8_t srtp_plaintext_ref[28] = {
@@ -2670,8 +2681,8 @@ srtp_err_status_t srtp_validate_null(void)
     srtp_policy_t policy;
 
     /*
-     * create a session with a single stream using the default srtp
-     * policy and with the SSRC value 0xcafebabe
+     * create a session with a single stream using the null cipher
+     * and sha1_80 policy and with the SSRC value 0xcafebabe
      */
     memset(&policy, 0, sizeof(policy));
     srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
@@ -2752,6 +2763,176 @@ srtp_err_status_t srtp_validate_null(void)
     len = 38;
     status = call_srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
     if (status || (len != 24)) {
+        return status;
+    }
+
+    if (!srtp_octet_string_equal(srtcp_ciphertext, rtcp_plaintext_ref, len)) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_snd);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * srtp_validate_null_null() verifies the correctness of libsrtp by comparing
+ * some computed packets against some pre-computed reference values.
+ * These packets were made with a policy that applies null encryption
+ * and null authentication.
+ */
+
+srtp_err_status_t srtp_validate_null_null(void)
+{
+    // clang-format off
+    uint8_t srtp_plaintext_ref[28] = {
+        0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab
+    };
+    uint8_t srtp_plaintext[28] = {
+        0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab,
+    };
+    uint8_t srtp_ciphertext[28] = {
+        0x80, 0x0f, 0x12, 0x34, 0xde, 0xca, 0xfb, 0xad,
+        0xca, 0xfe, 0xba, 0xbe, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab,
+    };
+    uint8_t rtcp_plaintext_ref[24] = {
+        0x81, 0xc8, 0x00, 0x0b, 0xca, 0xfe, 0xba, 0xbe,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+    };
+    uint8_t rtcp_plaintext[28] = {
+        0x81, 0xc8, 0x00, 0x0b, 0xca, 0xfe, 0xba, 0xbe,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0x00, 0x00, 0x00, 0x00,
+    };
+    uint8_t srtcp_ciphertext[28] = {
+        0x81, 0xc8, 0x00, 0x0b, 0xca, 0xfe, 0xba, 0xbe,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab, 0xab,
+        0x00, 0x00, 0x00, 0x01,
+    };
+    // clang-format on
+
+    srtp_t srtp_snd, srtp_recv;
+    srtp_err_status_t status;
+    size_t len;
+    srtp_policy_t policy;
+
+    /*
+     * create a session with a single stream using the null cipher
+     * and null hmac policy and with the SSRC value 0xcafebabe
+     */
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtp);
+    srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtcp);
+    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    /*
+     * We need some non-zero value set here
+     */
+    policy.key = (void *)(uintptr_t)-1;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = false;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_snd, &policy);
+    if (status) {
+        return status;
+    }
+
+    /*
+     * protect plaintext, then compare with ciphertext
+     */
+    len = 28;
+    status = call_srtp_protect(srtp_snd, srtp_plaintext, &len, 0);
+    if (!status && (len != 28)) {
+        status = srtp_err_status_fail;
+    }
+    if (status) {
+        return status;
+    }
+
+    debug_print(mod_driver, "ciphertext:\n  %s",
+                octet_string_hex_string(srtp_plaintext, len));
+    debug_print(mod_driver, "ciphertext reference:\n  %s",
+                octet_string_hex_string(srtp_ciphertext, len));
+
+    if (!srtp_octet_string_equal(srtp_plaintext, srtp_ciphertext, len)) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * protect plaintext rtcp, then compare with srtcp ciphertext
+     */
+    len = 24;
+    status = call_srtp_protect_rtcp(srtp_snd, rtcp_plaintext, &len, 0);
+    if (!status && (len != 28)) {
+        status = srtp_err_status_fail;
+    }
+    if (status) {
+        return status;
+    }
+
+    debug_print(mod_driver, "srtcp ciphertext:\n  %s",
+                octet_string_hex_string(rtcp_plaintext, len));
+    debug_print(mod_driver, "srtcp ciphertext reference:\n  %s",
+                octet_string_hex_string(srtcp_ciphertext, len));
+
+    if (!srtp_octet_string_equal(rtcp_plaintext, srtcp_ciphertext, len)) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * create a receiver session context comparable to the one created
+     * above - we need to do this so that the replay checking doesn't
+     * complain
+     */
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    /*
+     * unprotect ciphertext, then compare with plaintext
+     */
+    status = call_srtp_unprotect(srtp_recv, srtp_ciphertext, &len);
+    if (!status && (len != 28)) {
+        status = srtp_err_status_fail;
+    }
+    if (status) {
+        return status;
+    }
+
+    if (!srtp_octet_string_equal(srtp_ciphertext, srtp_plaintext_ref, len)) {
+        return srtp_err_status_fail;
+    }
+
+    /*
+     * unprotect srtcp ciphertext, then compare with rtcp plaintext
+     */
+    len = 28;
+    status = call_srtp_unprotect_rtcp(srtp_recv, srtcp_ciphertext, &len);
+    if (!status && (len != 24)) {
+        status = srtp_err_status_fail;
+    }
+    if (status) {
         return status;
     }
 
