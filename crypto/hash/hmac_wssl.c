@@ -53,6 +53,7 @@
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
+#include <limits.h>
 
 #define SHA1_DIGEST_SIZE 20
 
@@ -135,7 +136,11 @@ static srtp_err_status_t srtp_hmac_wolfssl_init(void *statev,
     Hmac *state = (Hmac *)statev;
     int err;
 
-    err = wc_HmacSetKey(state, WC_SHA, key, key_len);
+    if (key_len > INT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
+    err = wc_HmacSetKey(state, WC_SHA, key, (word32)key_len);
     if (err < 0) {
         debug_print(srtp_mod_hmac, "wolfSSL error code: %d", err);
         return srtp_err_status_auth_fail;
@@ -154,7 +159,11 @@ static srtp_err_status_t srtp_hmac_wolfssl_update(void *statev,
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
-    err = wc_HmacUpdate(state, message, msg_octets);
+    if (msg_octets > INT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
+    err = wc_HmacUpdate(state, message, (word32)msg_octets);
     if (err < 0) {
         debug_print(srtp_mod_hmac, "wolfSSL error code: %d", err);
         return srtp_err_status_auth_fail;
@@ -182,8 +191,12 @@ static srtp_err_status_t srtp_hmac_wolfssl_compute(void *statev,
         return srtp_err_status_bad_param;
     }
 
+    if (msg_octets > INT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
     /* hash message, copy output into H */
-    err = wc_HmacUpdate(state, message, msg_octets);
+    err = wc_HmacUpdate(state, message, (word32)msg_octets);
     if (err < 0) {
         debug_print(srtp_mod_hmac, "wolfSSL error code: %d", err);
         return srtp_err_status_auth_fail;
