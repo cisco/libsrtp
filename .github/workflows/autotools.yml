@@ -18,11 +18,11 @@ jobs:
           - crypto: internal
             configure-crypto-enable: ""
           - crypto: openssl
-            configure-crypto-enable: "--enable-openssl"
+            configure-crypto-enable: "--with-crypto-library=openssl"
           - crypto: wolfssl
-            configure-crypto-enable: "--enable-wolfssl"
+            configure-crypto-enable: "--with-crypto-library=wolfssl"
           - crypto: nss
-            configure-crypto-enable: "--enable-nss"
+            configure-crypto-enable: "--with-crypto-library=nss"
 
     runs-on: ${{ matrix.os }}
 
