@@ -204,23 +204,17 @@ AC_MSG_RESULT([$enable_debug_logging])
 PKG_PROG_PKG_CONFIG
 AS_IF([test "x$PKG_CONFIG" != "x"], [PKG_CONFIG="$PKG_CONFIG --static"])
 
-AC_MSG_CHECKING([whether to leverage OpenSSL crypto])
-AC_ARG_ENABLE([openssl],
-  [AS_HELP_STRING([--enable-openssl], [compile in OpenSSL crypto engine])],
-  [], [enable_openssl=no])
-AC_MSG_RESULT([$enable_openssl])
-
-AC_MSG_CHECKING([whether to leverage wolfSSL crypto])
-AC_ARG_ENABLE([wolfssl],
-  [AS_HELP_STRING([--enable-wolfssl], [compile in wolfSSL crypto engine])],
-  [], [enable_wolfssl=no])
-AC_MSG_RESULT([$enable_wolfssl])
-
-AC_MSG_CHECKING([whether to leverage NSS crypto])
-AC_ARG_ENABLE([nss],
-  [AS_HELP_STRING([--enable-nss], [compile in NSS crypto engine])],
-  [], [enable_nss=no])
-AC_MSG_RESULT([$enable_nss])
+AC_MSG_CHECKING([for crypto library])
+AC_ARG_WITH([crypto-library], AS_HELP_STRING([--with-crypto-library=TYPE], [Select crypto library, one of: internal, openssl, wolfssl, nss]),
+      [case "$with_crypto_library" in
+         internal) ;;
+         openssl) enable_openssl=yes ;;
+         wolfssl) enable_wolfssl=yes ;;
+         nss) enable_nss=yes ;;
+         *) AC_MSG_ERROR([Invalid crypto library: $with_crypto_library. Select one of: internal, openssl, wolfssl, nss,]) ;;
+       esac],
+      [with_crypto_library=internal])
+AC_MSG_RESULT([$with_crypto_library])
 
 if test "$enable_openssl" = "yes"; then
    AC_MSG_CHECKING([for user specified OpenSSL directory])

@@ -32,15 +32,15 @@ jobs:
           - crypto: internal
             cmake-crypto-enable: ""
           - crypto: openssl
-            cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=openssl"
           - crypto: openssl3
-            cmake-crypto-enable: "-DENABLE_OPENSSL=ON"
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=openssl"
           - crypto: wolfssl
-            cmake-crypto-enable: "-DENABLE_WOLFSSL=ON"
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=wolfssl"
           - crypto: nss
-            cmake-crypto-enable: "-DENABLE_NSS=ON"
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=nss"
           - crypto: mbedtls
-            cmake-crypto-enable: "-DENABLE_MBEDTLS=ON"
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=mbedtls"
 
     runs-on: ${{ matrix.os }}
 
