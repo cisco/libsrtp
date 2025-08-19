@@ -56,6 +56,7 @@
 #include "cipher_test_cases.h"
 #include <secerr.h>
 #include <nspr.h>
+#include <limits.h>
 
 srtp_debug_module_t srtp_mod_aes_gcm = {
     false,        /* debugging is off by default */
@@ -215,7 +216,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_context_init(void *cv,
 
     /* explicitly cast away const of key */
     SECItem key_item = { siBuffer, (unsigned char *)(uintptr_t)key,
-                         c->key_size };
+                         (unsigned)c->key_size };
     c->key = PK11_ImportSymKey(slot, CKM_AES_GCM, PK11_OriginUnwrap,
                                CKA_ENCRYPT, &key_item, NULL);
     PK11_FreeSlot(slot);
@@ -296,6 +297,10 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
     // Reset AAD
     c->aad_size = 0;
 
+    if (src_len > UINT_MAX || *dst_len > UINT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
     unsigned int out_len = 0;
     int rv;
     SECItem param = { siBuffer, (unsigned char *)&c->params,
@@ -309,8 +314,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
             return srtp_err_status_buffer_small;
         }
 
-        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, dst, &out_len, *dst_len,
-                          src, src_len);
+        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, dst, &out_len,
+                          (unsigned int)*dst_len, src, (unsigned int)src_len);
     } else {
         if (c->dir != srtp_direction_decrypt) {
             return srtp_err_status_bad_param;
@@ -324,8 +329,8 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
             return srtp_err_status_buffer_small;
         }
 
-        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, dst, &out_len, *dst_len,
-                          src, src_len);
+        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, dst, &out_len,
+                          (unsigned int)*dst_len, src, (unsigned int)src_len);
     }
     *dst_len = out_len;
     srtp_err_status_t status = srtp_err_status_ok;

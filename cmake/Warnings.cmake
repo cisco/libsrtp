@@ -31,7 +31,7 @@ function(target_set_warnings)
  #       /w14906 # string literal cast to 'LPWSTR'
     )
 
-    set(CLANG_WARNINGS
+    set(COMMON_WARNINGS
         # Baseline
         -Wall
         -Wextra # reasonable and standard
@@ -48,8 +48,13 @@ function(target_set_warnings)
         -Wcast-qual
     )
 
+    set(CLANG_WARNINGS
+        ${COMMON_WARNINGS}
+        -Wshorten-64-to-32
+    )
+
     set(GCC_WARNINGS
-        ${CLANG_WARNINGS}
+        ${COMMON_WARNINGS}
         -Wduplicated-cond # warn if if / else chain has duplicated conditions
         -Wduplicated-branches # warn if if / else branches have duplicated code
         -Wlogical-op # warn about logical operations being used where bitwise were probably wanted
