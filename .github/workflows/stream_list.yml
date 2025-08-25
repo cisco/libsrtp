@@ -28,7 +28,7 @@ jobs:
     - name: Configure CMake
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake $GITHUB_WORKSPACE -DLIBSRTP_TEST_APPS=ON -DCMAKE_C_FLAGS:STRING="-DSRTP_NO_STREAM_LIST -DSRTP_USE_TEST_STREAM_LIST"
+      run: cmake $GITHUB_WORKSPACE -DCRYPTO_LIBRARY=internal -DLIBSRTP_TEST_APPS=ON -DCMAKE_C_FLAGS:STRING="-DSRTP_NO_STREAM_LIST -DSRTP_USE_TEST_STREAM_LIST"
 
     - name: Build
       working-directory: ${{github.workspace}}/build

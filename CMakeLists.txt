@@ -86,8 +86,8 @@ set(ENABLE_DEBUG_LOGGING OFF CACHE BOOL "Enable debug logging in all modules")
 set(ERR_REPORTING_STDOUT OFF CACHE BOOL "Enable logging to stdout")
 set(ERR_REPORTING_FILE "" CACHE FILEPATH "Use file for logging")
 
-set(CRYPTO_LIBRARY_VALUES "internal;openssl;wolfssl;mbedtls;nss")
-set(CRYPTO_LIBRARY "internal" CACHE STRING
+set(CRYPTO_LIBRARY_VALUES "openssl;wolfssl;mbedtls;nss;internal")
+set(CRYPTO_LIBRARY "openssl" CACHE STRING
   "Crypto library used by libSRTP, can be one of: ${CRYPTO_LIBRARY_VALUES}")
 set_property(CACHE CRYPTO_LIBRARY PROPERTY STRINGS ${CRYPTO_LIBRARY_VALUES})
 if(NOT CRYPTO_LIBRARY IN_LIST CRYPTO_LIBRARY_VALUES)
