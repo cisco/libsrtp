@@ -4,7 +4,7 @@ option('log-stdout', type : 'boolean', value : false,
   description : 'Redirect logging to stdout')
 option('log-file', type : 'string', value : '',
   description : 'Write logging output into this file')
-option('crypto-library', type: 'combo', choices : ['none', 'openssl', 'wolfssl', 'nss', 'mbedtls'], value : 'none',
+option('crypto-library', type: 'combo', choices : ['openssl', 'wolfssl', 'nss', 'mbedtls', 'internal'], value : 'openssl',
   description : 'What external crypto library to leverage, if any (OpenSSL, wolfSSL, NSS, or mbedtls)')
 option('crypto-library-kdf', type : 'feature', value : 'auto',
   description : 'Use the external crypto library for Key Derivation Function support')

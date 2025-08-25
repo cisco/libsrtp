@@ -16,7 +16,7 @@ jobs:
         crypto: [internal, openssl, wolfssl, nss]
         include:
           - crypto: internal
-            configure-crypto-enable: ""
+            configure-crypto-enable: "--with-crypto-library=internal"
           - crypto: openssl
             configure-crypto-enable: "--with-crypto-library=openssl"
           - crypto: wolfssl
