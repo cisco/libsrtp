@@ -30,7 +30,7 @@ jobs:
             crypto: openssl3
         include:
           - crypto: internal
-            cmake-crypto-enable: ""
+            cmake-crypto-enable: "-DCRYPTO_LIBRARY=internal"
           - crypto: openssl
             cmake-crypto-enable: "-DCRYPTO_LIBRARY=openssl"
           - crypto: openssl3

@@ -30,7 +30,7 @@ jobs:
             crypto: openssl3
         include:
           - crypto: internal
-            meson-crypto-enable: ""
+            meson-crypto-enable: "-Dcrypto-library=internal"
           - crypto: openssl
             meson-crypto-enable: "-Dcrypto-library=openssl"
           - crypto: openssl3
@@ -126,12 +126,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Create Build Environment
-      run: meson setup ${{github.workspace}}/build
-
-    - name: Configure Meson
-      working-directory: ${{github.workspace}}/build
-      shell: bash
-      run: ${{ env.pkgconfig-crypto-dir }} meson configure ${{ matrix.meson-crypto-enable }}
+      run: meson setup ${{github.workspace}}/build ${{ matrix.meson-crypto-enable }}
 
     - name: Build
       working-directory: ${{github.workspace}}/build
