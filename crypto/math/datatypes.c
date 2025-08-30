@@ -210,7 +210,7 @@ void v128_left_shift(v128_t *x, size_t shift)
         return;
     }
 
-    const int base_index = shift >> 5;
+    const int base_index = (int)(shift >> 5);
     const int bit_index = shift & 31;
 
     __m128i mm = _mm_loadu_si128((const __m128i *)x);
@@ -325,8 +325,8 @@ void bitvector_left_shift(bitvector_t *x, size_t shift)
         ((const __m128i *)right_shift_masks)[4u - (base_index & 3u)];
     __m128i mm_left_shift_mask =
         ((const __m128i *)left_shift_masks)[base_index & 3u];
-    __m128i mm_shift_right = _mm_cvtsi32_si128(bit_index);
-    __m128i mm_shift_left = _mm_cvtsi32_si128(32 - bit_index);
+    __m128i mm_shift_right = _mm_cvtsi32_si128((int)bit_index);
+    __m128i mm_shift_left = _mm_cvtsi32_si128((int)(32 - bit_index));
 
     __m128i mm_current = _mm_loadu_si128(from);
     __m128i mm_current_r = _mm_srl_epi32(mm_current, mm_shift_right);

@@ -48,6 +48,8 @@
 #include <nss.h>
 #include <pk11pub.h>
 
+#include <limits.h>
+
 #define SHA1_DIGEST_SIZE 20
 
 /* the debug module for authentiation */
@@ -187,8 +189,13 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
         return srtp_err_status_bad_param;
     }
 
+    if (key_len > UINT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
     /* explicitly cast away const of key */
-    SECItem key_item = { siBuffer, (unsigned char *)(uintptr_t)key, key_len };
+    SECItem key_item = { siBuffer, (unsigned char *)(uintptr_t)key,
+                         (unsigned int)key_len };
     sym_key = PK11_ImportSymKey(slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap,
                                 CKA_SIGN, &key_item, NULL);
     PK11_FreeSlot(slot);
@@ -221,7 +228,12 @@ static srtp_err_status_t srtp_hmac_update(void *statev,
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
-    if (PK11_DigestOp(hmac->ctx, message, msg_octets) != SECSuccess) {
+    if (msg_octets > UINT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (PK11_DigestOp(hmac->ctx, message, (unsigned int)msg_octets) !=
+        SECSuccess) {
         return srtp_err_status_auth_fail;
     }
 
@@ -247,7 +259,12 @@ static srtp_err_status_t srtp_hmac_compute(void *statev,
         return srtp_err_status_bad_param;
     }
 
-    if (PK11_DigestOp(hmac->ctx, message, msg_octets) != SECSuccess) {
+    if (msg_octets > UINT_MAX) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (PK11_DigestOp(hmac->ctx, message, (unsigned int)msg_octets) !=
+        SECSuccess) {
         return srtp_err_status_auth_fail;
     }
 
