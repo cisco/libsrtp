@@ -318,6 +318,13 @@ if(WIN32)
 endif()
 
 install(TARGETS srtp3 EXPORT libSRTPTargets)
+=======
+install(TARGETS srtp3
+  EXPORT libSRTPTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
 
 install(FILES include/srtp.h crypto/include/auth.h
   crypto/include/cipher.h
