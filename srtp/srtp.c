@@ -1039,15 +1039,20 @@ srtp_err_status_t srtp_stream_init_keys(srtp_stream_ctx_t *srtp,
     }
 
     if (rtp_keylen > kdf_keylen) {
-        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+        kdf_keylen = rtp_keylen;
     }
 
     if (rtcp_keylen > kdf_keylen) {
-        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+        kdf_keylen = rtcp_keylen;
     }
 
     if (input_keylen > kdf_keylen) {
-        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+        kdf_keylen = input_keylen;
+    }
+
+    if (kdf_keylen == SRTP_AES_GCM_128_KEY_LEN_WSALT ||
+        kdf_keylen == SRTP_AES_GCM_256_KEY_LEN_WSALT) {
+        kdf_keylen += 2; /* AES-CTR mode is always used for KDF */
     }
 
     debug_print(mod_srtp, "input key len: %d", input_keylen);
