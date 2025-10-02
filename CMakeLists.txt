@@ -317,12 +317,7 @@ if(WIN32)
   target_compile_definitions(srtp3 PUBLIC _CRT_SECURE_NO_WARNINGS)
 endif()
 
-install(TARGETS srtp3
-  EXPORT libSRTPTargets
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
+install(TARGETS srtp3 EXPORT libSRTPTargets)
 
 install(FILES include/srtp.h crypto/include/auth.h
   crypto/include/cipher.h
