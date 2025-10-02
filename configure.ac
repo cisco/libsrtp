@@ -250,9 +250,6 @@ if test "$enable_openssl" = "yes"; then
      PKG_CHECK_MODULES([crypto], [libcrypto],
        [CFLAGS="$CFLAGS $crypto_CFLAGS"
         LIBS="$crypto_LIBS $LIBS"])
-   else
-     AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([can't find libdl])])
-     AC_CHECK_LIB([z], [inflate], [], [AC_MSG_WARN([can't find libz])])
    fi
 
    AC_SEARCH_LIBS([EVP_EncryptInit], [crypto],
@@ -297,8 +294,6 @@ elif test "$enable_wolfssl" = "yes"; then
          AC_MSG_FAILURE([Invalid wolfSSL location: $with_wolfssl_dir])
        fi],
       [AC_MSG_RESULT([no])])
-
-   AC_CHECK_LIB([dl], [dlopen], [], [AC_MSG_WARN([can't find libdl])])
 
    AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
    AC_DEFINE([WOLFSSL], [1], [Define this to use wolfSSL crypto.])
