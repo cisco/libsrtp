@@ -301,7 +301,7 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_context_init(void *cv,
                                                            const uint8_t *key)
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
-    uint32_t key_size_in_bits = (c->key_size << 3);
+    uint32_t key_size_in_bits = (uint32_t)(c->key_size << 3);
     int errcode = 0;
 
     /*
