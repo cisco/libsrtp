@@ -1265,6 +1265,7 @@ srtp_err_status_t srtp_stream_init_keys(srtp_session_keys_t *session_keys,
         session_keys->mki_id = NULL;
     }
 
+    /* Find the maximum key length */
     input_keylen = full_key_length(session_keys->rtp_cipher->type);
     full_keylen = full_auth_key_length(session_keys->rtp_auth->type);
     if (full_keylen > input_keylen) {
@@ -1296,15 +1297,20 @@ srtp_err_status_t srtp_stream_init_keys(srtp_session_keys_t *session_keys,
     }
 
     if (rtp_keylen > kdf_keylen) {
-        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+        kdf_keylen = rtp_keylen;
     }
 
     if (rtcp_keylen > kdf_keylen) {
-        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+        kdf_keylen = rtcp_keylen;
     }
 
     if (input_keylen > kdf_keylen) {
-        kdf_keylen = 46; /* AES-CTR mode is always used for KDF */
+        kdf_keylen = input_keylen;
+    }
+
+    if (kdf_keylen == SRTP_AES_GCM_128_KEY_LEN_WSALT ||
+        kdf_keylen == SRTP_AES_GCM_256_KEY_LEN_WSALT) {
+        kdf_keylen += 2; /* AES-CTR mode is always used for KDF */
     }
 
     debug_print(mod_srtp, "input key len: %zu", input_keylen);
