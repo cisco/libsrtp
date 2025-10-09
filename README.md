@@ -60,6 +60,7 @@ because it does its work behind the scenes.
 - [Installing and Building libSRTP](#installing-and-building-libsrtp)
   - [Changing Build Configuration](#changing-build-configuration)
   - [Using Visual Studio](#using-visual-studio)
+  - [Using Meson](#using-meson)
 - [Applications](#applications)
   - [Example Code](#example-code)
 - [Credits](#credits)
