@@ -1,5 +1,5 @@
 [![CMake Build](https://github.com/cisco/libsrtp/actions/workflows/cmake.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/cmake.yml)
-[![CMake Release](https://github.com/cisco/libsrtp/actions/workflows/cmake_release.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/cmake_relese.yml)
+[![CMake Release](https://github.com/cisco/libsrtp/actions/workflows/cmake_release.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/cmake_release.yml)
 [![Autotools Build](https://github.com/cisco/libsrtp/actions/workflows/autotools.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/autotools.yml)
 [![Autotools Build](https://github.com/cisco/libsrtp/actions/workflows/meson.yml/badge.svg)](https://github.com/cisco/libsrtp/actions/workflows/meson.yml)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/14274/badge.svg)](https://scan.coverity.com/projects/cisco-libsrtp)
