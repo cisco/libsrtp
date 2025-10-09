@@ -1,0 +1,48 @@
+name: CMake Release CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '20 4 * * 1'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        lib_type: [static, shared]
+        include:
+          - lib_type: static
+            cmake-lib-type: "-DBUILD_SHARED_LIBS=Off"
+          - lib_type: shared
+            cmake-lib-type: "-DBUILD_SHARED_LIBS=On"
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake $GITHUB_WORKSPACE -DLIBSRTP_TEST_APPS=OFF ${{matrix.cmake-lib-type}}
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config Release
+
+    - name: Install
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --install . --prefix ${{github.workspace}}/install --config Release
