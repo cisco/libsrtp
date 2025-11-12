@@ -53,6 +53,7 @@
 #include "alloc.h"
 #include "cipher_types.h"
 #include "cipher_test_cases.h"
+#include "nss_fips.h"
 
 srtp_debug_module_t srtp_mod_aes_icm = {
     false,        /* debugging is off by default */
@@ -257,8 +258,16 @@ static srtp_err_status_t srtp_aes_icm_nss_context_init(void *cv,
     /* explicitly cast away const of key */
     SECItem keyItem = { siBuffer, (unsigned char *)(uintptr_t)key,
                         c->key_size };
-    c->key = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
-                               CKA_ENCRYPT, &keyItem, NULL);
+    if (PK11_IsFIPS()) {
+      /*
+       * Note: the caller is now responsible for the proper FIPS usage of the key material!
+       */
+      c->key = import_sym_key_in_FIPS(slot, CKM_AES_CTR, PK11_OriginUnwrap,
+                                      CKA_ENCRYPT, &keyItem, NULL);
+    } else {
+      c->key = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
+                                 CKA_ENCRYPT, &keyItem, NULL);
+    }
     PK11_FreeSlot(slot);
 
     if (!c->key) {
