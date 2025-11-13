@@ -281,7 +281,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
 
     debug_print(srtp_mod_aes_gcm, "key:  %s",
                 srtp_octet_string_hex_string(key, c->key_size));
-    key_len_in_bits = (c->key_size << 3);
+    key_len_in_bits = (uint32_t)(c->key_size << 3);
     switch (c->key_size) {
     case SRTP_AES_256_KEY_LEN:
     case SRTP_AES_128_KEY_LEN:
