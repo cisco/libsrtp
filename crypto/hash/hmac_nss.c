@@ -191,11 +191,12 @@ static srtp_err_status_t srtp_hmac_init(void *statev,
     /* explicitly cast away const of key */
     SECItem key_item = { siBuffer, (unsigned char *)(uintptr_t)key, key_len };
     if (PK11_IsFIPS()) {
-      /*
-       * Note: the caller is now responsible for the proper FIPS usage of the key material!
-       */
-        sym_key = import_sym_key_in_FIPS(slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap,
-                                         CKA_SIGN, &key_item, NULL);
+        /*
+         * Note: the caller is now responsible for the proper FIPS usage of the
+         * key material!
+         */
+        sym_key = import_sym_key_in_FIPS(
+            slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap, CKA_SIGN, &key_item, NULL);
     } else {
         sym_key = PK11_ImportSymKey(slot, CKM_SHA_1_HMAC, PK11_OriginUnwrap,
                                     CKA_SIGN, &key_item, NULL);

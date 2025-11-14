@@ -218,14 +218,15 @@ static srtp_err_status_t srtp_aes_gcm_nss_context_init(void *cv,
     SECItem key_item = { siBuffer, (unsigned char *)(uintptr_t)key,
                          c->key_size };
     if (PK11_IsFIPS()) {
-      /*
-       * Note: the caller is now responsible for the proper FIPS usage of the key material!
-       */
-      c->key = import_sym_key_in_FIPS(slot, CKM_AES_GCM, PK11_OriginUnwrap,
-                                      CKA_ENCRYPT, &key_item, NULL);
+        /*
+         * Note: the caller is now responsible for the proper FIPS usage of the
+         * key material!
+         */
+        c->key = import_sym_key_in_FIPS(slot, CKM_AES_GCM, PK11_OriginUnwrap,
+                                        CKA_ENCRYPT, &key_item, NULL);
     } else {
-      c->key = PK11_ImportSymKey(slot, CKM_AES_GCM, PK11_OriginUnwrap,
-                                 CKA_ENCRYPT, &key_item, NULL);
+        c->key = PK11_ImportSymKey(slot, CKM_AES_GCM, PK11_OriginUnwrap,
+                                   CKA_ENCRYPT, &key_item, NULL);
     }
     PK11_FreeSlot(slot);
 
