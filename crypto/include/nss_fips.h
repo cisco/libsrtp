@@ -85,7 +85,7 @@ static PK11SymKey *import_sym_key_in_FIPS(PK11SlotInfo *const slot,
         return NULL;
     }
 
-    // getting 306 on my system which is CKM_DES3_ECB.
+    // Usually returns CKM_DES3_ECB.
     wrap_mechanism = PK11_GetBestWrapMechanism(slot);
 
     // Generate a wrapping key. It will be used exactly twice over the scope:
