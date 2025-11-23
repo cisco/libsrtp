@@ -211,8 +211,9 @@ typedef enum {
                                         /**< invalid                         */
     srtp_err_status_pkt_idx_old = 26,   /**< packet index is too old to      */
                                         /**< consider                        */
-    srtp_err_status_pkt_idx_adv = 27    /**< packet index advanced, reset    */
+    srtp_err_status_pkt_idx_adv = 27,   /**< packet index advanced, reset    */
                                         /**< needed                          */
+    srtp_err_status_cryptex_err = 28    /**< cryptex error                   */
 } srtp_err_status_t;
 
 typedef struct srtp_ctx_t_ srtp_ctx_t;
@@ -350,6 +351,8 @@ typedef struct srtp_policy_t {
     int *enc_xtn_hdr;              /**< List of header ids to encrypt.      */
     int enc_xtn_hdr_count;         /**< Number of entries in list of header */
                                    /**<  ids.                               */
+    int use_cryptex;               /**< Encrypt header block and CSRCs with */
+                                   /**< cryptex.                            */
     struct srtp_policy_t *next;    /**< Pointer to next stream policy.      */
 } srtp_policy_t;
 
