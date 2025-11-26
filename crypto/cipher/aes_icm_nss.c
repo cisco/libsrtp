@@ -263,7 +263,8 @@ static srtp_err_status_t srtp_aes_icm_nss_context_init(void *cv,
          * Note: the caller is now responsible for the proper FIPS usage of the
          * key material!
          */
-        c->key = import_sym_key_in_FIPS(slot, CKM_AES_CTR, CKA_ENCRYPT, &keyItem);
+        c->key =
+            import_sym_key_in_FIPS(slot, CKM_AES_CTR, CKA_ENCRYPT, &keyItem);
     } else {
         c->key = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
                                    CKA_ENCRYPT, &keyItem, NULL);
