@@ -43,10 +43,8 @@
 
 static PK11SymKey *import_sym_key_in_FIPS(PK11SlotInfo *const slot,
                                           const CK_MECHANISM_TYPE type,
-                                          const PK11Origin origin,
                                           const CK_ATTRIBUTE_TYPE operation,
-                                          SECItem *const raw_key,
-                                          void *const wincx)
+                                          SECItem *const raw_key)
 {
     PK11SymKey *wrapping_key = NULL;
     PK11Context *wrap_key_crypt_context = NULL;
