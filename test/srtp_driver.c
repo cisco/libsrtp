@@ -2510,7 +2510,6 @@ srtp_err_status_t srtp_validate_cryptex(void)
     policy.key = test_key;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
-    policy.use_cryptex = 1;
     policy.next = NULL;
 
     for (size_t i = 0; i < num_vectors; ++i) {
@@ -2536,6 +2535,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
         debug_print(mod_driver, "test vector: %s\n", vectors[i].name);
 
         CHECK_OK(srtp_create(&srtp_snd, &policy));
+        CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc));
 
         CHECK_OK(srtp_protect(srtp_snd, packet, &len));
         CHECK(len == enc_len);
@@ -2550,6 +2550,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
         CHECK_OK(srtp_dealloc(srtp_snd));
 
         CHECK_OK(srtp_create(&srtp_recv, &policy));
+        CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc));
 
         /*
          * unprotect ciphertext, then compare with plaintext
@@ -2594,11 +2595,11 @@ srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void)
     policy.key = test_key;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
-    policy.use_cryptex = 1;
     policy.next = NULL;
 
     srtp_t srtp_snd;
     CHECK_OK(srtp_create(&srtp_snd, &policy));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc));
 
     char packet[1400];
     int packet_len =
@@ -3007,10 +3008,10 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
     policy.key = test_key_gcm_cryptex;
     policy.window_size = 128;
     policy.allow_repeat_tx = 0;
-    policy.use_cryptex = 1;
     policy.next = NULL;
 
     CHECK_OK(srtp_create(&srtp_snd, &policy));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc));
 
     for (size_t i = 0; i < num_vectors; ++i) {
         char packet[1400];
@@ -3050,6 +3051,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
          * complain
          */
         CHECK_OK(srtp_create(&srtp_recv, &policy));
+        CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc));
 
         /*
          * unprotect ciphertext, then compare with plaintext
@@ -4949,7 +4951,6 @@ const srtp_policy_t default_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -4979,7 +4980,6 @@ const srtp_policy_t aes_only_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5009,7 +5009,6 @@ const srtp_policy_t hmac_only_policy = {
     0,    /* retransmission not allowed                       */
     NULL, /* no encrypted extension headers                   */
     0,    /* list of encrypted extension headers is empty     */
-    0,    /* no cryptex                                       */
     NULL
 };
 
@@ -5042,7 +5041,6 @@ const srtp_policy_t aes128_gcm_8_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5074,7 +5072,6 @@ const srtp_policy_t aes128_gcm_8_cauth_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5106,7 +5103,6 @@ const srtp_policy_t aes256_gcm_8_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5138,7 +5134,6 @@ const srtp_policy_t aes256_gcm_8_cauth_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 #endif
@@ -5169,7 +5164,6 @@ const srtp_policy_t null_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5239,7 +5233,6 @@ const srtp_policy_t aes_256_hmac_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5272,7 +5265,6 @@ const srtp_policy_t aes_256_hmac_32_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 
@@ -5304,7 +5296,6 @@ const srtp_policy_t hmac_only_with_ekt_policy = {
     0,                /* retransmission not allowed                   */
     NULL,             /* no encrypted extension headers               */
     0,                /* list of encrypted extension headers is empty */
-    0,                /* no cryptex                                   */
     NULL
 };
 
@@ -5371,7 +5362,6 @@ const srtp_policy_t wildcard_policy = {
     0,    /* retransmission not allowed                   */
     NULL, /* no encrypted extension headers               */
     0,    /* list of encrypted extension headers is empty */
-    0,    /* no cryptex                                   */
     NULL
 };
 

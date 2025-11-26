@@ -641,7 +641,7 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
         str->enc_xtn_hdr_count = 0;
     }
 
-    str->use_cryptex = p->use_cryptex;
+    str->use_cryptex = 0;
 
     return srtp_err_status_ok;
 }
@@ -5109,6 +5109,64 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
         return srtp_err_status_bad_param;
 
     *roc = srtp_rdbx_get_roc(&stream->rtp_rdbx);
+
+    return srtp_err_status_ok;
+}
+
+struct set_cryptex_from_template_data {
+    const srtp_stream_ctx_t *template;
+};
+
+static int set_cryptex_from_template_cb(srtp_stream_t stream, void *raw_data)
+{
+    struct set_cryptex_from_template_data *data =
+        (struct set_cryptex_from_template_data *)raw_data;
+
+    /*
+     * Streams cloned from the template share auth cipher pointers with it,
+     * so use that to identify clones that need updating.
+     */
+    if (stream->session_keys[0].rtp_auth ==
+        data->template->session_keys[0].rtp_auth) {
+        stream->use_cryptex = 1;
+    }
+
+    return 0;
+}
+
+srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
+                                              const srtp_ssrc_t *ssrc)
+{
+    srtp_stream_t stream;
+
+    if (session == NULL || ssrc == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    switch (ssrc->type) {
+    case ssrc_specific:
+        stream = srtp_get_stream(session, htonl(ssrc->value));
+        if (stream == NULL) {
+            return srtp_err_status_bad_param;
+        }
+        stream->use_cryptex = 1;
+        break;
+    case ssrc_any_inbound:
+    case ssrc_any_outbound: {
+        struct set_cryptex_from_template_data data;
+
+        if (session->stream_template == NULL) {
+            return srtp_err_status_bad_param;
+        }
+        session->stream_template->use_cryptex = 1;
+        data.template = session->stream_template;
+        srtp_stream_list_for_each(session->stream_list,
+                                  set_cryptex_from_template_cb, &data);
+        break;
+    }
+    default:
+        return srtp_err_status_bad_param;
+    }
 
     return srtp_err_status_ok;
 }
