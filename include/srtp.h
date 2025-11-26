@@ -351,8 +351,6 @@ typedef struct srtp_policy_t {
     int *enc_xtn_hdr;              /**< List of header ids to encrypt.      */
     int enc_xtn_hdr_count;         /**< Number of entries in list of header */
                                    /**<  ids.                               */
-    int use_cryptex;               /**< Encrypt header block and CSRCs with */
-                                   /**< cryptex.                            */
     struct srtp_policy_t *next;    /**< Pointer to next stream policy.      */
 } srtp_policy_t;
 
@@ -1748,6 +1746,22 @@ srtp_err_status_t srtp_set_stream_roc(srtp_t session,
 srtp_err_status_t srtp_get_stream_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t *roc);
+
+/**
+ * @brief srtp_set_stream_use_cryptex(session, ssrc)
+ *
+ * Enable cryptex processing for the stream identified by the given SSRC. For
+ * wildcard SSRC types the cryptex setting is applied to the session template
+ * and any streams created from it.
+ *
+ * @param session is the SRTP session containing the stream to update.
+ * @param ssrc describes the SSRC to enable cryptex for.
+ *
+ * @returns srtp_err_status_ok on success, or srtp_err_status_bad_param if the
+ * stream or template cannot be found for the given SSRC.
+ */
+srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
+                                              const srtp_ssrc_t *ssrc);
 
 /**
  * @}
