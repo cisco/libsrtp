@@ -1,4 +1,4 @@
-# libsrt fuzzer
+# libsrtp fuzzer
 
 By Guido Vranken <guidovranken@gmail.com> -- https://guidovranken.wordpress.com/
 
