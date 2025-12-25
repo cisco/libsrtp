@@ -290,6 +290,12 @@ make:
 make
 ~~~
 
+Assuming the mbedtls V4.0 is installed in `mbedtls-4` directory.
+~~~.txt
+cmake -S . -B build   -DCRYPTO_LIBRARY=mbedtls   -DMBEDTLS_INCLUDE_DIRS=/opt/mbedtls-4/include   -DMBEDTLS_LIBRARY="/opt/mbedtls-4/lib/libmbedtls.a;/opt/mbedtls-4/lib/libmbedcrypto.a" && cmake --build build
+~~~
+
+
 The configure script accepts the following options:
 
 Option                         | Description

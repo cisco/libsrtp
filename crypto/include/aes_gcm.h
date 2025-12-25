@@ -90,7 +90,8 @@ typedef struct {
 
 #endif /* WOLFSSL */
 
-#ifdef MBEDTLS
+#ifdef PSA
+// #ifdef MBEDTLS
 #define MAX_AD_SIZE 2048
 #include <mbedtls/aes.h>
 #include <mbedtls/gcm.h>
@@ -107,6 +108,47 @@ typedef struct {
 } srtp_aes_gcm_ctx_t;
 
 #endif /* MBEDTLS */
+
+#ifdef MBEDTLS
+#define MAX_AD_SIZE 2048
+#include <psa/crypto.h>
+
+/**
+ * \brief          The GCM context structure.
+ */
+typedef struct psa_gcm_context {
+    // psa_aead_operation_t cipher_ctx;  /*!< The cipher context used. */
+
+    psa_aead_operation_t op; /*!< The cipher context used. */
+    psa_key_id_t key_id;
+
+    uint64_t HL[16];  /*!< Precalculated HTable low. */
+    uint64_t HH[16];  /*!< Precalculated HTable high. */
+    uint64_t len;     /*!< The total length of the encrypted data. */
+    uint64_t add_len; /*!< The total length of the additional data. */
+    unsigned char base_ectr[16]; /*!< The first ECTR for tag. */
+    unsigned char y[16];         /*!< The Y working value. */
+    unsigned char buf[16];       /*!< The buf working value. */
+    int mode;                    /*!< The operation to perform:
+                                  #MBEDTLS_GCM_ENCRYPT or
+                                  #MBEDTLS_GCM_DECRYPT. */
+} psa_gcm_context;
+
+typedef struct {
+    size_t key_size;
+    size_t tag_len;
+    size_t aad_size;
+    size_t iv_len;
+    uint8_t iv[12];
+    uint8_t aad[MAX_AD_SIZE];
+
+    // mbedtls_gcm_context *ctx;
+    psa_gcm_context *ctx;
+
+    srtp_cipher_direction_t dir;
+} srtp_aes_gcm_ctx_t;
+
+#endif /* PSA */
 
 #ifdef NSS
 
