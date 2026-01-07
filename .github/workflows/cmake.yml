@@ -70,7 +70,9 @@ jobs:
 
     - name: Setup macOS MbedTLS
       if:  matrix.os == 'macos-latest' && matrix.crypto == 'mbedtls'
-      run: brew install mbedtls
+      run: |
+        brew install mbedtls@3
+        echo "CMAKE_PREFIX_PATH=$(brew --prefix mbedtls@3)" >> $GITHUB_ENV
 
     - uses: actions/checkout@v2
 
