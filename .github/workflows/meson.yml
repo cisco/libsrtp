@@ -89,13 +89,13 @@ jobs:
 
     - name: Setup macOS OpenSSL
       if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
-      run: echo "pkgconfig-crypto-dir=PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig" >> $GITHUB_ENV
+      run: echo "PKG_CONFIG_PATH=$(brew --prefix openssl@1.1)/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: Setup macOS OpenSSL3
       if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl3'
       run: |
         brew install openssl@3
-        echo "pkgconfig-crypto-dir=PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig" >> $GITHUB_ENV
 
     - name: Setup macOS wolfSSL
       if: matrix.os == 'macos-latest' && matrix.crypto == 'wolfssl'
@@ -121,7 +121,9 @@ jobs:
 
     - name: Setup macOS MbedTLS
       if:  matrix.os == 'macos-latest' && matrix.crypto == 'mbedtls'
-      run: brew install mbedtls
+      run: |
+        brew install mbedtls@3
+        echo "PKG_CONFIG_PATH=$(brew --prefix mbedtls@3)/lib/pkgconfig" >> $GITHUB_ENV
 
     - uses: actions/checkout@v2
 
