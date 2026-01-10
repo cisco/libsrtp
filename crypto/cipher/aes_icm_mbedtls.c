@@ -370,13 +370,13 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
     v128_t nonce;
+    psa_status_t status = PSA_SUCCESS;
+
     (void)dir;
 
     c->nc_off = 0;
     /* set nonce (for alignment) */
     v128_copy_octet_string(&nonce, iv);
-
-    psa_cipher_set_iv(&(c->ctx->op), iv, 16);
 
     debug_print(srtp_mod_aes_icm, "setting iv: %s", v128_hex_string(&nonce));
 
@@ -384,6 +384,25 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
 
     debug_print(srtp_mod_aes_icm, "set_counter: %s",
                 v128_hex_string(&c->counter));
+
+    status = psa_cipher_abort(&c->ctx->op);
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_aes_icm, "abort error: %d", status);
+        return srtp_err_status_cipher_fail;
+    }
+
+    status =
+        psa_cipher_encrypt_setup(&(c->ctx->op), c->ctx->key_id, PSA_ALG_CTR);
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_aes_icm, "setup error: %d", status);
+        return srtp_err_status_cipher_fail;
+    }
+
+    status = psa_cipher_set_iv(&c->ctx->op, c->counter.v8, 16);
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_aes_icm, "set iv error: %d", status);
+        return srtp_err_status_cipher_fail;
+    }
 
     return srtp_err_status_ok;
 }
@@ -415,16 +434,9 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
     if (*dst_len < src_len) {
         return srtp_err_status_buffer_small;
     }
-
-    status =
-        psa_cipher_encrypt_setup(&(c->ctx->op), c->ctx->key_id, PSA_ALG_CTR);
-    status = psa_cipher_set_iv(&c->ctx->op, c->counter.v8, 16);
     status =
         psa_cipher_update(&(c->ctx->op), src, src_len, dst, *dst_len, &out_len);
 
-    total_len = out_len;
-    status = psa_cipher_finish(&(c->ctx->op), dst + total_len,
-                               *dst_len - total_len, &out_len);
     if (status != PSA_SUCCESS) {
         debug_print(srtp_mod_aes_icm, "encrypt error: %d", status);
         return srtp_err_status_cipher_fail;
