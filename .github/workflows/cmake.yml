@@ -68,7 +68,15 @@ jobs:
 
     - name: Setup Ubuntu MbedTLS
       if:  matrix.os == 'ubuntu-latest' && matrix.crypto == 'mbedtls'
-      run: sudo apt-get install libmbedtls-dev
+      run: |
+        git clone https://github.com/Mbed-TLS/mbedtls.git
+        cd mbedtls
+        git checkout mbedtls-4.0.0
+        git submodule update --init --recursive
+        cmake -S . -B build
+        cmake --build build
+        sudo cmake --install build
+        cd ..
 
     - name: Setup macOS OpenSSL
       if: matrix.os == 'macos-latest' && matrix.crypto == 'openssl'
