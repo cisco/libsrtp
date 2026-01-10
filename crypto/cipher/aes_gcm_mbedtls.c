@@ -386,12 +386,20 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
         return srtp_err_status_buffer_small;
     }
 
+    /*
+      There are tests that check a buffer is only written too as mush as needed
+      even if there is space in buffer. psa_aead_encrypt uses that extra space,
+      probable for performance reasons. For adjust the dst_len to be only what
+      is required to avoid the tests failing. The tests should be changed as
+      there is nothing wrong with using the free buffer space.
+    */
+    *dst_len = src_len + c->tag_len;
+
     size_t out_len = 0;
     status = psa_aead_encrypt(
         c->ctx->key_id,
         PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, c->tag_len), c->iv,
-        c->iv_len, c->aad, c->aad_size, src, src_len, dst,
-        PSA_AEAD_ENCRYPT_OUTPUT_MAX_SIZE(src_len), &out_len);
+        c->iv_len, c->aad, c->aad_size, src, src_len, dst, *dst_len, &out_len);
 
     c->aad_size = 0;
     if (status != PSA_SUCCESS) {
@@ -422,7 +430,6 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
 
     psa_status_t status = PSA_SUCCESS;
-    uint8_t full_tag[16] = { 0 };
 
     if (c->dir != srtp_direction_decrypt) {
         return srtp_err_status_bad_param;
@@ -432,13 +439,9 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
         return srtp_err_status_bad_param;
     }
 
-    size_t ciphertext_len = src_len - c->tag_len;
-
-    if (*dst_len < ciphertext_len) {
+    if (*dst_len < src_len - c->tag_len) {
         return srtp_err_status_buffer_small;
     }
-
-    memcpy(full_tag, src + ciphertext_len, c->tag_len);
 
     debug_print(srtp_mod_aes_gcm, "AAD: %s",
                 srtp_octet_string_hex_string(c->aad, c->aad_size));
@@ -447,9 +450,8 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
     status = psa_aead_decrypt(
         c->ctx->key_id,
         PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, c->tag_len), c->iv,
-        c->iv_len, c->aad, c->aad_size, src, src_len, dst,
-        PSA_AEAD_DECRYPT_OUTPUT_MAX_SIZE(src_len), &out_len);
-    *dst_len = ciphertext_len;
+        c->iv_len, c->aad, c->aad_size, src, src_len, dst, *dst_len, &out_len);
+    *dst_len = out_len;
     c->aad_size = 0;
     if (status != PSA_SUCCESS) {
         return srtp_err_status_auth_fail;
