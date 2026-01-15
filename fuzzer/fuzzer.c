@@ -705,10 +705,6 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
             g_no_mmap = true;
         }
 #endif
-        else if (strncmp("--", _argv[i], 2) == 0) {
-            printf("Invalid argument: %s\n", _argv[i]);
-            exit(0);
-        }
     }
 
     if (no_custom_event_handler == false) {
