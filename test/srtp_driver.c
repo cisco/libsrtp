@@ -4551,7 +4551,7 @@ srtp_err_status_t srtp_test_update(void)
     policy.next = NULL;
     policy.key = test_key;
 
-    /* create a send and recive ctx with defualt profile and test_key */
+    /* create a send and receive ctx with default profile and test_key */
     policy.ssrc.type = ssrc_any_outbound;
     status = srtp_create(&srtp_snd, &policy);
     if (status) {
@@ -4684,7 +4684,7 @@ srtp_err_status_t srtp_test_update(void)
         }
     }
 
-    /* update recive ctx to use test_alt_key */
+    /* update receive ctx to use test_alt_key */
     policy.ssrc.type = ssrc_any_inbound;
     policy.key = test_alt_key;
     status = srtp_update(srtp_recv, &policy);
