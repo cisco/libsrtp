@@ -49,7 +49,13 @@
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
 #include "auth_test_cases.h"
-#include <mbedtls/md.h>
+#include <psa/crypto.h>
+
+typedef struct {
+    psa_mac_operation_t op;
+    psa_key_id_t key_id;
+    size_t key_len;
+} psa_hmac_ctx_t;
 
 #define SHA1_DIGEST_SIZE 20
 
@@ -81,13 +87,15 @@ static srtp_err_status_t srtp_hmac_mbedtls_alloc(srtp_auth_t **a,
         return srtp_err_status_alloc_fail;
     }
     // allocate the buffer of mbedtls context.
-    (*a)->state = srtp_crypto_alloc(sizeof(mbedtls_md_context_t));
+    (*a)->state = srtp_crypto_alloc(sizeof(psa_hmac_ctx_t));
+
     if ((*a)->state == NULL) {
         srtp_crypto_free(*a);
         *a = NULL;
         return srtp_err_status_alloc_fail;
     }
-    mbedtls_md_init((mbedtls_md_context_t *)(*a)->state);
+
+    (((psa_hmac_ctx_t *)((*a)->state))->op) = psa_mac_operation_init();
 
     /* set pointers */
     (*a)->type = &srtp_hmac;
@@ -100,9 +108,15 @@ static srtp_err_status_t srtp_hmac_mbedtls_alloc(srtp_auth_t **a,
 
 static srtp_err_status_t srtp_hmac_mbedtls_dealloc(srtp_auth_t *a)
 {
-    mbedtls_md_context_t *hmac_ctx;
-    hmac_ctx = (mbedtls_md_context_t *)a->state;
-    mbedtls_md_free(hmac_ctx);
+    psa_hmac_ctx_t *hmac_ctx;
+    hmac_ctx = (psa_hmac_ctx_t *)a->state;
+
+    /*
+    There is no need for mbedtls_md_free function as it done automatically
+    by psa_mac_sign_finish function
+    */
+    // mbedtls_md_free(hmac_ctx);
+
     srtp_crypto_free(hmac_ctx);
     /* zeroize entire state*/
     octet_string_set_to_zero(a, sizeof(srtp_auth_t));
@@ -115,8 +129,14 @@ static srtp_err_status_t srtp_hmac_mbedtls_dealloc(srtp_auth_t *a)
 
 static srtp_err_status_t srtp_hmac_mbedtls_start(void *statev)
 {
-    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
-    if (mbedtls_md_hmac_reset(state) != 0) {
+    psa_hmac_ctx_t *state = (psa_hmac_ctx_t *)statev;
+
+    if (psa_mac_abort(&state->op) != 0) {
+        return srtp_err_status_auth_fail;
+    }
+
+    if (psa_mac_sign_setup(&state->op, state->key_id,
+                           PSA_ALG_HMAC(PSA_ALG_SHA_1)) != 0) {
         return srtp_err_status_auth_fail;
     }
 
@@ -127,27 +147,52 @@ static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
                                                 const uint8_t *key,
                                                 size_t key_len)
 {
-    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
-    const mbedtls_md_info_t *info = NULL;
+    /*
+    Please note that the two funcitons `mbedtls_md_setup` and
+    `mbedtls_md_hmac_starts` are combined into a single function
+    `psa_mac_sign_setup`
 
-    info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
-    if (info == NULL) {
-        return srtp_err_status_auth_fail;
+    Legacy:
+    Call mbedtls_md_setup to select the hash algorithm, with hmac=1. Then call
+    mbedtls_md_hmac_starts to set the key.
+
+    PSA API:
+    Call psa_mac_sign_setup to specify the algorithm and the key. See “MAC key
+    management” for how to obtain a key identifier.
+    */
+
+    psa_hmac_ctx_t *state = (psa_hmac_ctx_t *)statev;
+
+    /*
+    There is no equivalent to the type mbedtls_md_info_t and the functions
+    mbedtls_md_info_from_type and mbedtls_md_get_type in the PSA API
+    because it is unnecessary. All macros and functions operate directly
+    on algorithm (psa_algorithm_t, PSA_ALG_xxx constants).
+     */
+
+    /*
+    One of the major differences between the legacy API and the PSA API is that
+    in the PSA API, access to keys is indirect. Operations that require a key
+    take a parameter of type psa_key_id_t, which is an identifier for the key.
+    This allows the API to be used with keys hat are not directly accessible to
+    the application, for example because they are stored in a secure environment
+    that does not allow the key material to be exported.
+    */
+    psa_status_t status = PSA_SUCCESS;
+    psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+    psa_set_key_type(&attr, PSA_KEY_TYPE_HMAC);
+    psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_MESSAGE);
+
+    /*Note: maybe caculate a MAC or verifiy it in both directions.*/
+    psa_set_key_algorithm(&attr, PSA_ALG_HMAC(PSA_ALG_SHA_1));
+
+    status = psa_import_key(&attr, key, key_len, &state->key_id);
+    state->key_len = key_len;
+    if (status != PSA_SUCCESS) {
+        return status;
     }
 
-    if (mbedtls_md_setup(state, info, 1) != 0) {
-        return srtp_err_status_auth_fail;
-    }
-
-    debug_print(srtp_mod_hmac, "mbedtls setup, name: %s",
-                mbedtls_md_get_name(info));
-    debug_print(srtp_mod_hmac, "mbedtls setup, size: %d",
-                mbedtls_md_get_size(info));
-
-    if (mbedtls_md_hmac_starts(state, key, key_len) != 0) {
-        return srtp_err_status_auth_fail;
-    }
-
+    /*Note: I don't know when to distroy a key*/
     return srtp_err_status_ok;
 }
 
@@ -155,12 +200,12 @@ static srtp_err_status_t srtp_hmac_mbedtls_update(void *statev,
                                                   const uint8_t *message,
                                                   size_t msg_octets)
 {
-    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
+    psa_hmac_ctx_t *state = (psa_hmac_ctx_t *)statev;
 
     debug_print(srtp_mod_hmac, "input: %s",
                 srtp_octet_string_hex_string(message, msg_octets));
 
-    if (mbedtls_md_hmac_update(state, message, msg_octets) != 0) {
+    if (psa_mac_update(&state->op, message, msg_octets) != 0) {
         return srtp_err_status_auth_fail;
     }
 
@@ -173,7 +218,8 @@ static srtp_err_status_t srtp_hmac_mbedtls_compute(void *statev,
                                                    size_t tag_len,
                                                    uint8_t *result)
 {
-    mbedtls_md_context_t *state = (mbedtls_md_context_t *)statev;
+    psa_hmac_ctx_t *state = (psa_hmac_ctx_t *)statev;
+
     uint8_t hash_value[SHA1_DIGEST_SIZE];
     size_t i;
 
@@ -183,14 +229,20 @@ static srtp_err_status_t srtp_hmac_mbedtls_compute(void *statev,
     }
 
     /* hash message, copy output into H */
-    if (mbedtls_md_hmac_update(statev, message, msg_octets) != 0) {
+    if (psa_mac_update(&state->op, message, msg_octets) != 0) {
         return srtp_err_status_auth_fail;
     }
 
-    if (mbedtls_md_hmac_finish(state, hash_value) != 0) {
+    /* The `psa_mac_sign_finish` function can provide output length. I'm not
+    sure if it's usable or not now I just assigne it to a local variable named
+    `out_len`. I think the `out_len` must be equal to `tag_len`*/
+
+    size_t out_len = 0;
+
+    if (psa_mac_sign_finish(&state->op, hash_value, sizeof(hash_value),
+                            &out_len) != 0) {
         return srtp_err_status_auth_fail;
     }
-
     /* copy hash_value to *result */
     for (i = 0; i < tag_len; i++) {
         result[i] = hash_value[i];
