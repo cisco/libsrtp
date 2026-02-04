@@ -1750,9 +1750,9 @@ srtp_err_status_t srtp_get_stream_roc(srtp_t session,
 /**
  * @brief srtp_set_stream_use_cryptex(session, ssrc)
  *
- * Enable cryptex processing for the stream identified by the given SSRC. For
- * wildcard SSRC types the cryptex setting is applied to the session template
- * and any streams created from it.
+ * Enable cryptex, RFC 9335, processing for the stream identified by the given
+ * SSRC. For wildcard SSRC types the cryptex setting is applied to the session
+ * template and any streams created from it.
  *
  * @param session is the SRTP session containing the stream to update.
  * @param ssrc describes the SSRC to enable cryptex for.
