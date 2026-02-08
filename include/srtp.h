@@ -1090,6 +1090,7 @@ size_t srtp_profile_get_master_salt_length(srtp_profile_t profile);
  * @warning There must be at least bytes_in_salt + bytes_in_key bytes
  *          available at the location pointed to by key.
  *
+ *
  */
 void srtp_append_salt_to_key(uint8_t *key,
                              size_t bytes_in_key,
@@ -1491,6 +1492,44 @@ srtp_err_status_t srtp_stream_get_roc(srtp_t session,
 /* for byte-access */
 #define SRTCP_E_BYTE_BIT 0x80
 #define SRTCP_INDEX_MASK 0x7fffffff
+
+/* WIP new config policy API */
+
+typedef struct srtp_policy2_ctx_t_ srtp_policy2_ctx_t;
+typedef srtp_policy2_ctx_t *srtp_policy2_t;
+
+srtp_err_status_t srtp_policy2_create(srtp_policy2_t *policy);
+srtp_err_status_t srtp_policy2_set_ssrc(srtp_policy2_t policy,
+                                        srtp_ssrc_t ssrc);
+srtp_err_status_t srtp_policy2_set_profile(srtp_policy2_t policy,
+                                           srtp_profile_t profile);
+srtp_err_status_t srtp_policy2_set_key(srtp_policy2_t policy,
+                                       const uint8_t *key,
+                                       size_t key_len,
+                                       const uint8_t *salt,
+                                       size_t salt_len);
+srtp_err_status_t srtp_policy2_use_mki(srtp_policy2_t policy, size_t mki_len);
+srtp_err_status_t srtp_policy2_add_key(srtp_policy2_t policy,
+                                       const uint8_t *key,
+                                       size_t key_len,
+                                       const uint8_t *salt,
+                                       size_t salt_len,
+                                       const uint8_t *mki,
+                                       size_t mki_len);
+srtp_err_status_t srtp_policy2_set_window_size(srtp_policy2_t policy,
+                                               size_t window_size);
+srtp_err_status_t srtp_policy2_set_allow_repeat_tx(srtp_policy2_t policy,
+                                                   bool allow);
+srtp_err_status_t srtp_policy2_use_cryptex(srtp_policy2_t policy);
+srtp_err_status_t srtp_policy2_set_enc_hdr_xtnd_ids(srtp_policy2_t policy,
+                                                    const uint8_t *hdr_xtnd_ids,
+                                                    size_t num_xtnd_ids);
+srtp_err_status_t srtp_policy2_set_roc(srtp_policy2_t policy, uint32_t roc);
+void srtp_policy2_destroy(srtp_policy2_t policy);
+
+srtp_err_status_t srtp_policy2_validate(srtp_policy2_t policy);
+
+srtp_err_status_t srtp_create2(srtp_t *session, const srtp_policy2_t policy);
 
 #ifdef __cplusplus
 }
