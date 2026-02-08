@@ -115,49 +115,51 @@ static srtp_hdr_xtnd_t *srtp_get_rtp_xtn_hdr(const srtp_hdr_t *hdr,
 
 /*
  * Returns the length of the extension header including the extension header
- * header so will return a minium of 4. Assumes the srtp_hdr_xtnd_t is a valid
+ * header so will return a minium of 4. Assumes the srtp_hdr_t is a valid
  * pointer and that the caller has already verified that a header extension is
  * valid by checking the x bit of the RTP header.
  */
-static size_t srtp_get_rtp_xtn_hdr_len(const srtp_hdr_t *hdr,
-                                       const uint8_t *rtp)
+static size_t srtp_get_rtp_hdr_xtnd_len(const srtp_hdr_t *hdr,
+                                        const uint8_t *rtp)
 {
     const srtp_hdr_xtnd_t *xtn_hdr =
         (const srtp_hdr_xtnd_t *)(rtp + srtp_get_rtp_hdr_len(hdr));
     return (ntohs(xtn_hdr->length) + 1u) * 4u;
 }
 
-static uint16_t srtp_get_rtp_xtn_hdr_profile(const srtp_hdr_t *hdr,
-                                             const uint8_t *rtp)
+static uint16_t srtp_get_rtp_hdr_xtnd_profile(const srtp_hdr_t *hdr,
+                                              const uint8_t *rtp)
 {
     const srtp_hdr_xtnd_t *xtn_hdr =
         (const srtp_hdr_xtnd_t *)(rtp + srtp_get_rtp_hdr_len(hdr));
     return ntohs(xtn_hdr->profile_specific);
 }
 
-static void srtp_cryptex_adjust_buffer(const srtp_hdr_t *hdr, uint8_t *rtp)
+static void srtp_cryptex_move_hdr_xtnd_hdr_before_csrc(const srtp_hdr_t *hdr,
+                                                       uint8_t *rtp)
 {
     if (hdr->cc) {
         uint8_t tmp[4];
-        uint8_t *ptr = rtp + srtp_get_rtp_hdr_len(hdr);
-        size_t cc_list_size = hdr->cc * 4;
-        memcpy(tmp, ptr, 4);
-        ptr -= cc_list_size;
-        memmove(ptr + 4, ptr, cc_list_size);
-        memcpy(ptr, tmp, 4);
+        uint8_t *xtn_hdr = rtp + srtp_get_rtp_hdr_len(hdr);
+        uint8_t *csrc_list = rtp + octets_in_rtp_header;
+        size_t csrc_list_size = hdr->cc * 4;
+        memcpy(tmp, xtn_hdr, 4);
+        memmove(csrc_list + 4, csrc_list, csrc_list_size);
+        memcpy(csrc_list, tmp, 4);
     }
 }
 
-static void srtp_cryptex_restore_buffer(const srtp_hdr_t *hdr, uint8_t *rtp)
+static void srtp_cryptex_move_csrc_before_hdr_xtnd_hdr(const srtp_hdr_t *hdr,
+                                                       uint8_t *rtp)
 {
     if (hdr->cc) {
         uint8_t tmp[4];
-        uint8_t *ptr = rtp + octets_in_rtp_header;
-        size_t cc_list_size = hdr->cc * 4;
-        memcpy(tmp, ptr, 4);
-        memmove(ptr, ptr + 4, cc_list_size);
-        ptr += cc_list_size;
-        memcpy(ptr, tmp, 4);
+        uint8_t *xtn_hdr = rtp + srtp_get_rtp_hdr_len(hdr);
+        uint8_t *csrc_list = rtp + octets_in_rtp_header;
+        size_t csrc_list_size = hdr->cc * 4;
+        memcpy(tmp, csrc_list, 4);
+        memmove(csrc_list, csrc_list + 4, csrc_list_size);
+        memcpy(xtn_hdr, tmp, 4);
     }
 }
 
@@ -184,7 +186,7 @@ static srtp_err_status_t srtp_cryptex_protect_init(
 
     if (*inuse) {
         *enc_start -=
-            (srtp_get_rtp_xtn_hdr_len(hdr, rtp) - octets_in_rtp_xtn_hdr);
+            (srtp_get_rtp_hdr_xtnd_len(hdr, rtp) - octets_in_rtp_xtn_hdr);
         if (*inplace) {
             *enc_start -= (hdr->cc * 4);
         }
@@ -209,7 +211,7 @@ static srtp_err_status_t srtp_cryptex_protect(bool inplace,
     }
 
     if (inplace) {
-        srtp_cryptex_adjust_buffer(hdr, srtp);
+        srtp_cryptex_move_hdr_xtnd_hdr_before_csrc(hdr, srtp);
     } else {
         if (hdr->cc) {
             uint8_t *cc_list = srtp + octets_in_rtp_header;
@@ -231,7 +233,7 @@ static void srtp_cryptex_protect_cleanup(bool inplace,
                                          uint8_t *srtp)
 {
     if (inplace) {
-        srtp_cryptex_restore_buffer(hdr, srtp);
+        srtp_cryptex_move_csrc_before_hdr_xtnd_hdr(hdr, srtp);
     }
 }
 
@@ -245,7 +247,7 @@ static srtp_err_status_t srtp_cryptex_unprotect_init(
     size_t *enc_start)
 {
     if (stream->use_cryptex && hdr->x == 1) {
-        uint16_t profile = srtp_get_rtp_xtn_hdr_profile(hdr, rtp);
+        uint16_t profile = srtp_get_rtp_hdr_xtnd_profile(hdr, rtp);
         *inuse = profile == cryptex_one_byte_profile ||
                  profile == cryptex_two_byte_profile;
     } else {
@@ -256,7 +258,7 @@ static srtp_err_status_t srtp_cryptex_unprotect_init(
 
     if (*inuse) {
         *enc_start -=
-            (srtp_get_rtp_xtn_hdr_len(hdr, rtp) - octets_in_rtp_xtn_hdr);
+            (srtp_get_rtp_hdr_xtnd_len(hdr, rtp) - octets_in_rtp_xtn_hdr);
         if (*inplace) {
             *enc_start -= (hdr->cc * 4);
         }
@@ -271,7 +273,7 @@ static srtp_err_status_t srtp_cryptex_unprotect(bool inplace,
                                                 srtp_cipher_t *rtp_cipher)
 {
     if (inplace) {
-        srtp_cryptex_adjust_buffer(hdr, rtp);
+        srtp_cryptex_move_hdr_xtnd_hdr_before_csrc(hdr, rtp);
     } else {
         if (hdr->cc) {
             uint8_t *cc_list = rtp + octets_in_rtp_header;
@@ -293,7 +295,7 @@ static void srtp_cryptex_unprotect_cleanup(bool inplace,
                                            uint8_t *rtp)
 {
     if (inplace) {
-        srtp_cryptex_restore_buffer(hdr, rtp);
+        srtp_cryptex_move_csrc_before_hdr_xtnd_hdr(hdr, rtp);
     }
 
     srtp_hdr_xtnd_t *xtn_hdr = srtp_get_rtp_xtn_hdr(hdr, rtp);
@@ -327,7 +329,7 @@ static srtp_err_status_t srtp_validate_rtp_header(const uint8_t *rtp,
             return srtp_err_status_bad_param;
         }
 
-        rtp_header_len += srtp_get_rtp_xtn_hdr_len(hdr, rtp);
+        rtp_header_len += srtp_get_rtp_hdr_xtnd_len(hdr, rtp);
         if (pkt_octet_len < rtp_header_len) {
             return srtp_err_status_bad_param;
         }
@@ -2139,7 +2141,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
      */
     enc_start = srtp_get_rtp_hdr_len(hdr);
     if (hdr->x == 1) {
-        enc_start += srtp_get_rtp_xtn_hdr_len(hdr, rtp);
+        enc_start += srtp_get_rtp_hdr_xtnd_len(hdr, rtp);
     }
 
     bool cryptex_inuse, cryptex_inplace;
@@ -2319,7 +2321,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 
     enc_start = srtp_get_rtp_hdr_len(hdr);
     if (hdr->x == 1) {
-        enc_start += srtp_get_rtp_xtn_hdr_len(hdr, srtp);
+        enc_start += srtp_get_rtp_hdr_xtnd_len(hdr, srtp);
     }
 
     bool cryptex_inuse, cryptex_inplace;
@@ -2625,7 +2627,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
      */
     enc_start = srtp_get_rtp_hdr_len(hdr);
     if (hdr->x == 1) {
-        enc_start += srtp_get_rtp_xtn_hdr_len(hdr, rtp);
+        enc_start += srtp_get_rtp_hdr_xtnd_len(hdr, rtp);
     }
 
     bool cryptex_inuse, cryptex_inplace;
@@ -2962,7 +2964,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
 
     enc_start = srtp_get_rtp_hdr_len(hdr);
     if (hdr->x == 1) {
-        enc_start += srtp_get_rtp_xtn_hdr_len(hdr, srtp);
+        enc_start += srtp_get_rtp_hdr_xtnd_len(hdr, srtp);
     }
 
     bool cryptex_inuse, cryptex_inplace;
