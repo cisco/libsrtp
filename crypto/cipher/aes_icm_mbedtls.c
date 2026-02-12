@@ -306,8 +306,9 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_context_init(void *cv,
 {
     srtp_aes_icm_ctx_t *c = (srtp_aes_icm_ctx_t *)cv;
     uint32_t key_size_in_bits = (c->key_size << 3);
+    psa_status_t status = PSA_SUCCESS;
 
-    psa_status_t status = psa_crypto_init();
+    status = psa_crypto_init();
 
     /*
      * set counter and initial values to 'offset' value, being careful not to
@@ -345,7 +346,6 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_context_init(void *cv,
     psa_set_key_algorithm(&attr, PSA_ALG_CTR);
 
     if (c->ctx->key_id != PSA_KEY_ID_NULL) {
-        psa_destroy_key(c->ctx->key_id);
         c->ctx->key_id = PSA_KEY_ID_NULL;
     }
 
@@ -353,6 +353,7 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_context_init(void *cv,
         psa_import_key(&attr, key, key_size_in_bits / 8, &(c->ctx->key_id));
 
     if (status != PSA_SUCCESS) {
+        psa_destroy_key(c->ctx->key_id);
         debug_print(srtp_mod_aes_icm, "status: %d", status);
     }
 
@@ -394,6 +395,7 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
     status =
         psa_cipher_encrypt_setup(&(c->ctx->op), c->ctx->key_id, PSA_ALG_CTR);
     if (status != PSA_SUCCESS) {
+        psa_cipher_abort(&c->ctx->op);
         debug_print(srtp_mod_aes_icm, "setup error: %d", status);
         return srtp_err_status_cipher_fail;
     }
@@ -401,6 +403,7 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
     status = psa_cipher_set_iv(&c->ctx->op, c->counter.v8, 16);
     if (status != PSA_SUCCESS) {
         debug_print(srtp_mod_aes_icm, "set iv error: %d", status);
+        psa_cipher_abort(&c->ctx->op);
         return srtp_err_status_cipher_fail;
     }
 
@@ -411,9 +414,12 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_set_iv(
  * This function encrypts a buffer using AES CTR mode
  *
  * Parameters:
- *	c	Crypto contextsrtp_aes_icm_mbedtls_encrypt
- *	buf	data to encrypt
- *	enc_len	length of encrypt buffer
+ *	cv	Crypto contexts
+ *  src plaintext buffer
+ *  src_len length of plaintext
+ *	dst	encrypted data buffer
+ *	dst_len	At the begining of function, length of encrypted data buffer.
+ *  des_len At the end of function, length of the actual encrypted data.
  */
 static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
                                                       const uint8_t *src,
@@ -425,7 +431,6 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
 
     psa_status_t status = PSA_SUCCESS;
     size_t out_len = 0;
-    size_t total_len = 0;
 
     debug_print(srtp_mod_aes_icm, "rs0: %s", v128_hex_string(&c->counter));
     debug_print(srtp_mod_aes_icm, "source: %s",
@@ -439,10 +444,10 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
 
     if (status != PSA_SUCCESS) {
         debug_print(srtp_mod_aes_icm, "encrypt error: %d", status);
+        psa_cipher_abort(&c->ctx->op);
         return srtp_err_status_cipher_fail;
     }
-    total_len += out_len;
-    *dst_len = total_len;
+    *dst_len = out_len;
     debug_print(srtp_mod_aes_icm, "encrypted: %s",
                 srtp_octet_string_hex_string(dst, *dst_len));
 

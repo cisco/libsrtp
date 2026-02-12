@@ -111,12 +111,7 @@ static srtp_err_status_t srtp_hmac_mbedtls_dealloc(srtp_auth_t *a)
     psa_hmac_ctx_t *hmac_ctx;
     hmac_ctx = (psa_hmac_ctx_t *)a->state;
 
-    /*
-    There is no need for mbedtls_md_free function as it done automatically
-    by psa_mac_sign_finish function
-    */
-    // mbedtls_md_free(hmac_ctx);
-
+    psa_destroy_key(hmac_ctx->key_id);
     srtp_crypto_free(hmac_ctx);
     /* zeroize entire state*/
     octet_string_set_to_zero(a, sizeof(srtp_auth_t));
@@ -137,6 +132,7 @@ static srtp_err_status_t srtp_hmac_mbedtls_start(void *statev)
 
     if (psa_mac_sign_setup(&state->op, state->key_id,
                            PSA_ALG_HMAC(PSA_ALG_SHA_1)) != 0) {
+        psa_mac_abort(&state->op);
         return srtp_err_status_auth_fail;
     }
 
@@ -147,52 +143,22 @@ static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
                                                 const uint8_t *key,
                                                 size_t key_len)
 {
-    /*
-    Please note that the two funcitons `mbedtls_md_setup` and
-    `mbedtls_md_hmac_starts` are combined into a single function
-    `psa_mac_sign_setup`
-
-    Legacy:
-    Call mbedtls_md_setup to select the hash algorithm, with hmac=1. Then call
-    mbedtls_md_hmac_starts to set the key.
-
-    PSA API:
-    Call psa_mac_sign_setup to specify the algorithm and the key. See “MAC key
-    management” for how to obtain a key identifier.
-    */
-
     psa_hmac_ctx_t *state = (psa_hmac_ctx_t *)statev;
-
-    /*
-    There is no equivalent to the type mbedtls_md_info_t and the functions
-    mbedtls_md_info_from_type and mbedtls_md_get_type in the PSA API
-    because it is unnecessary. All macros and functions operate directly
-    on algorithm (psa_algorithm_t, PSA_ALG_xxx constants).
-     */
-
-    /*
-    One of the major differences between the legacy API and the PSA API is that
-    in the PSA API, access to keys is indirect. Operations that require a key
-    take a parameter of type psa_key_id_t, which is an identifier for the key.
-    This allows the API to be used with keys hat are not directly accessible to
-    the application, for example because they are stored in a secure environment
-    that does not allow the key material to be exported.
-    */
     psa_status_t status = PSA_SUCCESS;
     psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+
     psa_set_key_type(&attr, PSA_KEY_TYPE_HMAC);
     psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_MESSAGE);
-
-    /*Note: maybe caculate a MAC or verifiy it in both directions.*/
     psa_set_key_algorithm(&attr, PSA_ALG_HMAC(PSA_ALG_SHA_1));
 
     status = psa_import_key(&attr, key, key_len, &state->key_id);
     state->key_len = key_len;
     if (status != PSA_SUCCESS) {
+        psa_destroy_key(state->key_id);
+        debug_print(srtp_mod_hmac, "mbedtls error code:  %d", status);
         return status;
     }
 
-    /*Note: I don't know when to distroy a key*/
     return srtp_err_status_ok;
 }
 
@@ -206,6 +172,7 @@ static srtp_err_status_t srtp_hmac_mbedtls_update(void *statev,
                 srtp_octet_string_hex_string(message, msg_octets));
 
     if (psa_mac_update(&state->op, message, msg_octets) != 0) {
+        psa_mac_abort(&state->op);
         return srtp_err_status_auth_fail;
     }
 
@@ -241,8 +208,10 @@ static srtp_err_status_t srtp_hmac_mbedtls_compute(void *statev,
 
     if (psa_mac_sign_finish(&state->op, hash_value, sizeof(hash_value),
                             &out_len) != 0) {
+        psa_mac_abort(&state->op);
         return srtp_err_status_auth_fail;
     }
+
     /* copy hash_value to *result */
     for (i = 0; i < tag_len; i++) {
         result[i] = hash_value[i];
