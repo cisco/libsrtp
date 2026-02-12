@@ -304,6 +304,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
 
     if (status != PSA_SUCCESS) {
         debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", status);
+        psa_destroy_key(c->ctx->key_id);
         return srtp_err_status_init_fail;
     }
 

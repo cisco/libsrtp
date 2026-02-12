@@ -87,7 +87,6 @@ typedef struct {
 typedef struct {
     v128_t counter; /* holds the counter value          */
     v128_t offset;  /* initial offset value             */
-    v128_t stream_block;
     size_t nc_off;
     size_t key_size;
     psa_aes_icm_ctx_t *ctx;
