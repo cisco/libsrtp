@@ -46,7 +46,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <mbedtls/gcm.h>
+
+#include <psa/crypto.h>
 #include "aes_gcm.h"
 #include "alloc.h"
 #include "err.h" /* for srtp_debug */
@@ -198,7 +199,6 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_alloc(srtp_cipher_t **c,
     if (tlen != GCM_AUTH_TAG_LEN && tlen != GCM_AUTH_TAG_LEN_8) {
         return (srtp_err_status_bad_param);
     }
-
     /* allocate memory a cipher of type aes_gcm */
     *c = (srtp_cipher_t *)srtp_crypto_alloc(sizeof(srtp_cipher_t));
     if (*c == NULL) {
@@ -212,15 +212,15 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_alloc(srtp_cipher_t **c,
         return (srtp_err_status_alloc_fail);
     }
 
-    gcm->ctx =
-        (mbedtls_gcm_context *)srtp_crypto_alloc(sizeof(mbedtls_gcm_context));
+    gcm->ctx = (psa_gcm_context *)srtp_crypto_alloc(sizeof(psa_gcm_context));
+
     if (gcm->ctx == NULL) {
         srtp_crypto_free(gcm);
         srtp_crypto_free(*c);
         *c = NULL;
         return srtp_err_status_alloc_fail;
     }
-    mbedtls_gcm_init(gcm->ctx);
+    gcm->ctx->op = psa_aead_operation_init();
 
     /* set pointers */
     (*c)->state = gcm;
@@ -256,7 +256,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_dealloc(srtp_cipher_t *c)
     FUNC_ENTRY();
     ctx = (srtp_aes_gcm_ctx_t *)c->state;
     if (ctx) {
-        mbedtls_gcm_free(ctx->ctx);
+        psa_destroy_key(ctx->ctx->key_id);
         srtp_crypto_free(ctx->ctx);
         /* zeroize the key material */
         octet_string_set_to_zero(ctx, sizeof(srtp_aes_gcm_ctx_t));
@@ -275,7 +275,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
     uint32_t key_len_in_bits;
-    int errCode = 0;
+    psa_status_t status = PSA_SUCCESS;
     c->dir = srtp_direction_any;
     c->aad_size = 0;
 
@@ -291,10 +291,20 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
         break;
     }
 
-    errCode =
-        mbedtls_gcm_setkey(c->ctx, MBEDTLS_CIPHER_ID_AES, key, key_len_in_bits);
-    if (errCode != 0) {
-        debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", errCode);
+    psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+
+    psa_set_key_usage_flags(&attr,
+                            PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
+    psa_set_key_algorithm(
+        &attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, c->tag_len));
+    psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
+    psa_set_key_bits(&attr, key_len_in_bits);
+
+    status = psa_import_key(&attr, key, key_len_in_bits / 8, &c->ctx->key_id);
+
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", status);
+        psa_destroy_key(c->ctx->key_id);
         return srtp_err_status_init_fail;
     }
 
@@ -366,7 +376,8 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    int errCode = 0;
+
+    psa_status_t status = PSA_SUCCESS;
 
     if (c->dir != srtp_direction_encrypt) {
         return srtp_err_status_bad_param;
@@ -376,13 +387,24 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
         return srtp_err_status_buffer_small;
     }
 
-    errCode = mbedtls_gcm_crypt_and_tag(c->ctx, MBEDTLS_GCM_ENCRYPT, src_len,
-                                        c->iv, c->iv_len, c->aad, c->aad_size,
-                                        src, dst, c->tag_len, dst + src_len);
+    /*
+      There are tests that check a buffer is only written too as mush as needed
+      even if there is space in buffer. psa_aead_encrypt uses that extra space,
+      probable for performance reasons. For adjust the dst_len to be only what
+      is required to avoid the tests failing. The tests should be changed as
+      there is nothing wrong with using the free buffer space.
+    */
+    *dst_len = src_len + c->tag_len;
+
+    size_t out_len = 0;
+    status = psa_aead_encrypt(
+        c->ctx->key_id,
+        PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, c->tag_len), c->iv,
+        c->iv_len, c->aad, c->aad_size, src, src_len, dst, *dst_len, &out_len);
 
     c->aad_size = 0;
-    if (errCode != 0) {
-        debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", errCode);
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_aes_gcm, "mbedtls error code:  %d", status);
         return srtp_err_status_bad_param;
     }
 
@@ -407,7 +429,8 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
 {
     FUNC_ENTRY();
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
-    int errCode = 0;
+
+    psa_status_t status = PSA_SUCCESS;
 
     if (c->dir != srtp_direction_decrypt) {
         return srtp_err_status_bad_param;
@@ -417,26 +440,22 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
         return srtp_err_status_bad_param;
     }
 
-    if (*dst_len < (src_len - c->tag_len)) {
+    if (*dst_len < src_len - c->tag_len) {
         return srtp_err_status_buffer_small;
     }
 
     debug_print(srtp_mod_aes_gcm, "AAD: %s",
                 srtp_octet_string_hex_string(c->aad, c->aad_size));
 
-    errCode = mbedtls_gcm_auth_decrypt(
-        c->ctx, (src_len - c->tag_len), c->iv, c->iv_len, c->aad, c->aad_size,
-        src + (src_len - c->tag_len), c->tag_len, src, dst);
+    size_t out_len = 0;
+    status = psa_aead_decrypt(
+        c->ctx->key_id,
+        PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, c->tag_len), c->iv,
+        c->iv_len, c->aad, c->aad_size, src, src_len, dst, *dst_len, &out_len);
+    *dst_len = out_len;
     c->aad_size = 0;
-    if (errCode != 0) {
+    if (status != PSA_SUCCESS) {
         return srtp_err_status_auth_fail;
     }
-
-    /*
-     * Reduce the buffer size by the tag length since the tag
-     * is not part of the original payload
-     */
-    *dst_len = (src_len - c->tag_len);
-
     return srtp_err_status_ok;
 }
