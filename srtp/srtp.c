@@ -2535,7 +2535,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
      */
     stream = srtp_get_stream(ctx, hdr->ssrc);
     if (stream == NULL) {
-        if (ctx->stream_template != NULL) {
+        if ((ctx->stream_template != NULL) && (ctx->stream_template->direction != dir_srtp_receiver)) {
             srtp_stream_ctx_t *new_stream;
 
             /* allocate and initialize a new stream */
@@ -2866,6 +2866,10 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     stream = srtp_get_stream(ctx, hdr->ssrc);
     if (stream == NULL) {
         if (ctx->stream_template != NULL) {
+            if (ctx->stream_template->direction == dir_srtp_sender) {
+                return srtp_err_status_no_ctx;
+            }
+
             stream = ctx->stream_template;
             debug_print(mod_srtp, "using provisional stream (SSRC: 0x%08x)",
                         (unsigned int)ntohl(hdr->ssrc));
