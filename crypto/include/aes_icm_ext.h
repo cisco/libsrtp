@@ -78,14 +78,18 @@ typedef struct {
 
 #ifdef MBEDTLS
 
-#include <mbedtls/aes.h>
+#include <psa/crypto.h>
+typedef struct {
+    psa_key_id_t key_id;
+    psa_cipher_operation_t op;
+} psa_aes_icm_ctx_t;
+
 typedef struct {
     v128_t counter; /* holds the counter value          */
     v128_t offset;  /* initial offset value             */
-    v128_t stream_block;
     size_t nc_off;
     size_t key_size;
-    mbedtls_aes_context *ctx;
+    psa_aes_icm_ctx_t *ctx;
 } srtp_aes_icm_ctx_t;
 
 #endif /* MBEDTLS */

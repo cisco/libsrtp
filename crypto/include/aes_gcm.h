@@ -92,8 +92,15 @@ typedef struct {
 
 #ifdef MBEDTLS
 #define MAX_AD_SIZE 2048
-#include <mbedtls/aes.h>
-#include <mbedtls/gcm.h>
+#include <psa/crypto.h>
+
+/**
+ * \brief          The GCM context structure.
+ */
+typedef struct psa_gcm_context {
+    psa_aead_operation_t op; /*!< The cipher context used. */
+    psa_key_id_t key_id;
+} psa_gcm_context;
 
 typedef struct {
     size_t key_size;
@@ -102,7 +109,7 @@ typedef struct {
     size_t iv_len;
     uint8_t iv[12];
     uint8_t aad[MAX_AD_SIZE];
-    mbedtls_gcm_context *ctx;
+    psa_gcm_context *ctx;
     srtp_cipher_direction_t dir;
 } srtp_aes_gcm_ctx_t;
 
