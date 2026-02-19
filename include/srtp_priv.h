@@ -67,6 +67,24 @@ typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
 typedef srtp_stream_ctx_t *srtp_stream_t;
 typedef struct srtp_stream_list_ctx_t_ *srtp_stream_list_t;
 
+typedef struct srtp_master_key2_t {
+    uint8_t key[SRTP_MAX_KEY_LEN];
+    size_t key_len;
+    uint8_t mki_id[SRTP_MAX_MKI_LEN];
+    size_t mki_id_len;
+} srtp_master2_key_t;
+#define SRTP_MAX_NUM_HDR_XTND_IDS 16
+typedef struct srtp_policy2_ctx_t_ {
+    srtp_profile_t profile;
+    srtp_policy_t legacy;
+    srtp_master2_key_t master_key_store[SRTP_MAX_NUM_MASTER_KEYS];
+    srtp_master_key_t master_keys[SRTP_MAX_NUM_MASTER_KEYS];
+    srtp_master_key_t *keys[SRTP_MAX_NUM_MASTER_KEYS];
+    uint8_t enc_hdr_xtnd_ids[SRTP_MAX_NUM_HDR_XTND_IDS];
+} srtp_policy2_ctx_t_;
+
+srtp_err_status_t srtp_valid_policy(const srtp_policy_t *policy);
+
 /*
  * the following declarations are libSRTP internal functions
  */

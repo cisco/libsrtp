@@ -143,6 +143,7 @@ endif()
 
 set(SOURCES_C
   srtp/srtp.c
+  srtp/srtp_policy.c
 )
 
 set(CIPHERS_SOURCES_C
@@ -471,6 +472,17 @@ if(LIBSRTP_TEST_APPS)
     endif()
     target_link_libraries(test_srtp srtp3)
     add_test(test_srtp test_srtp)
+
+    add_executable(test_srtp_policy test/test_srtp_policy.c test/util.c)
+    target_set_warnings(
+            TARGET
+            test_srtp_policy
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
+    target_link_libraries(test_srtp_policy srtp3)
+    add_test(test_srtp_policy test_srtp_policy)
   endif()
 
   find_program(BASH_PROGRAM bash)

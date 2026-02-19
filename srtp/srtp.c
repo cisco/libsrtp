@@ -554,7 +554,7 @@ static srtp_err_status_t srtp_remove_and_dealloc_streams(
     return data.status;
 }
 
-static srtp_err_status_t srtp_valid_policy(const srtp_policy_t *policy)
+srtp_err_status_t srtp_valid_policy(const srtp_policy_t *policy)
 {
     if (policy == NULL) {
         return srtp_err_status_bad_param;
