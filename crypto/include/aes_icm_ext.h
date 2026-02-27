@@ -82,6 +82,8 @@ typedef struct {
 typedef struct {
     psa_key_id_t key_id;
     psa_cipher_operation_t op;
+    uint8_t *buffer;
+    size_t buffer_size;
 } psa_aes_icm_ctx_t;
 
 typedef struct {
