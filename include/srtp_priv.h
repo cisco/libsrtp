@@ -46,7 +46,9 @@
 #define SRTP_PRIV_H
 
 // Leave this as the top level import. Ensures the existence of defines
-#include "config.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "srtp.h"
 #include "rdbx.h"

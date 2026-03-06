@@ -42,9 +42,6 @@
  *
  */
 
-// Leave this as the top level import. Ensures the existence of defines
-#include "config.h"
-
 #include "srtp_priv.h"
 #include "stream_list_priv.h"
 #include "crypto_types.h"
