@@ -1,0 +1,48 @@
+name: Cygwin CI
+
+on:
+  push:
+    branches: [ 2_x_dev ]
+  pull_request:
+    branches: [ 2_x_dev ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: 1
+
+    steps:
+      - name: Install Cygwin + packages
+        uses: cygwin/cygwin-install-action@v6
+        with:
+          packages: |
+            gcc-g++
+            make
+            cmake
+
+      - name: Configure git line endings
+        run: git config --global core.autocrlf input
+
+      - uses: actions/checkout@v4
+
+      - name: Create Build Environment
+        working-directory: ${{github.workspace}}
+        shell: 'D:\cygwin\bin\bash.exe --noprofile --norc -leo pipefail {0}'
+        run: mkdir build
+
+      - name: Configure CMake
+        working-directory: ${{github.workspace}}/build
+        shell: 'D:\cygwin\bin\bash.exe --noprofile --norc -leo pipefail {0}'
+        run: cmake ..
+
+      - name: Build
+        working-directory: ${{github.workspace}}/build
+        shell: 'D:\cygwin\bin\bash.exe --noprofile --norc -leo pipefail {0}'
+        run: make
+
+      - name: Test
+        working-directory: ${{github.workspace}}/build
+        shell: 'D:\cygwin\bin\bash.exe --noprofile --norc -leo pipefail {0}'
+        run: ctest
