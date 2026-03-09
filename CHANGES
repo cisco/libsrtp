@@ -1,5 +1,13 @@
 Changelog
 
+2.8.0
+
+#778 - Backport cryptex to v2 branch
+
+#770 - Fix AES 192 kdf
+
+#760 - Properly support null crypto and null auth scenario
+
 2.7.0
 
 #746 - Fix function signature mismatch for srtp_remove_stream
