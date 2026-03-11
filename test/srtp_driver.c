@@ -120,6 +120,8 @@ srtp_err_status_t srtp_test_set_sender_roc(void);
 
 srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void);
 
+srtp_err_status_t srtp_test_cryptex_disable(void);
+
 double srtp_bits_per_second(size_t msg_len_octets, const srtp_policy_t *policy);
 
 double srtp_rejections_per_second(size_t msg_len_octets,
@@ -927,6 +929,14 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
+        printf("testing cryptex_disable()...");
+        if (srtp_test_cryptex_disable() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
     }
 
     if (do_stream_list) {
@@ -1128,6 +1138,20 @@ uint8_t *create_rtcp_test_packet(size_t payload_len,
     }
 
     return buffer - *rtcp_len;
+}
+
+static uint16_t get_xtn_profile(const uint8_t *packet)
+{
+    const srtp_hdr_t *hdr = (const srtp_hdr_t *)packet;
+    const srtp_hdr_xtnd_t *xtn_hdr;
+
+    if (!hdr->x) {
+        return 0;
+    }
+
+    xtn_hdr = (const srtp_hdr_xtnd_t *)(packet + sizeof(srtp_hdr_t) +
+                                        (hdr->cc * sizeof(uint32_t)));
+    return ntohs(xtn_hdr->profile_specific);
 }
 
 void srtp_do_timing(const srtp_policy_t *policy)
@@ -3282,6 +3306,74 @@ srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void)
                  srtp_err_status_cryptex_err);
 
     CHECK_OK(srtp_dealloc(srtp_snd));
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_cryptex_disable(void)
+{
+    srtp_policy_t policy;
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.use_cryptex = true;
+    policy.next = NULL;
+
+    srtp_t srtp_snd, srtp_recv;
+    CHECK_OK(srtp_create(&srtp_snd, &policy));
+    CHECK_OK(srtp_create(&srtp_recv, &policy));
+
+    size_t packet_len;
+    uint8_t *packet = create_rtp_test_packet(100, policy.ssrc.value, 1, 1000,
+                                             true, &packet_len, NULL);
+    uint8_t clear_text[1400];
+    memcpy(clear_text, packet, packet_len);
+    size_t clear_text_len = packet_len;
+
+    CHECK_OK(call_srtp_protect(srtp_snd, packet, &packet_len, 0));
+    CHECK(packet_len > clear_text_len);
+    CHECK(memcmp(packet, clear_text, clear_text_len) != 0);
+
+    // clear text uses original one byte header extension profile
+    CHECK(get_xtn_profile(clear_text) == 0xbede);
+    // packet uses cryptex one byte header extension profile
+    CHECK(get_xtn_profile(packet) == 0xc0de);
+
+    CHECK_OK(call_srtp_unprotect(srtp_recv, packet, &packet_len));
+    CHECK(packet_len == clear_text_len);
+    CHECK_BUFFER_EQUAL(packet, clear_text, clear_text_len);
+
+    // update squence number for next packet
+    srtp_hdr_t *hdr = (srtp_hdr_t *)packet;
+    hdr->seq = htons(ntohs(hdr->seq) + 1);
+    memcpy(clear_text, packet, packet_len);
+
+    // disbale cryptex at sender only
+    policy.use_cryptex = false;
+    CHECK_OK(srtp_update(srtp_snd, &policy));
+
+    CHECK_OK(call_srtp_protect(srtp_snd, packet, &packet_len, 0));
+    CHECK(packet_len > clear_text_len);
+    CHECK(memcmp(packet, clear_text, clear_text_len) != 0);
+
+    // both use original one byte header extension profile as cryptex is
+    // disabled
+    CHECK(get_xtn_profile(clear_text) == 0xbede);
+    CHECK(get_xtn_profile(packet) == 0xbede);
+
+    // unprotect should work as cryptex is detected dynamically
+    CHECK_OK(call_srtp_unprotect(srtp_recv, packet, &packet_len));
+    CHECK(packet_len == clear_text_len);
+    CHECK_BUFFER_EQUAL(packet, clear_text, clear_text_len);
+
+    free(packet);
+    CHECK_OK(srtp_dealloc(srtp_snd));
+    CHECK_OK(srtp_dealloc(srtp_recv));
 
     return srtp_err_status_ok;
 }
