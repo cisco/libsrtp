@@ -5127,14 +5127,15 @@ static int set_cryptex_from_template_cb(srtp_stream_t stream, void *raw_data)
      */
     if (stream->session_keys[0].rtp_auth ==
         data->template->session_keys[0].rtp_auth) {
-        stream->use_cryptex = 1;
+        stream->use_cryptex = data->template->use_cryptex;
     }
 
     return 0;
 }
 
 srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
-                                              const srtp_ssrc_t *ssrc)
+                                              const srtp_ssrc_t *ssrc,
+                                              int enable)
 {
     srtp_stream_t stream;
 
@@ -5148,7 +5149,7 @@ srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
         if (stream == NULL) {
             return srtp_err_status_bad_param;
         }
-        stream->use_cryptex = 1;
+        stream->use_cryptex = enable != 0;
         break;
     case ssrc_any_inbound:
     case ssrc_any_outbound: {
@@ -5157,7 +5158,7 @@ srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
         if (session->stream_template == NULL) {
             return srtp_err_status_bad_param;
         }
-        session->stream_template->use_cryptex = 1;
+        session->stream_template->use_cryptex = enable != 0;
         data.template = session->stream_template;
         srtp_stream_list_for_each(session->stream_list,
                                   set_cryptex_from_template_cb, &data);

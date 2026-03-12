@@ -113,6 +113,8 @@ srtp_err_status_t srtp_test_set_sender_roc(void);
 
 srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void);
 
+srtp_err_status_t srtp_test_cryptex_disable(void);
+
 double srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
 
 double srtp_rejections_per_second(int msg_len_octets,
@@ -674,6 +676,14 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
+        printf("testing cryptex_disable()...");
+        if (srtp_test_cryptex_disable() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
     }
 
     if (do_stream_list) {
@@ -938,6 +948,20 @@ srtp_hdr_t *srtp_create_test_packet_ext_hdr(int pkt_octet_len,
     *pkt_len = bytes_in_hdr + sizeof(extension_header) + pkt_octet_len;
 
     return hdr;
+}
+
+static uint16_t srtp_get_xtn_profile(const uint8_t *packet)
+{
+    const srtp_hdr_t *hdr = (const srtp_hdr_t *)packet;
+    const srtp_hdr_xtnd_t *xtn_hdr;
+
+    if (!hdr->x) {
+        return 0;
+    }
+
+    xtn_hdr = (const srtp_hdr_xtnd_t *)(packet + sizeof(srtp_hdr_t) +
+                                        (hdr->cc * sizeof(uint32_t)));
+    return ntohs(xtn_hdr->profile_specific);
 }
 
 void srtp_do_timing(const srtp_policy_t *policy)
@@ -2535,7 +2559,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
         debug_print(mod_driver, "test vector: %s\n", vectors[i].name);
 
         CHECK_OK(srtp_create(&srtp_snd, &policy));
-        CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc));
+        CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 1));
 
         CHECK_OK(srtp_protect(srtp_snd, packet, &len));
         CHECK(len == enc_len);
@@ -2550,7 +2574,7 @@ srtp_err_status_t srtp_validate_cryptex(void)
         CHECK_OK(srtp_dealloc(srtp_snd));
 
         CHECK_OK(srtp_create(&srtp_recv, &policy));
-        CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc));
+        CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc, 1));
 
         /*
          * unprotect ciphertext, then compare with plaintext
@@ -2599,7 +2623,7 @@ srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void)
 
     srtp_t srtp_snd;
     CHECK_OK(srtp_create(&srtp_snd, &policy));
-    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 1));
 
     char packet[1400];
     int packet_len =
@@ -2609,6 +2633,76 @@ srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void)
                  srtp_err_status_cryptex_err);
 
     CHECK_OK(srtp_dealloc(srtp_snd));
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_cryptex_disable(void)
+{
+    srtp_policy_t policy;
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    srtp_t srtp_snd, srtp_recv;
+    CHECK_OK(srtp_create(&srtp_snd, &policy));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 1));
+    CHECK_OK(srtp_create(&srtp_recv, &policy));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc, 1));
+
+    int packet_len;
+    srtp_hdr_t *packet =
+        srtp_create_test_packet_ext_hdr(100, policy.ssrc.value, &packet_len);
+    uint8_t clear_text[1400];
+    memcpy(clear_text, packet, packet_len);
+    int clear_text_len = packet_len;
+
+    CHECK_OK(srtp_protect(srtp_snd, packet, &packet_len));
+    CHECK(packet_len > clear_text_len);
+    CHECK(srtp_octet_string_is_eq((uint8_t *)packet, clear_text,
+                                  clear_text_len) != 0);
+
+    // clear text uses original one byte header extension profile
+    CHECK(srtp_get_xtn_profile(clear_text) == 0xbede);
+    // packet uses cryptex one byte header extension profile
+    CHECK(srtp_get_xtn_profile((uint8_t *)packet) == 0xc0de);
+
+    CHECK_OK(srtp_unprotect(srtp_recv, packet, &packet_len));
+    CHECK(packet_len == clear_text_len);
+    CHECK_BUFFER_EQUAL((char *)packet, (char *)clear_text, clear_text_len);
+
+    // update squence number for next packet
+    srtp_hdr_t *hdr = (srtp_hdr_t *)packet;
+    hdr->seq = htons(ntohs(hdr->seq) + 1);
+    memcpy(clear_text, packet, packet_len);
+
+    // disbale cryptex at sender only
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 0));
+
+    CHECK_OK(srtp_protect(srtp_snd, packet, &packet_len));
+    CHECK(packet_len > clear_text_len);
+    CHECK(srtp_octet_string_is_eq((uint8_t *)packet, clear_text,
+                                  clear_text_len) != 0);
+
+    // both use original one byte header extension profile as cryptex is
+    // disabled
+    CHECK(srtp_get_xtn_profile(clear_text) == 0xbede);
+    CHECK(srtp_get_xtn_profile((uint8_t *)packet) == 0xbede);
+
+    // unprotect should work as cryptex is detected dynamically
+    CHECK_OK(srtp_unprotect(srtp_recv, packet, &packet_len));
+    CHECK(packet_len == clear_text_len);
+    CHECK_BUFFER_EQUAL((char *)packet, (char *)clear_text, clear_text_len);
+
+    free(packet);
+    CHECK_OK(srtp_dealloc(srtp_snd));
+    CHECK_OK(srtp_dealloc(srtp_recv));
 
     return srtp_err_status_ok;
 }
@@ -3011,7 +3105,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
     policy.next = NULL;
 
     CHECK_OK(srtp_create(&srtp_snd, &policy));
-    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 1));
 
     for (size_t i = 0; i < num_vectors; ++i) {
         char packet[1400];
@@ -3051,7 +3145,7 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void)
          * complain
          */
         CHECK_OK(srtp_create(&srtp_recv, &policy));
-        CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc));
+        CHECK_OK(srtp_set_stream_use_cryptex(srtp_recv, &policy.ssrc, 1));
 
         /*
          * unprotect ciphertext, then compare with plaintext
