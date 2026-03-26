@@ -115,6 +115,8 @@ srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void);
 
 srtp_err_status_t srtp_test_cryptex_disable(void);
 
+srtp_err_status_t srtp_test_require_cryptex(void);
+
 double srtp_bits_per_second(int msg_len_octets, const srtp_policy_t *policy);
 
 double srtp_rejections_per_second(int msg_len_octets,
@@ -679,6 +681,14 @@ int main(int argc, char *argv[])
 
         printf("testing cryptex_disable()...");
         if (srtp_test_cryptex_disable() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing require_cryptex()...");
+        if (srtp_test_require_cryptex() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -2703,6 +2713,41 @@ srtp_err_status_t srtp_test_cryptex_disable(void)
     free(packet);
     CHECK_OK(srtp_dealloc(srtp_snd));
     CHECK_OK(srtp_dealloc(srtp_recv));
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_require_cryptex(void)
+{
+    srtp_policy_t policy;
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.value = 0xcafebabe;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    srtp_t srtp_snd, srtp_recv;
+    CHECK_OK(srtp_create(&srtp_snd, &policy));
+    CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 0));
+    CHECK_OK(srtp_create(&srtp_recv, &policy));
+    CHECK_OK(srtp_set_stream_require_cryptex(srtp_recv, &policy.ssrc, 1));
+
+    int packet_len;
+    srtp_hdr_t *packet =
+        srtp_create_test_packet_ext_hdr(100, policy.ssrc.value, &packet_len);
+
+    CHECK_OK(srtp_protect(srtp_snd, packet, &packet_len));
+
+    CHECK_RETURN(srtp_unprotect(srtp_recv, packet, &packet_len),
+                 srtp_err_status_cryptex_err);
+
+    CHECK_OK(srtp_dealloc(srtp_snd));
+    CHECK_OK(srtp_dealloc(srtp_recv));
+    free(packet);
 
     return srtp_err_status_ok;
 }
