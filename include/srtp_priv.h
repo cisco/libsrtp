@@ -146,6 +146,7 @@ typedef struct srtp_stream_ctx_t_ {
     int *enc_xtn_hdr;
     int enc_xtn_hdr_count;
     int use_cryptex;
+    int require_cryptex;
     uint32_t pending_roc;
     /*
     The next and prev pointers are here to allow for a stream list to be
