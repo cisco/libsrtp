@@ -5194,8 +5194,7 @@ srtp_err_status_t srtp_set_stream_require_cryptex(srtp_t session,
         }
         stream->require_cryptex = enable != 0;
         break;
-    case ssrc_any_inbound:
-    case ssrc_any_outbound: {
+    case ssrc_any_inbound: {
         struct set_cryptex_from_template_data data;
 
         if (session->stream_template == NULL) {
@@ -5207,6 +5206,8 @@ srtp_err_status_t srtp_set_stream_require_cryptex(srtp_t session,
                                   set_cryptex_from_template_cb, &data);
         break;
     }
+    case ssrc_any_outbound:
+        // Requiring cryptex is not possible for outbound SSRCs, fall through.
     default:
         return srtp_err_status_bad_param;
     }

@@ -2723,7 +2723,7 @@ srtp_err_status_t srtp_test_require_cryptex(void)
     memset(&policy, 0, sizeof(policy));
     srtp_crypto_policy_set_rtp_default(&policy.rtp);
     srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-    policy.ssrc.type = ssrc_specific;
+    policy.ssrc.type = ssrc_any_outbound;
     policy.ssrc.value = 0xcafebabe;
     policy.key = test_key;
     policy.window_size = 128;
@@ -2733,6 +2733,12 @@ srtp_err_status_t srtp_test_require_cryptex(void)
     srtp_t srtp_snd, srtp_recv;
     CHECK_OK(srtp_create(&srtp_snd, &policy));
     CHECK_OK(srtp_set_stream_use_cryptex(srtp_snd, &policy.ssrc, 0));
+    /*
+     * requiring cryptex is not defined for the outbound wildcard ssrc.
+     */
+    CHECK_RETURN(srtp_set_stream_require_cryptex(srtp_snd, &policy.ssrc, 1),
+                 srtp_err_status_bad_param);
+    policy.ssrc.type = ssrc_any_inbound;
     CHECK_OK(srtp_create(&srtp_recv, &policy));
     CHECK_OK(srtp_set_stream_require_cryptex(srtp_recv, &policy.ssrc, 1));
 
