@@ -664,7 +664,8 @@ static srtp_err_status_t srtp_stream_clone(
     srtp_session_keys_t *session_keys = NULL;
     const srtp_session_keys_t *template_session_keys = NULL;
 
-    debug_print(mod_srtp, "cloning stream (SSRC: 0x%08x)", ntohl(ssrc));
+    debug_print(mod_srtp, "cloning stream (SSRC: 0x%08x)",
+                (unsigned int)ntohl(ssrc));
 
     /* allocate srtp stream and set str_ptr */
     str = (srtp_stream_ctx_t *)srtp_crypto_alloc(sizeof(srtp_stream_ctx_t));
@@ -2782,7 +2783,7 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
         if (ctx->stream_template != NULL) {
             stream = ctx->stream_template;
             debug_print(mod_srtp, "using provisional stream (SSRC: 0x%08x)",
-                        ntohl(hdr->ssrc));
+                        (unsigned int)ntohl(hdr->ssrc));
 
 /*
  * set estimated packet index to sequence number from header,
@@ -4547,7 +4548,7 @@ srtp_err_status_t srtp_unprotect_rtcp_mki(srtp_t ctx,
 
             debug_print(mod_srtp,
                         "srtcp using provisional stream (SSRC: 0x%08x)",
-                        ntohl(hdr->ssrc));
+                        (unsigned int)ntohl(hdr->ssrc));
         } else {
             /* no template stream, so we return an error */
             return srtp_err_status_no_ctx;
