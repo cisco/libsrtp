@@ -136,24 +136,12 @@ receives from each sender.
 
 In libSRTP, a session is created using the function `srtp_create()`.
 The policy to be implemented in the session is passed into this
-function as an `srtp_policy_t` structure. A single one of these
-structures describes the policy of a single stream. These structures
-can also be linked together to form an entire session policy. A linked
-list of `srtp_policy_t` structures is equivalent to a session policy.
-In such a policy, we refer to a single `srtp_policy_t` as an *element*.
+function as an opaque `srtp_policy_t` handle. A single policy handle
+describes one stream policy. To configure multiple streams, create a
+session and add additional policies with `srtp_stream_add()`.
 
-An `srtp_policy_t` structure contains two `srtp_crypto_policy_t` structures
-that describe the cryptograhic policies for RTP and RTCP, as well as
-the SRTP master key and the SSRC value. The SSRC describes what to
-protect (e.g. which stream), and the `srtp_crypto_policy_t` structures
-describe how to protect it. The key is contained in a policy element
-because it simplifies the interface to the library. In many cases, it
-is desirable to use the same cryptographic policies across all of the
-streams in a session, but to use a distinct key for each stream. A
-`srtp_crypto_policy_t` structure can be initialized by using either the
-`srtp_crypto_policy_set_rtp_default()` or `srtp_crypto_policy_set_rtcp_default()`
-functions, which set a crypto policy structure to the default policies
-for RTP and RTCP protection, respectively.
+A policy handle is configured with `srtp_policy_set_*` functions. At a minimum this includes SSRC selection, profile selection, and key/salt
+material. The profile configures RTP/RTCP crypto policy settings, while the SSRC identify how and where that policy is applied.
 
 --------------------------------------------------------------------------------
 
@@ -181,7 +169,7 @@ traffic from a particular source a *stream*. Each stream has its own
 SSRC, sequence number, rollover counter, and other data. A particular
 choice of options, cryptographic mechanisms, and keys is called a
 *policy*. Each stream within a session can have a distinct policy
-applied to it. A session policy is a collection of stream policies.
+applied to it.
 
 A single policy can be used for all of the streams in a given session,
 though the case in which a single *key* is shared across multiple
@@ -202,7 +190,7 @@ in which a key is used for both inbound and outbound data.
 This library supports all of the mandatory-to-implement features of
 SRTP (as defined in [RFC 3711](https://tools.ietf.org/html/rfc3711)). Some of these
 features can be selected (or de-selected) at run time by setting an
-appropriate policy; this is done using the structure `srtp_policy_t`.
+appropriate policy using an `srtp_policy_t` handle.
 Some other behaviors of the protocol can be adapted by defining an
 approriate event handler for the exceptional events; see the SRTPevents
 section in the generated documentation.
@@ -467,11 +455,9 @@ set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC
 <a name="example-code"></a>
 ## Example Code
 
-This section provides a simple example of how to use libSRTP. The
-example code lacks error checking, but is functional. Here we assume
-that the value ssrc is already set to describe the SSRC of the stream
-that we are sending, and that the functions `get_rtp_packet()` and
-`send_srtp_packet()` are available to us. The former puts an RTP packet
+This section provides a simple example of how to use libSRTP. Here we assume
+that the functions `get_rtp_packet()` and `send_srtp_packet()` are available
+to us. The former puts an RTP packet
 into the buffer and returns the number of octets written to that
 buffer. The latter sends the RTP packet in the buffer, given the
 length as its second argument.
@@ -480,39 +466,41 @@ length as its second argument.
 srtp_t session;
 srtp_policy_t policy;
 
-// Set key to predetermined value
-uint8_t key[30] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                   0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-                   0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-                   0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D};
+// Set key/salt to predetermined values.
+uint8_t master_key[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                          0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
+uint8_t master_salt[14] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+                           0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D};
 
-// initialize libSRTP
+// Initialize libSRTP.
 srtp_init();
 
-// default policy values
-memset(&policy, 0x0, sizeof(srtp_policy_t));
+// Create and configure an opaque policy handle.
+srtp_policy_create(&policy);
+srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ssrc_any_outbound, 0});
+srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80);
+srtp_policy_add_key(policy, master_key, sizeof(master_key),
+                    master_salt, sizeof(master_salt), NULL, 0);
 
-// set policy to describe a policy for an SRTP stream
-srtp_crypto_policy_set_rtp_default(&policy.rtp);
-srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-policy.ssrc = ssrc;
-policy.key  = key;
-policy.next = NULL;
+// Allocate and initialize the SRTP session.
+srtp_create(&session, policy);
 
-// allocate and initialize the SRTP session
-srtp_create(&session, &policy);
+srtp_policy_destroy(policy);
 
-// main loop: get rtp packets, send srtp packets
+// Main loop: get RTP packets, send SRTP packets.
 while (1) {
   char rtp_buffer[2048];
   size_t rtp_len;
   char srtp_buffer[2048];
   size_t srtp_len = sizeof(srtp_buffer);
 
-  len = get_rtp_packet(rtp_buffer);
+  rtp_len = get_rtp_packet(rtp_buffer);
   srtp_protect(session, rtp_buffer, rtp_len, srtp_buffer, &srtp_len);
   send_srtp_packet(srtp_buffer, srtp_len);
 }
+
+srtp_dealloc(session);
+srtp_shutdown();
 ~~~
 
 --------------------------------------------------------------------------------

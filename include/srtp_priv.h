@@ -69,23 +69,42 @@ typedef struct srtp_stream_ctx_t_ srtp_stream_ctx_t;
 typedef srtp_stream_ctx_t *srtp_stream_t;
 typedef struct srtp_stream_list_ctx_t_ *srtp_stream_list_t;
 
-typedef struct srtp_master_key2_t {
+typedef struct srtp_master_key_t {
     uint8_t key[SRTP_MAX_KEY_LEN];
     size_t key_len;
     uint8_t mki_id[SRTP_MAX_MKI_LEN];
     size_t mki_id_len;
-} srtp_master2_key_t;
-#define SRTP_MAX_NUM_HDR_XTND_IDS 16
-typedef struct srtp_policy2_ctx_t_ {
-    srtp_profile_t profile;
-    srtp_policy_t legacy;
-    srtp_master2_key_t master_key_store[SRTP_MAX_NUM_MASTER_KEYS];
-    srtp_master_key_t master_keys[SRTP_MAX_NUM_MASTER_KEYS];
-    srtp_master_key_t *keys[SRTP_MAX_NUM_MASTER_KEYS];
-    uint8_t enc_hdr_xtnd_ids[SRTP_MAX_NUM_HDR_XTND_IDS];
-} srtp_policy2_ctx_t_;
+} srtp_master_key_t;
 
-srtp_err_status_t srtp_valid_policy(const srtp_policy_t *policy);
+typedef struct srtp_policy_ctx_t_ {
+    srtp_ssrc_t ssrc;          /**< The SSRC value of stream, or the    */
+                               /**< flags SSRC_ANY_INBOUND or           */
+                               /**< SSRC_ANY_OUTBOUND if key sharing    */
+                               /**< is used for this policy element.    */
+    srtp_crypto_policy_t rtp;  /**< SRTP crypto policy.                 */
+    srtp_crypto_policy_t rtcp; /**< SRTCP crypto policy.                */
+    srtp_master_key_t master_keys[SRTP_MAX_NUM_MASTER_KEYS];
+    size_t num_master_keys; /** Number of master keys                */
+    bool use_mki;           /** Whether MKI is in use                */
+    size_t mki_size;        /** Size of MKI when in use              */
+    size_t window_size;     /**< The window size to use for replay   */
+                            /**< protection.                         */
+    bool allow_repeat_tx;   /**< Whether retransmissions of          */
+                            /**< packets with the same sequence      */
+                            /**< number are allowed.                 */
+                            /**< (Note that such repeated            */
+                            /**< transmissions must have the same    */
+                            /**< RTP payload, or a severe security   */
+                            /**< weakness is introduced!)            */
+    uint8_t enc_xtn_hdr[SRTP_MAX_NUM_ENC_HDR_XTND_IDS]; /**< List of header ids
+                                                           to encrypt.      */
+    size_t enc_xtn_hdr_count; /**< Number of entries in list of header */
+                              /**<  ids.                               */
+    bool use_cryptex;         /**< Encrypt header block and CSRCs with */
+                              /**< cryptex, RFC 9335.                  */
+
+    srtp_profile_t profile;
+} srtp_policy_ctx_t_;
 
 /*
  * the following declarations are libSRTP internal functions

@@ -86,4 +86,14 @@ size_t base64_string_to_octet_string(uint8_t *raw,
                                      const char *base64,
                                      size_t len);
 
+typedef struct policy_params_t {
+    bool gcm_on;
+    size_t key_size;
+    size_t tag_size;
+    srtp_sec_serv_t sec_servs;
+} policy_params_t;
+
+srtp_err_status_t create_policy_from_params(srtp_policy_t *policy,
+                                            const policy_params_t *params);
+
 #endif

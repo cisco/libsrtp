@@ -345,3 +345,74 @@ size_t base64_string_to_octet_string(uint8_t *out,
     *pad = (int)j;
     return i;
 }
+
+srtp_err_status_t create_policy_from_params(srtp_policy_t *policy,
+                                            const policy_params_t *params)
+{
+    if (policy == NULL || params == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    srtp_policy_t p;
+    srtp_err_status_t status = srtp_policy_create(&p);
+    if (status != srtp_err_status_ok) {
+        return status;
+    }
+
+    srtp_profile_t profile = srtp_profile_reserved;
+    if (params->gcm_on) {
+        switch (params->key_size) {
+        case 128:
+            profile = srtp_profile_aead_aes_128_gcm;
+            break;
+        case 256:
+            profile = srtp_profile_aead_aes_256_gcm;
+            break;
+        default:
+            srtp_policy_destroy(p);
+            return srtp_err_status_bad_param;
+        }
+    } else {
+        switch (params->key_size) {
+        case 128:
+            if (params->tag_size == 4) {
+                profile = srtp_profile_aes128_cm_sha1_32;
+            } else {
+                profile = srtp_profile_aes128_cm_sha1_80;
+            }
+            break;
+        case 192:
+            if (params->tag_size == 4) {
+                profile = srtp_profile_aes192_cm_sha1_32;
+            } else {
+                profile = srtp_profile_aes192_cm_sha1_80;
+            }
+            break;
+        case 256:
+            if (params->tag_size == 4) {
+                profile = srtp_profile_aes256_cm_sha1_32;
+            } else {
+                profile = srtp_profile_aes256_cm_sha1_80;
+            }
+            break;
+        default:
+            srtp_policy_destroy(p);
+            return srtp_err_status_bad_param;
+        }
+    }
+
+    status = srtp_policy_set_profile(p, profile);
+    if (status != srtp_err_status_ok) {
+        srtp_policy_destroy(p);
+        return status;
+    }
+
+    status = srtp_policy_set_sec_serv(p, params->sec_servs, params->sec_servs);
+    if (status != srtp_err_status_ok) {
+        srtp_policy_destroy(p);
+        return status;
+    }
+
+    *policy = p;
+    return srtp_err_status_ok;
+}

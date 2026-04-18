@@ -254,113 +254,81 @@ static uint8_t *extract_key(const uint8_t **data,
     return ret;
 }
 
-static srtp_master_key_t *extract_master_key(const uint8_t **data,
-                                             size_t *size,
-                                             const size_t key_size,
-                                             bool simulate,
-                                             bool *success)
+static bool extract_and_add_key(srtp_policy_t policy,
+                                const uint8_t **data,
+                                size_t *size,
+                                size_t key_size)
 {
-    srtp_master_key_t *ret = NULL;
-    uint16_t mki_id_size;
-
-    if (simulate == true) {
-        *success = false;
+    bool added = false;
+    uint8_t *key = extract_key(data, size, key_size);
+    if (key == NULL) {
+        return false;
     }
+
+    if (srtp_policy_add_key(policy, key, key_size, key, 0, NULL, 0) ==
+        srtp_err_status_ok) {
+        added = true;
+    }
+
+    fuzz_free(key);
+    return added;
+}
+
+static bool extract_and_add_master_key(srtp_policy_t policy,
+                                       const uint8_t **data,
+                                       size_t *size,
+                                       size_t key_size)
+{
+    bool added = false;
+    uint8_t *key = NULL;
+    uint16_t mki_id_size = 0;
+    const uint8_t *mki = NULL;
+    srtp_err_status_t status;
 
     EXTRACT_IF(&mki_id_size, *data, *size, sizeof(mki_id_size));
 
     if (*size < key_size + mki_id_size) {
-        goto end;
+        return false;
     }
 
-    if (simulate == true) {
+    if (mki_id_size > SRTP_MAX_MKI_LEN) {
         *data += key_size + mki_id_size;
         *size -= key_size + mki_id_size;
-        *success = true;
+        return false;
+    }
+
+    key = extract_key(data, size, key_size);
+    if (key == NULL) {
+        return false;
+    }
+    mki = *data;
+    *data += mki_id_size;
+    *size -= mki_id_size;
+
+    if (mki_id_size > 0) {
+        status = srtp_policy_use_mki(policy, mki_id_size);
+        if (status != srtp_err_status_ok) {
+            goto end;
+        }
+    }
+
+    status =
+        srtp_policy_add_key(policy, key, key_size, key, 0, mki, mki_id_size);
+    if (status != srtp_err_status_ok) {
         goto end;
     }
 
-    ret = fuzz_alloc_succeed(sizeof(srtp_master_key_t), false);
-    ret->key = fuzz_alloc_succeed(key_size, false);
-
-    ret->mki_id = fuzz_alloc_succeed(mki_id_size, false);
-
-    EXTRACT(ret->key, *data, *size, key_size);
-    EXTRACT(ret->mki_id, *data, *size, mki_id_size);
-end:
-    return ret;
-}
-
-static srtp_master_key_t **extract_master_keys(const uint8_t **data,
-                                               size_t *size,
-                                               const size_t key_size,
-                                               size_t *num_master_keys)
-{
-    const uint8_t *data_orig = *data;
-    size_t size_orig = *size;
-    size_t i = 0;
-
-    srtp_master_key_t **ret = NULL;
-
-    *num_master_keys = 0;
-
-    /* First pass -- dry run, determine how many keys we want and can extract */
-    while (1) {
-        uint8_t do_extract_master_key;
-        bool success;
-        if (*size < sizeof(do_extract_master_key)) {
-            goto next;
-        }
-        EXTRACT(&do_extract_master_key, *data, *size,
-                sizeof(do_extract_master_key));
-
-        /* Decide whether to extract another key */
-        if ((do_extract_master_key % 2) == 0) {
-            break;
-        }
-
-        extract_master_key(data, size, key_size, true, &success);
-
-        if (success == false) {
-            break;
-        }
-
-        (*num_master_keys)++;
-    }
-
-next:
-    *data = data_orig;
-    *size = size_orig;
-
-    /* Allocate array of pointers */
-    ret = fuzz_alloc_succeed(*num_master_keys * sizeof(srtp_master_key_t *),
-                             false);
-
-    /* Second pass -- perform the actual extractions */
-    for (i = 0; i < *num_master_keys; i++) {
-        uint8_t do_extract_master_key;
-        EXTRACT_IF(&do_extract_master_key, *data, *size,
-                   sizeof(do_extract_master_key));
-
-        if ((do_extract_master_key % 2) == 0) {
-            break;
-        }
-
-        ret[i] = extract_master_key(data, size, key_size, false, NULL);
-
-        if (ret[i] == NULL) {
-            /* Shouldn't happen */
-            abort();
-        }
-    }
+    added = true;
 
 end:
-    return ret;
+    fuzz_free(key);
+    return added;
 }
 
-static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
+static srtp_policy_t extract_policy(const uint8_t **data, size_t *size)
 {
-    srtp_policy_t *policy = NULL;
+    srtp_policy_t policy = NULL;
+    srtp_err_status_t status;
     struct {
         uint8_t srtp_crypto_policy_func;
         size_t window_size;
@@ -380,7 +348,10 @@ static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
     params.ssrc_type %=
         sizeof(fuzz_ssrc_type_map) / sizeof(fuzz_ssrc_type_map[0]);
 
-    policy = fuzz_alloc_succeed(sizeof(*policy), true);
+    status = srtp_policy_create(&policy);
+    if (status != srtp_err_status_ok || policy == NULL) {
+        return NULL;
+    }
 
     fuzz_srtp_crypto_policies[params.srtp_crypto_policy_func]
         .crypto_policy_func(&policy->rtp);
@@ -392,62 +363,85 @@ static srtp_policy_t *extract_policy(const uint8_t **data, size_t *size)
         abort();
     }
 
-    policy->ssrc.type = fuzz_ssrc_type_map[params.ssrc_type].srtp_ssrc_type;
-    policy->ssrc.value = params.ssrc_value;
+    /*
+     * The fuzzer sets crypto fields directly and still needs a non-reserved
+     * profile for policy validation.
+     */
+    policy->profile = srtp_profile_aes128_cm_sha1_80;
+
+    status = srtp_policy_set_ssrc(
+        policy, (srtp_ssrc_t){
+                    .type = fuzz_ssrc_type_map[params.ssrc_type].srtp_ssrc_type,
+                    .value = params.ssrc_value,
+                });
+    if (status != srtp_err_status_ok) {
+        srtp_policy_destroy(policy);
+        return NULL;
+    }
 
     if ((params.do_extract_key % 2) == 0) {
-        policy->key = extract_key(data, size, policy->rtp.cipher_key_len);
-
-        if (policy->key == NULL) {
-            fuzz_free(policy);
+        if (!extract_and_add_key(policy, data, size,
+                                 policy->rtp.cipher_key_len)) {
+            srtp_policy_destroy(policy);
             return NULL;
         }
     }
 
     if (params.num_xtn_hdr != 0) {
-        const size_t xtn_hdr_size = params.num_xtn_hdr * sizeof(int);
+        const size_t xtn_hdr_size = params.num_xtn_hdr;
+        size_t copy_size = xtn_hdr_size;
         if (*size < xtn_hdr_size) {
-            fuzz_free(policy->key);
-            fuzz_free(policy);
+            srtp_policy_destroy(policy);
             return NULL;
         }
-        policy->enc_xtn_hdr = fuzz_alloc_succeed(xtn_hdr_size, false);
-        EXTRACT(policy->enc_xtn_hdr, *data, *size, xtn_hdr_size);
-        policy->enc_xtn_hdr_count = params.num_xtn_hdr;
+        if (copy_size > SRTP_MAX_NUM_ENC_HDR_XTND_IDS) {
+            copy_size = SRTP_MAX_NUM_ENC_HDR_XTND_IDS;
+        }
+        memcpy(policy->enc_xtn_hdr, *data, copy_size);
+        *data += xtn_hdr_size;
+        *size -= xtn_hdr_size;
+        policy->enc_xtn_hdr_count = copy_size;
     }
 
     if ((params.do_extract_master_keys % 2) == 0) {
-        policy->keys = extract_master_keys(
-            data, size, policy->rtp.cipher_key_len, &policy->num_master_keys);
-        if (policy->keys == NULL) {
-            fuzz_free(policy->key);
-            fuzz_free(policy->enc_xtn_hdr);
-            fuzz_free(policy);
-            return NULL;
+        while (1) {
+            uint8_t do_extract_master_key;
+            EXTRACT_IF(&do_extract_master_key, *data, *size,
+                       sizeof(do_extract_master_key));
+
+            if ((do_extract_master_key % 2) == 0) {
+                break;
+            }
+
+            if (!extract_and_add_master_key(policy, data, size,
+                                            policy->rtp.cipher_key_len)) {
+                break;
+            }
         }
     }
 
-    policy->window_size = params.window_size;
-    policy->allow_repeat_tx = params.allow_repeat_tx;
-    policy->next = NULL;
+    status = srtp_policy_set_window_size(policy, params.window_size);
+    if (status != srtp_err_status_ok) {
+        srtp_policy_destroy(policy);
+        return NULL;
+    }
+    status = srtp_policy_set_allow_repeat_tx(policy, params.allow_repeat_tx);
+    if (status != srtp_err_status_ok) {
+        srtp_policy_destroy(policy);
+        return NULL;
+    }
 
 end:
     return policy;
 }
 
-static srtp_policy_t *extract_policies(const uint8_t **data, size_t *size)
+static void extract_more_policies_to_session(const uint8_t **data,
+                                             size_t *size,
+                                             srtp_t srtp_ctx)
 {
-    srtp_policy_t *curpolicy = NULL, *policy_chain = NULL;
-
-    curpolicy = extract_policy(data, size);
-    if (curpolicy == NULL) {
-        return NULL;
-    }
-
-    policy_chain = curpolicy;
-
     while (1) {
         uint8_t do_extract_policy;
+        srtp_policy_t policy = NULL;
         EXTRACT_IF(&do_extract_policy, *data, *size, sizeof(do_extract_policy));
 
         /* Decide whether to extract another policy */
@@ -455,15 +449,19 @@ static srtp_policy_t *extract_policies(const uint8_t **data, size_t *size)
             break;
         }
 
-        curpolicy->next = extract_policy(data, size);
-        if (curpolicy->next == NULL) {
+        policy = extract_policy(data, size);
+        if (policy == NULL) {
             break;
         }
-        curpolicy = curpolicy->next;
+
+        if (srtp_ctx != NULL) {
+            (void)srtp_stream_add(srtp_ctx, policy);
+        }
+        srtp_policy_destroy(policy);
     }
 
 end:
-    return policy_chain;
+    return;
 }
 
 static uint32_t *extract_remove_stream_ssrc(const uint8_t **data,
@@ -525,28 +523,6 @@ static uint32_t *extract_set_roc(const uint8_t **data,
 
 end:
     return ret;
-}
-
-static void free_policies(srtp_policy_t *curpolicy)
-{
-    size_t i;
-    while (curpolicy) {
-        srtp_policy_t *next = curpolicy->next;
-
-        fuzz_free(curpolicy->key);
-
-        for (i = 0; i < curpolicy->num_master_keys; i++) {
-            fuzz_free(curpolicy->keys[i]->key);
-            fuzz_free(curpolicy->keys[i]->mki_id);
-            fuzz_free(curpolicy->keys[i]);
-        }
-
-        fuzz_free(curpolicy->keys);
-        fuzz_free(curpolicy->enc_xtn_hdr);
-        fuzz_free(curpolicy);
-
-        curpolicy = next;
-    }
 }
 
 static uint8_t *run_srtp_func(const srtp_t srtp_ctx,
@@ -729,7 +705,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     uint8_t num_set_roc;
     uint32_t *set_roc = NULL;
     srtp_t srtp_ctx = NULL;
-    srtp_policy_t *policy_chain = NULL, *policy_chain_2 = NULL;
+    srtp_policy_t policy = NULL;
+    srtp_policy_t policy_2 = NULL;
     uint32_t randseed;
     static bool firstrun = true;
 
@@ -751,22 +728,26 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     fuzz_mt19937_init(randseed);
     srand(randseed);
 
-    /* policy_chain is used to initialize the srtp context with */
-    if ((policy_chain = extract_policies(&data, &size)) == NULL) {
-        goto end;
-    }
-    /* policy_chain_2 is used as an argument to srtp_update later on */
-    if ((policy_chain_2 = extract_policies(&data, &size)) == NULL) {
+    /* policy is used to initialize the srtp context with */
+    if ((policy = extract_policy(&data, &size)) == NULL) {
         goto end;
     }
 
     /* Create context */
-    if (srtp_create(&srtp_ctx, policy_chain) != srtp_err_status_ok) {
+    if (srtp_create(&srtp_ctx, policy) != srtp_err_status_ok) {
         goto end;
     }
 
-    // free_policies(policy_chain);
-    // policy_chain = NULL;
+    /* Add additional policies extracted for initial stream setup */
+    extract_more_policies_to_session(&data, &size, srtp_ctx);
+
+    /* policy_2 is used as an argument for post-create stream additions */
+    if ((policy_2 = extract_policy(&data, &size)) == NULL) {
+        goto end;
+    }
+
+    /* Consume any additional policies from this second extraction phase */
+    extract_more_policies_to_session(&data, &size, NULL);
 
     /* Don't check for NULL result -- no extractions is fine */
     remove_stream_ssrc =
@@ -807,19 +788,19 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
                 j += 2;
             }
 
-            if (policy_chain_2 != NULL) {
-                /* TODO srtp_update(srtp_ctx, policy_chain_2); */
+            if (policy_2 != NULL) {
+                (void)srtp_stream_add(srtp_ctx, policy_2);
 
                 /* Discard after using once */
-                free_policies(policy_chain_2);
-                policy_chain_2 = NULL;
+                srtp_policy_destroy(policy_2);
+                policy_2 = NULL;
             }
         }
     }
 
 end:
-    free_policies(policy_chain);
-    free_policies(policy_chain_2);
+    srtp_policy_destroy(policy);
+    srtp_policy_destroy(policy_2);
     fuzz_free(remove_stream_ssrc);
     fuzz_free(set_roc);
     if (srtp_ctx != NULL) {

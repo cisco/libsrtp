@@ -203,6 +203,7 @@ endif
 
 sources = files(
   'srtp/srtp.c',
+  'srtp/srtp_policy.c'
   )
 
 ciphers_sources = files(

@@ -119,6 +119,8 @@ extern "C" {
  */
 #define SRTP_MAX_NUM_MASTER_KEYS 16
 
+#define SRTP_MAX_NUM_ENC_HDR_XTND_IDS 16
+
 #define SRTP_SALT_LEN 14
 
 /*
@@ -240,9 +242,7 @@ typedef enum {
  * can be applied to an SRTP stream.
  *
  * A srtp_crypto_policy_t describes a particular cryptographic policy that
- * can be applied to an SRTP or SRTCP stream.  An SRTP session policy
- * consists of a list of these policies, one for each SRTP stream
- * in the session.
+ * can be applied to an SRTP or SRTCP stream.
  */
 typedef struct srtp_crypto_policy_t {
     srtp_cipher_type_id_t cipher_type; /**< An integer representing          */
@@ -291,71 +291,267 @@ typedef struct {
                            /**< wildcard */
 } srtp_ssrc_t;
 
-/**
- * @brief srtp_master_key_t represents a master key.  There will
- * be a Master Key Index and the Master Key associated with the
- * Master Key Index.
+/*
+ * @brief identifies a particular SRTP profile
+ *
+ * An srtp_profile_t enumeration is used to identify a particular SRTP
+ * profile (that is, a set of algorithms and parameters).
  */
-typedef struct srtp_master_key_t {
-    uint8_t *key;
-    uint8_t *mki_id;
-} srtp_master_key_t;
+typedef enum {
+    srtp_profile_reserved = 0,
+    srtp_profile_null_null =
+        1, // TODO: for testing and troubleshooting only ??? check rfc3711
+    srtp_profile_aes128_cm_sha1_80 = 2,
+    srtp_profile_aes128_cm_sha1_32 = 3,
+    srtp_profile_aes192_cm_sha1_80 = 4,
+    srtp_profile_aes192_cm_sha1_32 = 5,
+    srtp_profile_aes256_cm_sha1_80 = 6,
+    srtp_profile_aes256_cm_sha1_32 = 7,
+    srtp_profile_null_sha1_80 =
+        8, // TODO: remove, how to interact with security service ?
+    srtp_profile_null_sha1_32 = 9, // TODO: remove ?
+    srtp_profile_aead_aes_128_gcm = 10,
+    srtp_profile_aead_aes_256_gcm = 11
+} srtp_profile_t;
+
+typedef struct srtp_policy_ctx_t_ srtp_policy_ctx_t;
+typedef srtp_policy_ctx_t *srtp_policy_t;
 
 /**
- * @brief represents the policy for an SRTP session.
+ * @brief Allocate a new policy handle.
  *
- * A single srtp_policy_t struct represents the policy for a single
- * SRTP stream, and a linked list of these elements represents the
- * policy for an entire SRTP session.  Each element contains the SRTP
- * and SRTCP crypto policies for that stream, a pointer to the SRTP
- * master key for that stream, the SSRC describing that stream, or a
- * flag indicating a `wildcard' SSRC value, and a `next' field that
- * holds a pointer to the next element in the list of policy elements,
- * or NULL if it is the last element.
+ * @param policy output pointer that receives the allocated policy handle.
  *
- * The wildcard value SSRC_ANY_INBOUND matches any SSRC from an
- * inbound stream that for which there is no explicit SSRC entry in
- * another policy element.  Similarly, the value SSRC_ANY_OUTBOUND
- * will matches any SSRC from an outbound stream that does not appear
- * in another policy element.  Note that wildcard SSRCs &b cannot be
- * used to match both inbound and outbound traffic.  This restriction
- * is intentional, and it allows libSRTP to ensure that no security
- * lapses result from accidental re-use of SSRC values during key
- * sharing.
- *
- * @warning The final element of the list @b must have its `next' pointer
- *          set to NULL.
+ * @return
+ *    - srtp_err_status_ok if allocation succeeded.
+ *    - srtp_err_status_bad_param if policy is NULL.
+ *    - srtp_err_status_alloc_fail if allocation failed.
  */
+srtp_err_status_t srtp_policy_create(srtp_policy_t *policy);
 
-typedef struct srtp_policy_t {
-    srtp_ssrc_t ssrc;           /**< The SSRC value of stream, or the    */
-                                /**< flags SSRC_ANY_INBOUND or           */
-                                /**< SSRC_ANY_OUTBOUND if key sharing    */
-                                /**< is used for this policy element.    */
-    srtp_crypto_policy_t rtp;   /**< SRTP crypto policy.                 */
-    srtp_crypto_policy_t rtcp;  /**< SRTCP crypto policy.                */
-    uint8_t *key;               /**< Pointer to the SRTP master key for  */
-                                /**< this stream.                        */
-    srtp_master_key_t **keys;   /** Array of Master Key structures       */
-    size_t num_master_keys;     /** Number of master keys                */
-    bool use_mki;               /** Whether MKI is in use                */
-    size_t mki_size;            /** Size of MKI when in use              */
-    size_t window_size;         /**< The window size to use for replay   */
-                                /**< protection.                         */
-    bool allow_repeat_tx;       /**< Whether retransmissions of          */
-                                /**< packets with the same sequence      */
-                                /**< number are allowed.                 */
-                                /**< (Note that such repeated            */
-                                /**< transmissions must have the same    */
-                                /**< RTP payload, or a severe security   */
-                                /**< weakness is introduced!)            */
-    uint8_t *enc_xtn_hdr;       /**< List of header ids to encrypt.      */
-    size_t enc_xtn_hdr_count;   /**< Number of entries in list of header */
-                                /**<  ids.                               */
-    bool use_cryptex;           /**< Encrypt header block and CSRCs with */
-                                /**< cryptex, RFC 9335.                  */
-    struct srtp_policy_t *next; /**< Pointer to next stream policy.      */
-} srtp_policy_t;
+/**
+ * @brief Clone an existing policy handle.
+ *
+ * @param policy source policy to clone.
+ * @param cloned_policy output pointer that receives the cloned policy handle.
+ *
+ *  This copies all fields of the source policy, including keys.
+ *
+ * @return
+ *    - srtp_err_status_ok if cloning succeeded.
+ *    - srtp_err_status_bad_param if either argument is NULL.
+ *    - srtp_err_status_alloc_fail if allocation failed.
+ */
+srtp_err_status_t srtp_policy_clone(srtp_policy_t policy,
+                                    srtp_policy_t *cloned_policy);
+
+/**
+ * @brief Set the policy SSRC selector.
+ *
+ * @param policy policy handle.
+ * @param ssrc SSRC selector to apply.
+ *
+ * @return
+ *    - srtp_err_status_ok if the SSRC selector was accepted.
+ *    - srtp_err_status_bad_param if policy is NULL or ssrc.type is invalid.
+ */
+srtp_err_status_t srtp_policy_set_ssrc(srtp_policy_t policy, srtp_ssrc_t ssrc);
+
+/**
+ * @brief Set the SRTP profile and initialize RTP/RTCP crypto settings.
+ *
+ * @param policy policy handle.
+ * @param profile profile to apply.
+ *
+ * @return
+ *    - srtp_err_status_ok if the profile was applied.
+ *    - srtp_err_status_bad_param if policy is NULL or profile is invalid.
+ *    - [other] if profile-to-crypto mapping failed.
+ */
+srtp_err_status_t srtp_policy_set_profile(srtp_policy_t policy,
+                                          srtp_profile_t profile);
+
+/**
+ * @brief Get the profile currently set on a policy.
+ *
+ * @param policy policy handle.
+ * @param profile output pointer that receives the configured profile.
+ *
+ * @return
+ *    - srtp_err_status_ok if the profile was returned.
+ *    - srtp_err_status_bad_param if any argument is NULL.
+ */
+srtp_err_status_t srtp_policy_get_profile(srtp_policy_t policy,
+                                          srtp_profile_t *profile);
+
+/**
+ * @brief Override security-service flags for RTP and RTCP.
+ *
+ * @param policy policy handle.
+ * @param rtp_sec_serv RTP security-service flags.
+ * @param rtcp_sec_serv RTCP security-service flags.
+ *
+ * @return
+ *    - srtp_err_status_ok if flags were applied.
+ *    - srtp_err_status_bad_param if policy is NULL or profile is unset.
+ */
+srtp_err_status_t srtp_policy_set_sec_serv(srtp_policy_t policy,
+                                           srtp_sec_serv_t rtp_sec_serv,
+                                           srtp_sec_serv_t rtcp_sec_serv);
+
+/**
+ * @brief Enable or disable MKI and set the MKI length.
+ *
+ * @param policy policy handle.
+ * @param mki_len MKI length in octets (0 disables MKI).
+ *
+ * mki_len must be <= SRTP_MAX_MKI_LEN.
+ * Call this with mki_len > 0 before adding MKI-tagged keys via
+ * srtp_policy_add_key().
+ *
+ * @return
+ *    - srtp_err_status_ok if MKI settings were applied.
+ *    - srtp_err_status_bad_param if policy is NULL or mki_len is invalid.
+ */
+srtp_err_status_t srtp_policy_use_mki(srtp_policy_t policy, size_t mki_len);
+
+/**
+ * @brief Read the configured MKI length.
+ *
+ * @param policy policy handle.
+ * @param mki_len output pointer that receives MKI length in octets.
+ *
+ * @return
+ *    - srtp_err_status_ok if MKI length was returned.
+ *    - srtp_err_status_bad_param if any argument is NULL.
+ */
+srtp_err_status_t srtp_policy_get_mki_length(srtp_policy_t policy,
+                                             size_t *mki_len);
+
+/**
+ * @brief Add an additional key/salt pair for MKI-based key selection.
+ *
+ * @param policy policy handle.
+ * @param key pointer to key bytes.
+ * @param key_len key length in octets.
+ * @param salt pointer to salt bytes.
+ * @param salt_len salt length in octets.
+ * @param mki pointer to MKI bytes for this key.
+ * @param mki_len MKI length in octets for this key.
+ *
+ * key_len + salt_len must be <= SRTP_MAX_KEY_LEN.
+ * key and salt must not be NULL.
+ * mki must not be NULL when mki_len > 0.
+ * If MKI is enabled, mki_len must match the configured MKI length.
+ * If MKI is disabled, mki_len must be 0 and only one key can be configured.
+ *
+ * @return
+ *    - srtp_err_status_ok if key was added.
+ *    - srtp_err_status_bad_param if policy is NULL, MKI is disabled, or
+ *      sizes are invalid.
+ */
+srtp_err_status_t srtp_policy_add_key(srtp_policy_t policy,
+                                      const uint8_t *key,
+                                      size_t key_len,
+                                      const uint8_t *salt,
+                                      size_t salt_len,
+                                      const uint8_t *mki,
+                                      size_t mki_len);
+
+/**
+ * @brief Remove all configured master keys from a policy.
+ *
+ * @param policy policy handle.
+ *
+ * This clears the configured key material and resets key count to zero.
+ * Other policy settings (for example, profile, SSRC, and MKI mode) are
+ * unchanged.
+ *
+ * @return
+ *    - srtp_err_status_ok if keys were removed.
+ *    - srtp_err_status_bad_param if policy is NULL.
+ */
+srtp_err_status_t srtp_policy_remove_keys(srtp_policy_t policy);
+
+/**
+ * @brief Set replay-window size.
+ *
+ * @param policy policy handle.
+ * @param window_size replay window size in packets.
+ *
+ * window_size must be 0 or in [64, 0x7fff].
+ *
+ * @return
+ *    - srtp_err_status_ok if value was accepted.
+ *    - srtp_err_status_bad_param if policy is NULL or value is invalid.
+ */
+srtp_err_status_t srtp_policy_set_window_size(srtp_policy_t policy,
+                                              size_t window_size);
+
+/**
+ * @brief Enable or disable repeat transmission for RTP.
+ *
+ * @param policy policy handle.
+ * @param allow true to allow repeat transmissions, false otherwise.
+ *
+ * @return
+ *    - srtp_err_status_ok if value was applied.
+ *    - srtp_err_status_bad_param if policy is NULL.
+ */
+srtp_err_status_t srtp_policy_set_allow_repeat_tx(srtp_policy_t policy,
+                                                  bool allow);
+
+/**
+ * @brief Enable or disable cryptex for this policy.
+ *
+ * @param policy policy handle.
+ * @param use_cryptex true to enable cryptex, false to disable.
+ *
+ * @return
+ *    - srtp_err_status_ok if value was applied.
+ *    - srtp_err_status_bad_param if policy is NULL.
+ */
+srtp_err_status_t srtp_policy_set_cryptex(srtp_policy_t policy,
+                                          bool use_cryptex);
+
+/**
+ * @brief Set encrypted header extension IDs.
+ *
+ * @param policy policy handle.
+ * @param hdr_xtnd_ids pointer to extension ID array.
+ * @param num_xtnd_ids number of IDs in hdr_xtnd_ids.
+ *
+ * num_xtnd_ids must be <= SRTP_MAX_NUM_ENC_HDR_XTND_IDS.
+ * When num_xtnd_ids is non-zero, hdr_xtnd_ids must reference that many bytes.
+ *
+ * @return
+ *    - srtp_err_status_ok if values were applied.
+ *    - srtp_err_status_bad_param if policy is NULL or num_xtnd_ids is invalid.
+ */
+srtp_err_status_t srtp_policy_set_enc_hdr_xtnd_ids(srtp_policy_t policy,
+                                                   const uint8_t *hdr_xtnd_ids,
+                                                   size_t num_xtnd_ids);
+
+/**
+ * @brief Destroy a policy handle.
+ *
+ * @param policy policy handle. NULL is ignored.
+ */
+void srtp_policy_destroy(srtp_policy_t policy);
+
+/**
+ * @brief Validate that policy contains a usable configuration.
+ *
+ * @param policy policy handle.
+ *
+ * Validation checks include profile, SSRC selector, key/MKI consistency,
+ * key count, and replay-window constraints.
+ *
+ * @return
+ *    - srtp_err_status_ok if policy is valid.
+ *    - srtp_err_status_bad_param if policy is NULL or configuration is invalid.
+ */
+srtp_err_status_t srtp_policy_validate(srtp_policy_t policy);
 
 /**
  * @brief An srtp_t points to an SRTP session structure.
@@ -497,19 +693,16 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
  * @param session is a pointer to the SRTP session to which the policy is
  * to be added.
  *
- * @param policy is the srtp_policy_t struct that describes the policy
- * for the session.  The struct may be a single element, or it may be
- * the head of a list, in which case each element of the list is
- * processed.  It may also be NULL, in which case streams should be added
- * later using srtp_stream_add().  The final element of the list @b must
- * have its `next' field set to NULL.
+ * @param policy is an srtp_policy_t handle that describes one stream policy.
+ * It may be NULL, in which case streams can be added later using
+ * srtp_stream_add().
  *
  * @return
  *    - srtp_err_status_ok           if creation succeeded.
  *    - srtp_err_status_alloc_fail   if allocation failed.
  *    - srtp_err_status_init_fail    if initialization failed.
  */
-srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t *policy);
+srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t policy);
 
 /**
  * @brief srtp_stream_add() allocates and initializes an SRTP stream
@@ -525,7 +718,7 @@ srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t *policy);
  *    - srtp_err_status_alloc_fail   if stream allocation failed
  *    - srtp_err_status_init_fail    if stream initialization failed.
  */
-srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t *policy);
+srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t policy);
 
 /**
  * @brief srtp_stream_remove() deallocates an SRTP stream.
@@ -565,11 +758,8 @@ srtp_err_status_t srtp_stream_remove(srtp_t session, uint32_t ssrc);
  * @param session is the SRTP session that contains the streams
  *        to be updated.
  *
- * @param policy is the srtp_policy_t struct that describes the policy
- * for the session.  The struct may be a single element, or it may be
- * the head of a list, in which case each element of the list is
- * processed. The final element of the list @b must
- * have its `next' field set to NULL.
+ * @param policy is an srtp_policy_t handle that describes the update policy
+ * to apply to matching stream(s).
  *
  * @return
  *    - srtp_err_status_ok           if stream creation succeed.
@@ -578,7 +768,7 @@ srtp_err_status_t srtp_stream_remove(srtp_t session, uint32_t ssrc);
  *    - [other]                 otherwise.
  *
  */
-srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy);
+srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t policy);
 
 /**
  * @brief srtp_stream_update() updates a SRTP stream.
@@ -602,7 +792,7 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t *policy);
  *
  */
 srtp_err_status_t srtp_stream_update(srtp_t session,
-                                     const srtp_policy_t *policy);
+                                     const srtp_policy_t policy);
 
 /**
  * @brief srtp_crypto_policy_set_rtp_default() sets a crypto policy
@@ -999,22 +1189,6 @@ void srtp_crypto_policy_set_aes_gcm_256_16_auth(srtp_crypto_policy_t *p);
  *    - srtp_err_status_dealloc_fail   a memory deallocation failure occurred.
  */
 srtp_err_status_t srtp_dealloc(srtp_t s);
-
-/*
- * @brief identifies a particular SRTP profile
- *
- * An srtp_profile_t enumeration is used to identify a particular SRTP
- * profile (that is, a set of algorithms and parameters).
- */
-typedef enum {
-    srtp_profile_reserved = 0,
-    srtp_profile_aes128_cm_sha1_80 = 1,
-    srtp_profile_aes128_cm_sha1_32 = 2,
-    srtp_profile_null_sha1_80 = 5,
-    srtp_profile_null_sha1_32 = 6,
-    srtp_profile_aead_aes_128_gcm = 7,
-    srtp_profile_aead_aes_256_gcm = 8
-} srtp_profile_t;
 
 /**
  * @brief srtp_crypto_policy_set_from_profile_for_rtp() sets a crypto policy
@@ -1492,44 +1666,6 @@ srtp_err_status_t srtp_stream_get_roc(srtp_t session,
 /* for byte-access */
 #define SRTCP_E_BYTE_BIT 0x80
 #define SRTCP_INDEX_MASK 0x7fffffff
-
-/* WIP new config policy API */
-
-typedef struct srtp_policy2_ctx_t_ srtp_policy2_ctx_t;
-typedef srtp_policy2_ctx_t *srtp_policy2_t;
-
-srtp_err_status_t srtp_policy2_create(srtp_policy2_t *policy);
-srtp_err_status_t srtp_policy2_set_ssrc(srtp_policy2_t policy,
-                                        srtp_ssrc_t ssrc);
-srtp_err_status_t srtp_policy2_set_profile(srtp_policy2_t policy,
-                                           srtp_profile_t profile);
-srtp_err_status_t srtp_policy2_set_key(srtp_policy2_t policy,
-                                       const uint8_t *key,
-                                       size_t key_len,
-                                       const uint8_t *salt,
-                                       size_t salt_len);
-srtp_err_status_t srtp_policy2_use_mki(srtp_policy2_t policy, size_t mki_len);
-srtp_err_status_t srtp_policy2_add_key(srtp_policy2_t policy,
-                                       const uint8_t *key,
-                                       size_t key_len,
-                                       const uint8_t *salt,
-                                       size_t salt_len,
-                                       const uint8_t *mki,
-                                       size_t mki_len);
-srtp_err_status_t srtp_policy2_set_window_size(srtp_policy2_t policy,
-                                               size_t window_size);
-srtp_err_status_t srtp_policy2_set_allow_repeat_tx(srtp_policy2_t policy,
-                                                   bool allow);
-srtp_err_status_t srtp_policy2_use_cryptex(srtp_policy2_t policy);
-srtp_err_status_t srtp_policy2_set_enc_hdr_xtnd_ids(srtp_policy2_t policy,
-                                                    const uint8_t *hdr_xtnd_ids,
-                                                    size_t num_xtnd_ids);
-srtp_err_status_t srtp_policy2_set_roc(srtp_policy2_t policy, uint32_t roc);
-void srtp_policy2_destroy(srtp_policy2_t policy);
-
-srtp_err_status_t srtp_policy2_validate(srtp_policy2_t policy);
-
-srtp_err_status_t srtp_create2(srtp_t *session, const srtp_policy2_t policy);
 
 #ifdef __cplusplus
 }
