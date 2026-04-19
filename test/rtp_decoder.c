@@ -95,9 +95,6 @@ struct srtp_crypto_suite {
 };
 
 static struct srtp_crypto_suite srtp_crypto_suites[] = {
-#if 0
-  {.can_name = "F8_128_HMAC_SHA1_32", .gcm_on = false, .key_size = 128, .tag_size = 4},
-#endif
     { .can_name = "AES_CM_128_HMAC_SHA1_32",
       .gcm_on = false,
       .key_size = 128,
@@ -164,25 +161,24 @@ int main(int argc, char *argv[])
 #if BEW
     struct sockaddr_in local;
 #endif
-    srtp_sec_serv_t sec_servs = sec_serv_none;
     int c;
-    struct srtp_crypto_suite scs, *i_scsp;
-    scs.key_size = 128;
-    scs.tag_size = 0;
-    bool gcm_on = false;
+    struct srtp_crypto_suite *i_scsp;
+    policy_params_t policy_params;
+    policy_params.key_size = 128;
+    policy_params.tag_size = 0;
+    policy_params.gcm_on = false;
+    policy_params.sec_servs = sec_serv_none;
     char *input_key = NULL;
     int b64_input = 0;
     uint8_t key[MAX_KEY_LEN];
     size_t mki_size = 0;
     uint8_t mki[SRTP_MAX_MKI_LEN];
-    srtp_master_key_t masterKey;
-    srtp_master_key_t *masterKeys[1];
     struct bpf_program fp;
     char filter_exp[MAX_FILTER] = "";
     char pcap_file[MAX_FILE] = "-";
     size_t rtp_packet_offset = DEFAULT_RTP_OFFSET;
     rtp_decoder_t dec;
-    srtp_policy_t policy = { 0 };
+    srtp_policy_t policy;
     rtp_decoder_mode_t mode = mode_rtp;
     srtp_ssrc_t ssrc = { ssrc_any_inbound, 0 };
     uint32_t roc = 0;
@@ -227,27 +223,28 @@ int main(int argc, char *argv[])
                 hex_string_to_octet_string(mki, optarg_s, strlen(optarg_s)) / 2;
             break;
         case 'e':
-            scs.key_size = atoi(optarg_s);
-            if (scs.key_size != 128 && scs.key_size != 192 &&
-                scs.key_size != 256) {
+            policy_params.key_size = atoi(optarg_s);
+            if (policy_params.key_size != 128 &&
+                policy_params.key_size != 192 &&
+                policy_params.key_size != 256) {
                 fprintf(stderr,
                         "error: encryption key size must be 128, 192 or 256 "
                         "(%zu)\n",
-                        scs.key_size);
+                        policy_params.key_size);
                 exit(1);
             }
-            input_key = malloc(scs.key_size);
-            sec_servs |= sec_serv_conf;
+            input_key = malloc(policy_params.key_size);
+            policy_params.sec_servs |= sec_serv_conf;
             break;
         case 't':
-            scs.tag_size = atoi(optarg_s);
+            policy_params.tag_size = atoi(optarg_s);
             break;
         case 'a':
-            sec_servs |= sec_serv_auth;
+            policy_params.sec_servs |= sec_serv_auth;
             break;
         case 'g':
-            gcm_on = true;
-            sec_servs |= sec_serv_auth;
+            policy_params.gcm_on = true;
+            policy_params.sec_servs |= sec_serv_auth;
             break;
         case 'd':
             status = srtp_set_debug_module(optarg_s, true);
@@ -281,10 +278,11 @@ int main(int argc, char *argv[])
                         optarg_s);
                 exit(1);
             }
-            scs = *i_scsp;
-            input_key = malloc(scs.key_size);
-            sec_servs |= sec_serv_conf | sec_serv_auth;
-            gcm_on = scs.gcm_on;
+            policy_params.key_size = i_scsp->key_size;
+            input_key = malloc(policy_params.key_size);
+            policy_params.tag_size = i_scsp->tag_size;
+            policy_params.sec_servs |= sec_serv_conf | sec_serv_auth;
+            policy_params.gcm_on = i_scsp->gcm_on;
             break;
         case 'm':
             if (strcasecmp("rtp", optarg_s) == 0) {
@@ -322,22 +320,24 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (scs.tag_size == 0) {
-        if (gcm_on) {
-            scs.tag_size = 16;
+    if (policy_params.tag_size == 0) {
+        if (policy_params.gcm_on) {
+            policy_params.tag_size = 16;
         } else {
-            scs.tag_size = 10;
+            policy_params.tag_size = 10;
         }
     }
 
-    if (gcm_on && scs.tag_size != 16) {
-        fprintf(stderr, "error: GCM tag size must be 16 (%zu)\n", scs.tag_size);
+    if (policy_params.gcm_on && policy_params.tag_size != 16) {
+        fprintf(stderr, "error: GCM tag size must be 16 (%zu)\n",
+                policy_params.tag_size);
         exit(1);
     }
 
-    if (!gcm_on && scs.tag_size != 4 && scs.tag_size != 10) {
+    if (!policy_params.gcm_on && policy_params.tag_size != 4 &&
+        policy_params.tag_size != 10) {
         fprintf(stderr, "error: non GCM tag size must be 4 or 10 (%zu)\n",
-                scs.tag_size);
+                policy_params.tag_size);
         exit(1);
     }
 
@@ -350,7 +350,8 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if ((sec_servs && !input_key) || (!sec_servs && input_key)) {
+    if ((policy_params.sec_servs && !input_key) ||
+        (!policy_params.sec_servs && input_key)) {
         /*
          * a key must be provided if and only if security services have
          * been requested
@@ -358,7 +359,7 @@ int main(int argc, char *argv[])
         if (input_key == NULL) {
             fprintf(stderr, "key not provided\n");
         }
-        if (!sec_servs) {
+        if (!policy_params.sec_servs) {
             fprintf(stderr, "no secservs\n");
         }
         fprintf(stderr, "provided\n");
@@ -367,186 +368,42 @@ int main(int argc, char *argv[])
 
     /* report security services selected on the command line */
     fprintf(stderr, "security services: ");
-    if (sec_servs & sec_serv_conf) {
+    if (policy_params.sec_servs & sec_serv_conf) {
         fprintf(stderr, "confidentiality ");
     }
-    if (sec_servs & sec_serv_auth) {
+    if (policy_params.sec_servs & sec_serv_auth) {
         fprintf(stderr, "message authentication");
     }
-    if (sec_servs == sec_serv_none) {
+    if (policy_params.sec_servs == sec_serv_none) {
         fprintf(stderr, "none");
     }
     fprintf(stderr, "\n");
 
     /* set up the srtp policy and master key */
-    if (sec_servs) {
+    if (policy_params.sec_servs) {
         /*
          * create policy structure, using the default mechanisms but
          * with only the security services requested on the command line,
          * using the right SSRC value
          */
-        switch (sec_servs) {
-        case sec_serv_conf_and_auth:
-            if (gcm_on) {
-#ifdef OPENSSL
-                switch (scs.key_size) {
-                case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
-                    break;
-                }
-#else
-                fprintf(stderr, "error: GCM mode only supported when using the "
-                                "OpenSSL crypto engine.\n");
-                return 0;
-#endif
-            } else {
-                switch (scs.key_size) {
-                case 128:
-                    if (scs.tag_size == 4) {
-                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_32(
-                            &policy.rtp);
-                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
-                            &policy.rtcp);
-                    } else {
-                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
-                            &policy.rtp);
-                        srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
-                            &policy.rtcp);
-                    }
-                    break;
-                case 192:
-#ifdef OPENSSL
-                    if (scs.tag_size == 4) {
-                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_32(
-                            &policy.rtp);
-                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
-                            &policy.rtcp);
-                    } else {
-                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
-                            &policy.rtp);
-                        srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
-                            &policy.rtcp);
-                    }
-#else
-                    fprintf(stderr,
-                            "error: AES 192 mode only supported when using the "
-                            "OpenSSL crypto engine.\n");
-                    return 0;
 
-#endif
-                    break;
-                case 256:
-                    if (scs.tag_size == 4) {
-                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_32(
-                            &policy.rtp);
-                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
-                            &policy.rtcp);
-                    } else {
-                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
-                            &policy.rtp);
-                        srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
-                            &policy.rtcp);
-                    }
-                    break;
-                }
-            }
-            break;
-        case sec_serv_conf:
-            if (gcm_on) {
-                fprintf(
-                    stderr,
-                    "error: GCM mode must always be used with auth enabled\n");
-                return -1;
-            } else {
-                switch (scs.key_size) {
-                case 128:
-                    srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_cm_128_hmac_sha1_80(
-                        &policy.rtcp);
-                    break;
-                case 192:
-#ifdef OPENSSL
-                    srtp_crypto_policy_set_aes_cm_192_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_cm_192_hmac_sha1_80(
-                        &policy.rtcp);
-#else
-                    fprintf(stderr,
-                            "error: AES 192 mode only supported when using the "
-                            "OpenSSL crypto engine.\n");
-                    return 0;
-
-#endif
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(
-                        &policy.rtcp);
-                    break;
-                }
-            }
-            break;
-        case sec_serv_auth:
-            if (gcm_on) {
-#ifdef OPENSSL
-                switch (scs.key_size) {
-                case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
-                    policy.rtp.sec_serv = sec_serv_auth;
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
-                    policy.rtcp.sec_serv = sec_serv_auth;
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
-                    policy.rtp.sec_serv = sec_serv_auth;
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
-                    policy.rtcp.sec_serv = sec_serv_auth;
-                    break;
-                }
-#else
-                printf("error: GCM mode only supported when using the OpenSSL "
-                       "crypto engine.\n");
-                return 0;
-#endif
-            } else {
-                srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
-                srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-            }
-            break;
-        default:
-            fprintf(stderr, "error: unknown security service requested\n");
-            return -1;
+        if (create_policy_from_params(&policy, &policy_params) !=
+            srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to create policy from params\n");
+            exit(1);
         }
 
-        masterKey.key = key;
+        fprintf(stderr, "setting tag len %zu\n", policy_params.tag_size);
 
-        if (mki_size) {
-            policy.use_mki = true;
-            policy.mki_size = mki_size;
-            masterKey.mki_id = mki;
+        srtp_profile_t profile;
+        if (srtp_policy_get_profile(policy, &profile) != srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to get profile from policy\n");
+            exit(1);
         }
+        size_t key_len = srtp_profile_get_master_key_length(profile);
+        size_t salt_len = srtp_profile_get_master_salt_length(profile);
 
-        masterKeys[0] = &masterKey;
-        policy.keys = masterKeys;
-        policy.num_master_keys = 1;
-
-        policy.next = NULL;
-        policy.window_size = 128;
-        policy.allow_repeat_tx = false;
-        policy.rtp.sec_serv = sec_servs;
-        policy.rtcp.sec_serv =
-            sec_servs; // sec_serv_none;  /* we don't do RTCP anyway */
-        fprintf(stderr, "setting tag len %zu\n", scs.tag_size);
-        policy.rtp.auth_tag_len = scs.tag_size;
-
-        if (gcm_on && scs.tag_size != 8) {
-            fprintf(stderr, "set tag len %zu\n", scs.tag_size);
-            policy.rtp.auth_tag_len = scs.tag_size;
-        }
+        size_t input_key_len = key_len + salt_len;
 
         /*
          * read key from hexadecimal or base64 on command line into an octet
@@ -554,11 +411,11 @@ int main(int argc, char *argv[])
          */
         if (b64_input) {
             int pad;
-            expected_len = policy.rtp.cipher_key_len * 4 / 3;
+            expected_len = input_key_len * 4 / 3;
             len = base64_string_to_octet_string(key, &pad, input_key,
                                                 strlen(input_key));
         } else {
-            expected_len = policy.rtp.cipher_key_len * 2;
+            expected_len = input_key_len * 2;
             len = hex_string_to_octet_string(key, input_key, expected_len);
         }
         /* check that hex string is the right length */
@@ -569,24 +426,38 @@ int main(int argc, char *argv[])
                     expected_len, len);
             exit(1);
         }
-        if (strlen(input_key) > policy.rtp.cipher_key_len * 2) {
+        if (strlen(input_key) > input_key_len * 2) {
             fprintf(stderr,
                     "error: too many digits in key/salt "
                     "(should be %zu hexadecimal digits, found %zu)\n",
-                    policy.rtp.cipher_key_len * 2, strlen(input_key));
+                    input_key_len * 2, strlen(input_key));
             exit(1);
         }
 
-        size_t key_octets = (scs.key_size / 8);
-        size_t salt_octets = policy.rtp.cipher_key_len - key_octets;
         fprintf(stderr, "set master key/salt to %s/",
-                octet_string_hex_string(key, key_octets));
+                octet_string_hex_string(key, key_len));
         fprintf(stderr, "%s\n",
-                octet_string_hex_string(key + key_octets, salt_octets));
+                octet_string_hex_string(key + key_len, salt_len));
 
         if (mki_size) {
             fprintf(stderr, "set mki to %s\n",
                     octet_string_hex_string(mki, mki_size));
+            if (srtp_policy_use_mki(policy, mki_size) != srtp_err_status_ok) {
+                fprintf(stderr, "error: failed to set MKI in policy\n");
+                exit(1);
+            }
+            if (srtp_policy_add_key(policy, key, key_len, key + key_len,
+                                    salt_len, mki,
+                                    mki_size) != srtp_err_status_ok) {
+                fprintf(stderr, "error: failed to set key in policy\n");
+                exit(1);
+            }
+        } else {
+            if (srtp_policy_add_key(policy, key, key_len, key + key_len,
+                                    salt_len, NULL, 0) != srtp_err_status_ok) {
+                fprintf(stderr, "error: failed to set key in policy\n");
+                exit(1);
+            }
         }
 
     } else {
@@ -595,9 +466,12 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    policy.ssrc = ssrc;
+    if (srtp_policy_set_ssrc(policy, ssrc) != srtp_err_status_ok) {
+        fprintf(stderr, "error: failed to set SSRC in policy\n");
+        exit(1);
+    }
 
-    if (roc != 0 && policy.ssrc.type != ssrc_specific) {
+    if (roc != 0 && ssrc.type != ssrc_specific) {
         fprintf(stderr, "error: setting ROC (-r) requires -s <ssrc>\n");
         exit(1);
     }
@@ -625,7 +499,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, roc)) {
+    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, ssrc.value,
+                         roc)) {
         fprintf(stderr, "error: init failed\n");
         exit(1);
     }
@@ -695,9 +570,14 @@ void rtp_decoder_dealloc(rtp_decoder_t rtp_ctx)
 
 srtp_err_status_t rtp_decoder_deinit(rtp_decoder_t decoder)
 {
+    if (decoder->policy) {
+        srtp_policy_destroy(decoder->policy);
+    }
+
     if (decoder->srtp_ctx) {
         return srtp_dealloc(decoder->srtp_ctx);
     }
+
     return srtp_err_status_ok;
 }
 
@@ -705,6 +585,7 @@ srtp_err_status_t rtp_decoder_init(rtp_decoder_t dcdr,
                                    srtp_policy_t policy,
                                    rtp_decoder_mode_t mode,
                                    size_t rtp_packet_offset,
+                                   uint32_t ssrc,
                                    uint32_t roc)
 {
     dcdr->rtp_offset = rtp_packet_offset;
@@ -718,13 +599,13 @@ srtp_err_status_t rtp_decoder_init(rtp_decoder_t dcdr,
     dcdr->mode = mode;
     dcdr->policy = policy;
 
-    srtp_err_status_t result = srtp_create(&dcdr->srtp_ctx, &dcdr->policy);
+    srtp_err_status_t result = srtp_create(&dcdr->srtp_ctx, dcdr->policy);
     if (result != srtp_err_status_ok) {
         return result;
     }
 
-    if (policy.ssrc.type == ssrc_specific && roc != 0) {
-        result = srtp_stream_set_roc(dcdr->srtp_ctx, policy.ssrc.value, roc);
+    if (roc != 0) {
+        result = srtp_stream_set_roc(dcdr->srtp_ctx, ssrc, roc);
         if (result != srtp_err_status_ok) {
             return result;
         }

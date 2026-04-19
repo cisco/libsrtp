@@ -175,8 +175,6 @@ int main(int argc, char *argv[])
     }
 #endif
 
-    memset(&policy, 0x0, sizeof(srtp_policy_t));
-
     printf("Using %s [0x%x]\n", srtp_get_version_string(), srtp_get_version());
 
     if (setup_signal_handler(argv[0]) != 0) {
@@ -375,99 +373,32 @@ int main(int argc, char *argv[])
          * with only the security services requested on the command line,
          * using the right SSRC value
          */
-        switch (sec_servs) {
-        case sec_serv_conf_and_auth:
-            if (gcm_on) {
-#ifdef GCM
-                switch (key_size) {
-                case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
-                    break;
-                }
-#else
-                printf("error: GCM mode only supported when using the OpenSSL "
-                       "or NSS crypto engine.\n");
-                return 0;
-#endif
-            } else {
-                switch (key_size) {
-                case 128:
-                    srtp_crypto_policy_set_rtp_default(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_cm_256_hmac_sha1_80(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-                    break;
-                }
-            }
-            break;
-        case sec_serv_conf:
-            if (gcm_on) {
-                printf(
-                    "error: GCM mode must always be used with auth enabled\n");
-                return -1;
-            } else {
-                switch (key_size) {
-                case 128:
-                    srtp_crypto_policy_set_aes_cm_128_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_cm_256_null_auth(&policy.rtp);
-                    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-                    break;
-                }
-            }
-            break;
-        case sec_serv_auth:
-            if (gcm_on) {
-#ifdef GCM
-                switch (key_size) {
-                case 128:
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
-                    policy.rtp.sec_serv = sec_serv_auth;
-                    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
-                    policy.rtcp.sec_serv = sec_serv_auth;
-                    break;
-                case 256:
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtp);
-                    policy.rtp.sec_serv = sec_serv_auth;
-                    srtp_crypto_policy_set_aes_gcm_256_16_auth(&policy.rtcp);
-                    policy.rtcp.sec_serv = sec_serv_auth;
-                    break;
-                }
-#else
-                printf("error: GCM mode only supported when using the OpenSSL "
-                       "crypto engine.\n");
-                return 0;
-#endif
-            } else {
-                srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
-                srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
-            }
-            break;
-        default:
-            printf("error: unknown security service requested\n");
-            return -1;
+        policy_params_t params;
+        params.sec_servs = sec_servs;
+        params.gcm_on = gcm_on;
+        params.key_size = key_size;
+        params.tag_size = tag_size;
+        if (create_policy_from_params(&policy, &params) != srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to create policy from parameters\n");
+            exit(1);
         }
-        policy.ssrc.type = ssrc_specific;
-        policy.ssrc.value = ssrc;
-        policy.key = key;
-        policy.next = NULL;
-        policy.window_size = 128;
-        policy.allow_repeat_tx = false;
-        policy.rtp.sec_serv = sec_servs;
-        policy.rtcp.sec_serv = sec_serv_none; /* we don't do RTCP anyway */
 
-        if (gcm_on && tag_size != 8) {
-            policy.rtp.auth_tag_len = tag_size;
+        if (srtp_policy_set_ssrc(policy,
+                                 (srtp_ssrc_t){ ssrc_specific, ssrc }) !=
+            srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to set SSRC in policy\n");
+            exit(1);
         }
+
+        srtp_profile_t profile;
+        if (srtp_policy_get_profile(policy, &profile) != srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to get profile from policy\n");
+            exit(1);
+        }
+        size_t key_len = srtp_profile_get_master_key_length(profile);
+        size_t salt_len = srtp_profile_get_master_salt_length(profile);
+
+        size_t input_key_len = key_len + salt_len;
 
         /*
          * read key from hexadecimal or base64 on command line into an octet
@@ -475,7 +406,7 @@ int main(int argc, char *argv[])
          */
         if (b64_input) {
             int pad;
-            expected_len = (policy.rtp.cipher_key_len * 4) / 3;
+            expected_len = (input_key_len * 4) / 3;
             len = base64_string_to_octet_string(key, &pad, input_key,
                                                 expected_len);
             if (pad != 0) {
@@ -483,7 +414,7 @@ int main(int argc, char *argv[])
                 exit(1);
             }
         } else {
-            expected_len = policy.rtp.cipher_key_len * 2;
+            expected_len = input_key_len * 2;
             len = hex_string_to_octet_string(key, input_key, expected_len);
         }
         /* check that hex string is the right length */
@@ -494,35 +425,22 @@ int main(int argc, char *argv[])
                     expected_len, len);
             exit(1);
         }
-        if (strlen(input_key) > policy.rtp.cipher_key_len * 2) {
+        if (strlen(input_key) > input_key_len * 2) {
             fprintf(stderr,
                     "error: too many digits in key/salt "
                     "(should be %zu hexadecimal digits, found %zu)\n",
-                    policy.rtp.cipher_key_len * 2, strlen(input_key));
+                    input_key_len * 2, strlen(input_key));
             exit(1);
         }
 
         printf("set master key/salt to %s/", octet_string_hex_string(key, 16));
         printf("%s\n", octet_string_hex_string(key + 16, 14));
 
-    } else {
-        /*
-         * we're not providing security services, so set the policy to the
-         * null policy
-         *
-         * Note that this policy does not conform to the SRTP
-         * specification, since RTCP authentication is required.  However,
-         * the effect of this policy is to turn off SRTP, so that this
-         * application is now a vanilla-flavored RTP application.
-         */
-        srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtp);
-        srtp_crypto_policy_set_null_cipher_hmac_null(&policy.rtcp);
-        policy.key = (uint8_t *)key;
-        policy.ssrc.type = ssrc_specific;
-        policy.ssrc.value = ssrc;
-        policy.window_size = 0;
-        policy.allow_repeat_tx = false;
-        policy.next = NULL;
+        if (srtp_policy_add_key(policy, key, key_len, key + key_len, salt_len,
+                                NULL, 0) != srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to set key in policy\n");
+            exit(1);
+        }
     }
 
     if (prog_type == sender) {
@@ -546,7 +464,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
         rtp_sender_init(snd, sock, name, ssrc);
-        status = rtp_sender_init_srtp(snd, &policy);
+        status = rtp_sender_init_srtp(snd, policy);
         if (status) {
             fprintf(stderr, "error: srtp_create() failed with code %d\n",
                     status);
@@ -599,7 +517,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
         rtp_receiver_init(rcvr, sock, name, ssrc);
-        status = rtp_receiver_init_srtp(rcvr, &policy);
+        status = rtp_receiver_init_srtp(rcvr, policy);
         if (status) {
             fprintf(stderr, "error: srtp_create() failed with code %d\n",
                     status);
@@ -631,6 +549,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "%s: Failed to close socket", argv[0]);
         perror("");
     }
+
+    srtp_policy_destroy(policy);
 
     status = srtp_shutdown();
     if (status) {

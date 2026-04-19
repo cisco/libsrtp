@@ -195,7 +195,7 @@ srtp_err_status_t rtp_receiver_init(rtp_receiver_t rcvr,
 }
 
 srtp_err_status_t rtp_sender_init_srtp(rtp_sender_t sender,
-                                       const srtp_policy_t *policy)
+                                       const srtp_policy_t policy)
 {
     return srtp_create(&sender->srtp_ctx, policy);
 }
@@ -206,7 +206,7 @@ srtp_err_status_t rtp_sender_deinit_srtp(rtp_sender_t sender)
 }
 
 srtp_err_status_t rtp_receiver_init_srtp(rtp_receiver_t sender,
-                                         const srtp_policy_t *policy)
+                                         const srtp_policy_t policy)
 {
     return srtp_create(&sender->srtp_ctx, policy);
 }
