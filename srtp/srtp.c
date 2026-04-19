@@ -235,6 +235,10 @@ static srtp_err_status_t srtp_cryptex_unprotect_init(
         *inuse = 0;
     }
 
+    if (stream->require_cryptex && !*inuse && hdr->x == 1) {
+        return srtp_err_status_cryptex_err;
+    }
+
     if (*inuse) {
         srtp_hdr_xtnd_t *xtn_hdr = srtp_get_rtp_xtn_hdr(hdr);
         *enc_start -=
@@ -5129,6 +5133,7 @@ static int set_cryptex_from_template_cb(srtp_stream_t stream, void *raw_data)
     if (stream->session_keys[0].rtp_auth ==
         data->template->session_keys[0].rtp_auth) {
         stream->use_cryptex = data->template->use_cryptex;
+        stream->require_cryptex = data->template->require_cryptex;
     }
 
     return 0;
@@ -5165,6 +5170,45 @@ srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
                                   set_cryptex_from_template_cb, &data);
         break;
     }
+    default:
+        return srtp_err_status_bad_param;
+    }
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_set_stream_require_cryptex(srtp_t session,
+                                                  const srtp_ssrc_t *ssrc,
+                                                  int enable)
+{
+    srtp_stream_t stream;
+
+    if (session == NULL || ssrc == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    switch (ssrc->type) {
+    case ssrc_specific:
+        stream = srtp_get_stream(session, htonl(ssrc->value));
+        if (stream == NULL) {
+            return srtp_err_status_bad_param;
+        }
+        stream->require_cryptex = enable != 0;
+        break;
+    case ssrc_any_inbound: {
+        struct set_cryptex_from_template_data data;
+
+        if (session->stream_template == NULL) {
+            return srtp_err_status_bad_param;
+        }
+        session->stream_template->require_cryptex = enable != 0;
+        data.template = session->stream_template;
+        srtp_stream_list_for_each(session->stream_list,
+                                  set_cryptex_from_template_cb, &data);
+        break;
+    }
+    case ssrc_any_outbound:
+        // Requiring cryptex is not possible for outbound SSRCs, fall through.
     default:
         return srtp_err_status_bad_param;
     }

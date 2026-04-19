@@ -1766,6 +1766,24 @@ srtp_err_status_t srtp_set_stream_use_cryptex(srtp_t session,
                                               int enable);
 
 /**
+ * @brief srtp_set_stream_require_cryptex(session, ssrc, enable)
+ *
+ * Require cryptex, RFC 9335, processing for the stream identified by the given
+ * SSRC. For wildcard SSRC types the require cryptex setting is applied to the
+ * session template and any streams created from it.
+ *
+ * @param session is the SRTP session containing the stream to update.
+ * @param ssrc describes the SSRC to require cryptex for.
+ * @param enable whether to require sending and receiving cryptex.
+ *
+ * @returns srtp_err_status_ok on success, or srtp_err_status_bad_param if the
+ * stream or template cannot be found for the given SSRC.
+ */
+srtp_err_status_t srtp_set_stream_require_cryptex(srtp_t session,
+                                                  const srtp_ssrc_t *ssrc,
+                                                  int enable);
+
+/**
  * @}
  */
 
