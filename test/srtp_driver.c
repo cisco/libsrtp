@@ -124,6 +124,8 @@ srtp_err_status_t srtp_test_cryptex_csrc_but_no_extension_header(void);
 
 srtp_err_status_t srtp_test_cryptex_disable(void);
 
+srtp_err_status_t srtp_test_missing_session_keys(void);
+
 double srtp_bits_per_second(size_t msg_len_octets, const srtp_policy_t *policy);
 
 double srtp_rejections_per_second(size_t msg_len_octets,
@@ -942,6 +944,14 @@ int main(int argc, char *argv[])
 
         printf("testing cryptex_disable()...");
         if (srtp_test_cryptex_disable() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing missing session keys handling()...");
+        if (srtp_test_missing_session_keys() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -3384,6 +3394,51 @@ srtp_err_status_t srtp_test_cryptex_disable(void)
     free(packet);
     CHECK_OK(srtp_dealloc(srtp_snd));
     CHECK_OK(srtp_dealloc(srtp_recv));
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_missing_session_keys(void)
+{
+    srtp_t srtp_receiver;
+    srtp_policy_t policy;
+    srtp_stream_ctx_t *stream;
+    srtp_session_keys_t *session_keys;
+    size_t num_master_keys;
+    uint8_t *packet;
+    size_t packet_len;
+    size_t buffer_len;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_rtp_default(&policy.rtp);
+    srtp_crypto_policy_set_rtcp_default(&policy.rtcp);
+    policy.ssrc.type = ssrc_any_inbound;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = false;
+
+    CHECK_OK(srtp_create(&srtp_receiver, &policy));
+    CHECK(srtp_receiver->stream_template != NULL);
+
+    stream = srtp_receiver->stream_template;
+    session_keys = stream->session_keys;
+    num_master_keys = stream->num_master_keys;
+    stream->session_keys = NULL;
+    stream->num_master_keys = 0;
+
+    packet = create_rtp_test_packet(0, 0xcafebabe, 1, 1, false, &packet_len,
+                                    &buffer_len);
+    packet_len = buffer_len;
+    CHECK_RETURN(
+        call_srtp_unprotect2(srtp_receiver, packet, sizeof(srtp_hdr_t),
+                             &packet_len),
+        srtp_err_status_no_ctx);
+
+    stream->session_keys = session_keys;
+    stream->num_master_keys = num_master_keys;
+
+    free(packet);
+    CHECK_OK(srtp_dealloc(srtp_receiver));
 
     return srtp_err_status_ok;
 }
