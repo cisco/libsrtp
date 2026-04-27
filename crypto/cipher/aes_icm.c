@@ -217,6 +217,7 @@ static srtp_err_status_t srtp_aes_icm_context_init(void *cv, const uint8_t *key)
     status =
         srtp_aes_expand_encryption_key(key, base_key_len, &c->expanded_key);
     if (status) {
+        octet_string_set_to_zero(&c->expanded_key, sizeof(c->expanded_key));
         v128_set_to_zero(&c->counter);
         v128_set_to_zero(&c->offset);
         return status;
@@ -316,7 +317,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
     /* check that there's enough segment left*/
     size_t bytes_of_new_keystream = bytes_to_encr - c->bytes_in_buffer;
     size_t blocks_of_new_keystream = (bytes_of_new_keystream + 15) >> 4;
-    if ((blocks_of_new_keystream + htons(c->counter.v16[7])) > 0xffff) {
+    if (blocks_of_new_keystream > (size_t)0xffff - htons(c->counter.v16[7])) {
         return srtp_err_status_terminus;
     }
 

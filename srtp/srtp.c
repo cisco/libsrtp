@@ -1965,6 +1965,10 @@ static srtp_err_status_t srtp_get_session_keys_for_packet(
     size_t tag_len,
     srtp_session_keys_t **session_keys)
 {
+    if (stream->num_master_keys == 0 || stream->session_keys == NULL) {
+        return srtp_err_status_no_ctx;
+    }
+
     if (!stream->use_mki) {
         *session_keys = &stream->session_keys[0];
         return srtp_err_status_ok;
@@ -2003,6 +2007,10 @@ static srtp_err_status_t srtp_get_session_keys_for_rtp_packet(
 {
     size_t tag_len = 0;
 
+    if (stream->num_master_keys == 0 || stream->session_keys == NULL) {
+        return srtp_err_status_no_ctx;
+    }
+
     // Determine the authentication tag size
     if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
         stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
@@ -2022,6 +2030,10 @@ static srtp_err_status_t srtp_get_session_keys_for_rtcp_packet(
     srtp_session_keys_t **session_keys)
 {
     size_t tag_len = 0;
+
+    if (stream->num_master_keys == 0 || stream->session_keys == NULL) {
+        return srtp_err_status_no_ctx;
+    }
 
     // Determine the authentication tag size
     if (stream->session_keys[0].rtcp_cipher->algorithm == SRTP_AES_GCM_128 ||
@@ -2334,7 +2346,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         return srtp_err_status_cryptex_err;
     }
 
-    if (enc_start > srtp_len - tag_len - stream->mki_size) {
+    if (tag_len + stream->mki_size > srtp_len ||
+        enc_start > srtp_len - tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
 
@@ -2971,7 +2984,8 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         return status;
     }
 
-    if (enc_start > srtp_len - tag_len - stream->mki_size) {
+    if (tag_len + stream->mki_size > srtp_len ||
+        enc_start > srtp_len - tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
     enc_octet_len = srtp_len - enc_start - stream->mki_size - tag_len;

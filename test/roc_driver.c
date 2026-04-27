@@ -64,6 +64,8 @@
 
 srtp_err_status_t roc_test(size_t num_trials);
 
+srtp_err_status_t roc_boundary_test(void);
+
 int main(void)
 {
     srtp_err_status_t status;
@@ -74,6 +76,11 @@ int main(void)
 
     printf("testing index functions...");
     status = roc_test(1 << 18);
+    if (status) {
+        printf("failed\n");
+        exit(status);
+    }
+    status = roc_boundary_test();
     if (status) {
         printf("failed\n");
         exit(status);
@@ -170,6 +177,29 @@ srtp_err_status_t roc_test(size_t num_trials)
         return srtp_err_status_algo_fail;
     }
     printf("done\n");
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t roc_boundary_test(void)
+{
+    srtp_xtd_seq_num_t local;
+    srtp_xtd_seq_num_t est;
+    ssize_t delta;
+
+    local = (((uint64_t)1) << 16) | 0x0010;
+    delta = srtp_index_guess(&local, &est, 0x9001);
+    if (est != 0x9001 || delta != -28687) {
+        printf("index_guess failed low-seq boundary test\n");
+        return srtp_err_status_algo_fail;
+    }
+
+    local = (((uint64_t)1) << 16) | 0x8001;
+    delta = srtp_index_guess(&local, &est, 0x0000);
+    if (est != ((((uint64_t)2) << 16)) || delta != 32767) {
+        printf("index_guess failed high-seq boundary test\n");
+        return srtp_err_status_algo_fail;
+    }
 
     return srtp_err_status_ok;
 }
