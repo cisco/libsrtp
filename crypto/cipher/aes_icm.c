@@ -217,6 +217,7 @@ static srtp_err_status_t srtp_aes_icm_context_init(void *cv, const uint8_t *key)
     status =
         srtp_aes_expand_encryption_key(key, base_key_len, &c->expanded_key);
     if (status) {
+        octet_string_set_to_zero(&c->expanded_key, sizeof(c->expanded_key));
         v128_set_to_zero(&c->counter);
         v128_set_to_zero(&c->offset);
         return status;
