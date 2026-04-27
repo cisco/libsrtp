@@ -61,6 +61,8 @@
 
 srtp_err_status_t test_replay_dbx(size_t num_trials, size_t ws);
 
+srtp_err_status_t test_replay_dbx_boundaries(size_t ws);
+
 double rdbx_check_adds_per_second(size_t num_trials, size_t ws);
 
 void usage(char *prog_name)
@@ -318,6 +320,65 @@ srtp_err_status_t test_replay_dbx(size_t num_trials, size_t ws)
         }
     }
     printf("passed\n");
+
+    srtp_rdbx_dealloc(&rdbx);
+
+    status = test_replay_dbx_boundaries(ws);
+    if (status) {
+        return status;
+    }
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t test_replay_dbx_boundaries(size_t ws)
+{
+    srtp_rdbx_t rdbx;
+    ssize_t oldest_delta = -((ssize_t)ws - 1);
+
+    if (srtp_rdbx_init(&rdbx, ws) != srtp_err_status_ok) {
+        printf("replay_init failed\n");
+        return srtp_err_status_init_fail;
+    }
+
+    if (srtp_rdbx_add_index(&rdbx, 0) != srtp_err_status_ok) {
+        printf("rdbx_add_index failed at delta 0\n");
+        return srtp_err_status_algo_fail;
+    }
+    if (srtp_rdbx_check(&rdbx, oldest_delta) != srtp_err_status_ok) {
+        printf("rdbx_check failed at oldest in-window delta %zd\n",
+               oldest_delta);
+        return srtp_err_status_algo_fail;
+    }
+    if (srtp_rdbx_add_index(&rdbx, oldest_delta) != srtp_err_status_ok) {
+        printf("rdbx_add_index failed at oldest in-window delta %zd\n",
+               oldest_delta);
+        return srtp_err_status_algo_fail;
+    }
+    if (srtp_rdbx_check(&rdbx, oldest_delta) != srtp_err_status_replay_fail) {
+        printf("rdbx_check failed to reject oldest in-window delta %zd\n",
+               oldest_delta);
+        return srtp_err_status_algo_fail;
+    }
+    if (srtp_rdbx_check(&rdbx, -((ssize_t)ws)) != srtp_err_status_replay_old) {
+        printf("rdbx_check failed to reject out-of-window delta %zd\n",
+               -((ssize_t)ws));
+        return srtp_err_status_algo_fail;
+    }
+    if (srtp_rdbx_add_index(&rdbx, (ssize_t)ws) != srtp_err_status_ok) {
+        printf("rdbx_add_index failed at window-size delta %zu\n", ws);
+        return srtp_err_status_algo_fail;
+    }
+    if (rdbx.index != ws) {
+        printf("rdbx index was %llu, expected %zu\n",
+               (unsigned long long)rdbx.index, ws);
+        return srtp_err_status_algo_fail;
+    }
+    if (srtp_rdbx_check(&rdbx, -((ssize_t)ws)) != srtp_err_status_replay_old) {
+        printf("rdbx_check failed to age out window-size delta %zd\n",
+               -((ssize_t)ws));
+        return srtp_err_status_algo_fail;
+    }
 
     srtp_rdbx_dealloc(&rdbx);
 

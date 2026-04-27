@@ -63,6 +63,8 @@ size_t num_trials = 1 << 16;
 
 srtp_err_status_t test_rdb_db(void);
 
+srtp_err_status_t test_rdb_boundaries(void);
+
 double rdb_check_adds_per_second(void);
 
 int main(void)
@@ -244,6 +246,75 @@ srtp_err_status_t test_rdb_db(void)
     }
     if (srtp_rdb_get_value(&rdb) != 0x7fffffff) {
         printf("rdb valiue was not 0x7fffffff\n");
+        return srtp_err_status_fail;
+    }
+
+    err = test_rdb_boundaries();
+    if (err) {
+        return err;
+    }
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t test_rdb_boundaries(void)
+{
+    srtp_rdb_t rdb;
+
+    if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
+        printf("rdb_init failed\n");
+        return srtp_err_status_fail;
+    }
+
+    if (srtp_rdb_add_index(&rdb, 0) != srtp_err_status_ok) {
+        printf("rdb_add_index failed at index 0\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_check(&rdb, 127) != srtp_err_status_ok) {
+        printf("rdb_check failed at index 127\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_add_index(&rdb, 127) != srtp_err_status_ok) {
+        printf("rdb_add_index failed at index 127\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_check(&rdb, 127) != srtp_err_status_replay_fail) {
+        printf("rdb_check failed to reject index 127\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_check(&rdb, 128) != srtp_err_status_ok) {
+        printf("rdb_check failed at index 128\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_add_index(&rdb, 128) != srtp_err_status_ok) {
+        printf("rdb_add_index failed at index 128\n");
+        return srtp_err_status_fail;
+    }
+    if (rdb.window_start != 1) {
+        printf("rdb window_start was %u, expected 1\n", rdb.window_start);
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_check(&rdb, 0) != srtp_err_status_replay_old) {
+        printf("rdb_check failed to age out index 0\n");
+        return srtp_err_status_fail;
+    }
+
+    if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
+        printf("rdb_init failed\n");
+        return srtp_err_status_fail;
+    }
+
+    rdb.window_start = 0x7fffffff - 127;
+    if (srtp_rdb_add_index(&rdb, 0x7fffffff) != srtp_err_status_ok) {
+        printf("rdb_add_index failed at 31-bit boundary\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_check(&rdb, 0x7fffffff) != srtp_err_status_replay_fail) {
+        printf("rdb_check failed to retain 31-bit boundary packet\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_check(&rdb, 0x7fffffff - 128) != srtp_err_status_replay_old) {
+        printf("rdb_check failed to age packets before 31-bit boundary\n");
         return srtp_err_status_fail;
     }
 
