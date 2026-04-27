@@ -317,8 +317,7 @@ static srtp_err_status_t srtp_aes_icm_encrypt(void *cv,
     /* check that there's enough segment left*/
     size_t bytes_of_new_keystream = bytes_to_encr - c->bytes_in_buffer;
     size_t blocks_of_new_keystream = (bytes_of_new_keystream + 15) >> 4;
-    if (blocks_of_new_keystream >
-        (size_t)0xffff - htons(c->counter.v16[7])) {
+    if (blocks_of_new_keystream > (size_t)0xffff - htons(c->counter.v16[7])) {
         return srtp_err_status_terminus;
     }
 

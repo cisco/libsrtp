@@ -3429,10 +3429,9 @@ srtp_err_status_t srtp_test_missing_session_keys(void)
     packet = create_rtp_test_packet(0, 0xcafebabe, 1, 1, false, &packet_len,
                                     &buffer_len);
     packet_len = buffer_len;
-    CHECK_RETURN(
-        call_srtp_unprotect2(srtp_receiver, packet, sizeof(srtp_hdr_t),
-                             &packet_len),
-        srtp_err_status_no_ctx);
+    CHECK_RETURN(call_srtp_unprotect2(srtp_receiver, packet, sizeof(srtp_hdr_t),
+                                      &packet_len),
+                 srtp_err_status_no_ctx);
 
     stream->session_keys = session_keys;
     stream->num_master_keys = num_master_keys;
