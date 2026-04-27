@@ -96,6 +96,8 @@ srtp_err_status_t srtp_test_empty_payload(void);
 
 #ifdef GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void);
+
+srtp_err_status_t srtp_test_short_packet_gcm_mki(void);
 #endif
 
 srtp_err_status_t srtp_test_remove_stream(void);
@@ -821,6 +823,14 @@ int main(int argc, char *argv[])
         printf("testing srtp_protect and srtp_unprotect against "
                "packet with empty payload (GCM)\n");
         if (srtp_test_empty_payload_gcm() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_unprotect on short packet with GCM and MKI\n");
+        if (srtp_test_short_packet_gcm_mki() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -4508,6 +4518,42 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
     }
 
     free(mesg);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_short_packet_gcm_mki(void)
+{
+    srtp_t srtp_receiver;
+    srtp_policy_t policy;
+    uint8_t *packet;
+    size_t packet_len;
+    size_t buffer_len;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+    policy.ssrc.type = ssrc_any_inbound;
+    policy.keys = test_keys;
+    policy.num_master_keys = 2;
+    policy.use_mki = true;
+    policy.mki_size = TEST_MKI_ID_SIZE;
+
+    CHECK_OK(srtp_create(&srtp_receiver, &policy));
+
+    packet =
+        create_rtp_test_packet(0, 0, 1, 1, false, &packet_len, &buffer_len);
+    CHECK(packet_len == sizeof(srtp_hdr_t));
+    memcpy(packet + packet_len - TEST_MKI_ID_SIZE, test_mki_id,
+           TEST_MKI_ID_SIZE);
+
+    packet_len = buffer_len;
+    CHECK_RETURN(call_srtp_unprotect2(srtp_receiver, packet, sizeof(srtp_hdr_t),
+                                      &packet_len),
+                 srtp_err_status_parse_err);
+
+    free(packet);
+    CHECK_OK(srtp_dealloc(srtp_receiver));
 
     return srtp_err_status_ok;
 }

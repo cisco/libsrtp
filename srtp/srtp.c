@@ -2334,7 +2334,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         return srtp_err_status_cryptex_err;
     }
 
-    if (enc_start > srtp_len - tag_len - stream->mki_size) {
+    if (tag_len + stream->mki_size > srtp_len ||
+        enc_start > srtp_len - tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
 
@@ -2971,7 +2972,8 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         return status;
     }
 
-    if (enc_start > srtp_len - tag_len - stream->mki_size) {
+    if (tag_len + stream->mki_size > srtp_len ||
+        enc_start > srtp_len - tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
     enc_octet_len = srtp_len - enc_start - stream->mki_size - tag_len;
