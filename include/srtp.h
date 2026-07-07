@@ -386,7 +386,7 @@ srtp_err_status_t srtp_policy_get_profile(srtp_policy_t policy,
  *    - srtp_err_status_bad_param if policy is NULL or profile is unset.
  */
 
- /**
+/**
  * @brief srtp_rcc_mode_t selects the RFC 4771 Roll-over Counter Carrying
  * (RCC) integrity transform mode for an SRTP stream.
  *
@@ -470,7 +470,9 @@ srtp_err_status_t srtp_policy_get_mki_length(srtp_policy_t policy,
  *    - srtp_err_status_ok if the RCC settings were applied.
  *    - srtp_err_status_bad_param if policy is NULL or the rate is invalid.
  */
-srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy, srtp_rcc_mode_t rcc_mode, uint16_t roc_tx_rate);
+srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy,
+                                                   srtp_rcc_mode_t rcc_mode,
+                                                   uint16_t roc_tx_rate);
 
 /**
  * @brief Add a master key and salt to a policy handle.

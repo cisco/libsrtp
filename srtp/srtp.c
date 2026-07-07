@@ -2191,7 +2191,7 @@ static srtp_err_status_t srtp_protect_rcc(srtp_t ctx,
     srtp_err_status_t status;
     size_t tag_len;
     size_t prefix_len;
-    bool rcc_carry;    /* whether this packet carries the ROC           */
+    bool rcc_carry;     /* whether this packet carries the ROC           */
     size_t rcc_tag_len; /* number of tag octets actually appended       */
 
     debug_print0(mod_srtp, "function srtp_protect_rcc");
@@ -2777,11 +2777,11 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         rcc_extra = 4;
     }
 
-        /* check output length */
+    /* check output length */
     if (*srtp_len < rtp_len + tag_len + stream->mki_size + rcc_extra) {
         return srtp_err_status_buffer_small;
     }
-    
+
     /*
      * find starting point for encryption and length of data to be
      * encrypted - the encrypted portion starts after the rtp header
@@ -2982,8 +2982,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         uint16_t seq = ntohs(hdr->seq);
         if ((seq % stream->roc_tx_rate) == 0) {
             rcc_extra = 4;
-            if (srtp_len < octets_in_rtp_header + stream->mki_size + tag_len +
-                               rcc_extra) {
+            if (srtp_len <
+                octets_in_rtp_header + stream->mki_size + tag_len + rcc_extra) {
                 return srtp_err_status_bad_param;
             }
             /* the ROC is the last field, after the optional MKI */
@@ -3657,8 +3657,8 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
             srtp_len >= octets_in_rtp_header + 4) {
             mki_lookup_len -= 4;
         }
-        status = srtp_get_session_keys_for_rtp_packet(stream, srtp, mki_lookup_len,
-                                                  &session_keys);
+        status = srtp_get_session_keys_for_rtp_packet(
+            stream, srtp, mki_lookup_len, &session_keys);
     }
     if (status) {
         return status;

@@ -49,49 +49,54 @@
 #endif
 #include "srtp.h"
 
-static uint8_t key[30] = {
-    0xe1, 0xf9, 0x7a, 0x0d, 0x3e, 0x01, 0x8b, 0xe0, 0xd6, 0x4f, 0xa3, 0x2c,
-    0x06, 0xde, 0x41, 0x39, 0x0e, 0xc6, 0x75, 0xad, 0x49, 0x8a, 0xfe, 0xeb,
-    0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6
-};
+static uint8_t key[30] = { 0xe1, 0xf9, 0x7a, 0x0d, 0x3e, 0x01, 0x8b, 0xe0,
+                           0xd6, 0x4f, 0xa3, 0x2c, 0x06, 0xde, 0x41, 0x39,
+                           0x0e, 0xc6, 0x75, 0xad, 0x49, 0x8a, 0xfe, 0xeb,
+                           0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6 };
 
 #define SSRC 0xcafebabe
 
-static void make_policy_rate(srtp_policy_t *p, srtp_rcc_mode_t mode,
-                             srtp_ssrc_type_t dir, uint16_t rate)
+static void make_policy_rate(srtp_policy_t *p,
+                             srtp_rcc_mode_t mode,
+                             srtp_ssrc_type_t dir,
+                             uint16_t rate)
 {
     srtp_ssrc_t ssrc = { dir, SSRC };
     srtp_policy_create(p);
     srtp_policy_set_profile(*p, srtp_profile_aes128_cm_sha1_80);
-    srtp_policy_set_sec_serv(*p, sec_serv_conf_and_auth, sec_serv_conf_and_auth);
+    srtp_policy_set_sec_serv(*p, sec_serv_conf_and_auth,
+                             sec_serv_conf_and_auth);
     srtp_policy_set_ssrc(*p, ssrc);
     srtp_policy_set_rcc_mode_tx_rate(*p, mode, rate);
     srtp_policy_set_window_size(*p, 128);
-    srtp_policy_add_key(*p, key, SRTP_AES_128_KEY_LEN, key + SRTP_AES_128_KEY_LEN,
-                        SRTP_SALT_LEN, NULL, 0);
+    srtp_policy_add_key(*p, key, SRTP_AES_128_KEY_LEN,
+                        key + SRTP_AES_128_KEY_LEN, SRTP_SALT_LEN, NULL, 0);
 }
 
-static void make_policy(srtp_policy_t *p, srtp_rcc_mode_t mode,
+static void make_policy(srtp_policy_t *p,
+                        srtp_rcc_mode_t mode,
                         srtp_ssrc_type_t dir)
 {
     make_policy_rate(p, mode, dir, 1);
 }
 
 /* AES-GCM-128 key (16 octets) + salt (12 octets) = 28 octets */
-static uint8_t gcm_key[28] = {
-    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
-    0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
-    0x18, 0x19, 0x1a, 0x1b
-};
+static uint8_t gcm_key[28] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+                               0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d,
+                               0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+                               0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b };
 
 #ifdef GCM
-static void make_gcm_policy_rate(srtp_policy_t *p, srtp_rcc_mode_t mode,
-                                 srtp_ssrc_type_t dir, uint16_t rate)
+static void make_gcm_policy_rate(srtp_policy_t *p,
+                                 srtp_rcc_mode_t mode,
+                                 srtp_ssrc_type_t dir,
+                                 uint16_t rate)
 {
     srtp_ssrc_t ssrc = { dir, SSRC };
     srtp_policy_create(p);
     srtp_policy_set_profile(*p, srtp_profile_aead_aes_128_gcm);
-    srtp_policy_set_sec_serv(*p, sec_serv_conf_and_auth, sec_serv_conf_and_auth);
+    srtp_policy_set_sec_serv(*p, sec_serv_conf_and_auth,
+                             sec_serv_conf_and_auth);
     srtp_policy_set_ssrc(*p, ssrc);
     srtp_policy_set_rcc_mode_tx_rate(*p, mode, rate);
     srtp_policy_set_window_size(*p, 128);
@@ -124,16 +129,22 @@ static int roundtrip(srtp_t snd, srtp_t rcv, uint16_t seq, const char *msg)
     uint8_t enc[256];
     size_t enc_len = sizeof(enc);
     srtp_err_status_t s = srtp_protect(snd, pkt, len, enc, &enc_len, 0);
-    if (s) { printf("  protect seq=%u failed: %d\n", seq, s); return 1; }
+    if (s) {
+        printf("  protect seq=%u failed: %d\n", seq, s);
+        return 1;
+    }
 
     uint8_t dec[256];
     size_t dec_len = sizeof(dec);
     s = srtp_unprotect(rcv, enc, enc_len, dec, &dec_len);
-    if (s) { printf("  unprotect seq=%u failed: %d\n", seq, s); return 1; }
+    if (s) {
+        printf("  unprotect seq=%u failed: %d\n", seq, s);
+        return 1;
+    }
 
     if (dec_len != len || memcmp(dec, pkt, len) != 0) {
-        printf("  payload mismatch seq=%u (dec_len=%zu, exp=%zu)\n",
-               seq, dec_len, len);
+        printf("  payload mismatch seq=%u (dec_len=%zu, exp=%zu)\n", seq,
+               dec_len, len);
         return 1;
     }
     return 0;
@@ -141,7 +152,10 @@ static int roundtrip(srtp_t snd, srtp_t rcv, uint16_t seq, const char *msg)
 
 int main(void)
 {
-    if (srtp_init() != srtp_err_status_ok) { printf("init fail\n"); return 1; }
+    if (srtp_init() != srtp_err_status_ok) {
+        printf("init fail\n");
+        return 1;
+    }
 
     int fails = 0;
 
@@ -149,7 +163,8 @@ int main(void)
     {
         srtp_t snd, rcv;
         srtp_policy_t sp, rp;
-        uint16_t rate = 3; /* carry every 3rd packet, arbitrary non-power-of-2 */
+        uint16_t rate =
+            3; /* carry every 3rd packet, arbitrary non-power-of-2 */
         make_policy_rate(&sp, srtp_rcc_mode_2, ssrc_specific, rate);
         make_policy_rate(&rp, srtp_rcc_mode_2, ssrc_specific, rate);
         srtp_create(&snd, sp);
@@ -159,14 +174,16 @@ int main(void)
             f += roundtrip(snd, rcv, seq, "hello world");
         printf("Test1 mode2 basic: %s\n", f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 2: mode 1, basic round trip ---- */
     {
         srtp_t snd, rcv;
         srtp_policy_t sp, rp;
-        uint16_t rate = 3; /* carry every 3rd packet, arbitrary non-power-of-2 */
+        uint16_t rate =
+            3; /* carry every 3rd packet, arbitrary non-power-of-2 */
         make_policy_rate(&sp, srtp_rcc_mode_1, ssrc_specific, rate);
         make_policy_rate(&rp, srtp_rcc_mode_1, ssrc_specific, rate);
         srtp_create(&snd, sp);
@@ -176,7 +193,8 @@ int main(void)
             f += roundtrip(snd, rcv, seq, "mode one data");
         printf("Test2 mode1 basic: %s\n", f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 3: late-joining receiver after ROC advanced (mode 2) ----
@@ -212,19 +230,27 @@ int main(void)
         len = make_rtp(pkt, seq, "late join payload");
         enc_len = sizeof(enc);
         srtp_err_status_t s = srtp_protect(snd, pkt, len, enc, &enc_len, 0);
-        uint8_t dec[256]; size_t dec_len = sizeof(dec);
+        uint8_t dec[256];
+        size_t dec_len = sizeof(dec);
         s = srtp_unprotect(rcv, enc, enc_len, dec, &dec_len);
         int f = 0;
-        if (s) { printf("  late-join unprotect failed: %d\n", s); f = 1; }
-        else if (dec_len != len || memcmp(dec, pkt, len)) {
-            printf("  late-join payload mismatch\n"); f = 1;
+        if (s) {
+            printf("  late-join unprotect failed: %d\n", s);
+            f = 1;
+        } else if (dec_len != len || memcmp(dec, pkt, len)) {
+            printf("  late-join payload mismatch\n");
+            f = 1;
         }
         uint32_t rroc = 0;
         srtp_stream_get_roc(rcv, SSRC, &rroc);
-        if (rroc != roc) { printf("  receiver ROC=%u != sender ROC=%u\n", rroc, roc); f = 1; }
+        if (rroc != roc) {
+            printf("  receiver ROC=%u != sender ROC=%u\n", rroc, roc);
+            f = 1;
+        }
         printf("Test3 mode2 late-join ROC sync: %s\n", f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 4: GCM + RCC mode 2 rejected at create ----
@@ -241,7 +267,8 @@ int main(void)
         printf("Test4 GCM+RCC mode2 rejected: %s (status=%d)\n",
                f ? "FAIL" : "PASS", st);
         fails += f;
-        if (st == srtp_err_status_ok) srtp_dealloc(s);
+        if (st == srtp_err_status_ok)
+            srtp_dealloc(s);
     }
 
     /* ---- Test 5: mode 2, R=4 ----
@@ -259,9 +286,11 @@ int main(void)
         int f = 0;
         for (uint16_t seq = 0; seq <= 12; seq++)
             f += roundtrip(snd, rcv, seq, "mode2 rate4 payload");
-        printf("Test5 mode2 R=4 (carry + non-carry): %s\n", f ? "FAIL" : "PASS");
+        printf("Test5 mode2 R=4 (carry + non-carry): %s\n",
+               f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 6: mode 1, R=4 ----
@@ -280,7 +309,8 @@ int main(void)
             f += roundtrip(snd, rcv, seq, "mode1 rate4 payload");
         printf("Test6 mode1 R=4 (carry + untagged): %s\n", f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 7: mode 2, R=4, late-joining receiver after a wrap ----
@@ -313,19 +343,27 @@ int main(void)
         len = make_rtp(pkt, seq, "late join r4 payload");
         enc_len = sizeof(enc);
         srtp_protect(snd, pkt, len, enc, &enc_len, 0);
-        uint8_t dec[256]; size_t dec_len = sizeof(dec);
+        uint8_t dec[256];
+        size_t dec_len = sizeof(dec);
         srtp_err_status_t s = srtp_unprotect(rcv, enc, enc_len, dec, &dec_len);
         int f = 0;
-        if (s) { printf("  late-join unprotect failed: %d\n", s); f = 1; }
-        else if (dec_len != len || memcmp(dec, pkt, len)) {
-            printf("  late-join payload mismatch\n"); f = 1;
+        if (s) {
+            printf("  late-join unprotect failed: %d\n", s);
+            f = 1;
+        } else if (dec_len != len || memcmp(dec, pkt, len)) {
+            printf("  late-join payload mismatch\n");
+            f = 1;
         }
         uint32_t rroc = 0;
         srtp_stream_get_roc(rcv, SSRC, &rroc);
-        if (rroc != roc) { printf("  receiver ROC=%u != sender ROC=%u\n", rroc, roc); f = 1; }
+        if (rroc != roc) {
+            printf("  receiver ROC=%u != sender ROC=%u\n", rroc, roc);
+            f = 1;
+        }
         printf("Test7 mode2 R=4 late-join ROC sync: %s\n", f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
 #ifdef GCM
@@ -339,7 +377,8 @@ int main(void)
         printf("Test8 GCM+RCC mode3 accepted: %s (status=%d)\n",
                f ? "FAIL" : "PASS", st);
         fails += f;
-        if (st == srtp_err_status_ok) srtp_dealloc(s);
+        if (st == srtp_err_status_ok)
+            srtp_dealloc(s);
     }
 
     /* ---- Test 9: GCM mode 3, basic round trip (R=1, every packet carries
@@ -356,7 +395,8 @@ int main(void)
             f += roundtrip(snd, rcv, seq, "gcm mode3 payload");
         printf("Test9 GCM mode3 basic round trip: %s\n", f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 10: GCM mode 3, R=4 (carry and non-carry packets) ----
@@ -376,7 +416,8 @@ int main(void)
         printf("Test10 GCM mode3 R=4 (carry + non-carry): %s\n",
                f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 11: GCM mode 3, verify the ROC is carried in the SRTP auth
@@ -431,11 +472,15 @@ int main(void)
         srtp_policy_t rp;
         make_gcm_policy_rate(&rp, srtp_rcc_mode_3, ssrc_specific, 1);
         srtp_create(&rcv, rp);
-        uint8_t dec[256]; size_t dec_len = sizeof(dec);
+        uint8_t dec[256];
+        size_t dec_len = sizeof(dec);
         srtp_err_status_t s = srtp_unprotect(rcv, enc, enc_len, dec, &dec_len);
-        if (s) { printf("  late-join unprotect failed: %d\n", s); f = 1; }
-        else if (dec_len != len || memcmp(dec, pkt, len)) {
-            printf("  late-join payload mismatch\n"); f = 1;
+        if (s) {
+            printf("  late-join unprotect failed: %d\n", s);
+            f = 1;
+        } else if (dec_len != len || memcmp(dec, pkt, len)) {
+            printf("  late-join payload mismatch\n");
+            f = 1;
         }
         uint32_t rroc = 0;
         srtp_stream_get_roc(rcv, SSRC, &rroc);
@@ -446,7 +491,8 @@ int main(void)
         printf("Test11 GCM mode3 ROC-after-tag + late-join sync: %s\n",
                f ? "FAIL" : "PASS");
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 12: GCM mode 3, tampering with the carried ROC is detected ----
@@ -475,7 +521,8 @@ int main(void)
         printf("Test12 GCM mode3 ROC tamper detected: %s (status=%d)\n",
                f ? "FAIL" : "PASS", s);
         fails += f;
-        srtp_dealloc(snd); srtp_dealloc(rcv);
+        srtp_dealloc(snd);
+        srtp_dealloc(rcv);
     }
 
     /* ---- Test 13: GCM mode 3 with MKI, verifying the RFC 7714 section 8.2
@@ -491,7 +538,8 @@ int main(void)
         srtp_ssrc_t ssrc = { ssrc_specific, SSRC };
         srtp_policy_create(&sp);
         srtp_policy_set_profile(sp, srtp_profile_aead_aes_128_gcm);
-        srtp_policy_set_sec_serv(sp, sec_serv_conf_and_auth, sec_serv_conf_and_auth);
+        srtp_policy_set_sec_serv(sp, sec_serv_conf_and_auth,
+                                 sec_serv_conf_and_auth);
         srtp_policy_set_ssrc(sp, ssrc);
         srtp_policy_set_rcc_mode_tx_rate(sp, srtp_rcc_mode_3, 1);
         srtp_policy_set_window_size(sp, 128);
@@ -512,9 +560,11 @@ int main(void)
             uint8_t pkt[256], enc[256], dec[256];
             size_t len = make_rtp(pkt, 42, "gcm mode3 mki payload");
             size_t enc_len = sizeof(enc);
-            srtp_err_status_t s =
-                srtp_protect(snd, pkt, len, enc, &enc_len, 0);
-            if (s) { printf("  protect failed: %d\n", s); f = 1; }
+            srtp_err_status_t s = srtp_protect(snd, pkt, len, enc, &enc_len, 0);
+            if (s) {
+                printf("  protect failed: %d\n", s);
+                f = 1;
+            }
 
             /* layout: header + cipher + GCM tag (16) + MKI (4) + ROC (4) */
             if (!f && enc_len != len + 16 + 4 + 4) {
@@ -530,17 +580,22 @@ int main(void)
             size_t dec_len = sizeof(dec);
             if (!f) {
                 s = srtp_unprotect(rcv, enc, enc_len, dec, &dec_len);
-                if (s) { printf("  unprotect failed: %d\n", s); f = 1; }
-                else if (dec_len != len || memcmp(dec, pkt, len)) {
-                    printf("  payload mismatch\n"); f = 1;
+                if (s) {
+                    printf("  unprotect failed: %d\n", s);
+                    f = 1;
+                } else if (dec_len != len || memcmp(dec, pkt, len)) {
+                    printf("  payload mismatch\n");
+                    f = 1;
                 }
             }
         }
         printf("Test13 GCM mode3 with MKI (RFC 7714 field order): %s\n",
                f ? "FAIL" : "PASS");
         fails += f;
-        if (!cs) srtp_dealloc(snd);
-        if (!cr) srtp_dealloc(rcv);
+        if (!cs)
+            srtp_dealloc(snd);
+        if (!cr)
+            srtp_dealloc(rcv);
     }
 #endif /* GCM */
 

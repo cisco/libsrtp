@@ -1022,15 +1022,17 @@ srtp_err_status_t srtp_policy_get_mki_length(srtp_policy_t policy,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy, srtp_rcc_mode_t rcc_mode, uint16_t roc_tx_rate)
+srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy,
+                                                   srtp_rcc_mode_t rcc_mode,
+                                                   uint16_t roc_tx_rate)
 {
     if (policy == NULL) {
         return srtp_err_status_bad_param;
     }
-    
+
     policy->rcc_mode = rcc_mode;
     policy->roc_tx_rate = roc_tx_rate;
-    
+
     return srtp_err_status_ok;
 }
 
