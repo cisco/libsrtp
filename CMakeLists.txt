@@ -483,6 +483,18 @@ if(LIBSRTP_TEST_APPS)
             ${ENABLE_WARNINGS_AS_ERRORS})
     target_link_libraries(test_srtp_policy srtp3)
     add_test(test_srtp_policy test_srtp_policy)
+
+    add_executable(rcc_test test/rcc_test.c test/util.c)
+    target_set_warnings(
+            TARGET
+            rcc_test
+            ENABLE
+            ${ENABLE_WARNINGS}
+            AS_ERRORS
+            ${ENABLE_WARNINGS_AS_ERRORS})
+    target_include_directories(rcc_test PRIVATE test)
+    target_link_libraries(rcc_test srtp3)
+    add_test(rcc_test rcc_test)
   endif()
 
   find_program(BASH_PROGRAM bash)

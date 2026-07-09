@@ -12,6 +12,7 @@ test_apps = [
   ['rdbx_driver', {'extra_sources': 'ut_sim.c', 'run_args': '-v'}],
   ['test_srtp', {'run_args': '-v'}],
   ['test_srtp_policy', {'extra_sources': 'util.c', 'run_args': '-v'}],
+  ['rcc_test', {'extra_sources': 'util.c', 'run_args': '-v'}],
   ['rtpw', {'extra_sources': ['rtp.c', 'util.c', '../crypto/math/datatypes.c'], 'define_test': false}],
 ]
 

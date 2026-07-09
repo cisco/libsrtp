@@ -922,6 +922,52 @@ srtp_err_status_t srtp_policy_validate(srtp_policy_t policy)
         return srtp_err_status_bad_param;
     }
 
+    /*
+     * RFC 4771 RCC: validate the mode against the configured cipher.  When RCC
+     * is enabled the four-octet ROC is carried inside the SRTP authentication
+     * tag, so for the HMAC modes the tag must be able to hold the ROC plus at
+     * least one MAC octet.
+     */
+    if (policy->rcc_mode != srtp_rcc_mode_none) {
+        bool is_gcm = (policy->rtp.cipher_type == SRTP_AES_GCM_128 ||
+                       policy->rtp.cipher_type == SRTP_AES_GCM_256);
+
+        /* the transmission rate R must be >= 1 (see set_rcc_mode_tx_rate) */
+        if (policy->roc_tx_rate == 0) {
+            return srtp_err_status_bad_param;
+        }
+
+        switch (policy->rcc_mode) {
+        case srtp_rcc_mode_1:
+        case srtp_rcc_mode_2:
+            /*
+             * Modes 1 and 2 carry the ROC inside a truncated HMAC-SHA1 tag
+             * (TAG = ROC || MAC_tr), so the tag must hold the 4-octet ROC plus
+             * at least one MAC octet.  They are defined only for the AES-CM
+             * ciphers with HMAC-SHA1, not for AEAD/GCM.
+             */
+            if (policy->rtp.auth_tag_len < 5 || is_gcm) {
+                return srtp_err_status_bad_param;
+            }
+            break;
+        case srtp_rcc_mode_3:
+            /*
+             * Mode 3 (RFC 4771 NULL-MAC) carries only the 4-octet ROC with no
+             * MAC of its own.  It is supported here only on top of AES-GCM
+             * (RFC 7714): the AEAD tag authenticates the packet and the ROC is
+             * appended after the GCM tag.  Because the carried ROC also feeds
+             * the GCM IV, any tampering with it is detected by GCM tag
+             * verification.
+             */
+            if (!is_gcm) {
+                return srtp_err_status_bad_param;
+            }
+            break;
+        default:
+            return srtp_err_status_bad_param;
+        }
+    }
+
     return srtp_err_status_ok;
 }
 
@@ -1027,6 +1073,27 @@ srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy,
                                                    uint16_t roc_tx_rate)
 {
     if (policy == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    switch (rcc_mode) {
+    case srtp_rcc_mode_none:
+    case srtp_rcc_mode_1:
+    case srtp_rcc_mode_2:
+    case srtp_rcc_mode_3:
+        break;
+    default:
+        return srtp_err_status_bad_param;
+    }
+
+    /*
+     * The transmission rate R selects which packets carry the ROC (those
+     * whose sequence number is 0 modulo R), so R == 0 is meaningless when RCC
+     * is enabled; require R >= 1.  The rate is ignored when RCC is disabled.
+     * Cipher/mode consistency (AES-CM vs AES-GCM, tag length) is enforced by
+     * srtp_policy_validate() once the profile is known.
+     */
+    if (rcc_mode != srtp_rcc_mode_none && roc_tx_rate == 0) {
         return srtp_err_status_bad_param;
     }
 
