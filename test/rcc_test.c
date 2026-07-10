@@ -46,18 +46,18 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#elif defined(HAVE_WINSOCK2_H)
+#include <winsock2.h>
+#endif
+
 #include "cutest.h"
 
 #include "srtp.h"
 #include "util.h"
 
 #include <string.h>
-
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#elif defined(HAVE_WINSOCK2_H)
-#include <winsock2.h>
-#endif
 
 #define TEST_SSRC 0xcafebabe
 
@@ -70,6 +70,7 @@ static const uint8_t cm_master_salt[14] = {
     0xeb, 0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6,
 };
 
+#ifdef GCM
 static const uint8_t gcm_master_key[16] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -79,6 +80,7 @@ static const uint8_t gcm_master_salt[12] = {
 };
 
 static const uint8_t mki4[4] = { 0xde, 0xad, 0xbe, 0xef };
+#endif
 
 static void create_cm_rcc_policy(srtp_policy_t *policy,
                                  srtp_rcc_mode_t mode,
