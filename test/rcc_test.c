@@ -82,16 +82,17 @@ static const uint8_t gcm_master_salt[12] = {
 static const uint8_t mki4[4] = { 0xde, 0xad, 0xbe, 0xef };
 #endif
 
-static void create_cm_rcc_policy(srtp_policy_t *policy,
-                                 srtp_rcc_mode_t mode,
-                                 uint16_t rate)
+static void create_cm_rcc_policy_ssrc(srtp_policy_t *policy,
+                                      srtp_rcc_mode_t mode,
+                                      uint16_t rate,
+                                      srtp_ssrc_type_t ssrc_type)
 {
     CHECK_OK(srtp_policy_create(policy));
     CHECK_OK(srtp_policy_set_profile(*policy, srtp_profile_aes128_cm_sha1_80));
     CHECK_OK(srtp_policy_set_sec_serv(*policy, sec_serv_conf_and_auth,
                                       sec_serv_conf_and_auth));
-    CHECK_OK(srtp_policy_set_ssrc(*policy,
-                                  (srtp_ssrc_t){ ssrc_specific, TEST_SSRC }));
+    CHECK_OK(
+        srtp_policy_set_ssrc(*policy, (srtp_ssrc_t){ ssrc_type, TEST_SSRC }));
     CHECK_OK(srtp_policy_set_rcc_mode_tx_rate(*policy, mode, rate));
     CHECK_OK(srtp_policy_set_window_size(*policy, 128));
     CHECK_OK(srtp_policy_add_key(*policy, cm_master_key, sizeof(cm_master_key),
@@ -99,22 +100,37 @@ static void create_cm_rcc_policy(srtp_policy_t *policy,
                                  0));
 }
 
+static void create_cm_rcc_policy(srtp_policy_t *policy,
+                                 srtp_rcc_mode_t mode,
+                                 uint16_t rate)
+{
+    create_cm_rcc_policy_ssrc(policy, mode, rate, ssrc_specific);
+}
+
 #ifdef GCM
-static void create_gcm_rcc_policy(srtp_policy_t *policy,
-                                  srtp_rcc_mode_t mode,
-                                  uint16_t rate)
+static void create_gcm_rcc_policy_ssrc(srtp_policy_t *policy,
+                                       srtp_rcc_mode_t mode,
+                                       uint16_t rate,
+                                       srtp_ssrc_type_t ssrc_type)
 {
     CHECK_OK(srtp_policy_create(policy));
     CHECK_OK(srtp_policy_set_profile(*policy, srtp_profile_aead_aes_128_gcm));
     CHECK_OK(srtp_policy_set_sec_serv(*policy, sec_serv_conf_and_auth,
                                       sec_serv_conf_and_auth));
-    CHECK_OK(srtp_policy_set_ssrc(*policy,
-                                  (srtp_ssrc_t){ ssrc_specific, TEST_SSRC }));
+    CHECK_OK(
+        srtp_policy_set_ssrc(*policy, (srtp_ssrc_t){ ssrc_type, TEST_SSRC }));
     CHECK_OK(srtp_policy_set_rcc_mode_tx_rate(*policy, mode, rate));
     CHECK_OK(srtp_policy_set_window_size(*policy, 128));
     CHECK_OK(srtp_policy_add_key(*policy, gcm_master_key,
                                  sizeof(gcm_master_key), gcm_master_salt,
                                  sizeof(gcm_master_salt), NULL, 0));
+}
+
+static void create_gcm_rcc_policy(srtp_policy_t *policy,
+                                  srtp_rcc_mode_t mode,
+                                  uint16_t rate)
+{
+    create_gcm_rcc_policy_ssrc(policy, mode, rate, ssrc_specific);
 }
 #endif
 
@@ -476,6 +492,174 @@ static void rcc_mode2_rate4_late_join(void)
     CHECK_OK(srtp_shutdown());
 }
 
+/*
+ * Mode 2, R == 1, receiver using a wildcard ssrc_any_inbound policy.  The
+ * receiver has no stream for the SSRC yet, so the first packet is processed
+ * against the provisional template stream; the RCC transform must still be
+ * applied there (the tag is ROC || MAC_tr, not a plain MAC) and, once it
+ * authenticates, the template must be instantiated into a real stream that
+ * has adopted the sender's ROC.  The sender's ROC is advanced past a wrap
+ * first, so a receiver that fell back to the default transform (assuming
+ * ROC 0) would fail authentication.
+ */
+static void rcc_mode2_wildcard_inbound_late_join(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+    uint8_t pkt[256], enc[256], dec[256];
+    size_t len, enc_len, dec_len;
+    uint32_t sender_roc = 0, receiver_roc = 0;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy(&sp, srtp_rcc_mode_2, 1);
+    CHECK_OK(srtp_create(&snd, sp));
+
+    advance_sender_roc(snd);
+    CHECK_OK(srtp_stream_get_roc(snd, TEST_SSRC, &sender_roc));
+
+    create_cm_rcc_policy_ssrc(&rp, srtp_rcc_mode_2, 1, ssrc_any_inbound);
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    len = make_rtp(pkt, 5000, "wildcard inbound payload");
+    enc_len = sizeof(enc);
+    CHECK_OK(srtp_protect(snd, pkt, len, enc, &enc_len, 0));
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc, enc_len, dec, &dec_len));
+    CHECK(dec_len == len);
+    CHECK_BUFFER_EQUAL(dec, pkt, len);
+
+    /* the template must have been instantiated with the sender's ROC */
+    CHECK_OK(srtp_stream_get_roc(rcv, TEST_SSRC, &receiver_roc));
+    CHECK(receiver_roc == sender_roc);
+
+    /* subsequent packets are handled by the newly created stream */
+    rcc_roundtrip(snd, rcv, 5001, "wildcard inbound follow up");
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
+
+/*
+ * Mode 1, R == 4, receiver using a wildcard ssrc_any_inbound policy.  Mode 1
+ * sends non-carry packets with no authentication tag at all, so the template
+ * stream must go through the RCC transform to parse them correctly.  Starting
+ * at seq 0 exercises both the carry and the untagged packet through the
+ * provisional stream.
+ */
+static void rcc_mode1_wildcard_inbound(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy(&sp, srtp_rcc_mode_1, 4);
+    CHECK_OK(srtp_create(&snd, sp));
+    create_cm_rcc_policy_ssrc(&rp, srtp_rcc_mode_1, 4, ssrc_any_inbound);
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    for (uint16_t seq = 0; seq <= 8; seq++) {
+        rcc_roundtrip(snd, rcv, seq, "wildcard inbound mode1");
+    }
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
+
+/*
+ * Mode 2, R == 1: a ROC-carrying packet must not bypass replay detection.
+ * Every packet carries the ROC here, so replaying one that was already
+ * accepted has to be rejected rather than silently resetting the replay
+ * window (which would then let the whole tail of the stream be replayed).
+ */
+static void rcc_mode2_carry_replay_rejected(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+    uint8_t pkt[256], enc[256], saved[256], dec[256];
+    size_t len, enc_len, saved_len = 0, dec_len;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy(&sp, srtp_rcc_mode_2, 1);
+    create_cm_rcc_policy(&rp, srtp_rcc_mode_2, 1);
+    CHECK_OK(srtp_create(&snd, sp));
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    /* keep a copy of the packet with seq 3 as it goes over the wire */
+    for (uint16_t seq = 1; seq <= 5; seq++) {
+        len = make_rtp(pkt, seq, "replay me");
+        enc_len = sizeof(enc);
+        CHECK_OK(srtp_protect(snd, pkt, len, enc, &enc_len, 0));
+        if (seq == 3) {
+            memcpy(saved, enc, enc_len);
+            saved_len = enc_len;
+        }
+        dec_len = sizeof(dec);
+        CHECK_OK(srtp_unprotect(rcv, enc, enc_len, dec, &dec_len));
+    }
+
+    dec_len = sizeof(dec);
+    CHECK_RETURN(srtp_unprotect(rcv, saved, saved_len, dec, &dec_len),
+                 srtp_err_status_replay_fail);
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
+
+/*
+ * Mode 2, R == 1: a ROC-carrying packet that is new but falls inside the
+ * currently tracked window must only mark itself in the window, not reset it.
+ * Delivering 10, then the still-missing 8 and 9, must all succeed, and a
+ * second copy of 8 must then be rejected -- which only holds if accepting 8
+ * and 9 left the window (and the already-set bits) intact.
+ */
+static void rcc_mode2_carry_out_of_order_keeps_window(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+    uint8_t pkt[3][256], enc[3][256], dec[256];
+    size_t len[3], enc_len[3], dec_len;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy(&sp, srtp_rcc_mode_2, 1);
+    create_cm_rcc_policy(&rp, srtp_rcc_mode_2, 1);
+    CHECK_OK(srtp_create(&snd, sp));
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    for (uint16_t i = 0; i < 3; i++) {
+        len[i] = make_rtp(pkt[i], (uint16_t)(8 + i), "out of order");
+        enc_len[i] = sizeof(enc[i]);
+        CHECK_OK(srtp_protect(snd, pkt[i], len[i], enc[i], &enc_len[i], 0));
+    }
+
+    /* deliver 10 first, then the earlier 8 and 9 that are still in flight */
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc[2], enc_len[2], dec, &dec_len));
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc[0], enc_len[0], dec, &dec_len));
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc[1], enc_len[1], dec, &dec_len));
+
+    /* the window must have been updated, not reset, so 8 is now a replay */
+    dec_len = sizeof(dec);
+    CHECK_RETURN(srtp_unprotect(rcv, enc[0], enc_len[0], dec, &dec_len),
+                 srtp_err_status_replay_fail);
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
+
 #ifdef GCM
 /*
  * AES-GCM round trips (mode 3, RFC 7714 layout)
@@ -702,6 +886,97 @@ static void rcc_gcm_mode3_with_mki_field_order(void)
     srtp_policy_destroy(rp);
     CHECK_OK(srtp_shutdown());
 }
+
+/*
+ * Mode 3, receiver using a wildcard ssrc_any_inbound policy.  The AEAD path
+ * already instantiates the template once the GCM tag verifies; this pins that
+ * behaviour so the provisional stream keeps adopting the carried ROC.
+ */
+static void rcc_gcm_mode3_wildcard_inbound_late_join(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+    uint8_t pkt[256], enc[256], dec[256];
+    size_t len, enc_len, dec_len;
+    uint32_t sender_roc = 0, receiver_roc = 0;
+
+    CHECK_OK(srtp_init());
+    create_gcm_rcc_policy(&sp, srtp_rcc_mode_3, 1);
+    CHECK_OK(srtp_create(&snd, sp));
+
+    advance_sender_roc(snd);
+    CHECK_OK(srtp_stream_get_roc(snd, TEST_SSRC, &sender_roc));
+
+    create_gcm_rcc_policy_ssrc(&rp, srtp_rcc_mode_3, 1, ssrc_any_inbound);
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    len = make_rtp(pkt, 5000, "gcm wildcard inbound");
+    enc_len = sizeof(enc);
+    CHECK_OK(srtp_protect(snd, pkt, len, enc, &enc_len, 0));
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc, enc_len, dec, &dec_len));
+    CHECK(dec_len == len);
+    CHECK_BUFFER_EQUAL(dec, pkt, len);
+
+    /* the template must have been instantiated with the sender's ROC */
+    CHECK_OK(srtp_stream_get_roc(rcv, TEST_SSRC, &receiver_roc));
+    CHECK(receiver_roc == sender_roc);
+
+    /* subsequent packets are handled by the newly created stream */
+    rcc_roundtrip(snd, rcv, 5001, "gcm wildcard follow up");
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
+
+/*
+ * Mode 3, R == 1: the ROC carried after the GCM tag must not bypass replay
+ * detection either.  A replayed ROC-carrying packet has to be rejected, and
+ * an out-of-order but still unseen packet must update the window rather than
+ * reset it.
+ */
+static void rcc_gcm_mode3_carry_replay_rejected(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+    uint8_t pkt[3][256], enc[3][256], dec[256];
+    size_t len[3], enc_len[3], dec_len;
+
+    CHECK_OK(srtp_init());
+    create_gcm_rcc_policy(&sp, srtp_rcc_mode_3, 1);
+    create_gcm_rcc_policy(&rp, srtp_rcc_mode_3, 1);
+    CHECK_OK(srtp_create(&snd, sp));
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    for (uint16_t i = 0; i < 3; i++) {
+        len[i] = make_rtp(pkt[i], (uint16_t)(8 + i), "gcm replay");
+        enc_len[i] = sizeof(enc[i]);
+        CHECK_OK(srtp_protect(snd, pkt[i], len[i], enc[i], &enc_len[i], 0));
+    }
+
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc[2], enc_len[2], dec, &dec_len));
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc[0], enc_len[0], dec, &dec_len));
+
+    /* replaying the packet just accepted must fail */
+    dec_len = sizeof(dec);
+    CHECK_RETURN(srtp_unprotect(rcv, enc[0], enc_len[0], dec, &dec_len),
+                 srtp_err_status_replay_fail);
+
+    /* the still-unseen 9 must remain acceptable */
+    dec_len = sizeof(dec);
+    CHECK_OK(srtp_unprotect(rcv, enc[1], enc_len[1], dec, &dec_len));
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
 #endif /* GCM */
 
 TEST_LIST = {
@@ -719,6 +994,12 @@ TEST_LIST = {
       rcc_mode1_rate4_carry_and_untagged },
     { "rcc_mode2_late_join_roc_sync()", rcc_mode2_late_join_roc_sync },
     { "rcc_mode2_rate4_late_join()", rcc_mode2_rate4_late_join },
+    { "rcc_mode2_wildcard_inbound_late_join()",
+      rcc_mode2_wildcard_inbound_late_join },
+    { "rcc_mode1_wildcard_inbound()", rcc_mode1_wildcard_inbound },
+    { "rcc_mode2_carry_replay_rejected()", rcc_mode2_carry_replay_rejected },
+    { "rcc_mode2_carry_out_of_order_keeps_window()",
+      rcc_mode2_carry_out_of_order_keeps_window },
 #ifdef GCM
     { "rcc_gcm_mode2_rejected_at_create()", rcc_gcm_mode2_rejected_at_create },
     { "rcc_gcm_mode3_basic_roundtrip()", rcc_gcm_mode3_basic_roundtrip },
@@ -729,6 +1010,10 @@ TEST_LIST = {
       rcc_gcm_mode3_roc_tamper_detected },
     { "rcc_gcm_mode3_with_mki_field_order()",
       rcc_gcm_mode3_with_mki_field_order },
+    { "rcc_gcm_mode3_wildcard_inbound_late_join()",
+      rcc_gcm_mode3_wildcard_inbound_late_join },
+    { "rcc_gcm_mode3_carry_replay_rejected()",
+      rcc_gcm_mode3_carry_replay_rejected },
 #endif
     { 0 }
 };

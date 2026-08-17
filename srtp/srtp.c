@@ -2072,566 +2072,6 @@ static srtp_err_status_t srtp_get_est_pkt_index(const srtp_hdr_t *hdr,
 }
 
 /*
- * srtp_protect_rcc() implements the RFC 4771 Roll-over Counter Carrying (RCC)
- * integrity transform (modes 1 and 2) for sending.  It is dispatched to from
- * srtp_protect() when stream->rcc_mode is not srtp_rcc_mode_none.
- *
- * For a packet whose RTP sequence number is congruent to 0 modulo the
- * transmission rate R (a "ROC-carrying" packet) the authentication tag is
- * built as TAG = ROC(4 octets, network order) || MAC_tr, where MAC_tr is the
- * (tag_len - 4) most significant octets of HMAC-SHA1(auth_key,
- * authenticated_portion || ROC).  For other packets:
- *   - mode 1: no MAC is computed and no tag is appended;
- *   - mode 2: the default integrity transform is applied (full tag_len MAC).
- *
- * RCC is only defined here for the AES-CM ciphers with HMAC-SHA1; GCM streams
- * are rejected at stream initialization time.
- */
-static srtp_err_status_t srtp_protect_rcc(srtp_t ctx,
-                                          srtp_stream_ctx_t *stream,
-                                          const uint8_t *rtp,
-                                          size_t rtp_len,
-                                          uint8_t *srtp,
-                                          size_t *srtp_len,
-                                          srtp_session_keys_t *session_keys)
-{
-    const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp;
-    size_t enc_start;         /* offset to start of encrypted portion   */
-    uint8_t *auth_start;      /* pointer to start of auth. portion      */
-    size_t enc_octet_len = 0; /* number of octets in encrypted portion  */
-    srtp_xtd_seq_num_t est;   /* estimated xtd_seq_num_t of *hdr        */
-    ssize_t delta;            /* delta of local pkt idx and that in hdr */
-    uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
-    srtp_err_status_t status;
-    size_t tag_len;
-    size_t prefix_len;
-    bool rcc_carry;     /* whether this packet carries the ROC           */
-    size_t rcc_tag_len; /* number of tag octets actually appended       */
-
-    debug_print0(mod_srtp, "function srtp_protect_rcc");
-
-    /*
-     * This handler implements only the AES-CM/HMAC RCC modes (1 and 2).
-     * Mode 3 (AEAD) is handled by srtp_protect_aead, and srtp_rcc_mode_none
-     * streams never dispatch here.  Reject anything else instead of silently
-     * applying the wrong transform.
-     */
-    if (stream->rcc_mode != srtp_rcc_mode_1 &&
-        stream->rcc_mode != srtp_rcc_mode_2) {
-        return srtp_err_status_bad_param;
-    }
-
-    /* RFC 4771: a packet carries the ROC when seq is 0 modulo R */
-    rcc_carry = (ntohs(hdr->seq) % stream->roc_tx_rate) == 0;
-
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit
-     */
-    switch (srtp_key_limit_update(session_keys->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_soft_limit:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    default:
-        break;
-    }
-
-    /* get tag length from stream */
-    tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
-
-    /*
-     * in mode 1, packets that do not carry the ROC are not integrity
-     * protected and carry no authentication tag at all
-     */
-    if (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) {
-        rcc_tag_len = 0;
-    } else {
-        rcc_tag_len = tag_len;
-    }
-
-    /*
-     * find starting point for encryption and length of data to be
-     * encrypted - the encrypted portion starts after the rtp header
-     * extension, if present; otherwise, it starts after the last csrc,
-     * if any are present
-     */
-    enc_start = srtp_get_rtp_hdr_len(hdr);
-    if (hdr->x == 1) {
-        enc_start += srtp_get_rtp_hdr_xtnd_len(hdr, rtp);
-    }
-
-    bool cryptex_inuse, cryptex_inplace;
-    status = srtp_cryptex_protect_init(stream, hdr, rtp, srtp, &cryptex_inuse,
-                                       &cryptex_inplace, &enc_start);
-    if (status) {
-        return status;
-    }
-
-    if (enc_start > rtp_len) {
-        return srtp_err_status_parse_err;
-    }
-    enc_octet_len = rtp_len - enc_start;
-
-    /* check output length */
-    if (*srtp_len < rtp_len + stream->mki_size + rcc_tag_len) {
-        return srtp_err_status_buffer_small;
-    }
-
-    /* if not-inplace then need to copy full rtp header */
-    if (rtp != srtp) {
-        memcpy(srtp, rtp, enc_start);
-    }
-
-    if (stream->use_mki) {
-        srtp_inject_mki(srtp + rtp_len, session_keys, stream->mki_size);
-    }
-
-    /*
-     * if we're providing authentication, set the auth_start and auth_tag
-     * pointers to the proper locations; otherwise, set auth_start to NULL
-     */
-    if ((stream->rtp_services & sec_serv_auth) && rcc_tag_len > 0) {
-        auth_start = srtp;
-        auth_tag = srtp + rtp_len + stream->mki_size;
-    } else {
-        auth_start = NULL;
-        auth_tag = NULL;
-    }
-
-    /*
-     * estimate the packet index using the start of the replay window
-     * and the sequence number from the header
-     */
-    status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
-
-    if (status && (status != srtp_err_status_pkt_idx_adv)) {
-        return status;
-    }
-
-    if (status == srtp_err_status_pkt_idx_adv) {
-        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, (uint32_t)(est >> 16),
-                              (uint16_t)(est & 0xFFFF));
-        stream->pending_roc = 0;
-        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
-    } else {
-        status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-        if (status) {
-            if (status != srtp_err_status_replay_fail ||
-                !stream->allow_repeat_tx)
-                return status; /* we've been asked to reuse an index */
-        }
-        srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
-    }
-
-    debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
-
-    /* set the AES counter-mode nonce and sequence */
-    {
-        v128_t iv;
-
-        iv.v32[0] = 0;
-        iv.v32[1] = hdr->ssrc;
-        iv.v64[1] = be64_to_cpu(est << 16);
-        status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
-                                    srtp_direction_encrypt);
-        if (!status && session_keys->rtp_xtn_hdr_cipher) {
-            status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
-                                        (uint8_t *)&iv, srtp_direction_encrypt);
-        }
-        if (status) {
-            return srtp_err_status_cipher_fail;
-        }
-    }
-
-    /* shift est, put into network byte order */
-    est = be64_to_cpu(est << 16);
-
-    /*
-     * if we're authenticating using a universal hash, put the keystream
-     * prefix into the authentication tag
-     */
-    if (auth_start) {
-        prefix_len = srtp_auth_get_prefix_length(session_keys->rtp_auth);
-        if (prefix_len) {
-            status = srtp_cipher_output(session_keys->rtp_cipher, auth_tag,
-                                        &prefix_len);
-            if (status) {
-                return srtp_err_status_cipher_fail;
-            }
-        }
-    }
-
-    if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
-        /* extensions header encryption RFC 6904 */
-        status = srtp_process_header_encryption(
-            stream, srtp_get_rtp_xtn_hdr(hdr, srtp), session_keys);
-        if (status) {
-            return status;
-        }
-    }
-
-    if (cryptex_inuse) {
-        status = srtp_cryptex_protect(cryptex_inplace, hdr, srtp,
-                                      session_keys->rtp_cipher);
-        if (status) {
-            return status;
-        }
-    }
-
-    /* if we're encrypting, exor keystream into the message */
-    if (stream->rtp_services & sec_serv_conf) {
-        status = srtp_cipher_encrypt(session_keys->rtp_cipher, rtp + enc_start,
-                                     enc_octet_len, srtp + enc_start,
-                                     &enc_octet_len);
-        if (status) {
-            return srtp_err_status_cipher_fail;
-        }
-    } else if (rtp != srtp) {
-        /* if no encryption and not-inplace then need to copy rest of packet */
-        memcpy(srtp + enc_start, rtp + enc_start, enc_octet_len);
-    }
-
-    if (cryptex_inuse) {
-        srtp_cryptex_protect_cleanup(cryptex_inplace, hdr, srtp);
-    }
-
-    /*
-     * if we're authenticating, run the authentication function and build
-     * the RFC 4771 tag
-     */
-    if (auth_start) {
-        status = srtp_auth_start(session_keys->rtp_auth);
-        if (status) {
-            return status;
-        }
-
-        status = srtp_auth_update(session_keys->rtp_auth, auth_start, rtp_len);
-        if (status) {
-            return status;
-        }
-
-        if (rcc_carry) {
-            /* TAG = ROC (4 octets, network order) || MAC_tr */
-            uint8_t mac[SRTP_MAX_TAG_LEN];
-            status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
-                                       4, mac);
-            if (status) {
-                return status;
-            }
-            memcpy(auth_tag, (uint8_t *)&est, 4);
-            memcpy(auth_tag + 4, mac, tag_len - 4);
-        } else {
-            /* default integrity transform (mode 2, non-ROC packets) */
-            status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
-                                       4, auth_tag);
-            if (status) {
-                return status;
-            }
-        }
-    }
-
-    *srtp_len = enc_start + enc_octet_len;
-
-    /* increase the packet length by the length of the auth tag (if any) */
-    *srtp_len += rcc_tag_len;
-
-    /* increase the packet length by the mki size if used */
-    *srtp_len += stream->mki_size;
-
-    return srtp_err_status_ok;
-}
-
-/*
- * srtp_unprotect_rcc() implements the RFC 4771 Roll-over Counter Carrying
- * (RCC) integrity transform (modes 1 and 2) for receiving.  It is dispatched
- * to from srtp_unprotect() when stream->rcc_mode is not srtp_rcc_mode_none.
- *
- * For a ROC-carrying packet (seq congruent to 0 modulo R) the sender's ROC is
- * read from the first four octets of the tag and used both to build the
- * decryption IV and to compute the MAC; the remaining (tag_len - 4) octets of
- * the tag are the truncated MAC and are verified.  On success the receiver
- * adopts the sender's ROC, providing fast and robust resynchronization.
- *
- * For packets that do not carry the ROC, mode 1 performs no authentication
- * (no tag is present), while mode 2 applies the default integrity transform
- * using the locally maintained ROC.
- */
-static srtp_err_status_t srtp_unprotect_rcc(srtp_t ctx,
-                                            srtp_stream_ctx_t *stream,
-                                            const uint8_t *srtp,
-                                            size_t srtp_len,
-                                            uint8_t *rtp,
-                                            size_t *rtp_len,
-                                            srtp_session_keys_t *session_keys)
-{
-    const srtp_hdr_t *hdr = (const srtp_hdr_t *)srtp;
-    size_t enc_start;
-    const uint8_t *auth_start;
-    size_t enc_octet_len = 0;
-    const uint8_t *auth_tag = NULL;
-    srtp_xtd_seq_num_t est;
-    ssize_t delta = 0;
-    v128_t iv;
-    srtp_err_status_t status;
-    uint8_t tmp_tag[SRTP_MAX_TAG_LEN];
-    size_t tag_len, prefix_len;
-    uint16_t seq;
-    bool rcc_carry;
-    size_t rcc_tag_len;
-    uint32_t roc_sender = 0;
-    bool advance_packet_index = false;
-    uint32_t roc_to_set = 0;
-    uint16_t seq_to_set = 0;
-
-    debug_print0(mod_srtp, "function srtp_unprotect_rcc");
-
-    /*
-     * This handler implements only the AES-CM/HMAC RCC modes (1 and 2).
-     * Mode 3 (AEAD) is handled by srtp_unprotect_aead, and srtp_rcc_mode_none
-     * streams never dispatch here.  Reject anything else instead of silently
-     * applying the wrong transform.
-     */
-    if (stream->rcc_mode != srtp_rcc_mode_1 &&
-        stream->rcc_mode != srtp_rcc_mode_2) {
-        return srtp_err_status_bad_param;
-    }
-
-    seq = ntohs(hdr->seq);
-    rcc_carry = (seq % stream->roc_tx_rate) == 0;
-
-    /* get tag length from stream */
-    tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
-
-    /*
-     * in mode 1 packets that do not carry the ROC have no tag at all; in
-     * every other case the full tag_len octets are present
-     */
-    if (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) {
-        rcc_tag_len = 0;
-    } else {
-        rcc_tag_len = tag_len;
-    }
-
-    /*
-     * determine the packet index.  For ROC-carrying packets the sender's ROC
-     * is taken directly from the tag (RFC 4771); otherwise it is estimated
-     * from the local replay database as in the default transform.
-     */
-    if (rcc_carry) {
-        if (srtp_len < octets_in_rtp_header + stream->mki_size + tag_len) {
-            return srtp_err_status_bad_param;
-        }
-        /* the ROC is the first four octets of the tag, in network order */
-        memcpy(&roc_sender, srtp + srtp_len - tag_len, 4);
-        roc_sender = ntohl(roc_sender);
-        est = (((srtp_xtd_seq_num_t)roc_sender) << 16) | seq;
-    } else {
-        status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
-        if (status && (status != srtp_err_status_pkt_idx_adv)) {
-            return status;
-        }
-        if (status == srtp_err_status_pkt_idx_adv) {
-            advance_packet_index = true;
-            roc_to_set = (uint32_t)(est >> 16);
-            seq_to_set = (uint16_t)(est & 0xFFFF);
-        } else {
-            status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-            if (status) {
-                return status;
-            }
-        }
-    }
-
-    debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
-
-    /* set the AES counter-mode IV from the (possibly sender-supplied) index */
-    iv.v32[0] = 0;
-    iv.v32[1] = hdr->ssrc; /* still in network order */
-    iv.v64[1] = be64_to_cpu(est << 16);
-    status = srtp_cipher_set_iv(session_keys->rtp_cipher, (uint8_t *)&iv,
-                                srtp_direction_decrypt);
-    if (!status && session_keys->rtp_xtn_hdr_cipher) {
-        status = srtp_cipher_set_iv(session_keys->rtp_xtn_hdr_cipher,
-                                    (uint8_t *)&iv, srtp_direction_decrypt);
-    }
-    if (status) {
-        return srtp_err_status_cipher_fail;
-    }
-
-    /* shift est, put into network byte order */
-    est = be64_to_cpu(est << 16);
-
-    enc_start = srtp_get_rtp_hdr_len(hdr);
-    if (hdr->x == 1) {
-        enc_start += srtp_get_rtp_hdr_xtnd_len(hdr, srtp);
-    }
-
-    bool cryptex_inuse, cryptex_inplace;
-    status = srtp_cryptex_unprotect_init(stream, hdr, srtp, rtp, &cryptex_inuse,
-                                         &cryptex_inplace, &enc_start);
-    if (status) {
-        return status;
-    }
-
-    if (enc_start > srtp_len - rcc_tag_len - stream->mki_size) {
-        return srtp_err_status_parse_err;
-    }
-    enc_octet_len = srtp_len - enc_start - stream->mki_size - rcc_tag_len;
-
-    /* check output length */
-    if (*rtp_len < srtp_len - stream->mki_size - rcc_tag_len) {
-        return srtp_err_status_buffer_small;
-    }
-
-    /* if not-inplace then need to copy full rtp header */
-    if (srtp != rtp) {
-        memcpy(rtp, srtp, enc_start);
-    }
-
-    if ((stream->rtp_services & sec_serv_auth) && rcc_tag_len > 0) {
-        auth_start = srtp;
-        /* the tag (ROC and/or MAC) is located at the end of the packet */
-        auth_tag = srtp + srtp_len - tag_len;
-    } else {
-        auth_start = NULL;
-        auth_tag = NULL;
-    }
-
-    /*
-     * if we expect message authentication, run the authentication function
-     * and compare the result with the value of the tag
-     */
-    if (auth_start) {
-        if (session_keys->rtp_auth->prefix_len != 0) {
-            prefix_len = srtp_auth_get_prefix_length(session_keys->rtp_auth);
-            status = srtp_cipher_output(session_keys->rtp_cipher, tmp_tag,
-                                        &prefix_len);
-            if (status) {
-                return srtp_err_status_cipher_fail;
-            }
-        }
-
-        status = srtp_auth_start(session_keys->rtp_auth);
-        if (status) {
-            return status;
-        }
-
-        /* the MAC covers the packet up to the start of the tag */
-        status = srtp_auth_update(session_keys->rtp_auth, auth_start,
-                                  srtp_len - tag_len - stream->mki_size);
-        if (status) {
-            return status;
-        }
-
-        status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est, 4,
-                                   tmp_tag);
-        if (status) {
-            return srtp_err_status_auth_fail;
-        }
-
-        if (rcc_carry) {
-            /* MAC_tr occupies the (tag_len - 4) octets after the ROC */
-            if (!srtp_octet_string_equal(tmp_tag, auth_tag + 4, tag_len - 4)) {
-                return srtp_err_status_auth_fail;
-            }
-        } else {
-            if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
-                return srtp_err_status_auth_fail;
-            }
-        }
-    }
-
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit
-     */
-    switch (srtp_key_limit_update(session_keys->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_soft_limit:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    default:
-        break;
-    }
-
-    if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
-        /* extensions header encryption RFC 6904 */
-        status = srtp_process_header_encryption(
-            stream, srtp_get_rtp_xtn_hdr(hdr, rtp), session_keys);
-        if (status) {
-            return status;
-        }
-    }
-
-    if (cryptex_inuse) {
-        status = srtp_cryptex_unprotect(cryptex_inplace, hdr, rtp,
-                                        session_keys->rtp_cipher);
-        if (status) {
-            return status;
-        }
-    }
-
-    /* if we're decrypting, add keystream into ciphertext */
-    if (stream->rtp_services & sec_serv_conf) {
-        status =
-            srtp_cipher_decrypt(session_keys->rtp_cipher, srtp + enc_start,
-                                enc_octet_len, rtp + enc_start, &enc_octet_len);
-        if (status) {
-            return srtp_err_status_cipher_fail;
-        }
-    } else if (rtp != srtp) {
-        /* if no encryption and not-inplace then need to copy rest of packet */
-        memcpy(rtp + enc_start, srtp + enc_start, enc_octet_len);
-    }
-
-    if (cryptex_inuse) {
-        srtp_cryptex_unprotect_cleanup(cryptex_inplace, hdr, rtp);
-    }
-
-    /*
-     * verify that stream is for received traffic - this check will detect
-     * SSRC collisions
-     */
-    if (stream->direction != dir_srtp_receiver) {
-        if (stream->direction == dir_unknown) {
-            stream->direction = dir_srtp_receiver;
-        } else {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
-        }
-    }
-
-    /*
-     * the authentication passed (or was not required), so update the replay
-     * database and roll-over counter
-     */
-    if (rcc_carry) {
-        /* adopt the sender's ROC (RFC 4771 fast resynchronization) */
-        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, roc_sender, seq);
-        stream->pending_roc = 0;
-        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
-    } else if (advance_packet_index) {
-        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, roc_to_set, seq_to_set);
-        stream->pending_roc = 0;
-        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
-    } else {
-        srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
-    }
-
-    *rtp_len = srtp_len - stream->mki_size - rcc_tag_len;
-
-    return srtp_err_status_ok;
-}
-
-/*
  * This function handles outgoing SRTP packets while in AEAD mode,
  * which currently supports AES-GCM encryption.  All packets are
  * encrypted and authenticated.
@@ -2871,7 +2311,6 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     size_t tag_len;
     size_t aad_len;
     size_t rcc_extra = 0;        /* octets of ROC carried (RFC 4771 mode 3) */
-    bool rcc_adopt_roc = false;  /* whether to adopt the sender's ROC       */
     uint32_t rcc_roc_sender = 0; /* ROC read from a ROC-carrying packet     */
 
     debug_print0(mod_srtp, "function srtp_unprotect_aead");
@@ -2903,10 +2342,26 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
             /* the ROC is the last field, after the optional MKI */
             memcpy(&rcc_roc_sender, srtp + srtp_len - rcc_extra, 4);
             rcc_roc_sender = ntohl(rcc_roc_sender);
-            est = (((srtp_xtd_seq_num_t)rcc_roc_sender) << 16) | seq;
-            delta = 0;
-            advance_packet_index = false;
-            rcc_adopt_roc = true;
+
+            /*
+             * The carried ROC still has to pass replay detection: accept it
+             * only if it advances the index, and when it lands inside the
+             * current window record it there rather than resetting it.
+             */
+            status = srtp_estimate_index(&stream->rtp_rdbx, rcc_roc_sender,
+                                         &est, seq, &delta);
+            if (status && (status != srtp_err_status_pkt_idx_adv)) {
+                return status;
+            }
+            if (status == srtp_err_status_pkt_idx_adv) {
+                advance_packet_index = true;
+            } else {
+                advance_packet_index = false;
+                status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+                if (status) {
+                    return status;
+                }
+            }
         } else {
             status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
             if (status && (status != srtp_err_status_pkt_idx_adv)) {
@@ -3102,13 +2557,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
      * the message authentication function passed, so add the packet
      * index into the replay database
      */
-    if (rcc_adopt_roc) {
-        /* RFC 4771: adopt the sender's ROC for fast resynchronization */
-        srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, rcc_roc_sender,
-                              (uint16_t)(est & 0xFFFF));
-        stream->pending_roc = 0;
-        srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
-    } else if (advance_packet_index) {
+    if (advance_packet_index) {
         uint32_t roc_to_set = (uint32_t)(est >> 16);
         uint16_t seq_to_set = (uint16_t)(est & 0xFFFF);
         srtp_rdbx_set_roc_seq(&stream->rtp_rdbx, roc_to_set, seq_to_set);
@@ -3142,6 +2591,8 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     srtp_stream_ctx_t *stream;
     size_t prefix_len;
     srtp_session_keys_t *session_keys = NULL;
+    bool rcc_carry;     /* whether this packet carries the ROC (RFC 4771) */
+    size_t rcc_tag_len; /* number of tag octets actually appended         */
 
     debug_print0(mod_srtp, "function srtp_protect");
 
@@ -3224,15 +2675,6 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     }
 
     /*
-     * If RFC 4771 RCC is enabled for this stream, dispatch to the RCC
-     * handler which carries the ROC inside the authentication tag.
-     */
-    if (stream->rcc_mode != srtp_rcc_mode_none) {
-        return srtp_protect_rcc(ctx, stream, rtp, rtp_len, srtp, srtp_len,
-                                session_keys);
-    }
-
-    /*
      * update the key usage limit, and check it to make sure that we
      * didn't just hit either the soft limit or the hard limit, and call
      * the event handler if we hit either.
@@ -3253,8 +2695,19 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
 
+    /*
+     * RFC 4771 RCC (modes 1 and 2, AES-CM only): a packet carries the ROC
+     * when its sequence number is 0 modulo R, and in mode 1 the packets that
+     * do not carry it are sent with no tag at all, so the number of appended
+     * tag octets varies per packet.
+     */
+    rcc_carry = stream->rcc_mode != srtp_rcc_mode_none &&
+                (ntohs(hdr->seq) % stream->roc_tx_rate) == 0;
+    rcc_tag_len =
+        (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) ? 0 : tag_len;
+
     /* check output length */
-    if (*srtp_len < rtp_len + stream->mki_size + tag_len) {
+    if (*srtp_len < rtp_len + stream->mki_size + rcc_tag_len) {
         return srtp_err_status_buffer_small;
     }
 
@@ -3295,7 +2748,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
      * pointers to the proper locations; otherwise, set auth_start to NULL
      * to indicate that no authentication is needed
      */
-    if (stream->rtp_services & sec_serv_auth) {
+    if ((stream->rtp_services & sec_serv_auth) && rcc_tag_len > 0) {
         auth_start = srtp;
         auth_tag = srtp + rtp_len + stream->mki_size;
     } else {
@@ -3439,19 +2892,31 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
 
         /* run auth func over ROC, put result into auth_tag */
         debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
-        status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est, 4,
-                                   auth_tag);
+        if (rcc_carry) {
+            /* RFC 4771: TAG = ROC (4 octets, network order) || MAC_tr */
+            uint8_t mac[SRTP_MAX_TAG_LEN];
+            status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
+                                       4, mac);
+            if (status) {
+                return status;
+            }
+            memcpy(auth_tag, (uint8_t *)&est, 4);
+            memcpy(auth_tag + 4, mac, tag_len - 4);
+        } else {
+            status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
+                                       4, auth_tag);
+            if (status) {
+                return status;
+            }
+        }
         debug_print(mod_srtp, "srtp auth tag:    %s",
                     srtp_octet_string_hex_string(auth_tag, tag_len));
-        if (status) {
-            return status;
-        }
     }
 
     *srtp_len = enc_start + enc_octet_len;
 
     /* increase the packet length by the length of the auth tag */
-    *srtp_len += tag_len;
+    *srtp_len += rcc_tag_len;
 
     /* increate the packet length by the mki size if used */
     *srtp_len += stream->mki_size;
@@ -3481,6 +2946,10 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     bool advance_packet_index = false;
     uint32_t roc_to_set = 0;
     uint16_t seq_to_set = 0;
+    bool from_template = false; /* packet matched the wildcard template   */
+    bool rcc_carry;             /* packet carries the ROC (RFC 4771)      */
+    size_t rcc_tag_len;         /* number of tag octets actually present  */
+    uint32_t roc_sender = 0;    /* ROC read from a ROC-carrying packet    */
 
     debug_print0(mod_srtp, "function srtp_unprotect");
 
@@ -3508,13 +2977,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
             stream = ctx->stream_template;
             debug_print(mod_srtp, "using provisional stream (SSRC: 0x%08x)",
                         (unsigned int)ntohl(hdr->ssrc));
-
-            /*
-             * set estimated packet index to sequence number from header,
-             * and set delta equal to the same value
-             */
-            est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
-            delta = (int)est;
+            from_template = true;
         } else {
             /*
              * no stream corresponding to SSRC found, and we don't do
@@ -3522,35 +2985,43 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
              */
             return srtp_err_status_no_ctx;
         }
-    } else {
+    }
+
+    /*
+     * RFC 4771 RCC: a packet whose sequence number is congruent to 0 modulo R
+     * carries the sender's ROC.  Reading it requires the tag length, so for
+     * those packets the index is determined further below once the session
+     * keys are known; estimating it here could reject a packet from a
+     * receiver that is not yet synchronized.
+     */
+    rcc_carry = stream->rcc_mode != srtp_rcc_mode_none &&
+                (ntohs(hdr->seq) % stream->roc_tx_rate) == 0;
+
+    if (from_template || rcc_carry || stream->rcc_mode == srtp_rcc_mode_3) {
         /*
-         * For RFC 4771 RCC streams the packet index (and the replay check for
-         * ROC-carrying packets) is handled inside srtp_unprotect_rcc(), which
-         * may use the sender-supplied ROC.  Estimating it here could reject a
-         * packet from a receiver that is not yet synchronized, so skip it.
+         * set estimated packet index to sequence number from header,
+         * and set delta equal to the same value
          */
-        if (stream->rcc_mode != srtp_rcc_mode_none) {
-            est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
-            delta = (int)est;
-        } else {
-            status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
+        est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
+        delta = (int)est;
+    } else {
+        status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
 
-            if (status && (status != srtp_err_status_pkt_idx_adv)) {
+        if (status && (status != srtp_err_status_pkt_idx_adv)) {
+            return status;
+        }
+
+        if (status == srtp_err_status_pkt_idx_adv) {
+            advance_packet_index = true;
+            roc_to_set = (uint32_t)(est >> 16);
+            seq_to_set = (uint16_t)(est & 0xFFFF);
+        }
+
+        /* check replay database */
+        if (!advance_packet_index) {
+            status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+            if (status) {
                 return status;
-            }
-
-            if (status == srtp_err_status_pkt_idx_adv) {
-                advance_packet_index = true;
-                roc_to_set = (uint32_t)(est >> 16);
-                seq_to_set = (uint16_t)(est & 0xFFFF);
-            }
-
-            /* check replay database */
-            if (!advance_packet_index) {
-                status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
-                if (status) {
-                    return status;
-                }
             }
         }
     }
@@ -3566,8 +3037,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
      */
     {
         size_t mki_lookup_len = srtp_len;
-        if (stream->rcc_mode == srtp_rcc_mode_3 &&
-            (ntohs(hdr->seq) % stream->roc_tx_rate) == 0 &&
+        if (stream->rcc_mode == srtp_rcc_mode_3 && rcc_carry &&
             srtp_len >= octets_in_rtp_header + 4) {
             mki_lookup_len -= 4;
         }
@@ -3588,18 +3058,50 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
                                    rtp_len, session_keys, advance_packet_index);
     }
 
-    /*
-     * If RFC 4771 RCC is enabled for this stream, dispatch to the RCC handler
-     * which reads the sender's ROC from the authentication tag.
-     */
-    if (stream->rcc_mode != srtp_rcc_mode_none &&
-        stream != ctx->stream_template) {
-        return srtp_unprotect_rcc(ctx, stream, srtp, srtp_len, rtp, rtp_len,
-                                  session_keys);
-    }
-
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
+
+    /*
+     * RFC 4771 RCC (modes 1 and 2, AES-CM only): in mode 1 the packets that
+     * do not carry the ROC have no tag at all.  On a ROC-carrying packet the
+     * sender's ROC is the first four octets of the tag and replaces the
+     * locally estimated index, which is what lets an unsynchronized receiver
+     * (including one still using the wildcard template stream) decrypt.
+     */
+    rcc_tag_len =
+        (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) ? 0 : tag_len;
+
+    if (rcc_carry) {
+        if (srtp_len < octets_in_rtp_header + stream->mki_size + tag_len) {
+            return srtp_err_status_bad_param;
+        }
+        memcpy(&roc_sender, srtp + srtp_len - tag_len, 4);
+        roc_sender = ntohl(roc_sender);
+
+        /*
+         * The carried ROC is authenticated (it is fed into the MAC), but it
+         * must still pass replay detection: accept it only if it advances the
+         * index, and when it lands inside the current window record it there
+         * rather than resetting the window.
+         */
+        status = srtp_estimate_index(&stream->rtp_rdbx, roc_sender, &est,
+                                     ntohs(hdr->seq), &delta);
+        if (status && (status != srtp_err_status_pkt_idx_adv)) {
+            return status;
+        }
+        if (status == srtp_err_status_pkt_idx_adv) {
+            advance_packet_index = true;
+            roc_to_set = roc_sender;
+            seq_to_set = ntohs(hdr->seq);
+        } else {
+            advance_packet_index = false;
+            status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+            if (status) {
+                return status;
+            }
+        }
+        debug_print(mod_srtp, "carried u_packet index: %016" PRIx64, est);
+    }
 
     /*
      * set the cipher's IV properly, depending on whatever cipher we
@@ -3648,14 +3150,14 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         return status;
     }
 
-    if (tag_len + stream->mki_size > srtp_len ||
-        enc_start > srtp_len - tag_len - stream->mki_size) {
+    if (rcc_tag_len + stream->mki_size > srtp_len ||
+        enc_start > srtp_len - rcc_tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
-    enc_octet_len = srtp_len - enc_start - stream->mki_size - tag_len;
+    enc_octet_len = srtp_len - enc_start - stream->mki_size - rcc_tag_len;
 
     /* check output length */
-    if (*rtp_len < srtp_len - stream->mki_size - tag_len) {
+    if (*rtp_len < srtp_len - stream->mki_size - rcc_tag_len) {
         return srtp_err_status_buffer_small;
     }
 
@@ -3669,7 +3171,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
      * pointers to the proper locations; otherwise, set auth_start to NULL
      * to indicate that no authentication is needed
      */
-    if (stream->rtp_services & sec_serv_auth) {
+    if ((stream->rtp_services & sec_serv_auth) && rcc_tag_len > 0) {
         auth_start = srtp;
         auth_tag = srtp + srtp_len - tag_len;
     } else {
@@ -3725,7 +3227,13 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
             return srtp_err_status_auth_fail;
         }
 
-        if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
+        if (rcc_carry) {
+            /* RFC 4771: MAC_tr occupies the (tag_len - 4) octets after the
+             * ROC */
+            if (!srtp_octet_string_equal(tmp_tag, auth_tag + 4, tag_len - 4)) {
+                return srtp_err_status_auth_fail;
+            }
+        } else if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
             return srtp_err_status_auth_fail;
         }
     }
