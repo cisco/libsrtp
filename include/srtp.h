@@ -219,6 +219,8 @@ typedef enum {
                                         /**< needed                          */
     srtp_err_status_buffer_small = 28,  /**< out buffer is too small         */
     srtp_err_status_cryptex_err = 29,   /**< unsupported cryptex operation   */
+    srtp_err_status_direction_mismatch =
+        30, /**< operation does not match stream direction */
 } srtp_err_status_t;
 
 typedef struct srtp_ctx_t_ srtp_ctx_t;
@@ -693,6 +695,7 @@ srtp_err_status_t srtp_shutdown(void);
  *    - srtp_err_status_replay_fail   rtp sequence number was non-increasing
  *    - srtp_err_status_buffer_small  the srtp buffer is too small for the SRTP
  * packet
+ *    - srtp_err_status_direction_mismatch the stream is not a sender stream
  *    - @e other                 failure in cryptographic mechanisms
  */
 srtp_err_status_t srtp_protect(srtp_t ctx,
@@ -744,6 +747,8 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
  *    - srtp_err_status_replay_fail if the SRTP packet is a replay (e.g. packet
  *                                  has already been processed and accepted).
  *    - srtp_err_status_bad_mki if the MKI in the packet is not a known MKI id
+ *    - srtp_err_status_direction_mismatch if the stream is not a receiver
+ *                                         stream
  *    - [other]  if there has been an error in the cryptographic mechanisms.
  *
  */
@@ -967,6 +972,7 @@ void srtp_append_salt_to_key(uint8_t *key,
  *    - srtp_err_status_ok            if there were no problems.
  *    - srtp_err_status_buffer_small  the srtcp buffer is too small for the
  * SRTCP packet
+ *    - srtp_err_status_direction_mismatch the stream is not a sender stream
  *    - [other]                  if there was a failure in
  *                               the cryptographic mechanisms.
  */
@@ -1017,6 +1023,8 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
  *                             already been processed and accepted).
  *    - srtp_err_status_bad_mki     if the MKI in the packet is not a known MKI
  *                                  id
+ *    - srtp_err_status_direction_mismatch if the stream is not a receiver
+ *                                         stream
  *    - [other]  if there has been an error in the cryptographic mechanisms.
  *
  */

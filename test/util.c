@@ -92,8 +92,9 @@ const char *err_status_string(srtp_err_status_t status)
         ERR_STATUS_STRING(pkt_idx_adv);
         ERR_STATUS_STRING(buffer_small);
         ERR_STATUS_STRING(cryptex_err);
+        ERR_STATUS_STRING(direction_mismatch);
     }
-    return "unkown srtp_err_status";
+    return "unknown srtp_err_status";
 }
 
 void check_ok_impl(srtp_err_status_t status, const char *file, int line)
