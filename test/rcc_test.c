@@ -713,9 +713,9 @@ static void rcc_gcm_mode3_basic_roundtrip(void)
 }
 
 /*
- * Mode 3, R == 4: only packets with seq % 4 == 0 carry the 4-octet ROC after
- * the GCM tag; the others are plain RFC 7714 GCM packets.  Both packet types
- * must round trip.
+ * Mode 3, R == 4: only packets with seq % 4 == 0 carry the 4-octet ROC as the
+ * last field of the packet; the others are plain RFC 7714 GCM packets.  Both
+ * packet types must round trip.
  */
 static void rcc_gcm_mode3_rate4(void)
 {
@@ -728,7 +728,7 @@ static void rcc_gcm_mode3_rate4(void)
     CHECK_OK(srtp_create(&snd, sp));
     CHECK_OK(srtp_create(&rcv, rp));
 
-    /* seq % 4 == 0 carries the ROC after the GCM tag; others are plain 7714 */
+    /* seq % 4 == 0 carries the trailing ROC; others are plain RFC 7714 */
     for (uint16_t seq = 0; seq <= 12; seq++) {
         rcc_roundtrip(snd, rcv, seq, "gcm mode3 rate4 payload");
     }
@@ -933,9 +933,9 @@ static void rcc_gcm_mode3_wildcard_inbound_late_join(void)
 }
 
 /*
- * Mode 3, R == 1: the ROC carried after the GCM tag must not bypass replay
- * detection either.  A replayed ROC-carrying packet has to be rejected, and
- * an out-of-order but still unseen packet must update the window rather than
+ * Mode 3, R == 1: the trailing carried ROC must not bypass replay detection
+ * either.  A replayed ROC-carrying packet has to be rejected, and an
+ * out-of-order but still unseen packet must update the window rather than
  * reset it.
  */
 static void rcc_gcm_mode3_carry_replay_rejected(void)

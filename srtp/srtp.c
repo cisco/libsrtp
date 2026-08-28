@@ -2420,8 +2420,9 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     }
 
     /*
-     * We pass the tag down to the cipher when doing GCM mode.  Any ROC
-     * carried for RFC 4771 mode 3 sits after the tag and is excluded here.
+     * We pass the tag down to the cipher when doing GCM mode.  Any ROC carried
+     * for RFC 4771 mode 3 is the last field, after the optional MKI, and is
+     * excluded here.
      */
     enc_octet_len = srtp_len - enc_start - stream->mki_size - rcc_extra;
 
@@ -2889,15 +2890,18 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
         /* run auth func over ROC, put result into auth_tag */
         debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
         if (rcc_carry) {
-            /* RFC 4771: TAG = ROC (4 octets, network order) || MAC_tr */
-            uint8_t mac[SRTP_MAX_TAG_LEN];
+            /*
+             * RFC 4771: TAG = ROC (4 octets, network order) || MAC_tr, where
+             * MAC_tr is the leading (tag_len - 4) octets of the MAC, so the
+             * MAC is shifted right rather than partly overwritten.
+             */
             status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
-                                       4, mac);
+                                       4, auth_tag);
             if (status) {
                 return status;
             }
+            memmove(auth_tag + 4, auth_tag, tag_len - 4);
             memcpy(auth_tag, (uint8_t *)&est, 4);
-            memcpy(auth_tag + 4, mac, tag_len - 4);
         } else {
             status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
                                        4, auth_tag);
@@ -4923,10 +4927,10 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
         *length += srtp_auth_get_tag_length(session_key->rtp_auth);
         /*
          * RFC 4771 mode 3 (AES-GCM): ROC-carrying packets append a 4-octet ROC
-         * after the authentication tag (RFC 7714 section 8.2). Report the
-         * worst case so callers size their buffers for ROC-carrying packets.
-         * Modes 1 and 2 (AES-CM) carry the ROC inside the existing HMAC tag and
-         * therefore add no extra trailer octets.
+         * as the last field, after the optional MKI (RFC 7714 section 8.2).
+         * Report the worst case so callers size their buffers for ROC-carrying
+         * packets.  Modes 1 and 2 (AES-CM) carry the ROC inside the existing
+         * HMAC tag and therefore add no extra trailer octets.
          */
         if (stream->rcc_mode == srtp_rcc_mode_3) {
             *length += 4;

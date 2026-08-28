@@ -954,10 +954,11 @@ srtp_err_status_t srtp_policy_validate(srtp_policy_t policy)
             /*
              * Mode 3 (RFC 4771 NULL-MAC) carries only the 4-octet ROC with no
              * MAC of its own.  It is supported here only on top of AES-GCM
-             * (RFC 7714): the AEAD tag authenticates the packet and the ROC is
-             * appended after the GCM tag.  Because the carried ROC also feeds
-             * the GCM IV, any tampering with it is detected by GCM tag
-             * verification.
+             * (RFC 7714): the AEAD tag authenticates the packet and the ROC
+             * occupies the SRTP authentication tag field, which RFC 7714
+             * section 8.2 places after the optional MKI.  Because the carried
+             * ROC also feeds the GCM IV, any tampering with it is detected by
+             * GCM tag verification.
              */
             if (!is_gcm) {
                 return srtp_err_status_bad_param;

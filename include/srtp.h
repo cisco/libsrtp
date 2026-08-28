@@ -387,6 +387,9 @@ srtp_err_status_t srtp_policy_get_profile(srtp_policy_t policy,
  *    - srtp_err_status_ok if flags were applied.
  *    - srtp_err_status_bad_param if policy is NULL or profile is unset.
  */
+srtp_err_status_t srtp_policy_set_sec_serv(srtp_policy_t policy,
+                                           srtp_sec_serv_t rtp_sec_serv,
+                                           srtp_sec_serv_t rtcp_sec_serv);
 
 /**
  * @brief srtp_rcc_mode_t selects the RFC 4771 Roll-over Counter Carrying
@@ -403,7 +406,8 @@ srtp_err_status_t srtp_policy_get_profile(srtp_policy_t policy,
  * for the AES-CM ciphers.  Mode 3 is the RFC 4771 NULL-MAC variant: it
  * carries only the 4-octet ROC with no MAC of its own.  Mode 3 is supported
  * here on top of AES-GCM (RFC 7714); the AEAD tag authenticates the packet
- * and the ROC is appended immediately after the GCM tag.
+ * and the ROC occupies the SRTP authentication tag field, which RFC 7714
+ * section 8.2 places at the end of the packet, after the optional MKI.
  */
 typedef enum {
     srtp_rcc_mode_none = 0, /**< RCC disabled (default RFC 3711 transform). */
@@ -415,12 +419,8 @@ typedef enum {
                             /**< default integrity transform.               */
     srtp_rcc_mode_3 = 3     /**< RFC 4771 mode 3: NULL-MAC, ROC only.        */
                             /**< Supported with AES-GCM, where the ROC is   */
-                            /**< appended after the GCM tag.                */
+                            /**< the last field, after the optional MKI.    */
 } srtp_rcc_mode_t;
-
-srtp_err_status_t srtp_policy_set_sec_serv(srtp_policy_t policy,
-                                           srtp_sec_serv_t rtp_sec_serv,
-                                           srtp_sec_serv_t rtcp_sec_serv);
 
 /**
  * @brief Enable or disable MKI on the policy.
