@@ -819,6 +819,10 @@ static srtp_err_status_t srtp_stream_clone(
     str->enc_xtn_hdr = stream_template->enc_xtn_hdr;
     str->enc_xtn_hdr_count = stream_template->enc_xtn_hdr_count;
     str->use_cryptex = stream_template->use_cryptex;
+    /* copy RFC 4771 RCC configuration */
+    str->rcc_mode = stream_template->rcc_mode;
+    str->roc_tx_rate = stream_template->roc_tx_rate;
+
     return srtp_err_status_ok;
 }
 
@@ -1674,6 +1678,10 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
     /* initialize allow_repeat_tx */
     srtp->allow_repeat_tx = p->allow_repeat_tx;
 
+    /* RFC 4771 RCC configuration (rate 0 means the default rate of 1) */
+    srtp->rcc_mode = p->rcc_mode;
+    srtp->roc_tx_rate = (p->roc_tx_rate != 0) ? p->roc_tx_rate : 1;
+
     /* DAM - no RTCP key limit at present */
 
     /* initialize keys */
@@ -2085,6 +2093,8 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     size_t tag_len;
     v128_t iv;
     size_t aad_len;
+    size_t rcc_extra = 0; /* octets of ROC appended for RFC 4771 mode 3   */
+    uint32_t rcc_roc = 0; /* sender's ROC carried on ROC-carrying packets */
 
     debug_print0(mod_srtp, "function srtp_protect_aead");
 
@@ -2108,8 +2118,21 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
 
+    /*
+     * RFC 4771 mode 3 over AES-GCM: on a ROC-carrying packet (RTP sequence
+     * number congruent to 0 modulo R) the sender's 4-octet ROC is carried in
+     * the SRTP authentication tag field, which RFC 7714 section 8.2 places
+     * after the optional MKI (see Figure 3).  No separate MAC is used; the
+     * GCM tag authenticates the packet and, because the ROC also feeds the
+     * GCM IV, it protects the carried ROC against modification.
+     */
+    if (stream->rcc_mode == srtp_rcc_mode_3 &&
+        (ntohs(hdr->seq) % stream->roc_tx_rate) == 0) {
+        rcc_extra = 4;
+    }
+
     /* check output length */
-    if (*srtp_len < rtp_len + tag_len + stream->mki_size) {
+    if (*srtp_len < rtp_len + tag_len + stream->mki_size + rcc_extra) {
         return srtp_err_status_buffer_small;
     }
 
@@ -2175,6 +2198,9 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
 
     debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
 
+    /* capture the sender's ROC before est is shifted (RFC 4771 mode 3) */
+    rcc_roc = (uint32_t)(est >> 16);
+
     /*
      * AEAD uses a new IV formation method
      */
@@ -2232,19 +2258,29 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
         return srtp_err_status_cipher_fail;
     }
 
-    if (stream->use_mki) {
-        srtp_inject_mki(srtp + enc_start + enc_octet_len, session_keys,
-                        stream->mki_size);
-    }
-
     if (cryptex_inuse) {
         srtp_cryptex_protect_cleanup(cryptex_inplace, hdr, srtp);
     }
 
     *srtp_len = enc_start + enc_octet_len;
 
-    /* increase the packet length by the length of the mki_size */
-    *srtp_len += stream->mki_size;
+    /*
+     * Append the Raw Data fields in the order mandated by RFC 7714
+     * section 8.2 (Figure 3): the optional SRTP MKI comes first, followed
+     * by the SRTP authentication tag field.  For RFC 4771 mode 3 that tag
+     * field carries the sender's 4-octet ROC (the GCM tag itself is already
+     * part of the ciphertext written above).
+     */
+    if (stream->use_mki) {
+        srtp_inject_mki(srtp + *srtp_len, session_keys, stream->mki_size);
+        *srtp_len += stream->mki_size;
+    }
+
+    if (rcc_extra) {
+        uint32_t roc_net = htonl(rcc_roc);
+        memcpy(srtp + *srtp_len, &roc_net, sizeof(roc_net));
+        *srtp_len += rcc_extra;
+    }
 
     return srtp_err_status_ok;
 }
@@ -2274,6 +2310,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     srtp_err_status_t status;
     size_t tag_len;
     size_t aad_len;
+    size_t rcc_extra = 0;        /* octets of ROC carried (RFC 4771 mode 3) */
+    uint32_t rcc_roc_sender = 0; /* ROC read from a ROC-carrying packet     */
 
     debug_print0(mod_srtp, "function srtp_unprotect_aead");
 
@@ -2281,6 +2319,65 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
+
+    /*
+     * RFC 4771 mode 3 over AES-GCM: a ROC-carrying packet (RTP sequence
+     * number congruent to 0 modulo R) carries the sender's 4-octet ROC in the
+     * SRTP authentication tag field, which RFC 7714 section 8.2 places at the
+     * very end of the packet, after the optional MKI (see Figure 3).  Read
+     * that ROC and use it both to form the decryption IV and to resynchronize
+     * the local ROC; for other packets the index is estimated from the local
+     * replay database as usual.  The ROC is authenticated implicitly because
+     * it feeds the GCM IV, so a modified ROC yields a wrong IV and GCM tag
+     * verification fails.
+     */
+    if (stream->rcc_mode == srtp_rcc_mode_3) {
+        uint16_t seq = ntohs(hdr->seq);
+        if ((seq % stream->roc_tx_rate) == 0) {
+            rcc_extra = 4;
+            if (srtp_len <
+                octets_in_rtp_header + stream->mki_size + tag_len + rcc_extra) {
+                return srtp_err_status_bad_param;
+            }
+            /* the ROC is the last field, after the optional MKI */
+            memcpy(&rcc_roc_sender, srtp + srtp_len - rcc_extra, 4);
+            rcc_roc_sender = ntohl(rcc_roc_sender);
+
+            /*
+             * The carried ROC still has to pass replay detection: accept it
+             * only if it advances the index, and when it lands inside the
+             * current window record it there rather than resetting it.
+             */
+            status = srtp_estimate_index(&stream->rtp_rdbx, rcc_roc_sender,
+                                         &est, seq, &delta);
+            if (status && (status != srtp_err_status_pkt_idx_adv)) {
+                return status;
+            }
+            if (status == srtp_err_status_pkt_idx_adv) {
+                advance_packet_index = true;
+            } else {
+                advance_packet_index = false;
+                status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+                if (status) {
+                    return status;
+                }
+            }
+        } else {
+            status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
+            if (status && (status != srtp_err_status_pkt_idx_adv)) {
+                return status;
+            }
+            if (status == srtp_err_status_pkt_idx_adv) {
+                advance_packet_index = true;
+            } else {
+                advance_packet_index = false;
+                status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+                if (status) {
+                    return status;
+                }
+            }
+        }
+    }
 
     /*
      * AEAD uses a new IV formation method
@@ -2318,14 +2415,16 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     }
 
     if (tag_len + stream->mki_size > srtp_len ||
-        enc_start > srtp_len - tag_len - stream->mki_size) {
+        enc_start > srtp_len - tag_len - stream->mki_size - rcc_extra) {
         return srtp_err_status_parse_err;
     }
 
     /*
-     * We pass the tag down to the cipher when doing GCM mode
+     * We pass the tag down to the cipher when doing GCM mode.  Any ROC carried
+     * for RFC 4771 mode 3 is the last field, after the optional MKI, and is
+     * excluded here.
      */
-    enc_octet_len = srtp_len - enc_start - stream->mki_size;
+    enc_octet_len = srtp_len - enc_start - stream->mki_size - rcc_extra;
 
     /*
      * Sanity check the encrypted payload length against
@@ -2337,7 +2436,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     }
 
     /* check output length */
-    if (*rtp_len < srtp_len - stream->mki_size - tag_len) {
+    if (*rtp_len < srtp_len - stream->mki_size - tag_len - rcc_extra) {
         return srtp_err_status_buffer_small;
     }
 
@@ -2484,6 +2583,8 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     srtp_stream_ctx_t *stream;
     size_t prefix_len;
     srtp_session_keys_t *session_keys = NULL;
+    bool rcc_carry;     /* whether this packet carries the ROC (RFC 4771) */
+    size_t rcc_tag_len; /* number of tag octets actually appended         */
 
     debug_print0(mod_srtp, "function srtp_protect");
 
@@ -2591,8 +2692,19 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
 
+    /*
+     * RFC 4771 RCC (modes 1 and 2, AES-CM only): a packet carries the ROC
+     * when its sequence number is 0 modulo R, and in mode 1 the packets that
+     * do not carry it are sent with no tag at all, so the number of appended
+     * tag octets varies per packet.
+     */
+    rcc_carry = stream->rcc_mode != srtp_rcc_mode_none &&
+                (ntohs(hdr->seq) % stream->roc_tx_rate) == 0;
+    rcc_tag_len =
+        (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) ? 0 : tag_len;
+
     /* check output length */
-    if (*srtp_len < rtp_len + stream->mki_size + tag_len) {
+    if (*srtp_len < rtp_len + stream->mki_size + rcc_tag_len) {
         return srtp_err_status_buffer_small;
     }
 
@@ -2633,7 +2745,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
      * pointers to the proper locations; otherwise, set auth_start to NULL
      * to indicate that no authentication is needed
      */
-    if (stream->rtp_services & sec_serv_auth) {
+    if ((stream->rtp_services & sec_serv_auth) && rcc_tag_len > 0) {
         auth_start = srtp;
         auth_tag = srtp + rtp_len + stream->mki_size;
     } else {
@@ -2777,19 +2889,34 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
 
         /* run auth func over ROC, put result into auth_tag */
         debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
-        status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est, 4,
-                                   auth_tag);
+        if (rcc_carry) {
+            /*
+             * RFC 4771: TAG = ROC (4 octets, network order) || MAC_tr, where
+             * MAC_tr is the leading (tag_len - 4) octets of the MAC, so the
+             * MAC is shifted right rather than partly overwritten.
+             */
+            status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
+                                       4, auth_tag);
+            if (status) {
+                return status;
+            }
+            memmove(auth_tag + 4, auth_tag, tag_len - 4);
+            memcpy(auth_tag, (uint8_t *)&est, 4);
+        } else {
+            status = srtp_auth_compute(session_keys->rtp_auth, (uint8_t *)&est,
+                                       4, auth_tag);
+            if (status) {
+                return status;
+            }
+        }
         debug_print(mod_srtp, "srtp auth tag:    %s",
                     srtp_octet_string_hex_string(auth_tag, tag_len));
-        if (status) {
-            return status;
-        }
     }
 
     *srtp_len = enc_start + enc_octet_len;
 
     /* increase the packet length by the length of the auth tag */
-    *srtp_len += tag_len;
+    *srtp_len += rcc_tag_len;
 
     /* increate the packet length by the mki size if used */
     *srtp_len += stream->mki_size;
@@ -2819,6 +2946,10 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     bool advance_packet_index = false;
     uint32_t roc_to_set = 0;
     uint16_t seq_to_set = 0;
+    bool from_template = false; /* packet matched the wildcard template   */
+    bool rcc_carry;             /* packet carries the ROC (RFC 4771)      */
+    size_t rcc_tag_len;         /* number of tag octets actually present  */
+    uint32_t roc_sender = 0;    /* ROC read from a ROC-carrying packet    */
 
     debug_print0(mod_srtp, "function srtp_unprotect");
 
@@ -2850,13 +2981,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
             stream = ctx->stream_template;
             debug_print(mod_srtp, "using provisional stream (SSRC: 0x%08x)",
                         (unsigned int)ntohl(hdr->ssrc));
-
-            /*
-             * set estimated packet index to sequence number from header,
-             * and set delta equal to the same value
-             */
-            est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
-            delta = (int)est;
+            from_template = true;
         } else {
             /*
              * no stream corresponding to SSRC found, and we don't do
@@ -2864,6 +2989,25 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
              */
             return srtp_err_status_no_ctx;
         }
+    }
+
+    /*
+     * RFC 4771 RCC: a packet whose sequence number is congruent to 0 modulo R
+     * carries the sender's ROC.  Reading it requires the tag length, so for
+     * those packets the index is determined further below once the session
+     * keys are known; estimating it here could reject a packet from a
+     * receiver that is not yet synchronized.
+     */
+    rcc_carry = stream->rcc_mode != srtp_rcc_mode_none &&
+                (ntohs(hdr->seq) % stream->roc_tx_rate) == 0;
+
+    if (from_template || rcc_carry || stream->rcc_mode == srtp_rcc_mode_3) {
+        /*
+         * set estimated packet index to sequence number from header,
+         * and set delta equal to the same value
+         */
+        est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
+        delta = (int)est;
     } else {
         /*
          * Verify that stream is for received traffic - this check will
@@ -2900,9 +3044,22 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
 
     debug_print(mod_srtp, "estimated u_packet index: %016" PRIx64, est);
 
-    /* Determine if MKI is being used and what session keys should be used */
-    status = srtp_get_session_keys_for_rtp_packet(stream, srtp, srtp_len,
-                                                  &session_keys);
+    /*
+     * Determine if MKI is being used and what session keys should be used.
+     * For RFC 4771 mode 3 the sender's 4-octet ROC is carried in the SRTP
+     * authentication tag field, which RFC 7714 section 8.2 places after the
+     * MKI.  Exclude that trailing ROC from the length so the MKI is located
+     * correctly (the MKI lookup expects the MKI to be the last field).
+     */
+    {
+        size_t mki_lookup_len = srtp_len;
+        if (stream->rcc_mode == srtp_rcc_mode_3 && rcc_carry &&
+            srtp_len >= octets_in_rtp_header + 4) {
+            mki_lookup_len -= 4;
+        }
+        status = srtp_get_session_keys_for_rtp_packet(
+            stream, srtp, mki_lookup_len, &session_keys);
+    }
     if (status) {
         return status;
     }
@@ -2919,6 +3076,48 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
 
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
+
+    /*
+     * RFC 4771 RCC (modes 1 and 2, AES-CM only): in mode 1 the packets that
+     * do not carry the ROC have no tag at all.  On a ROC-carrying packet the
+     * sender's ROC is the first four octets of the tag and replaces the
+     * locally estimated index, which is what lets an unsynchronized receiver
+     * (including one still using the wildcard template stream) decrypt.
+     */
+    rcc_tag_len =
+        (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) ? 0 : tag_len;
+
+    if (rcc_carry) {
+        if (srtp_len < octets_in_rtp_header + stream->mki_size + tag_len) {
+            return srtp_err_status_bad_param;
+        }
+        memcpy(&roc_sender, srtp + srtp_len - tag_len, 4);
+        roc_sender = ntohl(roc_sender);
+
+        /*
+         * The carried ROC is authenticated (it is fed into the MAC), but it
+         * must still pass replay detection: accept it only if it advances the
+         * index, and when it lands inside the current window record it there
+         * rather than resetting the window.
+         */
+        status = srtp_estimate_index(&stream->rtp_rdbx, roc_sender, &est,
+                                     ntohs(hdr->seq), &delta);
+        if (status && (status != srtp_err_status_pkt_idx_adv)) {
+            return status;
+        }
+        if (status == srtp_err_status_pkt_idx_adv) {
+            advance_packet_index = true;
+            roc_to_set = roc_sender;
+            seq_to_set = ntohs(hdr->seq);
+        } else {
+            advance_packet_index = false;
+            status = srtp_rdbx_check(&stream->rtp_rdbx, delta);
+            if (status) {
+                return status;
+            }
+        }
+        debug_print(mod_srtp, "carried u_packet index: %016" PRIx64, est);
+    }
 
     /*
      * set the cipher's IV properly, depending on whatever cipher we
@@ -2967,14 +3166,14 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         return status;
     }
 
-    if (tag_len + stream->mki_size > srtp_len ||
-        enc_start > srtp_len - tag_len - stream->mki_size) {
+    if (rcc_tag_len + stream->mki_size > srtp_len ||
+        enc_start > srtp_len - rcc_tag_len - stream->mki_size) {
         return srtp_err_status_parse_err;
     }
-    enc_octet_len = srtp_len - enc_start - stream->mki_size - tag_len;
+    enc_octet_len = srtp_len - enc_start - stream->mki_size - rcc_tag_len;
 
     /* check output length */
-    if (*rtp_len < srtp_len - stream->mki_size - tag_len) {
+    if (*rtp_len < srtp_len - stream->mki_size - rcc_tag_len) {
         return srtp_err_status_buffer_small;
     }
 
@@ -2988,7 +3187,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
      * pointers to the proper locations; otherwise, set auth_start to NULL
      * to indicate that no authentication is needed
      */
-    if (stream->rtp_services & sec_serv_auth) {
+    if ((stream->rtp_services & sec_serv_auth) && rcc_tag_len > 0) {
         auth_start = srtp;
         auth_tag = srtp + srtp_len - tag_len;
     } else {
@@ -3044,7 +3243,13 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
             return srtp_err_status_auth_fail;
         }
 
-        if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
+        if (rcc_carry) {
+            /* RFC 4771: MAC_tr occupies the (tag_len - 4) octets after the
+             * ROC */
+            if (!srtp_octet_string_equal(tmp_tag, auth_tag + 4, tag_len - 4)) {
+                return srtp_err_status_auth_fail;
+            }
+        } else if (!srtp_octet_string_equal(tmp_tag, auth_tag, tag_len)) {
             return srtp_err_status_auth_fail;
         }
     }
@@ -4720,6 +4925,16 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
     }
     if (is_rtp) {
         *length += srtp_auth_get_tag_length(session_key->rtp_auth);
+        /*
+         * RFC 4771 mode 3 (AES-GCM): ROC-carrying packets append a 4-octet ROC
+         * as the last field, after the optional MKI (RFC 7714 section 8.2).
+         * Report the worst case so callers size their buffers for ROC-carrying
+         * packets.  Modes 1 and 2 (AES-CM) carry the ROC inside the existing
+         * HMAC tag and therefore add no extra trailer octets.
+         */
+        if (stream->rcc_mode == srtp_rcc_mode_3) {
+            *length += 4;
+        }
     } else {
         *length += srtp_auth_get_tag_length(session_key->rtcp_auth);
         *length += sizeof(srtcp_trailer_t);

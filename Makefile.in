@@ -48,6 +48,7 @@ runtest: test
 	$(FIND_LIBRARIES) crypto/test/kernel_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) test/test_srtp$(EXE) >/dev/null
 	$(FIND_LIBRARIES) test/test_srtp_policy$(EXE) >/dev/null
+	$(FIND_LIBRARIES) test/rcc_test$(EXE) >/dev/null
 	$(FIND_LIBRARIES) test/rdbx_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) test/srtp_driver$(EXE) -v >/dev/null
 	$(FIND_LIBRARIES) test/roc_driver$(EXE) -v >/dev/null
@@ -63,6 +64,7 @@ runtest-valgrind: test
 	@echo "running libsrtp3 test applications... (valgrind)"
 	valgrind --error-exitcode=1 --leak-check=full --suppressions=./valgrind.supp test/test_srtp$(EXE) -v >/dev/null
 	valgrind --error-exitcode=1 --leak-check=full --suppressions=./valgrind.supp test/test_srtp_policy$(EXE) -v >/dev/null
+	valgrind --error-exitcode=1 --leak-check=full --suppressions=./valgrind.supp test/rcc_test$(EXE) -v >/dev/null
 	valgrind --error-exitcode=1 --leak-check=full --suppressions=./valgrind.supp test/srtp_driver$(EXE) -v >/dev/null
 	@echo "libsrtp3 test applications passed. (valgrind)"
 
@@ -189,7 +191,7 @@ crypto_testapp = $(AES_CALC) crypto/test/cipher_driver$(EXE) \
 
 testapp = $(crypto_testapp) test/srtp_driver$(EXE) test/replay_driver$(EXE) \
 	  test/roc_driver$(EXE) test/rdbx_driver$(EXE) test/rtpw$(EXE) \
-	  test/test_srtp$(EXE) test/test_srtp_policy$(EXE)
+	  test/test_srtp$(EXE) test/test_srtp_policy$(EXE) test/rcc_test$(EXE)
 
 ifeq (1, $(HAVE_PCAP))
 testapp += test/rtp_decoder$(EXE)
@@ -214,6 +216,9 @@ test/test_srtp$(EXE): test/test_srtp.c
 	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 test/test_srtp_policy$(EXE): test/test_srtp_policy.c  test/util.c
+	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
+
+test/rcc_test$(EXE): test/rcc_test.c test/util.c
 	$(COMPILE) -I$(srcdir)/test $(LDFLAGS) -o $@ $^ $(LIBS) $(SRTPLIB)
 
 crypto/test/datatypes_driver$(EXE): crypto/test/datatypes_driver.c test/util.c

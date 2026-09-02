@@ -392,6 +392,37 @@ srtp_err_status_t srtp_policy_set_sec_serv(srtp_policy_t policy,
                                            srtp_sec_serv_t rtcp_sec_serv);
 
 /**
+ * @brief srtp_rcc_mode_t selects the RFC 4771 Roll-over Counter Carrying
+ * (RCC) integrity transform mode for an SRTP stream.
+ *
+ * RFC 4771 allows the sender's ROC to be carried inside the SRTP
+ * authentication tag of selected packets (those whose RTP sequence number
+ * is congruent to 0 modulo the transmission rate @c roc_tx_rate, "R").
+ * For a packet that carries the ROC the tag is built as
+ * @c TAG @c = @c ROC(4 @c octets) @c || @c MAC_tr, where @c MAC_tr is the
+ * @c (auth_tag_len @c - @c 4) most significant octets of the HMAC.
+ *
+ * Modes 1 and 2 use the HMAC-SHA1 integrity transform and are defined only
+ * for the AES-CM ciphers.  Mode 3 is the RFC 4771 NULL-MAC variant: it
+ * carries only the 4-octet ROC with no MAC of its own.  Mode 3 is supported
+ * here on top of AES-GCM (RFC 7714); the AEAD tag authenticates the packet
+ * and the ROC occupies the SRTP authentication tag field, which RFC 7714
+ * section 8.2 places at the end of the packet, after the optional MKI.
+ */
+typedef enum {
+    srtp_rcc_mode_none = 0, /**< RCC disabled (default RFC 3711 transform). */
+    srtp_rcc_mode_1 = 1,    /**< RFC 4771 mode 1: only ROC-carrying packets  */
+                            /**< are integrity protected; other packets     */
+                            /**< carry no authentication tag.               */
+    srtp_rcc_mode_2 = 2,    /**< RFC 4771 mode 2: ROC-carrying packets use   */
+                            /**< the RCC tag, all other packets use the     */
+                            /**< default integrity transform.               */
+    srtp_rcc_mode_3 = 3     /**< RFC 4771 mode 3: NULL-MAC, ROC only.        */
+                            /**< Supported with AES-GCM, where the ROC is   */
+                            /**< the last field, after the optional MKI.    */
+} srtp_rcc_mode_t;
+
+/**
  * @brief Enable or disable MKI on the policy.
  *
  * @param policy policy handle.
@@ -419,6 +450,31 @@ srtp_err_status_t srtp_policy_use_mki(srtp_policy_t policy, size_t mki_len);
  */
 srtp_err_status_t srtp_policy_get_mki_length(srtp_policy_t policy,
                                              size_t *mki_len);
+
+/**
+ * @brief Enable RFC 4771 Roll-over Counter Carrying (RCC) for this policy.
+ *
+ * @param policy policy handle.
+ * @param rcc_mode RCC integrity-transform mode (see srtp_rcc_mode_t). Pass
+ *        srtp_rcc_mode_none to disable RCC and use the default RFC 3711
+ *        transform.
+ * @param roc_tx_rate ROC transmission rate R: the sender embeds its ROC in
+ *        every packet whose RTP sequence number is congruent to 0 modulo R
+ *        (R == 1 carries the ROC in every packet). Ignored when rcc_mode is
+ *        srtp_rcc_mode_none; must be >= 1 otherwise.
+ *
+ * Modes 1 and 2 are defined only for the AES-CM ciphers; mode 3 (NULL-MAC) is
+ * supported only with AES-GCM. The mode must be consistent with the policy's
+ * profile or srtp_create()/srtp_policy_validate() rejects it. Both peers must
+ * derive the same mode and rate so they agree on the packet layout.
+ *
+ * @return
+ *    - srtp_err_status_ok if the RCC settings were applied.
+ *    - srtp_err_status_bad_param if policy is NULL or the rate is invalid.
+ */
+srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy,
+                                                   srtp_rcc_mode_t rcc_mode,
+                                                   uint16_t roc_tx_rate);
 
 /**
  * @brief Add a master key and salt to a policy handle.

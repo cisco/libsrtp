@@ -113,6 +113,12 @@ typedef struct srtp_policy_ctx_t_ {
                               /**<  ids.                               */
     bool use_cryptex;         /**< Encrypt header block and CSRCs with */
                               /**< cryptex, RFC 9335.                  */
+    srtp_rcc_mode_t rcc_mode; /**< RFC 4771 RCC integrity transform     */
+                              /**< mode for SRTP (default none).        */
+    uint16_t roc_tx_rate;     /**< RFC 4771 ROC transmission rate R:    */
+                              /**< the ROC is carried in packets whose  */
+                              /**< sequence number is 0 modulo R. A     */
+                              /**< value of 0 is treated as 1.          */
 } srtp_policy_ctx_t_;
 
 static inline bool srtp_policy_is_null_cipher_null_auth(
@@ -188,6 +194,8 @@ typedef struct srtp_stream_ctx_t_ {
     size_t enc_xtn_hdr_count;
     uint32_t pending_roc;
     bool use_cryptex;
+    srtp_rcc_mode_t rcc_mode; /* RFC 4771 RCC integrity transform mode      */
+    uint16_t roc_tx_rate;     /* RFC 4771 ROC transmission rate R (>= 1)    */
 } strp_stream_ctx_t_;
 
 /*
