@@ -165,6 +165,27 @@ static void rcc_roundtrip(srtp_t snd, srtp_t rcv, uint16_t seq, const char *msg)
     CHECK_BUFFER_EQUAL(dec, pkt, len);
 }
 
+/*
+ * Protect a packet on policy, then try to unprotect it on the same session.
+ * After srtp_protect() the stream is a sender, so unprotect must report an
+ * SSRC collision rather than decrypting the packet.
+ */
+static void rcc_sender_must_reject_unprotect(srtp_policy_t policy, uint16_t seq)
+{
+    srtp_t sess;
+    uint8_t pkt[256], enc[256], dec[256];
+    size_t len, enc_len, dec_len;
+
+    CHECK_OK(srtp_create(&sess, policy));
+    len = make_rtp(pkt, seq, "sender unprotect");
+    enc_len = sizeof(enc);
+    CHECK_OK(srtp_protect(sess, pkt, len, enc, &enc_len, 0));
+    dec_len = sizeof(dec);
+    CHECK_RETURN(srtp_unprotect(sess, enc, enc_len, dec, &dec_len),
+                 srtp_err_status_direction_mismatch);
+    CHECK_OK(srtp_dealloc(sess));
+}
+
 /* advance the sender's ROC to 1 by walking the sequence number past a wrap */
 static void advance_sender_roc(srtp_t snd)
 {
@@ -660,6 +681,36 @@ static void rcc_mode2_carry_out_of_order_keeps_window(void)
     CHECK_OK(srtp_shutdown());
 }
 
+/*
+ * An RCC-enabled sender stream must still reject unprotect as an SSRC
+ * collision.  ROC-carrying packets (and every mode-3 packet) used to skip
+ * that check because their index is estimated later.
+ */
+static void rcc_mode2_sender_rejects_unprotect(void)
+{
+    srtp_policy_t p;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy(&p, srtp_rcc_mode_2, 1);
+    /* R == 1: every packet carries the ROC */
+    rcc_sender_must_reject_unprotect(p, 4);
+    srtp_policy_destroy(p);
+    CHECK_OK(srtp_shutdown());
+}
+
+static void rcc_mode1_sender_rejects_unprotect(void)
+{
+    srtp_policy_t p;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy(&p, srtp_rcc_mode_1, 4);
+    /* seq 0 is ROC-carrying; seq 1 is untagged.  Both must collide. */
+    rcc_sender_must_reject_unprotect(p, 0);
+    rcc_sender_must_reject_unprotect(p, 1);
+    srtp_policy_destroy(p);
+    CHECK_OK(srtp_shutdown());
+}
+
 #ifdef GCM
 /*
  * AES-GCM round trips (mode 3, RFC 7714 layout)
@@ -977,6 +1028,20 @@ static void rcc_gcm_mode3_carry_replay_rejected(void)
     srtp_policy_destroy(rp);
     CHECK_OK(srtp_shutdown());
 }
+
+static void rcc_gcm_mode3_sender_rejects_unprotect(void)
+{
+    srtp_policy_t p;
+
+    CHECK_OK(srtp_init());
+    create_gcm_rcc_policy(&p, srtp_rcc_mode_3, 4);
+    /* seq 0 carries the ROC; seq 1 does not.  Mode 3 skipped the check on
+     * both. */
+    rcc_sender_must_reject_unprotect(p, 0);
+    rcc_sender_must_reject_unprotect(p, 1);
+    srtp_policy_destroy(p);
+    CHECK_OK(srtp_shutdown());
+}
 #endif /* GCM */
 
 TEST_LIST = {
@@ -1000,6 +1065,10 @@ TEST_LIST = {
     { "rcc_mode2_carry_replay_rejected()", rcc_mode2_carry_replay_rejected },
     { "rcc_mode2_carry_out_of_order_keeps_window()",
       rcc_mode2_carry_out_of_order_keeps_window },
+    { "rcc_mode2_sender_rejects_unprotect()",
+      rcc_mode2_sender_rejects_unprotect },
+    { "rcc_mode1_sender_rejects_unprotect()",
+      rcc_mode1_sender_rejects_unprotect },
 #ifdef GCM
     { "rcc_gcm_mode2_rejected_at_create()", rcc_gcm_mode2_rejected_at_create },
     { "rcc_gcm_mode3_basic_roundtrip()", rcc_gcm_mode3_basic_roundtrip },
@@ -1014,6 +1083,8 @@ TEST_LIST = {
       rcc_gcm_mode3_wildcard_inbound_late_join },
     { "rcc_gcm_mode3_carry_replay_rejected()",
       rcc_gcm_mode3_carry_replay_rejected },
+    { "rcc_gcm_mode3_sender_rejects_unprotect()",
+      rcc_gcm_mode3_sender_rejects_unprotect },
 #endif
     { 0 }
 };

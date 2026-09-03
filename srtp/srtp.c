@@ -3001,6 +3001,22 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
     rcc_carry = stream->rcc_mode != srtp_rcc_mode_none &&
                 (ntohs(hdr->seq) % stream->roc_tx_rate) == 0;
 
+    /*
+     * Verify that stream is for received traffic - this check will
+     * detect SSRC collisions, since a stream that appears in both
+     * srtp_protect() and srtp_unprotect() will fail this test in one of
+     * those functions.
+     *
+     * Skip it for the provisional template stream, which is not yet a
+     * real sender or receiver stream.  RCC packets still have to run
+     * this check: deferring index estimation for ROC-carrying (and
+     * mode 3) packets must not also skip collision detection.
+     */
+    if (!from_template && stream->direction == dir_srtp_sender) {
+        srtp_handle_event(ctx, stream, event_ssrc_collision);
+        return srtp_err_status_direction_mismatch;
+    }
+
     if (from_template || rcc_carry || stream->rcc_mode == srtp_rcc_mode_3) {
         /*
          * set estimated packet index to sequence number from header,
@@ -3009,18 +3025,6 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         est = (srtp_xtd_seq_num_t)ntohs(hdr->seq);
         delta = (int)est;
     } else {
-        /*
-         * Verify that stream is for received traffic - this check will
-         * detect SSRC collisions, since a stream that appears in both
-         * srtp_protect() and srtp_unprotect() will fail this test in one of
-         * those functions.
-         *
-         */
-        if (stream->direction == dir_srtp_sender) {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
-            return srtp_err_status_direction_mismatch;
-        }
-
         status = srtp_get_est_pkt_index(hdr, stream, &est, &delta);
 
         if (status && (status != srtp_err_status_pkt_idx_adv)) {
