@@ -107,6 +107,24 @@ static void create_cm_rcc_policy(srtp_policy_t *policy,
     create_cm_rcc_policy_ssrc(policy, mode, rate, ssrc_specific);
 }
 
+static void create_cm_rcc_policy_mki(srtp_policy_t *policy,
+                                     srtp_rcc_mode_t mode,
+                                     uint16_t rate)
+{
+    CHECK_OK(srtp_policy_create(policy));
+    CHECK_OK(srtp_policy_set_profile(*policy, srtp_profile_aes128_cm_sha1_80));
+    CHECK_OK(srtp_policy_set_sec_serv(*policy, sec_serv_conf_and_auth,
+                                      sec_serv_conf_and_auth));
+    CHECK_OK(srtp_policy_set_ssrc(*policy,
+                                  (srtp_ssrc_t){ ssrc_specific, TEST_SSRC }));
+    CHECK_OK(srtp_policy_set_rcc_mode_tx_rate(*policy, mode, rate));
+    CHECK_OK(srtp_policy_set_window_size(*policy, 128));
+    CHECK_OK(srtp_policy_use_mki(*policy, sizeof(mki4)));
+    CHECK_OK(srtp_policy_add_key(*policy, cm_master_key, sizeof(cm_master_key),
+                                 cm_master_salt, sizeof(cm_master_salt), mki4,
+                                 sizeof(mki4)));
+}
+
 #ifdef GCM
 static void create_gcm_rcc_policy_ssrc(srtp_policy_t *policy,
                                        srtp_rcc_mode_t mode,
@@ -411,6 +429,33 @@ static void rcc_mode1_rate4_carry_and_untagged(void)
     /* carry packets get TAG = ROC || MAC_tr; other packets carry no tag */
     for (uint16_t seq = 0; seq <= 12; seq++) {
         rcc_roundtrip(snd, rcv, seq, "mode1 rate4 payload");
+    }
+
+    CHECK_OK(srtp_dealloc(snd));
+    CHECK_OK(srtp_dealloc(rcv));
+    srtp_policy_destroy(sp);
+    srtp_policy_destroy(rp);
+    CHECK_OK(srtp_shutdown());
+}
+
+/*
+ * Mode 1, R == 4, with an MKI.  A packet that does not carry the ROC has no
+ * authentication tag, so the MKI is its last field; the receiver must locate
+ * it there rather than a tag length before the end.
+ */
+static void rcc_mode1_rate4_mki_untagged(void)
+{
+    srtp_policy_t sp, rp;
+    srtp_t snd, rcv;
+
+    CHECK_OK(srtp_init());
+    create_cm_rcc_policy_mki(&sp, srtp_rcc_mode_1, 4);
+    create_cm_rcc_policy_mki(&rp, srtp_rcc_mode_1, 4);
+    CHECK_OK(srtp_create(&snd, sp));
+    CHECK_OK(srtp_create(&rcv, rp));
+
+    for (uint16_t seq = 0; seq <= 12; seq++) {
+        rcc_roundtrip(snd, rcv, seq, "mode1 rate4 mki payload");
     }
 
     CHECK_OK(srtp_dealloc(snd));
@@ -1057,6 +1102,7 @@ TEST_LIST = {
       rcc_mode2_rate4_carry_and_noncarry },
     { "rcc_mode1_rate4_carry_and_untagged()",
       rcc_mode1_rate4_carry_and_untagged },
+    { "rcc_mode1_rate4_mki_untagged()", rcc_mode1_rate4_mki_untagged },
     { "rcc_mode2_late_join_roc_sync()", rcc_mode2_late_join_roc_sync },
     { "rcc_mode2_rate4_late_join()", rcc_mode2_rate4_late_join },
     { "rcc_mode2_wildcard_inbound_late_join()",
