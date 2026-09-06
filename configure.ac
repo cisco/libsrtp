@@ -202,7 +202,11 @@ fi
 AC_MSG_RESULT([$enable_debug_logging])
 
 PKG_PROG_PKG_CONFIG
-AS_IF([test "x$PKG_CONFIG" != "x"], [PKG_CONFIG="$PKG_CONFIG --static"])
+dnl Do not append --static to PKG_CONFIG. Forcing static pkg-config flags
+dnl pulls Libs.private into configure link probes (AC_SEARCH_LIBS), which
+dnl fails on hosts whose libcrypto.pc names private archives that are not
+dnl installed (for example Ubuntu libjitterentropy). Dynamic flags are enough
+dnl for discovery; Libs.private in libsrtp3.pc still gets the resulting LIBS.
 
 AC_MSG_CHECKING([for crypto library])
 AC_ARG_WITH([crypto-library], AS_HELP_STRING([--with-crypto-library=TYPE], [Select crypto library, one of: openssl, wolfssl, nss, internal]),
