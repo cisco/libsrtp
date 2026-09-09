@@ -78,9 +78,9 @@ static const uint8_t gcm_master_key[16] = {
 static const uint8_t gcm_master_salt[12] = {
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b,
 };
+#endif
 
 static const uint8_t mki4[4] = { 0xde, 0xad, 0xbe, 0xef };
-#endif
 
 static void create_cm_rcc_policy_ssrc(srtp_policy_t *policy,
                                       srtp_rcc_mode_t mode,
