@@ -1978,28 +1978,39 @@ static srtp_err_status_t srtp_get_session_keys_for_packet(
     return srtp_err_status_bad_mki;
 }
 
+/*
+ * Locating the MKI means knowing how many octets trail it, which RFC 4771
+ * makes depend on the packet: for AES-GCM only the 4-octet ROC of a mode 3
+ * ROC-carrying packet (RFC 7714 section 8.2), for a mode 1 packet that does
+ * not carry the ROC nothing at all (srtp_protect() appends no tag to those),
+ * otherwise the full authentication tag.
+ */
 static srtp_err_status_t srtp_get_session_keys_for_rtp_packet(
     srtp_stream_ctx_t *stream,
     const uint8_t *hdr,
     size_t pkt_octet_len,
+    bool rcc_carry,
     srtp_session_keys_t **session_keys)
 {
-    size_t tag_len = 0;
+    size_t trailing_len;
 
     if (stream->num_master_keys == 0 || stream->session_keys == NULL) {
         return srtp_err_status_no_ctx;
     }
 
-    // Determine the authentication tag size
     if (stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
         stream->session_keys[0].rtp_cipher->algorithm == SRTP_AES_GCM_256) {
-        tag_len = 0;
+        trailing_len =
+            (stream->rcc_mode == srtp_rcc_mode_3 && rcc_carry) ? 4 : 0;
+    } else if (stream->rcc_mode == srtp_rcc_mode_1 && !rcc_carry) {
+        trailing_len = 0;
     } else {
-        tag_len = srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
+        trailing_len =
+            srtp_auth_get_tag_length(stream->session_keys[0].rtp_auth);
     }
 
-    return srtp_get_session_keys_for_packet(stream, hdr, pkt_octet_len, tag_len,
-                                            session_keys);
+    return srtp_get_session_keys_for_packet(stream, hdr, pkt_octet_len,
+                                            trailing_len, session_keys);
 }
 
 static srtp_err_status_t srtp_get_session_keys_for_rtcp_packet(
@@ -3050,20 +3061,11 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
 
     /*
      * Determine if MKI is being used and what session keys should be used.
-     * For RFC 4771 mode 3 the sender's 4-octet ROC is carried in the SRTP
-     * authentication tag field, which RFC 7714 section 8.2 places after the
-     * MKI.  Exclude that trailing ROC from the length so the MKI is located
-     * correctly (the MKI lookup expects the MKI to be the last field).
+     * How many octets trail the MKI depends on the RCC mode and on whether
+     * this packet carries the ROC, so the lookup is told which it is.
      */
-    {
-        size_t mki_lookup_len = srtp_len;
-        if (stream->rcc_mode == srtp_rcc_mode_3 && rcc_carry &&
-            srtp_len >= octets_in_rtp_header + 4) {
-            mki_lookup_len -= 4;
-        }
-        status = srtp_get_session_keys_for_rtp_packet(
-            stream, srtp, mki_lookup_len, &session_keys);
-    }
+    status = srtp_get_session_keys_for_rtp_packet(stream, srtp, srtp_len,
+                                                  rcc_carry, &session_keys);
     if (status) {
         return status;
     }
