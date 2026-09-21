@@ -1,5 +1,13 @@
 Changelog
 
+2.8.1
+
+#811 - cryptex and enc xtn hdr is not a valid combination
+
+#806 - Fix printf format specifiers which cause issues on Windows
+
+#805 - Add API to require cryptex
+
 2.8.0
 
 #778 - Backport cryptex to v2 branch
