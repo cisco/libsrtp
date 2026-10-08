@@ -53,6 +53,10 @@
  */
 #include "cutest.h"
 
+#ifdef MBEDTLS
+#include <psa/crypto.h>
+#endif
+
 /*
  * Standard library.
  */
@@ -64,6 +68,11 @@
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output(void);
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param(void);
 void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void);
+#ifdef MBEDTLS
+void srtp_hmac_mbedtls_reinit_does_not_leak_key(void);
+void srtp_hmac_mbedtls_init_failure_returns_srtp_status(void);
+void srtp_aes_gcm_mbedtls_reinit_does_not_leak_key(void);
+#endif
 
 /*
  * NULL terminated array of tests.
@@ -78,6 +87,14 @@ TEST_LIST = { { "srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
                 srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param },
               { "srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()",
                 srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number },
+#ifdef MBEDTLS
+              { "srtp_hmac_mbedtls_reinit_does_not_leak_key()",
+                srtp_hmac_mbedtls_reinit_does_not_leak_key },
+              { "srtp_hmac_mbedtls_init_failure_returns_srtp_status()",
+                srtp_hmac_mbedtls_init_failure_returns_srtp_status },
+              { "srtp_aes_gcm_mbedtls_reinit_does_not_leak_key()",
+                srtp_aes_gcm_mbedtls_reinit_does_not_leak_key },
+#endif
               { 0 } /* End of tests */ };
 
 /*
@@ -182,3 +199,83 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void)
     }
 #undef SAMPLE_COUNT
 }
+
+#ifdef MBEDTLS
+static size_t psa_volatile_key_count(void)
+{
+    mbedtls_psa_stats_t stats;
+    mbedtls_psa_get_stats(&stats);
+    return stats.MBEDTLS_PRIVATE(volatile_slots);
+}
+
+void srtp_hmac_mbedtls_reinit_does_not_leak_key(void)
+{
+    // Preconditions
+    srtp_auth_t *auth = NULL;
+    const uint8_t key[20] = { 0 };
+    size_t keys_before;
+
+    TEST_CHECK(srtp_init() == srtp_err_status_ok);
+    TEST_CHECK(srtp_crypto_kernel_alloc_auth(SRTP_HMAC_SHA1, &auth, sizeof(key),
+                                             10) == srtp_err_status_ok);
+    keys_before = psa_volatile_key_count();
+
+    // When the same auth is keyed twice
+    TEST_CHECK(srtp_auth_init(auth, key) == srtp_err_status_ok);
+    TEST_CHECK(srtp_auth_init(auth, key) == srtp_err_status_ok);
+
+    // Then only one key is held
+    TEST_CHECK(psa_volatile_key_count() == keys_before + 1);
+
+    TEST_CHECK(srtp_auth_dealloc(auth) == srtp_err_status_ok);
+    TEST_CHECK(psa_volatile_key_count() == keys_before);
+    TEST_CHECK(srtp_shutdown() == srtp_err_status_ok);
+}
+
+void srtp_hmac_mbedtls_init_failure_returns_srtp_status(void)
+{
+    // Preconditions
+    srtp_auth_t *auth = NULL;
+    const uint8_t key[20] = { 0 };
+    srtp_err_status_t status;
+
+    TEST_CHECK(srtp_init() == srtp_err_status_ok);
+    // PSA rejects a zero-length HMAC key
+    TEST_CHECK(srtp_crypto_kernel_alloc_auth(SRTP_HMAC_SHA1, &auth, 0, 10) ==
+               srtp_err_status_ok);
+
+    // When
+    status = srtp_auth_init(auth, key);
+
+    // Then the PSA error is mapped to a libSRTP status
+    TEST_CHECK(status == srtp_err_status_auth_fail);
+
+    TEST_CHECK(srtp_auth_dealloc(auth) == srtp_err_status_ok);
+    TEST_CHECK(srtp_shutdown() == srtp_err_status_ok);
+}
+
+void srtp_aes_gcm_mbedtls_reinit_does_not_leak_key(void)
+{
+    // Preconditions
+    srtp_cipher_t *cipher = NULL;
+    const uint8_t key[SRTP_AES_GCM_128_KEY_LEN_WSALT] = { 0 };
+    size_t keys_before;
+
+    TEST_CHECK(srtp_init() == srtp_err_status_ok);
+    TEST_CHECK(srtp_crypto_kernel_alloc_cipher(SRTP_AES_GCM_128, &cipher,
+                                               SRTP_AES_GCM_128_KEY_LEN_WSALT,
+                                               16) == srtp_err_status_ok);
+    keys_before = psa_volatile_key_count();
+
+    // When the same cipher is keyed twice
+    TEST_CHECK(srtp_cipher_init(cipher, key) == srtp_err_status_ok);
+    TEST_CHECK(srtp_cipher_init(cipher, key) == srtp_err_status_ok);
+
+    // Then only one key is held
+    TEST_CHECK(psa_volatile_key_count() == keys_before + 1);
+
+    TEST_CHECK(srtp_cipher_dealloc(cipher) == srtp_err_status_ok);
+    TEST_CHECK(psa_volatile_key_count() == keys_before);
+    TEST_CHECK(srtp_shutdown() == srtp_err_status_ok);
+}
+#endif
