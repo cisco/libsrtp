@@ -95,6 +95,7 @@ static srtp_err_status_t srtp_hmac_mbedtls_alloc(srtp_auth_t **a,
         return srtp_err_status_alloc_fail;
     }
 
+    (((psa_hmac_ctx_t *)((*a)->state))->key_id) = PSA_KEY_ID_NULL;
     (((psa_hmac_ctx_t *)((*a)->state))->op) = psa_mac_operation_init();
 
     /* set pointers */
@@ -151,12 +152,17 @@ static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
     psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_MESSAGE);
     psa_set_key_algorithm(&attr, PSA_ALG_HMAC(PSA_ALG_SHA_1));
 
+    /* release the key from a previous init */
+    if (state->key_id != PSA_KEY_ID_NULL) {
+        psa_destroy_key(state->key_id);
+        state->key_id = PSA_KEY_ID_NULL;
+    }
+
     status = psa_import_key(&attr, key, key_len, &state->key_id);
     state->key_len = key_len;
     if (status != PSA_SUCCESS) {
-        psa_destroy_key(state->key_id);
         debug_print(srtp_mod_hmac, "mbedtls error code:  %d", status);
-        return status;
+        return srtp_err_status_auth_fail;
     }
 
     return srtp_err_status_ok;

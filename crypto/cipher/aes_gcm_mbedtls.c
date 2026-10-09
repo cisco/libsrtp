@@ -220,6 +220,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_alloc(srtp_cipher_t **c,
         *c = NULL;
         return srtp_err_status_alloc_fail;
     }
+    gcm->ctx->key_id = PSA_KEY_ID_NULL;
     gcm->ctx->op = psa_aead_operation_init();
 
     /* set pointers */
@@ -300,6 +301,12 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
         &attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_GCM, c->tag_len));
     psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
     psa_set_key_bits(&attr, key_len_in_bits);
+
+    /* release the key from a previous init */
+    if (c->ctx->key_id != PSA_KEY_ID_NULL) {
+        psa_destroy_key(c->ctx->key_id);
+        c->ctx->key_id = PSA_KEY_ID_NULL;
+    }
 
     status = psa_import_key(&attr, key, key_len_in_bits / 8, &c->ctx->key_id);
 
