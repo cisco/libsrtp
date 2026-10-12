@@ -293,6 +293,12 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_context_init(void *cv,
         break;
     }
 
+    status = psa_crypto_init();
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_aes_gcm, "psa_crypto_init failed: %d", status);
+        return srtp_err_status_cipher_fail;
+    }
+
     psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 
     psa_set_key_usage_flags(&attr,

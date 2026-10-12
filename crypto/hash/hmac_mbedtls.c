@@ -148,6 +148,12 @@ static srtp_err_status_t srtp_hmac_mbedtls_init(void *statev,
     psa_status_t status = PSA_SUCCESS;
     psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 
+    status = psa_crypto_init();
+    if (status != PSA_SUCCESS) {
+        debug_print(srtp_mod_hmac, "psa_crypto_init failed: %d", status);
+        return srtp_err_status_auth_fail;
+    }
+
     psa_set_key_type(&attr, PSA_KEY_TYPE_HMAC);
     psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_MESSAGE);
     psa_set_key_algorithm(&attr, PSA_ALG_HMAC(PSA_ALG_SHA_1));
