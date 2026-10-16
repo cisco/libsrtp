@@ -91,8 +91,12 @@ srtp_err_status_t srtp_dealloc_big_policy(srtp_policy_t *list);
 
 srtp_err_status_t srtp_test_empty_payload(void);
 
+srtp_err_status_t srtp_test_unprotect_short_packet_auth_only(void);
+
 #ifdef GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void);
+
+srtp_err_status_t srtp_test_unprotect_short_packet_gcm_mki(void);
 #endif
 
 srtp_err_status_t srtp_test_remove_stream(void);
@@ -587,10 +591,27 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
+        printf("testing srtp_unprotect on short packet with auth only\n");
+        if (srtp_test_unprotect_short_packet_auth_only() ==
+            srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
 #ifdef GCM
         printf("testing srtp_protect and srtp_unprotect against "
                "packet with empty payload (GCM)\n");
         if (srtp_test_empty_payload_gcm() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_unprotect_mki on short packet with GCM and MKI\n");
+        if (srtp_test_unprotect_short_packet_gcm_mki() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -3861,6 +3882,49 @@ srtp_err_status_t srtp_test_empty_payload(void)
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t srtp_test_unprotect_short_packet_auth_only(void)
+{
+    srtp_t srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+    srtp_hdr_t *mesg;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
+    srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtcp);
+    policy.rtp.auth_tag_len = 20;
+    policy.ssrc.type = ssrc_any_inbound;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    mesg = srtp_create_test_packet(0, 0xcafebabe, &len);
+    if (mesg == NULL) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_unprotect(srtp_recv, mesg, &len);
+    if (status != srtp_err_status_parse_err) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+
 #ifdef GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void)
 {
@@ -3925,6 +3989,52 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
     status = srtp_dealloc(srtp_snd);
     if (status) {
         return status;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_unprotect_short_packet_gcm_mki(void)
+{
+    srtp_t srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+    srtp_hdr_t *mesg;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+    policy.ssrc.type = ssrc_any_inbound;
+    policy.key = NULL;
+    policy.keys = test_keys;
+    policy.num_master_keys = 2;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    mesg = srtp_create_test_packet(0, 0xcafebabe, &len);
+    if (mesg == NULL) {
+        return srtp_err_status_fail;
+    }
+    memcpy((uint8_t *)mesg + len - TEST_MKI_ID_SIZE, test_mki_id,
+           TEST_MKI_ID_SIZE);
+
+    status = srtp_unprotect_mki(srtp_recv, mesg, &len, 1);
+    if (status != srtp_err_status_parse_err) {
+        return srtp_err_status_fail;
     }
 
     status = srtp_dealloc(srtp_recv);
