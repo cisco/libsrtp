@@ -2242,7 +2242,8 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         return status;
     }
 
-    if (!(enc_start <= (uint8_t *)hdr + (*pkt_octet_len - tag_len - mki_size)))
+    if ((unsigned int)tag_len + mki_size > *pkt_octet_len ||
+        !(enc_start <= (uint8_t *)hdr + (*pkt_octet_len - tag_len - mki_size)))
         return srtp_err_status_parse_err;
     /*
      * We pass the tag down to the cipher when doing GCM mode
@@ -2908,6 +2909,9 @@ srtp_err_status_t srtp_unprotect_mki(srtp_ctx_t *ctx,
 #else
     est = be64_to_cpu(est << 16);
 #endif
+
+    if (tag_len + mki_size > (unsigned int)*pkt_octet_len)
+        return srtp_err_status_parse_err;
 
     /*
      * find starting point for decryption and length of data to be
