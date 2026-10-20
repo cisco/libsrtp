@@ -42,8 +42,10 @@ srtp_protect_rtcp_mki
 srtp_unprotect_rtcp
 srtp_unprotect_rtcp_mki
 srtp_set_stream_roc
-srtp_set_user_data
 srtp_get_stream_roc
+srtp_set_stream_use_cryptex
+srtp_set_stream_require_cryptex
+srtp_set_user_data
 srtp_get_user_data
 srtp_install_event_handler
 srtp_get_version_string
