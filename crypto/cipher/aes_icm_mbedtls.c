@@ -448,8 +448,12 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_encrypt(void *cv,
         return srtp_err_status_buffer_small;
     }
 
+    /*
+      psa_cipher_update can write to all of the output buffer it is given, not
+      only the encrypted data, so limit it to the length of the input.
+    */
     status =
-        psa_cipher_update(&(c->ctx->op), src, src_len, dst, *dst_len, &out_len);
+        psa_cipher_update(&(c->ctx->op), src, src_len, dst, src_len, &out_len);
 
     if (status != PSA_SUCCESS) {
         debug_print(srtp_mod_aes_icm, "encrypt error: %d", status);

@@ -111,6 +111,10 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void);
 srtp_err_status_t srtp_test_short_packet_gcm_mki(void);
 
 srtp_err_status_t srtp_test_rtcp_gcm_not_encrypted(void);
+
+srtp_err_status_t srtp_test_gcm_unprotect_not_in_place(void);
+
+srtp_err_status_t srtp_test_rtcp_gcm_unprotect_not_in_place(void);
 #endif
 
 srtp_err_status_t srtp_test_remove_stream(void);
@@ -1023,6 +1027,22 @@ int main(int argc, char *argv[])
 #ifdef GCM
         printf("testing rtcp gcm not encrypted handling()...");
         if (srtp_test_rtcp_gcm_not_encrypted() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing gcm unprotect not in place()...");
+        if (srtp_test_gcm_unprotect_not_in_place() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing rtcp gcm unprotect not in place()...");
+        if (srtp_test_rtcp_gcm_unprotect_not_in_place() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -4134,6 +4154,115 @@ srtp_err_status_t srtp_test_rtcp_gcm_not_encrypted(void)
         srtp_err_status_auth_fail);
     CHECK_OVERRUN(rtcp, rtcp_overrun_len_start, sizeof(rtcp));
 
+    CHECK_OK(srtp_dealloc(receiver));
+    srtp_policy_destroy(policy);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_gcm_unprotect_not_in_place(void)
+{
+    /*
+     * Unprotecting into a separate output buffer only needs room for the RTP
+     * packet, not for the GCM tag. The output length is given first as
+     * exactly the RTP packet length and then as the whole buffer; the area
+     * after the RTP packet is a guard that detects writes beyond it.
+     */
+    uint32_t ssrc = 0xcafebabe;
+    size_t tag_len = 16;
+    srtp_policy_t policy;
+    srtp_t sender, receiver;
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_profile(policy, srtp_profile_aead_aes_128_gcm));
+    CHECK_OK(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_specific, ssrc }));
+    CHECK_OK(policy_set_key(policy, test_key_gcm));
+    CHECK_OK(srtp_create(&sender, policy));
+    CHECK_OK(srtp_create(&receiver, policy));
+
+    for (uint16_t seq = 1; seq <= 2; seq++) {
+        size_t rtp_len, buffer_len;
+        uint8_t *rtp = create_rtp_test_packet(28, ssrc, seq, 1234, false,
+                                              &rtp_len, &buffer_len);
+        uint8_t *srtp = (uint8_t *)malloc(buffer_len);
+        uint8_t *output = (uint8_t *)malloc(buffer_len);
+        CHECK(srtp != NULL && output != NULL);
+
+        size_t srtp_len = buffer_len;
+        CHECK_OK(srtp_protect(sender, rtp, rtp_len, srtp, &srtp_len, 0));
+        CHECK(srtp_len == rtp_len + tag_len);
+
+        overrun_check_prepare(output, 0, buffer_len);
+        size_t output_len = seq == 1 ? rtp_len : buffer_len;
+        CHECK_OK(srtp_unprotect(receiver, srtp, srtp_len, output, &output_len));
+        CHECK(output_len == rtp_len);
+        CHECK_BUFFER_EQUAL(output, rtp, rtp_len);
+        CHECK_OVERRUN(output, rtp_len, buffer_len);
+
+        free(output);
+        free(srtp);
+        free(rtp);
+    }
+
+    CHECK_OK(srtp_dealloc(sender));
+    CHECK_OK(srtp_dealloc(receiver));
+    srtp_policy_destroy(policy);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_rtcp_gcm_unprotect_not_in_place(void)
+{
+    /*
+     * As above for an encrypted (E=1) SRTCP packet: the output only needs
+     * room for the RTCP packet, not for the GCM tag or the trailer.
+     */
+    uint32_t ssrc = 0xcafebabe;
+    size_t tag_len = 16;
+    size_t trailer_len = 4;
+    srtp_policy_t policy;
+    srtp_t sender, receiver;
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_profile(policy, srtp_profile_aead_aes_128_gcm));
+    CHECK_OK(srtp_policy_set_sec_serv(policy, sec_serv_conf_and_auth,
+                                      sec_serv_conf_and_auth));
+    CHECK_OK(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_specific, ssrc }));
+    CHECK_OK(policy_set_key(policy, test_key_gcm));
+    CHECK_OK(srtp_create(&sender, policy));
+    CHECK_OK(srtp_create(&receiver, policy));
+
+    for (int i = 0; i < 2; i++) {
+        size_t rtcp_len, buffer_len;
+        uint8_t *rtcp =
+            create_rtcp_test_packet(28, ssrc, &rtcp_len, &buffer_len);
+        uint8_t *srtcp = (uint8_t *)malloc(buffer_len);
+        uint8_t *output = (uint8_t *)malloc(buffer_len);
+        CHECK(srtcp != NULL && output != NULL);
+
+        size_t srtcp_len = buffer_len;
+        CHECK_OK(
+            srtp_protect_rtcp(sender, rtcp, rtcp_len, srtcp, &srtcp_len, 0));
+        CHECK(srtcp_len == rtcp_len + tag_len + trailer_len);
+        // the E flag is the top bit of the trailer that follows the GCM tag
+        CHECK((srtcp[srtcp_len - trailer_len] & 0x80) != 0);
+
+        overrun_check_prepare(output, 0, buffer_len);
+        size_t output_len = i == 0 ? rtcp_len : buffer_len;
+        CHECK_OK(srtp_unprotect_rtcp(receiver, srtcp, srtcp_len, output,
+                                     &output_len));
+        CHECK(output_len == rtcp_len);
+        CHECK_BUFFER_EQUAL(output, rtcp, rtcp_len);
+        CHECK_OVERRUN(output, rtcp_len, buffer_len);
+
+        free(output);
+        free(srtcp);
+        free(rtcp);
+    }
+
+    CHECK_OK(srtp_dealloc(sender));
     CHECK_OK(srtp_dealloc(receiver));
     srtp_policy_destroy(policy);
 
