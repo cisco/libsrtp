@@ -459,9 +459,11 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     // dst len larger than src len
     src_len = sizeof(plaintext);
     dst_len = sizeof(encrypted);
+    overrun_check_prepare(encrypted, 0, sizeof(encrypted));
     status = srtp_cipher_encrypt(c, plaintext, src_len, encrypted, &dst_len);
     CHECK_OK(status);
     CHECK(dst_len == src_len + tag_len);
+    CHECK_OVERRUN(encrypted, dst_len, sizeof(encrypted));
 
     reint_cipher(c, test_key, iv, srtp_direction_encrypt);
 
@@ -514,10 +516,12 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     // dst len larger than src len
     src_len = encrypted_len;
     dst_len = sizeof(decrypted);
+    overrun_check_prepare(decrypted, 0, sizeof(decrypted));
     status = srtp_cipher_decrypt(c, encrypted, src_len, decrypted, &dst_len);
     CHECK_OK(status);
     CHECK(dst_len == sizeof(plaintext));
     CHECK_BUFFER_EQUAL(plaintext, decrypted, sizeof(plaintext));
+    CHECK_OVERRUN(decrypted, dst_len, sizeof(decrypted));
 
     reint_cipher(c, test_key, iv, srtp_direction_decrypt);
 
