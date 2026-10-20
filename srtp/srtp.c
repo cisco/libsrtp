@@ -2493,9 +2493,10 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 
     /* Decrypt the ciphertext.  This also checks the auth tag based
      * on the AAD we just specified above */
-    status =
-        srtp_cipher_decrypt(session_keys->rtp_cipher, srtp + enc_start,
-                            enc_octet_len, rtp + enc_start, &enc_octet_len);
+    size_t outlen = *rtp_len - enc_start;
+    status = srtp_cipher_decrypt(session_keys->rtp_cipher, srtp + enc_start,
+                                 enc_octet_len, rtp + enc_start, &outlen);
+    enc_octet_len = outlen;
     if (status) {
         return status;
     }
@@ -4220,9 +4221,10 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
 
     /* if we're decrypting, exor keystream into the message */
     if (*trailer_p & SRTCP_E_BYTE_BIT) {
-        status = srtp_cipher_decrypt(session_keys->rtcp_cipher,
-                                     srtcp + enc_start, enc_octet_len,
-                                     rtcp + enc_start, &enc_octet_len);
+        size_t out_len = *rtcp_len - enc_start;
+        status =
+            srtp_cipher_decrypt(session_keys->rtcp_cipher, srtcp + enc_start,
+                                enc_octet_len, rtcp + enc_start, &out_len);
         if (status) {
             return status;
         }

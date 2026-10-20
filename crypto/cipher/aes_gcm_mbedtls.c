@@ -452,6 +452,13 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
         return srtp_err_status_buffer_small;
     }
 
+    /*
+      psa_aead_decrypt can write to all of the output buffer it is given, not
+      only the plaintext, and clears all of it if the tag does not match, so
+      limit it to the plaintext length.
+    */
+    *dst_len = src_len - c->tag_len;
+
     debug_print(srtp_mod_aes_gcm, "AAD: %s",
                 srtp_octet_string_hex_string(c->aad, c->aad_size));
 
