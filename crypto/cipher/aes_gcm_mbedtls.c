@@ -402,11 +402,8 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_encrypt(void *cv,
     }
 
     /*
-      There are tests that check a buffer is only written too as mush as needed
-      even if there is space in buffer. psa_aead_encrypt uses that extra space,
-      probable for performance reasons. For adjust the dst_len to be only what
-      is required to avoid the tests failing. The tests should be changed as
-      there is nothing wrong with using the free buffer space.
+      psa_aead_encrypt can write to all of the output buffer it is given, not
+      only the encrypted data and tag, so limit it to the length required.
     */
     *dst_len = src_len + c->tag_len;
 
@@ -457,6 +454,13 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_decrypt(void *cv,
     if (*dst_len < src_len - c->tag_len) {
         return srtp_err_status_buffer_small;
     }
+
+    /*
+      psa_aead_decrypt can write to all of the output buffer it is given, not
+      only the plaintext, and clears all of it if the tag does not match, so
+      limit it to the plaintext length.
+    */
+    *dst_len = src_len - c->tag_len;
 
     debug_print(srtp_mod_aes_gcm, "AAD: %s",
                 srtp_octet_string_hex_string(c->aad, c->aad_size));
