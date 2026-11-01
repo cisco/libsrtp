@@ -4,8 +4,18 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
 
 jobs:
   build:

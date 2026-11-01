@@ -3,8 +3,18 @@ name: CIFuzz
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
 
 jobs:
   Fuzzing:

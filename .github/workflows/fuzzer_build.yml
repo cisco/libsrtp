@@ -4,8 +4,18 @@ name: Fuzzer build check
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
   workflow_dispatch:
 
 jobs:
