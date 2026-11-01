@@ -2,6 +2,11 @@ name: Start Coverity Scan
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CHANGES'
+      - 'LICENSE'
   workflow_dispatch:
 
 jobs:
