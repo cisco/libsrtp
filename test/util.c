@@ -307,7 +307,7 @@ static size_t base64_block_to_octet_triple(uint8_t *out, const char *in)
     size_t i;
 
     for (i = 0; i < 4; i++) {
-        char *p = strchr(b64chars, in[i]);
+        const char *p = strchr(b64chars, in[i]);
         if (p != NULL) {
             sextets[i] = (uint8_t)(p - b64chars);
         } else {
