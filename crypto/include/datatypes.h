@@ -140,13 +140,13 @@ void v128_left_shift(v128_t *x, size_t shift_index);
    really care which bit is which.  AES does care which bit is which, but
    doesn't use the 128-bit get/set or 128-bit shifts  */
 
-#define v128_get_bit(x, bit) (((((x)->v32[(bit) >> 5]) >> ((bit)&31)) & 1))
+#define v128_get_bit(x, bit) (((((x)->v32[(bit) >> 5]) >> ((bit) & 31)) & 1))
 
 #define v128_set_bit(x, bit)                                                   \
-    ((((x)->v32[(bit) >> 5]) |= ((uint32_t)1 << ((bit)&31))))
+    ((((x)->v32[(bit) >> 5]) |= ((uint32_t)1 << ((bit) & 31))))
 
 #define v128_clear_bit(x, bit)                                                 \
-    ((((x)->v32[(bit) >> 5]) &= ~((uint32_t)1 << ((bit)&31))))
+    ((((x)->v32[(bit) >> 5]) &= ~((uint32_t)1 << ((bit) & 31))))
 
 /*
  * srtp_octet_string_equal(a, b, len) returns true if the octet strings
@@ -242,10 +242,10 @@ typedef struct {
 } bitvector_t;
 
 #define bitvector_get_bit(v, bit_index)                                        \
-    (((((v)->word[((bit_index) >> 5)]) >> ((bit_index)&31)) & 1))
+    (((((v)->word[((bit_index) >> 5)]) >> ((bit_index) & 31)) & 1))
 
 #define bitvector_set_bit(v, bit_index)                                        \
-    ((((v)->word[((bit_index) >> 5)] |= ((uint32_t)1 << ((bit_index)&31)))))
+    ((((v)->word[((bit_index) >> 5)] |= ((uint32_t)1 << ((bit_index) & 31)))))
 
 #define bitvector_get_length(v) (((v)->length))
 

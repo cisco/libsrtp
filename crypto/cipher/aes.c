@@ -1397,7 +1397,7 @@ static const uint32_t U4[256] = {
  * value z should be an uint8_t.
  */
 #define gf2_8_shift(z)                                                         \
-    (((z)&128) ? (((z) << 1) ^ gf2_8_field_polynomial) : ((z) << 1))
+    (((z) & 128) ? (((z) << 1) ^ gf2_8_field_polynomial) : ((z) << 1))
 
 /* aes internals */
 
