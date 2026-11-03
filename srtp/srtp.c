@@ -4950,7 +4950,8 @@ srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,
 }
 
 struct get_protect_trailer_length_data {
-    bool found_stream; /* whether at least one matching stream was found */
+    bool found_stream; /* whether at least one stream was found */
+    bool valid_mki;    /* whether mki_index is valid for at least one stream */
     size_t length;     /* maximum trailer length found so far */
     bool is_rtp;
     size_t mki_index;
@@ -4962,9 +4963,10 @@ static bool get_protect_trailer_length_cb(srtp_stream_t stream, void *raw_data)
         (struct get_protect_trailer_length_data *)raw_data;
     size_t temp_length;
 
+    data->found_stream = true;
     if (stream_get_protect_trailer_length(stream, data->is_rtp, data->mki_index,
                                           &temp_length) == srtp_err_status_ok) {
-        data->found_stream = true;
+        data->valid_mki = true;
         if (temp_length > data->length) {
             data->length = temp_length;
         }
@@ -4979,7 +4981,7 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
                                              size_t *length)
 {
     srtp_stream_ctx_t *stream;
-    struct get_protect_trailer_length_data data = { false, 0, is_rtp,
+    struct get_protect_trailer_length_data data = { false, false, 0, is_rtp,
                                                     mki_index };
 
     if (session == NULL) {
@@ -4989,9 +4991,7 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
     stream = session->stream_template;
 
     if (stream != NULL) {
-        data.found_stream = true;
-        stream_get_protect_trailer_length(stream, is_rtp, mki_index,
-                                          &data.length);
+        get_protect_trailer_length_cb(stream, &data);
     }
 
     srtp_stream_list_for_each(session->stream_list,
@@ -4999,6 +4999,10 @@ srtp_err_status_t get_protect_trailer_length(srtp_t session,
 
     if (!data.found_stream) {
         return srtp_err_status_bad_param;
+    }
+
+    if (!data.valid_mki) {
+        return srtp_err_status_bad_mki;
     }
 
     *length = data.length;

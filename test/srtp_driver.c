@@ -5637,6 +5637,13 @@ srtp_err_status_t srtp_test_protect_trailer_length(void)
         return srtp_err_status_fail;
     }
 
+    /* only MKI indexes 0 and 1 exist, so index 2 must be rejected */
+    length = 0;
+    status = srtp_get_protect_trailer_length(srtp_send_mki, 2, &length);
+    if (status != srtp_err_status_bad_mki) {
+        return srtp_err_status_fail;
+    }
+
 #ifdef GCM
     status = srtp_get_protect_trailer_length(srtp_send_aes_gcm, 0, &length);
     if (status) {
@@ -5698,6 +5705,13 @@ srtp_err_status_t srtp_test_protect_rtcp_trailer_length(void)
 
     /*  TAG Length: 10 bytes + SRTCP Trailer 4 bytes + MKI 4 bytes*/
     if (length != 18) {
+        return srtp_err_status_fail;
+    }
+
+    /* only MKI indexes 0 and 1 exist, so index 2 must be rejected */
+    length = 0;
+    status = srtp_get_protect_rtcp_trailer_length(srtp_send_mki, 2, &length);
+    if (status != srtp_err_status_bad_mki) {
         return srtp_err_status_fail;
     }
 
