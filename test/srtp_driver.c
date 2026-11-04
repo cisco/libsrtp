@@ -4100,18 +4100,19 @@ srtp_err_status_t srtp_test_rtcp_gcm_not_encrypted(void)
      * The output only needs room for the RTCP data; the extra tag-sized area
      * below is a guard that detects writes beyond the advertised capacity.
      */
-    size_t rtcp_len = 28;
-    size_t tag_len = 16;
-    size_t trailer_len = 4;
-    size_t srtcp_len = rtcp_len + tag_len + trailer_len;
-    uint8_t srtcp[srtcp_len];
-    uint8_t rtcp[srtcp_len];
+    const size_t rtcp_data_len = 28;
+    const size_t tag_len = 16;
+    const size_t trailer_len = 4;
+    const size_t srtcp_len = rtcp_data_len + tag_len + trailer_len;
+    size_t rtcp_len = rtcp_data_len;
+    uint8_t srtcp[28 + 16 + 4];
+    uint8_t rtcp[sizeof(srtcp)];
 
     memset(srtcp, 0x0, sizeof(srtcp));
     srtcp[0] = 0x80;
     srtcp[1] = 0xc8;
     srtcp[2] = 0;
-    srtcp[3] = (rtcp_len / sizeof(uint32_t)) - 1;
+    srtcp[3] = (uint8_t)((rtcp_len / sizeof(uint32_t)) - 1);
     uint32_t trailer = htonl(1);
     memcpy(srtcp + rtcp_len + tag_len, &trailer, sizeof(trailer));
     // the tag area is deliberately filled with zeros, which is invalid for GCM
