@@ -648,7 +648,8 @@ void rtp_decoder_handle_pkt(u_char *arg,
         dcdr->start_tv = hdr->ts;
     }
 
-    if (hdr->caplen < dcdr->rtp_offset) {
+    if (hdr->caplen < dcdr->rtp_offset ||
+        hdr->caplen - dcdr->rtp_offset > sizeof(message)) {
         return;
     }
     const void *rtp_packet = bytes + dcdr->rtp_offset;
