@@ -80,7 +80,8 @@ typedef srtp_err_status_t (*srtp_cipher_alloc_func_t)(srtp_cipher_pointer_t *cp,
                                                       size_t tag_len);
 
 /*
- * a srtp_cipher_init_func_t [re-]initializes a cipher_t with a given key
+ * a srtp_cipher_init_func_t initializes a cipher_t with a given key.
+ * srtp_cipher_init() invokes this once per allocated cipher.
  */
 typedef srtp_err_status_t (*srtp_cipher_init_func_t)(void *state,
                                                      const uint8_t *key);
@@ -163,6 +164,7 @@ typedef struct srtp_cipher_t {
     void *state;
     size_t key_len;
     srtp_cipher_type_id_t algorithm;
+    bool initialized; /* set once srtp_cipher_init() has been attempted */
 } srtp_cipher_t;
 
 /* some bookkeeping functions */
@@ -204,6 +206,14 @@ srtp_err_status_t srtp_cipher_type_alloc(const srtp_cipher_type_t *ct,
                                          size_t key_len,
                                          size_t tlen);
 srtp_err_status_t srtp_cipher_dealloc(srtp_cipher_t *c);
+
+/*
+ * srtp_cipher_init(c, key) installs key in cipher c.
+ *
+ * A cipher may be initialized only once. A second call returns
+ * srtp_err_status_bad_param. On failure the cipher is not reusable;
+ * the caller deallocates it.
+ */
 srtp_err_status_t srtp_cipher_init(srtp_cipher_t *c, const uint8_t *key);
 srtp_err_status_t srtp_cipher_set_iv(srtp_cipher_t *c,
                                      uint8_t *iv,
