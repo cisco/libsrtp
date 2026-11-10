@@ -139,14 +139,12 @@ static srtp_err_status_t srtp_aes_gcm_nss_alloc(srtp_cipher_t **c,
         (*c)->algorithm = SRTP_AES_GCM_128;
         gcm->key_size = SRTP_AES_128_KEY_LEN;
         gcm->tag_size = tlen;
-        gcm->params.ulTagBits = 8 * tlen;
         break;
     case SRTP_AES_GCM_256_KEY_LEN_WSALT:
         (*c)->type = &srtp_aes_gcm_256;
         (*c)->algorithm = SRTP_AES_GCM_256;
         gcm->key_size = SRTP_AES_256_KEY_LEN;
         gcm->tag_size = tlen;
-        gcm->params.ulTagBits = 8 * tlen;
         break;
     default:
         /* this should never hit, but to be sure... */
@@ -223,11 +221,12 @@ static srtp_err_status_t srtp_aes_gcm_nss_context_init(void *cv,
          * Note: the caller is now responsible for the proper FIPS usage of the
          * key material!
          */
-        c->key =
-            import_sym_key_in_FIPS(slot, CKM_AES_GCM, CKA_ENCRYPT, &key_item);
+        c->key = import_sym_key_in_FIPS(slot, CKM_AES_GCM, CKA_ENCRYPT,
+                                        &key_item, CKF_ENCRYPT | CKF_DECRYPT);
     } else {
-        c->key = PK11_ImportSymKey(slot, CKM_AES_GCM, PK11_OriginUnwrap,
-                                   CKA_ENCRYPT, &key_item, NULL);
+        c->key = PK11_ImportSymKeyWithFlags(
+            slot, CKM_AES_GCM, PK11_OriginUnwrap, CKA_ENCRYPT, &key_item,
+            CKF_ENCRYPT | CKF_DECRYPT, PR_FALSE, NULL);
     }
     PK11_FreeSlot(slot);
 
@@ -298,23 +297,20 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
                                                     size_t *dst_len)
 {
     srtp_aes_gcm_ctx_t *c = (srtp_aes_gcm_ctx_t *)cv;
+    size_t aad_size = c->aad_size;
 
-    c->params.pIv = c->iv;
-    c->params.ulIvLen = GCM_IV_LEN;
-    c->params.pAAD = c->aad;
-    c->params.ulAADLen = c->aad_size;
-
-    // Reset AAD
+    /* The length is copied into the AEAD call below. */
     c->aad_size = 0;
 
-    if (src_len > UINT_MAX || *dst_len > UINT_MAX) {
+    if (src_len > INT_MAX || *dst_len > INT_MAX || aad_size > INT_MAX) {
         return srtp_err_status_bad_param;
     }
 
-    unsigned int out_len = 0;
-    int rv;
-    SECItem param = { siBuffer, (unsigned char *)&c->params,
-                      sizeof(CK_GCM_PARAMS) };
+    unsigned char *tag;
+    int in_len;
+    int maxout;
+    CK_ATTRIBUTE_TYPE op;
+
     if (encrypt) {
         if (c->dir != srtp_direction_encrypt) {
             return srtp_err_status_bad_param;
@@ -324,8 +320,10 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
             return srtp_err_status_buffer_small;
         }
 
-        rv = PK11_Encrypt(c->key, CKM_AES_GCM, &param, dst, &out_len,
-                          (unsigned int)*dst_len, src, (unsigned int)src_len);
+        tag = dst + src_len;
+        in_len = (int)src_len;
+        maxout = (int)src_len;
+        op = CKA_NSS_MESSAGE | CKA_ENCRYPT;
     } else {
         if (c->dir != srtp_direction_decrypt) {
             return srtp_err_status_bad_param;
@@ -339,16 +337,42 @@ static srtp_err_status_t srtp_aes_gcm_nss_do_crypto(void *cv,
             return srtp_err_status_buffer_small;
         }
 
-        rv = PK11_Decrypt(c->key, CKM_AES_GCM, &param, dst, &out_len,
-                          (unsigned int)*dst_len, src, (unsigned int)src_len);
-    }
-    *dst_len = out_len;
-    srtp_err_status_t status = srtp_err_status_ok;
-    if (rv != SECSuccess) {
-        status = srtp_err_status_cipher_fail;
+        in_len = (int)(src_len - c->tag_size);
+        /* PK11_AEADOp writes the tag only when encrypting. */
+        tag = (unsigned char *)(uintptr_t)(src + in_len);
+        maxout = (int)*dst_len;
+        op = CKA_NSS_MESSAGE | CKA_DECRYPT;
     }
 
-    return status;
+    SECItem empty = { siBuffer, NULL, 0 };
+    PK11Context *ctx =
+        PK11_CreateContextBySymKey(CKM_AES_GCM, op, c->key, &empty);
+    if (!ctx) {
+        return srtp_err_status_cipher_fail;
+    }
+
+    int out_len = 0;
+    const unsigned char *aad = aad_size > 0 ? c->aad : NULL;
+    SECStatus rv = PK11_AEADOp(ctx, CKG_NO_GENERATE, 0, c->iv, GCM_IV_LEN, aad,
+                               (int)aad_size, dst, &out_len, maxout, tag,
+                               (int)c->tag_size, src, in_len);
+    PRErrorCode saved_error = 0;
+    if (rv != SECSuccess) {
+        saved_error = PR_GetError();
+    }
+    PK11_DestroyContext(ctx, PR_TRUE);
+    if (rv != SECSuccess) {
+        PR_SetError(saved_error, 0);
+        return srtp_err_status_cipher_fail;
+    }
+
+    if (encrypt) {
+        *dst_len = (size_t)out_len + c->tag_size;
+    } else {
+        *dst_len = (size_t)out_len;
+    }
+
+    return srtp_err_status_ok;
 }
 
 /*
