@@ -230,6 +230,23 @@ srtp_err_status_t test_rdb_db(void)
         printf("rdb_init failed\n");
         return srtp_err_status_fail;
     }
+    if (srtp_rdb_increment(&rdb) != srtp_err_status_ok ||
+        srtp_rdb_get_value(&rdb) != 0) {
+        printf("first sender index was not zero\n");
+        return srtp_err_status_fail;
+    }
+    if (srtp_rdb_increment(&rdb) != srtp_err_status_ok ||
+        srtp_rdb_get_value(&rdb) != 1) {
+        printf("second sender index was not one\n");
+        return srtp_err_status_fail;
+    }
+
+    /* position an initialized sender immediately below the 31-bit boundary */
+    if (srtp_rdb_init(&rdb) != srtp_err_status_ok) {
+        printf("rdb_init failed\n");
+        return srtp_err_status_fail;
+    }
+    rdb.sender_initialized = true;
     rdb.window_start = 0x7ffffffe;
     if (srtp_rdb_increment(&rdb) != srtp_err_status_ok) {
         printf("srtp_rdb_increment of 0x7ffffffe failed\n");

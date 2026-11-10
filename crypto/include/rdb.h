@@ -46,6 +46,8 @@
 #ifndef REPLAY_DB_H
 #define REPLAY_DB_H
 
+#include <stdbool.h>
+
 #include "datatypes.h" /* for v128_t       */
 #include "err.h"       /* for srtp_err_status_t */
 
@@ -61,6 +63,7 @@ extern "C" {
 typedef struct {
     uint32_t window_start; /* packet index of the first bit in bitmask */
     v128_t bitmask;
+    bool sender_initialized; /* sender has emitted index zero */
 } srtp_rdb_t;
 
 /*
@@ -99,8 +102,8 @@ srtp_err_status_t srtp_rdb_add_index(srtp_rdb_t *rdb, uint32_t rdb_index);
  */
 
 /*
- * srtp_rdb_increment(db) increments the sequence number in db, if it is
- * not too high
+ * srtp_rdb_increment(db) selects the next sender sequence number, starting at
+ * zero, and increments later values if the current value is not too high
  *
  * return values:
  *
