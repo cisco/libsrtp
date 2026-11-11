@@ -50,6 +50,7 @@
 #include "getopt_s.h"
 #include "cipher.h"
 #include "cipher_priv.h"
+#include "crypto_backend.h"
 #include "datatypes.h"
 #include "alloc.h"
 #include "util.h"
@@ -169,6 +170,11 @@ int main(int argc, char *argv[])
 
     if (!do_validation && !do_timing_test && !do_array_timing_test) {
         usage(argv[0]);
+    }
+
+    status = srtp_crypto_backend_init();
+    if (status) {
+        exit(status);
     }
 
     /* array timing (cache thrash) test */
@@ -330,6 +336,8 @@ int main(int argc, char *argv[])
     status = srtp_cipher_dealloc(c);
     CHECK_OK(status);
 #endif
+
+    srtp_crypto_backend_shutdown();
 
     return 0;
 }

@@ -212,6 +212,7 @@ endif()
 
 set(KERNEL_SOURCES_C
   crypto/kernel/alloc.c
+  crypto/kernel/crypto_backend.c
   crypto/kernel/crypto_kernel.c
   crypto/kernel/err.c
   crypto/kernel/key.c
@@ -233,6 +234,7 @@ set(SOURCES_H
   crypto/include/auth.h
   crypto/include/cipher.h
   crypto/include/cipher_types.h
+  crypto/include/crypto_backend.h
   crypto/include/crypto_kernel.h
   crypto/include/crypto_types.h
   crypto/include/datatypes.h

@@ -128,7 +128,6 @@ typedef struct {
     size_t key_size;
     size_t tag_size;
     srtp_cipher_direction_t dir;
-    NSSInitContext *nss;
     PK11SymKey *key;
     uint8_t iv[12];
     uint8_t aad[MAX_AD_SIZE];

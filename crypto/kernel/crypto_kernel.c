@@ -47,6 +47,7 @@
 #endif
 
 #include "crypto_kernel.h"
+#include "crypto_backend.h"
 #include "cipher_types.h"
 #include "alloc.h"
 
@@ -70,24 +71,9 @@ static srtp_crypto_kernel_t crypto_kernel = {
 
 #define MAX_RNG_TRIALS 25
 
-srtp_err_status_t srtp_crypto_kernel_init(void)
+static srtp_err_status_t srtp_crypto_kernel_load(void)
 {
     srtp_err_status_t status;
-
-    /* check the security state */
-    if (crypto_kernel.state == srtp_crypto_kernel_state_secure) {
-        /*
-         * we're already in the secure state, but we've been asked to
-         * re-initialize, so we just re-run the self-tests and then return
-         */
-        return srtp_crypto_kernel_status();
-    }
-
-    /* initialize error reporting system */
-    status = srtp_err_reporting_init();
-    if (status) {
-        return status;
-    }
 
     /* load debug modules */
     status = srtp_crypto_kernel_load_debug_module(&srtp_mod_crypto_kernel);
@@ -158,8 +144,40 @@ srtp_err_status_t srtp_crypto_kernel_init(void)
     if (status) {
         return status;
     }
-    status = srtp_crypto_kernel_load_debug_module(&srtp_mod_hmac);
+    return srtp_crypto_kernel_load_debug_module(&srtp_mod_hmac);
+}
+
+srtp_err_status_t srtp_crypto_kernel_init(void)
+{
+    srtp_err_status_t status;
+
+    /* check the security state */
+    if (crypto_kernel.state == srtp_crypto_kernel_state_secure) {
+        /*
+         * we're already in the secure state, but we've been asked to
+         * re-initialize, so we just re-run the self-tests and then return
+         */
+        return srtp_crypto_kernel_status();
+    }
+
+    /* initialize error reporting system */
+    status = srtp_err_reporting_init();
     if (status) {
+        return status;
+    }
+
+    /*
+     * Start the crypto backend before loading cipher types. That load
+     * runs the self-tests, which allocate ciphers.
+     */
+    status = srtp_crypto_backend_init();
+    if (status) {
+        return status;
+    }
+
+    status = srtp_crypto_kernel_load();
+    if (status) {
+        srtp_crypto_kernel_shutdown();
         return status;
     }
 
@@ -265,6 +283,8 @@ srtp_err_status_t srtp_crypto_kernel_shutdown(void)
 
     /* return to insecure state */
     crypto_kernel.state = srtp_crypto_kernel_state_insecure;
+
+    srtp_crypto_backend_shutdown();
 
     return srtp_err_status_ok;
 }

@@ -61,7 +61,6 @@ srtp_debug_module_t srtp_mod_hmac = {
 };
 
 typedef struct {
-    NSSInitContext *nss;
     PK11SymKey *key;
     PK11Context *ctx;
 } srtp_hmac_nss_ctx_t;
@@ -72,7 +71,6 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
 {
     extern const srtp_auth_type_t srtp_hmac;
     srtp_hmac_nss_ctx_t *hmac;
-    NSSInitContext *nss;
 
     debug_print(srtp_mod_hmac, "allocating auth func with key length %zu",
                 key_len);
@@ -84,31 +82,19 @@ static srtp_err_status_t srtp_hmac_alloc(srtp_auth_t **a,
         return srtp_err_status_bad_param;
     }
 
-    /* Initialize NSS equiv of NSS_NoDB_Init(NULL) */
-    nss = NSS_InitContext("", "", "", "", NULL,
-                          NSS_INIT_READONLY | NSS_INIT_NOCERTDB |
-                              NSS_INIT_NOMODDB | NSS_INIT_FORCEOPEN |
-                              NSS_INIT_OPTIMIZESPACE);
-    if (!nss) {
-        return srtp_err_status_auth_fail;
-    }
-
     *a = (srtp_auth_t *)srtp_crypto_alloc(sizeof(srtp_auth_t));
     if (*a == NULL) {
-        NSS_ShutdownContext(nss);
         return srtp_err_status_alloc_fail;
     }
 
     hmac =
         (srtp_hmac_nss_ctx_t *)srtp_crypto_alloc(sizeof(srtp_hmac_nss_ctx_t));
     if (hmac == NULL) {
-        NSS_ShutdownContext(nss);
         srtp_crypto_free(*a);
         *a = NULL;
         return srtp_err_status_alloc_fail;
     }
 
-    hmac->nss = nss;
     hmac->key = NULL;
     hmac->ctx = NULL;
 
@@ -137,11 +123,6 @@ static srtp_err_status_t srtp_hmac_dealloc(srtp_auth_t *a)
         if (hmac->ctx) {
             PK11_DestroyContext(hmac->ctx, PR_TRUE);
             hmac->ctx = NULL;
-        }
-
-        if (hmac->nss) {
-            NSS_ShutdownContext(hmac->nss);
-            hmac->nss = NULL;
         }
 
         /* zeroize everything */
