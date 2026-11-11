@@ -35,18 +35,18 @@ because it does its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
-<a name="contact-us"></a>
+
+
 # Contact Us
 
 - [libsrtp@lists.packetizer.com](mailto:libsrtp@lists.packetizer.com) general mailing list for news / announcements / discussions. This is an open list, see
 [https://lists.packetizer.com/mailman/listinfo/libsrtp](https://lists.packetizer.com/mailman/listinfo/libsrtp) for singing up.
-
 - [libsrtp-security@lists.packetizer.com](mailto:libsrtp-security@lists.packetizer.com) for disclosing security issues to the libsrtp maintenance team. This is a closed list but anyone can send to it.
-
 
 --------------------------------------------------------------------------------
 
-<a name="contents"></a>
+
+
 ## Contents
 
 - [Introduction to libSRTP](#introduction-to-libsrtp)
@@ -58,8 +58,12 @@ because it does its work behind the scenes.
   - [Supported Features](#supported-features)
   - [Implementation Notes](#implementation-notes)
 - [Installing and Building libSRTP](#installing-and-building-libsrtp)
-  - [Changing Build Configuration](#changing-build-configuration)
-  - [Using Visual Studio](#using-visual-studio)
+  - [Using CMake](#using-cmake)
+    - [Using Visual Studio](#using-visual-studio)
+  - [Using Meson](#using-meson)
+  - [Using Autotools](#using-autotools)
+    - [Changing Build Configuration](#changing-build-configuration)
+  - [Build Options](#build-options)
 - [Applications](#applications)
   - [Example Code](#example-code)
 - [Credits](#credits)
@@ -67,7 +71,8 @@ because it does its work behind the scenes.
 
 --------------------------------------------------------------------------------
 
-<a name="license-and-disclaimer"></a>
+
+
 # License and Disclaimer
 
 libSRTP is distributed under the following license, which is included
@@ -81,13 +86,13 @@ case you got the library from another source.
 > are met:
 >
 > - Redistributions of source code must retain the above copyright
->   notice, this list of conditions and the following disclaimer.
+> notice, this list of conditions and the following disclaimer.
 > - Redistributions in binary form must reproduce the above copyright
->   notice, this list of conditions and the following disclaimer in
->   the documentation and/or other materials provided with the distribution.
+> notice, this list of conditions and the following disclaimer in
+> the documentation and/or other materials provided with the distribution.
 > - Neither the name of the Cisco Systems, Inc. nor the names of its
->   contributors may be used to endorse or promote products derived
->   from this software without specific prior written permission.
+> contributors may be used to endorse or promote products derived
+> from this software without specific prior written permission.
 >
 > THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 > "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -104,7 +109,8 @@ case you got the library from another source.
 
 --------------------------------------------------------------------------------
 
-<a name="libsrtp-overview"></a>
+
+
 # libSRTP Overview
 
 libSRTP provides functions for protecting RTP and RTCP.  RTP packets
@@ -147,7 +153,8 @@ SSRC selector identifies how and where that policy is applied.
 
 --------------------------------------------------------------------------------
 
-<a name="secure-rtp-background"></a>
+
+
 ## Secure RTP Background
 
 In this section we review SRTP and introduce some terms that are used
@@ -186,7 +193,8 @@ in which a key is used for both inbound and outbound data.
 
 --------------------------------------------------------------------------------
 
-<a name="supported-features"></a>
+
+
 ## Supported Features
 
 This library supports all of the mandatory-to-implement features of
@@ -216,50 +224,47 @@ described in [RFC 7714](https://tools.ietf.org/html/rfc7714)
 
 --------------------------------------------------------------------------------
 
-<a name="implementation-notes"></a>
+
+
 ## Implementation Notes
 
-  * It is possible to configure which 3rd party (ie openssl/nss/etc) crypto backend
-    libSRTP will be built with. If no 3rd party backend is set then libSRTP provides
-    an internal implementation of AES and Sha1. The internal implementation only
-    supports AES-128 & AES-256, so to use AES-192 or the AES-GCM group of ciphers a
-    3rd party crypto backend must be configured. For this and performance reasons it
-    is highly recommended to use a 3rd party crypto backend.
-
-  * The `srtp_protect()` function assumes that the buffer holding the
-    rtp packet has enough storage allocated that the authentication
-    tag can be written to the end of that packet. If this assumption
-    is not valid, memory corruption will ensue.
-
-  * Automated tests for the crypto functions are provided through
-    the `cipher_type_self_test()` and `auth_type_self_test()` functions.
-    These functions should be used to test each port of this code
-    to a new platform.
-
-  * Replay protection is contained in the crypto engine, and
-    tests for it are provided.
-
-  * This implementation provides calls to initialize, protect, and
-    unprotect RTP packets, and makes as few as possible assumptions
-    about how these functions will be called. For example, the
-    caller is not expected to provide packets in order (though if
-    they're called more than 65k out of sequence, synchronization
-    will be lost).
-
-  * The sequence number in the rtp packet is used as the low 16 bits
-    of the sender's local packet index. Note that RTP will start its
-    sequence number in a random place, and the SRTP layer just jumps
-    forward to that number at its first invocation. An earlier
-    version of this library used initial sequence numbers that are
-    less than 32,768; this trick is no longer required as the
-    `rdbx_estimate_index(...)` function has been made smarter as of
-    version 1.0.1.
-
-  * The replay window for (S)RTCP is hardcoded to 128 bits in length.
+* It is possible to configure which 3rd party crypto backend (OpenSSL, wolfSSL,
+NSS or mbedTLS) libSRTP will be built with, see [Build Options](#build-options).
+If the `internal` crypto library is selected then libSRTP provides
+an internal implementation of AES and SHA1. The internal implementation only
+supports AES-128 & AES-256, so to use AES-192 or the AES-GCM group of ciphers a
+3rd party crypto backend must be configured. For this and performance reasons it
+is highly recommended to use a 3rd party crypto backend.
+* The `srtp_protect()` function assumes that the buffer holding the
+rtp packet has enough storage allocated that the authentication
+tag can be written to the end of that packet. If this assumption
+is not valid, memory corruption will ensue.
+* Automated tests for the crypto functions are provided through
+the `cipher_type_self_test()` and `auth_type_self_test()` functions.
+These functions should be used to test each port of this code
+to a new platform.
+* Replay protection is contained in the crypto engine, and
+tests for it are provided.
+* This implementation provides calls to initialize, protect, and
+unprotect RTP packets, and makes as few as possible assumptions
+about how these functions will be called. For example, the
+caller is not expected to provide packets in order (though if
+they're called more than 65k out of sequence, synchronization
+will be lost).
+* The sequence number in the rtp packet is used as the low 16 bits
+of the sender's local packet index. Note that RTP will start its
+sequence number in a random place, and the SRTP layer just jumps
+forward to that number at its first invocation. An earlier
+version of this library used initial sequence numbers that are
+less than 32,768; this trick is no longer required as the
+`rdbx_estimate_index(...)` function has been made smarter as of
+version 1.0.1.
+* The replay window for (S)RTCP is hardcoded to 128 bits in length.
 
 --------------------------------------------------------------------------------
 
-<a name="installing-and-building-libsrtp"></a>
+
+
 # Installing and Building libSRTP
 
 To install libSRTP, download the latest release of the distribution
@@ -269,86 +274,74 @@ extract the source files; the directory into which the source files
 will go is named `libsrtp-A-B-C` where `A` is the version number, `B` is the
 major release number and `C` is the minor release number.
 
-libSRTP uses the GNU `autoconf` and `make` utilities (BSD make will not work; if
-both versions of make are on your platform, you can invoke GNU make as
-`gmake`.). In the `libsrtp` directory, run the configure script and then
-make:
-
-~~~.txt
-./configure [ options ]
-make
-~~~
-
-The configure script accepts the following options:
-
-Option                         | Description
--------------------------------|--------------------
-\-\-help                   \-h | Display help
-\-\-enable-debug-logging       | Enable debug logging in all modules
-\-\-enable-openssl             | Enable OpenSSL crypto engine
-\-\-enable-nss                 | Enable NSS crypto engine
-\-\-enable-openssl-kdf         | Enable OpenSSL KDF algorithm
-\-\-enable-log-stdout          | Enable logging to stdout
-\-\-with-openssl-dir           | Location of OpenSSL installation
-\-\-with-nss-dir               | Location of NSS installation
-\-\-with-log-file              | Use file for logging
-
-By default there is no log output, logging can be enabled to be output to stdout
-or a given file using the configure options.
-
-This package has been tested on the following platforms: Mac OS X
-(powerpc-apple-darwin1.4), Cygwin (i686-pc-cygwin), Solaris
-(sparc-sun-solaris2.6), RedHat Linux 7.1 and 9 (i686-pc-linux), and
-OpenBSD (sparc-unknown-openbsd2.7).
+libSRTP can be built with [CMake](#using-cmake), [Meson](#using-meson) or
+[Autotools](#using-autotools). CMake is the primary build system. The options
+that select what is built are listed for all three tools in
+[Build Options](#build-options).
 
 --------------------------------------------------------------------------------
 
-<a name="changing-build-configuration"></a>
-## Changing Build Configuration
 
-To build the `./configure` script mentioned above, libSRTP relies on the
-[automake](https://www.gnu.org/software/automake/) toolchain.  Since
-`./configure` is built from `configure.in` by automake, if you make changes in
-how `./configure` works (e.g., to add a new library dependency), you will need
-to rebuild `./configure` and commit the updated version.  In addition to
-automake itself, you will need to have the `pkgconfig` tools installed as well.
 
-For example, on macOS:
+## Using CMake
+
+CMake can be downloaded here: https://cmake.org/ . Configure, build, test and
+install from the `libsrtp` directory:
 
 ```
-brew install automake pkgconfig
-# Edit configure.in
-autoremake -ivf
+# Configure, the build files are put in the build subdirectory
+cmake -S . -B build
+
+# Build the project
+cmake --build build
+
+# Run tests
+ctest --test-dir build
+
+# Optionally, install
+cmake --install build
 ```
+
+Options are set at configure time with `-DNAME=value`, see
+[Build Options](#build-options).
+
+The `dev` preset selects a debug build with the address and undefined behavior
+sanitizers enabled:
+
+```
+cmake --preset dev
+cmake --build --preset dev
+ctest --preset dev
+```
+
+
+
+### Using Visual Studio
+
+On Windows, Visual Studio can be used through CMake. Select the generator that
+matches the installed Visual Studio version, for example:
+
+```
+# Create the project files
+cmake -S . -B build -G "Visual Studio 17 2022"
+
+# Build and test, Visual Studio is a multi-configuration generator
+cmake --build build --config Release
+ctest --test-dir build -C Release
+```
+
+`cmake --help` lists the available generators.
 
 --------------------------------------------------------------------------------
-<a name="using-visual-studio"></a>
-## Using Visual Studio
 
-On Windows one can use Visual Studio via CMake. CMake can be downloaded here:
-https://cmake.org/ . To create Visual Studio build files, for example run the
-following commands:
 
-```
-# Create build subdirectory
-mkdir build
-cd build
 
-# Make project files
-cmake .. -G "Visual Studio 15 2017"
-
-# Or for 64 bit project files
-cmake .. -G "Visual Studio 15 2017 Win64"
-```
-
---------------------------------------------------------------------------------
-<a name="using-meson"></a>
 ## Using Meson
 
 On all platforms including Windows, one can build using [Meson](https://mesonbuild.com).
 Steps to download Meson are here: https://mesonbuild.com/Getting-meson.html
 
-To build with Meson, you can do something like:
+To build with Meson:
 
 ```
 # Setup the build subdirectory
@@ -364,16 +357,103 @@ meson test -C builddir
 meson install -C builddir
 ```
 
+Options are set at setup with `-Dname=value`, and can be changed later with
+`meson configure builddir`, see [Build Options](#build-options).
+
 To build with Visual Studio, run the above commands from inside a Visual Studio
 command prompt, or run `vcvarsall.bat` with the appropriate arguments inside
 a Command Prompt.
 
-Note that you can also replace the above commands with the appropriate `ninja`
-targets: `ninja -C build`, `ninja -C build test`, `ninja -C build install`.
+The commands can also be replaced with the equivalent `ninja` targets:
+`ninja -C builddir`, `ninja -C builddir test`, `ninja -C builddir install`.
 
 --------------------------------------------------------------------------------
 
-<a name="applications"></a>
+
+
+## Using Autotools
+
+The Autotools build requires GNU `make` (BSD make will not work; GNU make may
+be installed as `gmake`). In the `libsrtp` directory, run the configure script
+and then make:
+
+`make` builds the static library and the test applications, `make runtest`
+runs the tests and `make shared_library` builds the shared library.
+`./configure --help` lists all options, including the standard autoconf options
+such as `--prefix`. The libSRTP options are listed in
+[Build Options](#build-options).
+
+This package has been tested on the following platforms: Mac OS X
+(powerpc-apple-darwin1.4), Cygwin (i686-pc-cygwin), Solaris
+(sparc-sun-solaris2.6), RedHat Linux 7.1 and 9 (i686-pc-linux), and
+OpenBSD (sparc-unknown-openbsd2.7).
+
+
+
+### Changing Build Configuration
+
+To build the `./configure` script mentioned above, libSRTP relies on the
+[autoconf](https://www.gnu.org/software/autoconf/) toolchain.  Since
+`./configure` is built from `configure.ac`, if you make changes in
+how `./configure` works (e.g., to add a new library dependency), you will need
+to rebuild `./configure` and commit the updated version.  In addition to
+autoconf itself, you will need to have the `pkgconfig` tools installed as well.
+
+For example, on macOS:
+
+```
+brew install autoconf pkgconfig
+# Edit configure.ac
+autoreconf -ivf
+```
+
+--------------------------------------------------------------------------------
+
+
+
+## Build Options
+
+The options that select what libSRTP is built with. A `-` marks an option that
+the build tool does not provide. The first value listed is the default unless
+noted.
+
+Description | CMake | Meson | Autotools
+------------|-------|-------|----------
+Crypto library, `openssl` by default (`internal` supports only AES-128 and AES-256) | `-DCRYPTO_LIBRARY=<openssl\|wolfssl\|mbedtls\|nss\|internal>` | `-Dcrypto-library=<openssl\|wolfssl\|mbedtls\|nss\|internal>` | `--with-crypto-library=<openssl\|wolfssl\|nss\|internal>`
+Use the crypto library's key derivation function (KDF) | - | `-Dcrypto-library-kdf=<auto\|enabled\|disabled>` | `--enable-openssl-kdf` (OpenSSL only, off by default)
+Library type | `-DBUILD_SHARED_LIBS=<OFF\|ON>` (static by default) | `-Ddefault_library=<shared\|static\|both>` (shared by default) | `make` builds static, `make shared_library` builds shared
+Debug logging in all modules | `-DENABLE_DEBUG_LOGGING=<OFF\|ON>` | `-Ddebug-logging=<false\|true>` | `--enable-debug-logging`
+Log to stdout | `-DERR_REPORTING_STDOUT=<OFF\|ON>` | `-Dlog-stdout=<false\|true>` | `--enable-log-stdout`
+Log to a file | `-DERR_REPORTING_FILE=<path>` | `-Dlog-file=<path>` | `--with-log-file=<path>`
+Test applications | `-DLIBSRTP_TEST_APPS=<ON\|OFF>` | `-Dtests=<auto\|enabled\|disabled>` | always built
+Test application requiring libpcap (`rtp_decoder`) | built if libpcap is found | `-Dpcap-tests=<auto\|enabled\|disabled>` | `--disable-pcap`
+Fuzzer (requires clang) | - | `-Dfuzzer=<disabled\|enabled\|auto>` | -
+API documentation (doxygen) | - | `-Ddoc=<auto\|enabled\|disabled>` | -
+
+AES-192 and the AES-GCM ciphers require an external crypto library. There is no
+log output by default. Autotools does not support mbedTLS.
+
+CMake provides additional development options: `ENABLE_WARNINGS` and
+`ENABLE_WARNINGS_AS_ERRORS` (both `ON` by default), `ENABLE_SANITIZE_ADDR`,
+`ENABLE_SANITIZE_UNDEF`, `ENABLE_SANITIZE_LEAK`, `ENABLE_SANITIZE_THREAD` and
+`ENABLE_LTO` (all `OFF` by default).
+
+### Crypto Library Location
+
+The crypto library is detected automatically. A library that is not in a
+default search location can be specified as follows. `<dir>` is the installation
+prefix, which contains the `include` and `lib` directories.
+
+Build tool | Setting
+-----------|--------
+CMake | `-DCMAKE_PREFIX_PATH=<dir>` for all libraries, or `-DOPENSSL_ROOT_DIR=<dir>`, `-DWOLFSSL_ROOT_DIR=<dir>` or `-DMBEDTLS_ROOT_DIR=<dir>` for the respective library
+Meson | `PKG_CONFIG_PATH=<dirs>` in the environment or `-Dpkg_config_path=<dirs>`, where `<dirs>` contains the library's `.pc` file, for example `/opt/openssl/lib/pkgconfig`
+Autotools | `PKG_CONFIG_PATH=<dirs>` in the environment, or `--with-openssl-dir=<dir>`, `--with-wolfssl-dir=<dir>` or `--with-nss-dir=<dir>`
+
+--------------------------------------------------------------------------------
+
+
+
 # Applications
 
 Several test drivers and a simple and portable srtp application are
@@ -389,72 +469,11 @@ replay_driver	  | replay database
 cipher_driver	  | ciphers
 auth_driver	    | hash functions
 
-The app `rtpw` is a simple rtp application which reads words from
-`/usr/dict/words` and then sends them out one at a time using [s]rtp.
-Manual srtp keying uses the -k option; automated key management
-using gdoi will be added later.
-
-usage:
-~~~.txt
-rtpw [[-d <debug>]* [-k|b <key> [-a][-e <key size>][-g]] [-s | -r] dest_ip dest_port] | [-l]
-~~~
-
-Either the -s (sender) or -r (receiver) option must be chosen.  The
-values `dest_ip`, `dest_port` are the IP address and UDP port to which
-the dictionary will be sent, respectively.
-
-The options are:
-
-Option         | Description
----------      | -------
-  -s           | (S)RTP sender - causes app to send words
-  -r           | (S)RTP receive - causes app to receive words
-  -k <key>     | use SRTP master key <key>, where the key is a hexadecimal (without the leading "0x")
-  -b <key>     | same as -k but with base64 encoded key
-  -e <keysize> | encrypt/decrypt (for data confidentiality) (requires use of -k option as well) (use 128, 192, or 256 for keysize)
-  -g           | use AES-GCM mode (must be used with -e)
-  -a           | message authentication (requires use of -k option as well)
-  -l           | list the available debug modules
-  -d <debug>   | turn on debugging for module <debug>
-
-In order to get random 30-byte values for use as key/salt pairs , you
-can use the following bash function to format the output of
-`/dev/random` (where that device is available).
-
-~~~.txt
-function randhex() {
-   cat /dev/random | od --read-bytes=32 --width=32 -x | awk '{ print $2 $3 $4 $5 $6 $7 $8 $9 $10 $11 $12 $13 $14 $15 $16 }'
-}
-~~~
-
-An example of an SRTP session using two rtpw programs follows:
-
-~~~.txt
-set k=c1eec3717da76195bb878578790af71c4ee9f859e197a414a78d5abc7451
-
-[sh1]$ test/rtpw -s -k $k -e 128 -a 0.0.0.0 9999
-Security services: confidentiality message authentication
-set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC7451
-setting SSRC to 2078917053
-sending word: A
-sending word: a
-sending word: aa
-sending word: aal
-...
-
-[sh2]$ test/rtpw -r -k $k -e 128 -a 0.0.0.0 9999
-security services: confidentiality message authentication
-set master key/salt to C1EEC3717DA76195BB878578790AF71C/4EE9F859E197A414A78D5ABC7451
-19 octets received from SSRC 2078917053 word: A
-19 octets received from SSRC 2078917053 word: a
-20 octets received from SSRC 2078917053 word: aa
-21 octets received from SSRC 2078917053 word: aal
-...
-~~~
 
 --------------------------------------------------------------------------------
 
-<a name="example-code"></a>
+
+
 ## Example Code
 
 This section provides a simple example of how to use libSRTP. Here we assume
@@ -507,7 +526,8 @@ srtp_shutdown();
 
 --------------------------------------------------------------------------------
 
-<a name="credits"></a>
+
+
 # Credits
 
 The original implementation and documentation of libSRTP was written
@@ -529,7 +549,8 @@ Copyright 2001-2005 by David A. McGrew, Cisco Systems, Inc.
 
 --------------------------------------------------------------------------------
 
-<a name="references"></a>
+
+
 # References
 
 SRTP and ICM References
