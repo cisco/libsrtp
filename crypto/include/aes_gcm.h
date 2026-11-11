@@ -117,8 +117,6 @@ typedef struct {
 
 #ifdef NSS
 
-#define NSS_PKCS11_2_0_COMPAT 1
-
 #include <nss.h>
 #include <pk11pub.h>
 
@@ -132,7 +130,6 @@ typedef struct {
     uint8_t iv[12];
     uint8_t aad[MAX_AD_SIZE];
     size_t aad_size;
-    CK_GCM_PARAMS params;
 } srtp_aes_gcm_ctx_t;
 
 #endif /* NSS */

@@ -248,7 +248,7 @@ static srtp_err_status_t srtp_aes_icm_nss_context_init(void *cv,
          * key material!
          */
         c->key =
-            import_sym_key_in_FIPS(slot, CKM_AES_CTR, CKA_ENCRYPT, &keyItem);
+            import_sym_key_in_FIPS(slot, CKM_AES_CTR, CKA_ENCRYPT, &keyItem, 0);
     } else {
         c->key = PK11_ImportSymKey(slot, CKM_AES_CTR, PK11_OriginUnwrap,
                                    CKA_ENCRYPT, &keyItem, NULL);

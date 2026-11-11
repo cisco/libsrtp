@@ -44,7 +44,8 @@
 static PK11SymKey *import_sym_key_in_FIPS(PK11SlotInfo *const slot,
                                           const CK_MECHANISM_TYPE type,
                                           const CK_ATTRIBUTE_TYPE operation,
-                                          SECItem *const raw_key)
+                                          SECItem *const raw_key,
+                                          const CK_FLAGS flags)
 {
     PK11SymKey *wrapping_key = NULL;
     PK11Context *wrap_key_crypt_context = NULL;
@@ -126,9 +127,9 @@ static PK11SymKey *import_sym_key_in_FIPS(PK11SlotInfo *const slot,
     wrapped_key_item.data = wrapped_key.data;
     wrapped_key_item.len = wrapped_key.len;
 
-    PK11SymKey *ret =
-        PK11_UnwrapSymKey(wrapping_key, wrap_mechanism, &tmp_sec_item,
-                          &wrapped_key_item, type, operation, raw_key->len);
+    PK11SymKey *ret = PK11_UnwrapSymKeyWithFlags(
+        wrapping_key, wrap_mechanism, &tmp_sec_item, &wrapped_key_item, type,
+        operation, raw_key->len, flags);
     SCOPE_DATA_FREE();
     return ret;
 }
