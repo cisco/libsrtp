@@ -233,7 +233,9 @@ NSS or mbedTLS) libSRTP will be built with, see [Build Options](#build-options).
 If the `internal` crypto library is selected then libSRTP provides
 an internal implementation of AES and SHA1. The internal implementation only
 supports AES-128 & AES-256, so to use AES-192 or the AES-GCM group of ciphers a
-3rd party crypto backend must be configured. For this and performance reasons it
+3rd party crypto backend must be configured. After `srtp_init()`,
+`srtp_profile_supported()` reports whether AES-192 or AES-GCM is loaded.
+For this and performance reasons it
 is highly recommended to use a 3rd party crypto backend.
 * The `srtp_protect()` function assumes that the buffer holding the
 rtp packet has enough storage allocated that the authentication

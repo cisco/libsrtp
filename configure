@@ -5376,6 +5376,7 @@ $as_echo "no" >&6; }
 		PKG_CONFIG=""
 	fi
 fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for crypto library" >&5
 $as_echo_n "checking for crypto library... " >&6; }
 
@@ -5778,7 +5779,10 @@ fi
 
 
 
-$as_echo "#define GCM 1" >>confdefs.h
+$as_echo "#define HAVE_GCM 1" >>confdefs.h
+
+
+$as_echo "#define HAVE_AES_192 1" >>confdefs.h
 
 
 $as_echo "#define OPENSSL 1" >>confdefs.h
@@ -5895,7 +5899,10 @@ fi
 
 
 
-$as_echo "#define GCM 1" >>confdefs.h
+$as_echo "#define HAVE_GCM 1" >>confdefs.h
+
+
+$as_echo "#define HAVE_AES_192 1" >>confdefs.h
 
 
 $as_echo "#define WOLFSSL 1" >>confdefs.h
@@ -6225,7 +6232,10 @@ fi
    fi
 
 
-$as_echo "#define GCM 1" >>confdefs.h
+$as_echo "#define HAVE_GCM 1" >>confdefs.h
+
+
+$as_echo "#define HAVE_AES_192 1" >>confdefs.h
 
 
 $as_echo "#define NSS 1" >>confdefs.h

@@ -85,7 +85,7 @@ srtp_err_status_t srtp_validate_null_null(void);
 
 srtp_err_status_t srtp_validate_cryptex(void);
 
-#ifdef GCM
+#ifdef HAVE_GCM
 srtp_err_status_t srtp_validate_gcm(void);
 
 srtp_err_status_t srtp_validate_gcm_cryptex(void);
@@ -93,19 +93,19 @@ srtp_err_status_t srtp_validate_gcm_cryptex(void);
 
 srtp_err_status_t srtp_validate_encrypted_extensions_headers(void);
 
-#ifdef GCM
+#ifdef HAVE_GCM
 srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void);
 #endif
 
 srtp_err_status_t srtp_validate_aes_256(void);
 
-#ifdef GCM
+#ifdef HAVE_AES_192
 srtp_err_status_t srtp_validate_aes_192(void);
 #endif
 
 srtp_err_status_t srtp_test_empty_payload(void);
 
-#ifdef GCM
+#ifdef HAVE_GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void);
 
 srtp_err_status_t srtp_test_short_packet_gcm_mki(void);
@@ -757,7 +757,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-#ifdef GCM
+#ifdef HAVE_GCM
         printf("testing srtp_protect and srtp_unprotect against "
                "reference packet using GCM\n");
         if (srtp_validate_gcm() == srtp_err_status_ok) {
@@ -787,7 +787,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-#ifdef GCM
+#ifdef HAVE_GCM
         printf("testing srtp_protect and srtp_unprotect against "
                "reference packet with encrypted extension headers (GCM)\n");
         if (srtp_validate_encrypted_extensions_headers_gcm() ==
@@ -799,7 +799,7 @@ int main(int argc, char *argv[])
         }
 #endif
 
-#ifdef GCM
+#ifdef HAVE_AES_192
         /*
          * run validation test against the reference packets for
          * AES-192
@@ -838,7 +838,7 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
-#ifdef GCM
+#ifdef HAVE_GCM
         printf("testing srtp_protect and srtp_unprotect against "
                "packet with empty payload (GCM)\n");
         if (srtp_test_empty_payload_gcm() == srtp_err_status_ok) {
@@ -1024,7 +1024,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-#ifdef GCM
+#ifdef HAVE_GCM
         printf("testing rtcp gcm not encrypted handling()...");
         if (srtp_test_rtcp_gcm_not_encrypted() == srtp_err_status_ok) {
             printf("passed\n");
@@ -3655,7 +3655,7 @@ srtp_err_status_t srtp_test_missing_session_keys(void)
     return srtp_err_status_ok;
 }
 
-#ifdef GCM
+#ifdef HAVE_GCM
 /*
  * srtp_validate_gcm() verifies the correctness of libsrtp by comparing
  * an computed packet against the known ciphertext for the plaintext.
@@ -4398,7 +4398,7 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers(void)
     return srtp_err_status_ok;
 }
 
-#ifdef GCM
+#ifdef HAVE_GCM
 /*
  * Headers of test vectors taken from RFC 6904, Appendix A
  */
@@ -4524,7 +4524,9 @@ srtp_err_status_t srtp_validate_encrypted_extensions_headers_gcm(void)
 
     return srtp_err_status_ok;
 }
+#endif /* HAVE_GCM */
 
+#ifdef HAVE_AES_192
 /*
  * srtp_validate_aes_192() verifies the correctness of libsrtp by comparing
  * some computed packets against some pre-computed reference values.
@@ -4621,7 +4623,7 @@ srtp_err_status_t srtp_validate_aes_192(void)
 
     return srtp_err_status_ok;
 }
-#endif
+#endif /* HAVE_AES_192 */
 
 /*
  * srtp_validate_aes_256() verifies the correctness of libsrtp by comparing
@@ -4810,7 +4812,7 @@ srtp_err_status_t srtp_test_empty_payload(void)
     return srtp_err_status_ok;
 }
 
-#ifdef GCM
+#ifdef HAVE_GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void)
 {
     srtp_t srtp_snd, srtp_recv;
@@ -4917,7 +4919,7 @@ srtp_err_status_t srtp_test_short_packet_gcm_mki(void)
 
     return srtp_err_status_ok;
 }
-#endif // GCM
+#endif // HAVE_GCM
 
 srtp_err_status_t srtp_test_remove_stream(void)
 {
@@ -5661,13 +5663,13 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     srtp_policy_t policy;
     srtp_policy_t policy_mki;
 
-#ifdef GCM
+#ifdef HAVE_GCM
     srtp_policy_t policy_aes_gcm;
     srtp_policy_t policy_aes_gcm_mki;
 #else
     (void)srtp_send_aes_gcm;
     (void)srtp_send_aes_gcm_mki;
-#endif // GCM
+#endif // HAVE_GCM
 
     CHECK_OK(srtp_policy_create(&policy));
     CHECK_OK(srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80));
@@ -5683,7 +5685,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     CHECK_OK(srtp_policy_use_mki(policy_mki, TEST_MKI_ID_SIZE));
     CHECK_OK(policy_add_keys(policy_mki, test_keys, 2));
 
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(srtp_policy_create(&policy_aes_gcm));
     CHECK_OK(
         srtp_policy_set_profile(policy_aes_gcm, srtp_profile_aead_aes_128_gcm));
@@ -5699,7 +5701,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
     CHECK_OK(srtp_policy_use_mki(policy_aes_gcm_mki, TEST_MKI_ID_SIZE));
     CHECK_OK(policy_add_keys(policy_aes_gcm_mki, test_keys, 2));
 
-#endif // GCM
+#endif // HAVE_GCM
 
     /* create a send ctx with defualt profile and test_key */
     status = srtp_create(srtp_send, policy);
@@ -5714,7 +5716,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
 
     srtp_policy_destroy(policy);
     srtp_policy_destroy(policy_mki);
-#ifdef GCM
+#ifdef HAVE_GCM
     status = srtp_create(srtp_send_aes_gcm, policy_aes_gcm);
     if (status) {
         return status;
@@ -5727,7 +5729,7 @@ srtp_err_status_t srtp_test_setup_protect_trailer_streams(
 
     srtp_policy_destroy(policy_aes_gcm);
     srtp_policy_destroy(policy_aes_gcm_mki);
-#endif // GCM
+#endif // HAVE_GCM
 
     return srtp_err_status_ok;
 }
@@ -5774,7 +5776,7 @@ srtp_err_status_t srtp_test_protect_trailer_length(void)
         return srtp_err_status_fail;
     }
 
-#ifdef GCM
+#ifdef HAVE_GCM
     status = srtp_get_protect_trailer_length(srtp_send_aes_gcm, 0, &length);
     if (status) {
         return status;
@@ -5794,11 +5796,11 @@ srtp_err_status_t srtp_test_protect_trailer_length(void)
     if (length != 20) {
         return srtp_err_status_fail;
     }
-#endif // GCM
+#endif // HAVE_GCM
 
     srtp_dealloc(srtp_send);
     srtp_dealloc(srtp_send_mki);
-#ifdef GCM
+#ifdef HAVE_GCM
     srtp_dealloc(srtp_send_aes_gcm);
     srtp_dealloc(srtp_send_aes_gcm_mki);
 #endif
@@ -5845,7 +5847,7 @@ srtp_err_status_t srtp_test_protect_rtcp_trailer_length(void)
         return srtp_err_status_fail;
     }
 
-#ifdef GCM
+#ifdef HAVE_GCM
     status =
         srtp_get_protect_rtcp_trailer_length(srtp_send_aes_gcm, 0, &length);
     if (status) {
@@ -5867,11 +5869,11 @@ srtp_err_status_t srtp_test_protect_rtcp_trailer_length(void)
     if (length != 24) {
         return srtp_err_status_fail;
     }
-#endif // GCM
+#endif // HAVE_GCM
 
     srtp_dealloc(srtp_send);
     srtp_dealloc(srtp_send_mki);
-#ifdef GCM
+#ifdef HAVE_GCM
     srtp_dealloc(srtp_send_aes_gcm);
     srtp_dealloc(srtp_send_aes_gcm_mki);
 #endif
@@ -5899,7 +5901,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     /* Create the sender */
     CHECK_OK(srtp_policy_create(&sender_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(
         srtp_policy_set_profile(sender_policy, srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(sender_policy, test_key_gcm));
@@ -5918,7 +5920,7 @@ srtp_err_status_t srtp_test_out_of_order_after_rollover(void)
 
     /* Create the receiver */
     CHECK_OK(srtp_policy_create(&receiver_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(srtp_policy_set_profile(receiver_policy,
                                      srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(receiver_policy, test_key_gcm));
@@ -6183,7 +6185,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
 
     /* Create the sender */
     CHECK_OK(srtp_policy_create(&sender_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(
         srtp_policy_set_profile(sender_policy, srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(sender_policy, test_key_gcm));
@@ -6248,7 +6250,7 @@ static srtp_err_status_t test_set_receiver_roc(uint32_t packets,
 
     /* Create the receiver */
     CHECK_OK(srtp_policy_create(&receiver_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(srtp_policy_set_profile(receiver_policy,
                                      srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(receiver_policy, test_key_gcm));
@@ -6343,7 +6345,7 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
 
     /* Create the sender */
     CHECK_OK(srtp_policy_create(&sender_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(
         srtp_policy_set_profile(sender_policy, srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(sender_policy, test_key_gcm));
@@ -6378,7 +6380,7 @@ static srtp_err_status_t test_set_sender_roc(uint16_t seq, uint32_t roc_to_set)
 
     /* Create the receiver */
     CHECK_OK(srtp_policy_create(&receiver_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(srtp_policy_set_profile(receiver_policy,
                                      srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(receiver_policy, test_key_gcm));
@@ -6568,7 +6570,7 @@ srtp_err_status_t srtp_test_roc_mismatch(void)
 
     /* Create the sender */
     CHECK_OK(srtp_policy_create(&sender_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(
         srtp_policy_set_profile(sender_policy, srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(sender_policy, test_key_gcm));
@@ -6584,7 +6586,7 @@ srtp_err_status_t srtp_test_roc_mismatch(void)
 
     /* Create the receiver */
     CHECK_OK(srtp_policy_create(&receiver_policy));
-#ifdef GCM
+#ifdef HAVE_GCM
     CHECK_OK(srtp_policy_set_profile(receiver_policy,
                                      srtp_profile_aead_aes_128_gcm));
     CHECK_OK(policy_set_key(receiver_policy, test_key_gcm));
@@ -6699,7 +6701,7 @@ const test_policy_t hmac_only_policy = {
     TEST_MKI_ID_SIZE,
 };
 
-#ifdef GCM
+#ifdef HAVE_GCM
 const test_policy_t aes128_gcm_policy = {
     { ssrc_any_outbound, 0 },
     srtp_profile_aead_aes_128_gcm,
@@ -6830,7 +6832,7 @@ const test_policy_t *policy_array[] = {
     &hmac_only_policy,
     &aes_only_policy,
     &default_policy,
-#ifdef GCM
+#ifdef HAVE_GCM
     &aes128_gcm_policy,
     &aes128_gcm_cauth_policy,
     &aes256_gcm_policy,

@@ -6,8 +6,8 @@
  *
  * Modes 1 and 2 use the AES-CM + HMAC-SHA1 transform and work with any crypto
  * backend.  Mode 3 (RFC 4771 NULL-MAC carried over AES-GCM, RFC 7714) requires
- * a backend that provides AES-GCM; those tests are compiled only when GCM is
- * available (config.h defines GCM).
+ * a backend that provides AES-GCM; those tests are compiled only when
+ * AES-GCM is available (config.h defines HAVE_GCM).
  *
  */
 /*
@@ -70,7 +70,7 @@ static const uint8_t cm_master_salt[14] = {
     0xeb, 0xb6, 0x96, 0x0b, 0x3a, 0xab, 0xe6,
 };
 
-#ifdef GCM
+#ifdef HAVE_GCM
 static const uint8_t gcm_master_key[16] = {
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
@@ -125,7 +125,7 @@ static void create_cm_rcc_policy_mki(srtp_policy_t *policy,
                                  sizeof(mki4)));
 }
 
-#ifdef GCM
+#ifdef HAVE_GCM
 static void create_gcm_rcc_policy_ssrc(srtp_policy_t *policy,
                                        srtp_rcc_mode_t mode,
                                        uint16_t rate,
@@ -283,7 +283,7 @@ static void rcc_validate_modes_1_2_require_aes_cm(void)
     CHECK_OK(srtp_policy_validate(policy));
     srtp_policy_destroy(policy);
 
-#ifdef GCM
+#ifdef HAVE_GCM
     /* modes 1 and 2 are not defined for AEAD/GCM */
     create_gcm_rcc_policy(&policy, srtp_rcc_mode_1, 1);
     CHECK_RETURN(srtp_policy_validate(policy), srtp_err_status_bad_param);
@@ -310,7 +310,7 @@ static void rcc_validate_mode3_requires_gcm(void)
     CHECK_RETURN(srtp_policy_validate(policy), srtp_err_status_bad_param);
     srtp_policy_destroy(policy);
 
-#ifdef GCM
+#ifdef HAVE_GCM
     create_gcm_rcc_policy(&policy, srtp_rcc_mode_3, 1);
     CHECK_OK(srtp_policy_validate(policy));
     srtp_policy_destroy(policy);
@@ -756,7 +756,7 @@ static void rcc_mode1_sender_rejects_unprotect(void)
     CHECK_OK(srtp_shutdown());
 }
 
-#ifdef GCM
+#ifdef HAVE_GCM
 /*
  * AES-GCM round trips (mode 3, RFC 7714 layout)
  */
@@ -1087,7 +1087,7 @@ static void rcc_gcm_mode3_sender_rejects_unprotect(void)
     srtp_policy_destroy(p);
     CHECK_OK(srtp_shutdown());
 }
-#endif /* GCM */
+#endif /* HAVE_GCM */
 
 TEST_LIST = {
     { "rcc_set_mode_rejects_zero_rate()", rcc_set_mode_rejects_zero_rate },
@@ -1115,7 +1115,7 @@ TEST_LIST = {
       rcc_mode2_sender_rejects_unprotect },
     { "rcc_mode1_sender_rejects_unprotect()",
       rcc_mode1_sender_rejects_unprotect },
-#ifdef GCM
+#ifdef HAVE_GCM
     { "rcc_gcm_mode2_rejected_at_create()", rcc_gcm_mode2_rejected_at_create },
     { "rcc_gcm_mode3_basic_roundtrip()", rcc_gcm_mode3_basic_roundtrip },
     { "rcc_gcm_mode3_rate4()", rcc_gcm_mode3_rate4 },

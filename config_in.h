@@ -18,14 +18,17 @@
 /* Define to redirect logging to stdout. */
 #undef ERR_REPORTING_STDOUT
 
-/* Define this to use AES-GCM. */
-#undef GCM
+/* Define this to use AES-192. */
+#undef HAVE_AES_192
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
 /* Define to 1 if you have the <byteswap.h> header file. */
 #undef HAVE_BYTESWAP_H
+
+/* Define this to use AES-GCM. */
+#undef HAVE_GCM
 
 /* Define to 1 if you have the `inet_aton' function. */
 #undef HAVE_INET_ATON

@@ -167,6 +167,12 @@ srtp_err_status_t srtp_crypto_kernel_load_debug_module(
     srtp_debug_module_t *new_dm);
 
 /*
+ * srtp_crypto_kernel_has_cipher(id) is true when the kernel is initialized
+ * and a cipher with this id has been loaded.
+ */
+bool srtp_crypto_kernel_has_cipher(srtp_cipher_type_id_t id);
+
+/*
  * srtp_crypto_kernel_alloc_cipher(id, cp, key_len);
  *
  * allocates a cipher of type id at location *cp, with key length
@@ -174,7 +180,7 @@ srtp_err_status_t srtp_crypto_kernel_load_debug_module(
  *
  *    srtp_err_status_ok           no problems
  *    srtp_err_status_alloc_fail   an allocation failure occured
- *    srtp_err_status_fail         couldn't find cipher with identifier 'id'
+ *    srtp_err_status_no_such_op   couldn't find cipher with identifier 'id'
  */
 srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
                                                   srtp_cipher_pointer_t *cp,

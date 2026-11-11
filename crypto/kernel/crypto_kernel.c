@@ -113,12 +113,14 @@ static srtp_err_status_t srtp_crypto_kernel_load(void)
     if (status) {
         return status;
     }
-#ifdef GCM
+#ifdef HAVE_AES_192
     status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_icm_192,
                                                  SRTP_AES_ICM_192);
     if (status) {
         return status;
     }
+#endif
+#ifdef HAVE_GCM
     status = srtp_crypto_kernel_load_cipher_type(&srtp_aes_gcm_128,
                                                  SRTP_AES_GCM_128);
     if (status) {
@@ -462,6 +464,15 @@ const srtp_cipher_type_t *srtp_crypto_kernel_get_cipher_type(
     return NULL;
 }
 
+bool srtp_crypto_kernel_has_cipher(srtp_cipher_type_id_t id)
+{
+    if (crypto_kernel.state != srtp_crypto_kernel_state_secure) {
+        return false;
+    }
+
+    return srtp_crypto_kernel_get_cipher_type(id) != NULL;
+}
+
 srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
                                                   srtp_cipher_pointer_t *cp,
                                                   size_t key_len,
@@ -479,7 +490,7 @@ srtp_err_status_t srtp_crypto_kernel_alloc_cipher(srtp_cipher_type_id_t id,
 
     ct = srtp_crypto_kernel_get_cipher_type(id);
     if (!ct) {
-        return srtp_err_status_fail;
+        return srtp_err_status_no_such_op;
     }
 
     return ((ct)->alloc(cp, key_len, tag_len));

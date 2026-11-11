@@ -896,6 +896,16 @@ size_t srtp_profile_get_master_key_length(srtp_profile_t profile);
 size_t srtp_profile_get_master_salt_length(srtp_profile_t profile);
 
 /**
+ * @brief reports whether a profile's cipher is loaded
+ *
+ * Call this after srtp_init(). It is false before initialization, for
+ * srtp_profile_reserved, and when the profile's cipher was not loaded.
+ * A cipher installed with srtp_replace_cipher_type() makes the matching
+ * profile supported.
+ */
+bool srtp_profile_supported(srtp_profile_t profile);
+
+/**
  * @brief appends the salt to the key
  *
  * The function call srtp_append_salt_to_key(k, klen, s, slen)
