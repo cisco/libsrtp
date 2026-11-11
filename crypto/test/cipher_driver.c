@@ -50,6 +50,7 @@
 #include "getopt_s.h"
 #include "cipher.h"
 #include "cipher_priv.h"
+#include "crypto_backend.h"
 #include "datatypes.h"
 #include "alloc.h"
 #include "util.h"
@@ -169,6 +170,11 @@ int main(int argc, char *argv[])
 
     if (!do_validation && !do_timing_test && !do_array_timing_test) {
         usage(argv[0]);
+    }
+
+    status = srtp_crypto_backend_init();
+    if (status) {
+        exit(status);
     }
 
     /* array timing (cache thrash) test */
@@ -331,6 +337,8 @@ int main(int argc, char *argv[])
     CHECK_OK(status);
 #endif
 
+    srtp_crypto_backend_shutdown();
+
     return 0;
 }
 
@@ -367,15 +375,11 @@ srtp_err_status_t cipher_driver_self_test(srtp_cipher_type_t *ct)
     return srtp_err_status_ok;
 }
 
-void reint_cipher(srtp_cipher_t *c,
-                  uint8_t *test_key,
-                  uint8_t *iv,
-                  srtp_cipher_direction_t direction)
+void set_cipher_iv(srtp_cipher_t *c,
+                   uint8_t *iv,
+                   srtp_cipher_direction_t direction)
 {
-    srtp_err_status_t status = srtp_cipher_init(c, test_key);
-    CHECK_OK(status);
-
-    status = srtp_cipher_set_iv(c, iv, direction);
+    srtp_err_status_t status = srtp_cipher_set_iv(c, iv, direction);
     CHECK_OK(status);
 }
 
@@ -437,7 +441,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     status = srtp_cipher_encrypt(c, plaintext, src_len, encrypted, &dst_len);
     CHECK_RETURN(status, srtp_err_status_buffer_small);
 
-    reint_cipher(c, test_key, iv, srtp_direction_encrypt);
+    set_cipher_iv(c, iv, srtp_direction_encrypt);
 
     // test dst len smaller than expected
     src_len = sizeof(plaintext);
@@ -445,7 +449,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     status = srtp_cipher_encrypt(c, plaintext, src_len, encrypted, &dst_len);
     CHECK_RETURN(status, srtp_err_status_buffer_small);
 
-    reint_cipher(c, test_key, iv, srtp_direction_encrypt);
+    set_cipher_iv(c, iv, srtp_direction_encrypt);
 
     // test dst len exact size
     src_len = sizeof(plaintext);
@@ -454,7 +458,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     CHECK_OK(status);
     CHECK(dst_len == src_len + tag_len);
 
-    reint_cipher(c, test_key, iv, srtp_direction_encrypt);
+    set_cipher_iv(c, iv, srtp_direction_encrypt);
 
     // dst len larger than src len
     src_len = sizeof(plaintext);
@@ -465,13 +469,9 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     CHECK(dst_len == src_len + tag_len);
     CHECK_OVERRUN(encrypted, dst_len, sizeof(encrypted));
 
-    reint_cipher(c, test_key, iv, srtp_direction_encrypt);
+    set_cipher_iv(c, iv, srtp_direction_encrypt);
 
     size_t encrypted_len = dst_len;
-
-    // init for decrypt
-    status = srtp_cipher_init(c, test_key);
-    CHECK_OK(status);
 
     status = srtp_cipher_set_iv(c, iv, srtp_direction_decrypt);
     CHECK_OK(status);
@@ -484,7 +484,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
             srtp_cipher_decrypt(c, encrypted, src_len, decrypted, &dst_len);
         CHECK_RETURN(status, srtp_err_status_bad_param);
 
-        reint_cipher(c, test_key, iv, srtp_direction_decrypt);
+        set_cipher_iv(c, iv, srtp_direction_decrypt);
     }
 
     // test dst len zero
@@ -493,7 +493,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     status = srtp_cipher_decrypt(c, encrypted, src_len, decrypted, &dst_len);
     CHECK_RETURN(status, srtp_err_status_buffer_small);
 
-    reint_cipher(c, test_key, iv, srtp_direction_decrypt);
+    set_cipher_iv(c, iv, srtp_direction_decrypt);
 
     // test dst len smaller than expected
     src_len = encrypted_len;
@@ -501,7 +501,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     status = srtp_cipher_decrypt(c, encrypted, src_len, decrypted, &dst_len);
     CHECK_RETURN(status, srtp_err_status_buffer_small);
 
-    reint_cipher(c, test_key, iv, srtp_direction_decrypt);
+    set_cipher_iv(c, iv, srtp_direction_decrypt);
 
     // test dst len exact
     src_len = encrypted_len;
@@ -511,7 +511,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     CHECK(dst_len == sizeof(plaintext));
     CHECK_BUFFER_EQUAL(plaintext, decrypted, sizeof(plaintext));
 
-    reint_cipher(c, test_key, iv, srtp_direction_decrypt);
+    set_cipher_iv(c, iv, srtp_direction_decrypt);
 
     // dst len larger than src len
     src_len = encrypted_len;
@@ -523,7 +523,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
     CHECK_BUFFER_EQUAL(plaintext, decrypted, sizeof(plaintext));
     CHECK_OVERRUN(decrypted, dst_len, sizeof(decrypted));
 
-    reint_cipher(c, test_key, iv, srtp_direction_decrypt);
+    set_cipher_iv(c, iv, srtp_direction_decrypt);
 
     status = srtp_cipher_dealloc(c);
     CHECK_OK(status);

@@ -269,9 +269,9 @@ void srtp_aes_gcm_mbedtls_reinit_does_not_leak_key(void)
 
     // When the same cipher is keyed twice
     TEST_CHECK(srtp_cipher_init(cipher, key) == srtp_err_status_ok);
-    TEST_CHECK(srtp_cipher_init(cipher, key) == srtp_err_status_ok);
+    TEST_CHECK(srtp_cipher_init(cipher, key) == srtp_err_status_bad_param);
 
-    // Then only one key is held
+    // Then the first key is unchanged and no second key was imported
     TEST_CHECK(psa_volatile_key_count() == keys_before + 1);
 
     TEST_CHECK(srtp_cipher_dealloc(cipher) == srtp_err_status_ok);

@@ -309,13 +309,6 @@ static srtp_err_status_t srtp_aes_icm_mbedtls_context_init(void *cv,
     uint32_t key_size_in_bits = (uint32_t)(c->key_size << 3);
     psa_status_t status = PSA_SUCCESS;
 
-    status = psa_crypto_init();
-
-    if (status != PSA_SUCCESS) {
-        debug_print(srtp_mod_aes_icm, "status: %d", status);
-        return srtp_err_status_cipher_fail;
-    }
-
     /*
      * set counter and initial values to 'offset' value, being careful not to
      * go past the end of the key buffer

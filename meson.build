@@ -270,6 +270,7 @@ endif
 
 kernel_sources = files(
   'crypto/kernel/alloc.c',
+  'crypto/kernel/crypto_backend.c',
   'crypto/kernel/crypto_kernel.c',
   'crypto/kernel/err.c',
   'crypto/kernel/key.c',

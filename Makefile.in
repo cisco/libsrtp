@@ -154,7 +154,7 @@ ust     = crypto/ust/ust.o
 err     = crypto/kernel/err.o
 
 kernel  = crypto/kernel/crypto_kernel.o  crypto/kernel/alloc.o   \
-	  crypto/kernel/key.o $(err) # $(ust)
+	  crypto/kernel/crypto_backend.o crypto/kernel/key.o $(err) # $(ust)
 
 cryptobj =  $(ciphers) $(hashes) $(math) $(kernel) $(replay)
 
