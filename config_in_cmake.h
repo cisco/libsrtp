@@ -30,8 +30,11 @@
 /* Define this to use NSS crypto. */
 #cmakedefine NSS 1
 
+/* Define this to use AES-192. */
+#cmakedefine HAVE_AES_192 1
+
 /* Define this to use AES-GCM. */
-#cmakedefine GCM 1
+#cmakedefine HAVE_GCM 1
 
 /* Define if building for a CISC machine (e.g. Intel). */
 #define CPU_CISC 1

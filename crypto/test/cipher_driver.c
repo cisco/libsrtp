@@ -69,7 +69,7 @@ srtp_err_status_t cipher_driver_test_api(srtp_cipher_type_t *ct,
                                          size_t tag_len);
 
 srtp_err_status_t cipher_driver_test_multi_aes_icm_128(void);
-#ifdef GCM
+#ifdef HAVE_GCM
 srtp_err_status_t cipher_driver_test_multi_aes_gcm_128(void);
 #endif
 
@@ -118,8 +118,10 @@ void usage(char *prog_name)
 extern srtp_cipher_type_t srtp_null_cipher;
 extern srtp_cipher_type_t srtp_aes_icm_128;
 extern srtp_cipher_type_t srtp_aes_icm_256;
-#ifdef GCM
+#ifdef HAVE_AES_192
 extern srtp_cipher_type_t srtp_aes_icm_192;
+#endif
+#ifdef HAVE_GCM
 extern srtp_cipher_type_t srtp_aes_gcm_128;
 extern srtp_cipher_type_t srtp_aes_gcm_256;
 #endif
@@ -197,12 +199,14 @@ int main(int argc, char *argv[])
                 &srtp_aes_icm_256, SRTP_AES_ICM_256_KEY_LEN_WSALT, num_cipher);
         }
 
-#ifdef GCM
+#ifdef HAVE_AES_192
         for (num_cipher = 1; num_cipher < max_num_cipher; num_cipher *= 8) {
             cipher_driver_test_array_throughput(
                 &srtp_aes_icm_192, SRTP_AES_ICM_192_KEY_LEN_WSALT, num_cipher);
         }
+#endif
 
+#ifdef HAVE_GCM
         for (num_cipher = 1; num_cipher < max_num_cipher; num_cipher *= 8) {
             cipher_driver_test_array_throughput(
                 &srtp_aes_gcm_128, SRTP_AES_GCM_128_KEY_LEN_WSALT, num_cipher);
@@ -219,19 +223,21 @@ int main(int argc, char *argv[])
         cipher_driver_self_test(&srtp_null_cipher);
         cipher_driver_self_test(&srtp_aes_icm_128);
         cipher_driver_self_test(&srtp_aes_icm_256);
-#ifdef GCM
+#ifdef HAVE_AES_192
         cipher_driver_self_test(&srtp_aes_icm_192);
+#endif
+#ifdef HAVE_GCM
         cipher_driver_self_test(&srtp_aes_gcm_128);
         cipher_driver_self_test(&srtp_aes_gcm_256);
 #endif
         cipher_driver_test_api(&srtp_aes_icm_128,
                                SRTP_AES_ICM_128_KEY_LEN_WSALT, 0);
-#ifdef GCM
+#ifdef HAVE_GCM
         cipher_driver_test_api(&srtp_aes_gcm_128,
                                SRTP_AES_GCM_128_KEY_LEN_WSALT, 16);
 #endif
         cipher_driver_test_multi_aes_icm_128();
-#ifdef GCM
+#ifdef HAVE_GCM
         cipher_driver_test_multi_aes_gcm_128();
 #endif
     }
@@ -299,7 +305,7 @@ int main(int argc, char *argv[])
     status = srtp_cipher_dealloc(c);
     CHECK_OK(status);
 
-#ifdef GCM
+#ifdef HAVE_GCM
     /* run the throughput test on the aes_gcm_128 cipher */
     status = srtp_cipher_type_alloc(&srtp_aes_gcm_128, &c,
                                     SRTP_AES_GCM_128_KEY_LEN_WSALT, 8);
@@ -695,7 +701,7 @@ srtp_err_status_t cipher_driver_test_multi_aes_icm_128(void)
     return srtp_err_status_ok;
 }
 
-#ifdef GCM
+#ifdef HAVE_GCM
 srtp_err_status_t cipher_driver_test_multi_aes_gcm_128(void)
 {
     /* clang-format off */

@@ -718,19 +718,12 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtp(
     case srtp_profile_null_sha1_80:
         srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
         return srtp_err_status_ok;
-#ifdef GCM
     case srtp_profile_aead_aes_128_gcm:
         srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
         return srtp_err_status_ok;
     case srtp_profile_aead_aes_256_gcm:
         srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
         return srtp_err_status_ok;
-#else
-    case srtp_profile_aead_aes_128_gcm:
-        return srtp_err_status_bad_param;
-    case srtp_profile_aead_aes_256_gcm:
-        return srtp_err_status_bad_param;
-#endif
     case srtp_profile_null_sha1_32:
         srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
         policy->auth_tag_len = 4;
@@ -778,19 +771,12 @@ srtp_err_status_t srtp_crypto_policy_set_from_profile_for_rtcp(
     case srtp_profile_null_sha1_80:
         srtp_crypto_policy_set_null_cipher_hmac_sha1_80(policy);
         return srtp_err_status_ok;
-#ifdef GCM
     case srtp_profile_aead_aes_128_gcm:
         srtp_crypto_policy_set_aes_gcm_128_16_auth(policy);
         return srtp_err_status_ok;
     case srtp_profile_aead_aes_256_gcm:
         srtp_crypto_policy_set_aes_gcm_256_16_auth(policy);
         return srtp_err_status_ok;
-#else
-    case srtp_profile_aead_aes_128_gcm:
-        return srtp_err_status_bad_param;
-    case srtp_profile_aead_aes_256_gcm:
-        return srtp_err_status_bad_param;
-#endif
     case srtp_profile_null_sha1_32:
         /* We do not honor the 32-bit auth tag request since
          * this is not compliant with RFC 3711 */

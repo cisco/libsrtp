@@ -621,6 +621,61 @@ static void srtp_policy_null_null_no_key_mki_rejected(void)
     srtp_policy_destroy(policy);
 }
 
+static void assert_profile_create_matches_support(srtp_profile_t profile)
+{
+    srtp_policy_t policy;
+    srtp_t session = NULL;
+    uint8_t key[SRTP_MAX_KEY_LEN] = { 0 };
+    uint8_t salt[SRTP_MAX_KEY_LEN] = { 0 };
+    size_t key_len = srtp_profile_get_master_key_length(profile);
+    size_t salt_len = srtp_profile_get_master_salt_length(profile);
+    bool supported = srtp_profile_supported(profile);
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_any_outbound, 0 }));
+    CHECK_OK(srtp_policy_set_profile(policy, profile));
+    if (key_len > 0) {
+        CHECK_OK(
+            srtp_policy_add_key(policy, key, key_len, salt, salt_len, NULL, 0));
+    }
+
+    if (supported) {
+        CHECK_OK(srtp_create(&session, policy));
+        CHECK_OK(srtp_dealloc(session));
+    } else {
+        CHECK_RETURN(srtp_create(&session, policy), srtp_err_status_no_such_op);
+    }
+
+    srtp_policy_destroy(policy);
+}
+
+static void srtp_profile_supported_matches_create(void)
+{
+    CHECK(!srtp_profile_supported(srtp_profile_reserved));
+    CHECK(!srtp_profile_supported(srtp_profile_null_null));
+    CHECK(!srtp_profile_supported(srtp_profile_aes128_cm_sha1_80));
+    CHECK(!srtp_profile_supported(srtp_profile_aes256_cm_sha1_80));
+    CHECK(!srtp_profile_supported(srtp_profile_aes192_cm_sha1_80));
+    CHECK(!srtp_profile_supported(srtp_profile_aead_aes_256_gcm));
+    CHECK(!srtp_profile_supported(srtp_profile_aead_aes_128_gcm));
+
+    CHECK_OK(srtp_init());
+
+    CHECK(!srtp_profile_supported(srtp_profile_reserved));
+    CHECK(srtp_profile_supported(srtp_profile_aes128_cm_sha1_80));
+    CHECK(srtp_profile_supported(srtp_profile_null_null));
+
+    assert_profile_create_matches_support(srtp_profile_null_null);
+    assert_profile_create_matches_support(srtp_profile_aes128_cm_sha1_80);
+    assert_profile_create_matches_support(srtp_profile_aes192_cm_sha1_80);
+    assert_profile_create_matches_support(srtp_profile_aes256_cm_sha1_80);
+    assert_profile_create_matches_support(srtp_profile_aead_aes_128_gcm);
+    assert_profile_create_matches_support(srtp_profile_aead_aes_256_gcm);
+
+    CHECK_OK(srtp_shutdown());
+}
+
 static void srtp_policy_all_functions_null_policy(void)
 {
     srtp_policy_t cloned;
@@ -733,6 +788,8 @@ TEST_LIST = {
       srtp_policy_null_null_no_key_cryptex_enc_hdr_rejected },
     { "srtp_policy_null_null_no_key_mki_rejected()",
       srtp_policy_null_null_no_key_mki_rejected },
+    { "srtp_profile_supported_matches_create()",
+      srtp_profile_supported_matches_create },
     { "srtp_policy_all_functions_null_policy()",
       srtp_policy_all_functions_null_policy },
     { 0 }

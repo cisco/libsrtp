@@ -48,10 +48,6 @@
 #include "err.h"
 #include "alloc.h" /* for srtp_crypto_alloc() */
 
-#ifdef GCM
-#include "aes_gcm.h" /* for AES GCM mode */
-#endif
-
 #ifdef OPENSSL_KDF
 #include <openssl/kdf.h>
 #include "aes_icm_ext.h"
@@ -66,6 +62,7 @@
 #endif
 #include <wolfssl/wolfcrypt/settings.h>
 #ifdef WOLFSSL_KDF
+#include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/kdf.h>
 #endif
 #endif
@@ -4913,6 +4910,42 @@ size_t srtp_profile_get_master_salt_length(srtp_profile_t profile)
         return SRTP_AEAD_SALT_LEN;
     }
     return 0; /* indicate error by returning a zero */
+}
+
+bool srtp_profile_supported(srtp_profile_t profile)
+{
+    srtp_cipher_type_id_t cipher_id;
+
+    switch (profile) {
+    case srtp_profile_null_null:
+    case srtp_profile_null_sha1_80:
+    case srtp_profile_null_sha1_32:
+        cipher_id = SRTP_NULL_CIPHER;
+        break;
+    case srtp_profile_aes128_cm_sha1_80:
+    case srtp_profile_aes128_cm_sha1_32:
+        cipher_id = SRTP_AES_ICM_128;
+        break;
+    case srtp_profile_aes192_cm_sha1_80:
+    case srtp_profile_aes192_cm_sha1_32:
+        cipher_id = SRTP_AES_ICM_192;
+        break;
+    case srtp_profile_aes256_cm_sha1_80:
+    case srtp_profile_aes256_cm_sha1_32:
+        cipher_id = SRTP_AES_ICM_256;
+        break;
+    case srtp_profile_aead_aes_128_gcm:
+        cipher_id = SRTP_AES_GCM_128;
+        break;
+    case srtp_profile_aead_aes_256_gcm:
+        cipher_id = SRTP_AES_GCM_256;
+        break;
+    case srtp_profile_reserved:
+    default:
+        return false;
+    }
+
+    return srtp_crypto_kernel_has_cipher(cipher_id);
 }
 
 srtp_err_status_t stream_get_protect_trailer_length(srtp_stream_ctx_t *stream,

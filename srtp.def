@@ -29,6 +29,7 @@ srtp_policy_remove_enc_hdr_xtnd_ids
 srtp_dealloc
 srtp_profile_get_master_key_length
 srtp_profile_get_master_salt_length
+srtp_profile_supported
 srtp_append_salt_to_key
 srtp_get_protect_trailer_length
 srtp_get_protect_rtcp_trailer_length

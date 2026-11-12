@@ -128,7 +128,8 @@ crypto_library = get_option('crypto-library')
 if crypto_library == 'openssl'
   openssl_dep = dependency('openssl', required: true)
   srtp3_deps += [openssl_dep]
-  cdata.set('GCM', true)
+  cdata.set('HAVE_GCM', true)
+  cdata.set('HAVE_AES_192', true)
   cdata.set('OPENSSL', true)
   cdata.set('USE_EXTERNAL_CRYPTO', true)
   use_openssl = true
@@ -146,7 +147,8 @@ if crypto_library == 'openssl'
 elif crypto_library == 'wolfssl'
   wolfssl_dep = dependency('wolfssl', version: '>= 5.7.0', required: true)
   srtp3_deps += [wolfssl_dep]
-  cdata.set('GCM', true)
+  cdata.set('HAVE_GCM', true)
+  cdata.set('HAVE_AES_192', true)
   cdata.set('WOLFSSL', true)
   cdata.set('USE_EXTERNAL_CRYPTO', true)
   use_wolfssl = true
@@ -162,7 +164,8 @@ elif crypto_library == 'wolfssl'
 elif crypto_library == 'nss'
   nss_dep = dependency('nss', version: '>= 1.0.1', required: true)
   srtp3_deps += [nss_dep]
-  cdata.set('GCM', true)
+  cdata.set('HAVE_GCM', true)
+  cdata.set('HAVE_AES_192', true)
   cdata.set('NSS', true)
   cdata.set('USE_EXTERNAL_CRYPTO', true)
   use_nss = true
@@ -176,7 +179,8 @@ elif crypto_library == 'mbedtls'
     mbedtls_dep = cc.find_library('mbedcrypto', has_headers: ['mbedtls/aes.h'], required: true)
   endif
   srtp3_deps += [mbedtls_dep]
-  cdata.set('GCM', true)
+  cdata.set('HAVE_GCM', true)
+  cdata.set('HAVE_AES_192', true)
   cdata.set('MBEDTLS', true)
   cdata.set('USE_EXTERNAL_CRYPTO', true)
   use_mbedtls = true

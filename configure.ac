@@ -265,7 +265,8 @@ if test "$enable_openssl" = "yes"; then
    AC_SEARCH_LIBS([EVP_CIPHER_CTX_reset], [crypto],
      [], [AC_MSG_FAILURE([can't find compatible openssl crypto lib])])
 
-   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([HAVE_GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([HAVE_AES_192], [1], [Define this to use AES-192.])
    AC_DEFINE([OPENSSL], [1], [Define this to use OpenSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_ossl.o crypto/cipher/aes_gcm_ossl.o"
    HMAC_OBJS=crypto/hash/hmac_ossl.o
@@ -299,7 +300,8 @@ elif test "$enable_wolfssl" = "yes"; then
        fi],
       [AC_MSG_RESULT([no])])
 
-   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([HAVE_GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([HAVE_AES_192], [1], [Define this to use AES-192.])
    AC_DEFINE([WOLFSSL], [1], [Define this to use wolfSSL crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_wssl.o crypto/cipher/aes_gcm_wssl.o"
    HMAC_OBJS=crypto/hash/hmac_wssl.o
@@ -354,7 +356,8 @@ elif test "$enable_nss" = "yes"; then
        [], [AC_MSG_FAILURE([can't find useable libnss3])])
    fi
 
-   AC_DEFINE([GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([HAVE_GCM], [1], [Define this to use AES-GCM.])
+   AC_DEFINE([HAVE_AES_192], [1], [Define this to use AES-192.])
    AC_DEFINE([NSS], [1], [Define this to use NSS crypto.])
    AES_ICM_OBJS="crypto/cipher/aes_icm_nss.o crypto/cipher/aes_gcm_nss.o"
    HMAC_OBJS="crypto/hash/hmac_nss.o"
