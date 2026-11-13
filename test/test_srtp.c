@@ -51,7 +51,7 @@
 /*
  * Test specific.
  */
-#include "cutest.h"
+#include "acutest.h"
 
 #ifdef MBEDTLS
 #include <psa/crypto.h>

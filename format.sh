@@ -12,7 +12,7 @@ fi
 
 a=`git ls-files '*.h' '*.c'`
 for x in $a; do
-    if [ $x != "config_in.h" ]; then
+    if [ $x != "config_in.h" ] && [ $x != "test/acutest.h" ]; then
         $CLANG_FORMAT -i -style=file $x
     fi
 done

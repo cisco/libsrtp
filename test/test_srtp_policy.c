@@ -36,7 +36,7 @@
  *
  */
 
-#include "cutest.h"
+#include "acutest.h"
 
 #include "srtp.h"
 #include "util.h"

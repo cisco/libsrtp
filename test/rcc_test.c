@@ -52,7 +52,7 @@
 #include <winsock2.h>
 #endif
 
-#include "cutest.h"
+#include "acutest.h"
 
 #include "srtp.h"
 #include "util.h"
