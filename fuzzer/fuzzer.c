@@ -357,6 +357,7 @@ static srtp_policy_t extract_policy(const uint8_t **data, size_t *size)
         uint8_t num_xtn_hdr;
         uint8_t do_extract_key;
         uint8_t do_extract_master_keys;
+        uint32_t initial_roc;
     } params;
 
     EXTRACT_IF(&params, *data, *size, sizeof(params));
@@ -447,6 +448,13 @@ static srtp_policy_t extract_policy(const uint8_t **data, size_t *size)
     if (status != srtp_err_status_ok) {
         srtp_policy_destroy(policy);
         return NULL;
+    }
+    if (fuzz_ssrc_type_map[params.ssrc_type].srtp_ssrc_type == ssrc_specific) {
+        status = srtp_policy_set_roc(policy, params.initial_roc);
+        if (status != srtp_err_status_ok) {
+            srtp_policy_destroy(policy);
+            return NULL;
+        }
     }
 
 end:
@@ -791,15 +799,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
                 i++;
             }
 
-            /* Keep setting and getting ROCs until the set of SSRC/ROC tuples
-             * extracted from the fuzzer input is exhausted */
+            /* Keep reading ROCs until the set of SSRC/ROC tuples extracted
+             * from the fuzzer input is exhausted. The ROC itself is applied
+             * from the policy before the stream exists. */
             if (j < num_set_roc * 2) {
                 uint32_t roc;
-                if (srtp_stream_set_roc(srtp_ctx, set_roc[j], set_roc[j + 1]) !=
-                    srtp_err_status_ok) {
-                    goto end;
-                }
-                if (srtp_stream_get_roc(srtp_ctx, set_roc[j + 1], &roc) !=
+                if (srtp_stream_get_roc(srtp_ctx, set_roc[j], &roc) !=
                     srtp_err_status_ok) {
                     goto end;
                 }

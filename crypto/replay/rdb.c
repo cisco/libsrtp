@@ -65,6 +65,7 @@ srtp_err_status_t srtp_rdb_init(srtp_rdb_t *rdb)
 {
     v128_set_to_zero(&rdb->bitmask);
     rdb->window_start = 0;
+    rdb->sender_initialized = false;
     return srtp_err_status_ok;
 }
 
@@ -127,6 +128,10 @@ srtp_err_status_t srtp_rdb_add_index(srtp_rdb_t *rdb, uint32_t p_index)
 
 srtp_err_status_t srtp_rdb_increment(srtp_rdb_t *rdb)
 {
+    if (!rdb->sender_initialized) {
+        rdb->sender_initialized = true;
+        return srtp_err_status_ok;
+    }
     if (rdb->window_start >= 0x7fffffff) {
         return srtp_err_status_key_expired;
     }

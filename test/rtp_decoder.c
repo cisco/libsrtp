@@ -471,9 +471,15 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    if (roc != 0 && ssrc.type != ssrc_specific) {
-        fprintf(stderr, "error: setting ROC (-r) requires -s <ssrc>\n");
-        exit(1);
+    if (roc != 0) {
+        if (ssrc.type != ssrc_specific) {
+            fprintf(stderr, "error: setting ROC (-r) requires -s <ssrc>\n");
+            exit(1);
+        }
+        if (srtp_policy_set_roc(policy, roc) != srtp_err_status_ok) {
+            fprintf(stderr, "error: failed to set ROC in policy\n");
+            exit(1);
+        }
     }
 
     pcap_handle = pcap_open_offline(pcap_file, errbuf);
@@ -499,8 +505,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     fprintf(stderr, "Starting decoder\n");
-    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset, ssrc.value,
-                         roc)) {
+    if (rtp_decoder_init(dec, policy, mode, rtp_packet_offset)) {
         fprintf(stderr, "error: init failed\n");
         exit(1);
     }
@@ -584,9 +589,7 @@ srtp_err_status_t rtp_decoder_deinit(rtp_decoder_t decoder)
 srtp_err_status_t rtp_decoder_init(rtp_decoder_t dcdr,
                                    srtp_policy_t policy,
                                    rtp_decoder_mode_t mode,
-                                   size_t rtp_packet_offset,
-                                   uint32_t ssrc,
-                                   uint32_t roc)
+                                   size_t rtp_packet_offset)
 {
     dcdr->rtp_offset = rtp_packet_offset;
     dcdr->srtp_ctx = NULL;
@@ -599,18 +602,7 @@ srtp_err_status_t rtp_decoder_init(rtp_decoder_t dcdr,
     dcdr->mode = mode;
     dcdr->policy = policy;
 
-    srtp_err_status_t result = srtp_create(&dcdr->srtp_ctx, dcdr->policy);
-    if (result != srtp_err_status_ok) {
-        return result;
-    }
-
-    if (roc != 0) {
-        result = srtp_stream_set_roc(dcdr->srtp_ctx, ssrc, roc);
-        if (result != srtp_err_status_ok) {
-            return result;
-        }
-    }
-    return srtp_err_status_ok;
+    return srtp_create(&dcdr->srtp_ctx, dcdr->policy);
 }
 
 /*

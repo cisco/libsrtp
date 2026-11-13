@@ -119,6 +119,12 @@ typedef struct srtp_policy_ctx_t_ {
                               /**< the ROC is carried in packets whose  */
                               /**< sequence number is 0 modulo R. A     */
                               /**< value of 0 is treated as 1.          */
+    uint32_t roc;             /**< Initial ROC, used until a sequence   */
+                              /**< number is known. 0 is the default.   */
+    uint64_t packet_index;    /**< Next 48-bit RTP packet index. 0      */
+                              /**< means start at index 0.              */
+    uint32_t srtcp_index;     /**< Next 31-bit SRTCP index. 0 is the    */
+                              /**< default first on-wire index.         */
 } srtp_policy_ctx_t_;
 
 static inline bool srtp_policy_is_null_cipher_null_auth(
