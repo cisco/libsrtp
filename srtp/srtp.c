@@ -716,6 +716,56 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
  * the SSRC
  */
 
+static size_t srtp_replay_word_count(size_t bit_length)
+{
+    return bit_length / 32;
+}
+
+static void srtp_rdbx_set_all_bits(srtp_rdbx_t *rdbx)
+{
+    size_t words = srtp_replay_word_count(bitvector_get_length(&rdbx->bitmask));
+
+    for (size_t i = 0; i < words; i++) {
+        rdbx->bitmask.word[i] = 0xffffffffu;
+    }
+}
+
+/* the highest bit of the bitmask is the current index */
+static bool srtp_rdbx_index_seen(const srtp_rdbx_t *rdbx)
+{
+    return bitvector_get_bit(&rdbx->bitmask,
+                             bitvector_get_length(&rdbx->bitmask) - 1) != 0;
+}
+
+/* largest replay window is below 0x8000 bits */
+#define SRTP_RDBX_MAX_WORDS (0x8000 / 32)
+
+static void srtp_rdbx_save_bits(const srtp_rdbx_t *rdbx,
+                                uint32_t saved[SRTP_RDBX_MAX_WORDS])
+{
+    size_t words = srtp_replay_word_count(bitvector_get_length(&rdbx->bitmask));
+
+    memcpy(saved, rdbx->bitmask.word, words * sizeof(uint32_t));
+}
+
+/*
+ * Carry the replay bits of a replaced stream over to its successor. The
+ * windows end at the current index, so they align at the top. Bits older than
+ * the previous window are treated as seen.
+ */
+static void srtp_rdbx_restore_bits(srtp_rdbx_t *rdbx,
+                                   const uint32_t saved[SRTP_RDBX_MAX_WORDS],
+                                   size_t saved_window)
+{
+    size_t words = srtp_replay_word_count(bitvector_get_length(&rdbx->bitmask));
+    size_t saved_words = srtp_replay_word_count(saved_window);
+
+    for (size_t i = 1; i <= words; i++) {
+        rdbx->bitmask.word[words - i] =
+            i <= saved_words ? saved[saved_words - i] : 0xffffffffu;
+    }
+}
+
 static srtp_err_status_t srtp_stream_clone(
     const srtp_stream_ctx_t *stream_template,
     uint32_t ssrc,
@@ -804,7 +854,7 @@ static srtp_err_status_t srtp_stream_clone(
     /* set ssrc to that provided */
     str->ssrc = ssrc;
 
-    /* reset pending ROC */
+    /* a template cannot carry a starting index, so this SSRC starts fresh */
     str->pending_roc = 0;
 
     /* set direction and security services */
@@ -1659,9 +1709,6 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
     /* set the SSRC value */
     srtp->ssrc = htonl(p->ssrc.value);
 
-    /* reset pending ROC */
-    srtp->pending_roc = 0;
-
     /* set the security service flags */
     srtp->rtp_services = p->rtp.sec_serv;
     srtp->rtcp_services = p->rtcp.sec_serv;
@@ -1675,6 +1722,20 @@ static srtp_err_status_t srtp_stream_init(srtp_stream_ctx_t *srtp,
 
     /* initialize SRTCP replay database */
     srtp_rdb_init(&srtp->rtcp_rdb);
+    srtp->rtcp_rdb.window_start = p->srtcp_index;
+
+    if (p->packet_index != 0) {
+        srtp->rtp_rdbx.index = p->packet_index - 1;
+        srtp_rdbx_set_all_bits(&srtp->rtp_rdbx);
+        /*
+         * The stored index is the one before the configured start, so its
+         * ROC is one lower when that start is on a sequence-number boundary.
+         * Keep the configured ROC until a packet commits an index.
+         */
+        srtp->pending_roc = (uint32_t)(p->packet_index >> 16);
+    } else {
+        srtp->pending_roc = p->roc;
+    }
 
     /* initialize allow_repeat_tx */
     srtp->allow_repeat_tx = p->allow_repeat_tx;
@@ -2069,7 +2130,11 @@ static srtp_err_status_t srtp_get_est_pkt_index(const srtp_hdr_t *hdr,
 {
     srtp_err_status_t result = srtp_err_status_ok;
 
-    if (stream->pending_roc) {
+    /*
+     * pending_roc replaces the estimate only while no index has been seen.
+     * A configured packet index already positions the replay database.
+     */
+    if (stream->pending_roc != 0 && !srtp_rdbx_index_seen(&stream->rtp_rdbx)) {
         result = srtp_estimate_index(&stream->rtp_rdbx, stream->pending_roc,
                                      est, ntohs(hdr->seq), delta);
     } else {
@@ -2206,6 +2271,7 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
                 return status; /* we've been asked to reuse an index */
         }
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+        stream->pending_roc = 0;
     }
 
     debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
@@ -2570,6 +2636,7 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
     } else {
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+        stream->pending_roc = 0;
     }
 
     *rtp_len = enc_start + enc_octet_len;
@@ -2789,6 +2856,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
                 return status; /* we've been asked to reuse an index */
         }
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+        stream->pending_roc = 0;
     }
 
     debug_print(mod_srtp, "estimated packet index: %016" PRIx64, est);
@@ -3365,6 +3433,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         srtp_rdbx_add_index(&stream->rtp_rdbx, 0);
     } else {
         srtp_rdbx_add_index(&stream->rtp_rdbx, delta);
+        stream->pending_roc = 0;
     }
 
     *rtp_len = enc_start + enc_octet_len;
@@ -3637,6 +3706,9 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
     uint32_t ssrc = stream->ssrc;
     srtp_xtd_seq_num_t old_index;
     srtp_rdb_t old_rtcp_rdb;
+    uint32_t old_pending_roc;
+    uint32_t old_bits[SRTP_RDBX_MAX_WORDS];
+    size_t old_window;
 
     /* old / non-template streams are copied unchanged */
     if (stream->session_keys[0].rtp_auth !=
@@ -3650,9 +3722,12 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
         return true;
     }
 
-    /* save old extended seq */
+    /* save the live index before the stream is rebuilt */
     old_index = stream->rtp_rdbx.index;
     old_rtcp_rdb = stream->rtcp_rdb;
+    old_pending_roc = stream->pending_roc;
+    old_window = srtp_rdbx_get_window_size(&stream->rtp_rdbx);
+    srtp_rdbx_save_bits(&stream->rtp_rdbx, old_bits);
 
     /* remove stream */
     data->status = srtp_stream_remove(session, ntohl(ssrc));
@@ -3673,9 +3748,14 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
         return false;
     }
 
-    /* restore old extended seq */
+    /*
+     * Restore the live index and replay bits. A starting index on the update
+     * policy is not applied.
+     */
     stream->rtp_rdbx.index = old_index;
     stream->rtcp_rdb = old_rtcp_rdb;
+    stream->pending_roc = old_pending_roc;
+    srtp_rdbx_restore_bits(&stream->rtp_rdbx, old_bits, old_window);
 
     return true;
 }
@@ -3794,6 +3874,9 @@ static srtp_err_status_t stream_update(srtp_t session,
     srtp_xtd_seq_num_t old_index;
     srtp_rdb_t old_rtcp_rdb;
     direction_t old_direction;
+    uint32_t old_pending_roc;
+    uint32_t old_bits[SRTP_RDBX_MAX_WORDS];
+    size_t old_window;
     srtp_stream_t stream;
 
     stream = srtp_get_stream(session, htonl(policy->ssrc.value));
@@ -3806,10 +3889,13 @@ static srtp_err_status_t stream_update(srtp_t session,
         return status;
     }
 
-    /* save old extendard seq */
+    /* save the live index before the stream is rebuilt */
     old_index = stream->rtp_rdbx.index;
     old_rtcp_rdb = stream->rtcp_rdb;
     old_direction = stream->direction;
+    old_pending_roc = stream->pending_roc;
+    old_window = srtp_rdbx_get_window_size(&stream->rtp_rdbx);
+    srtp_rdbx_save_bits(&stream->rtp_rdbx, old_bits);
 
     status = srtp_stream_remove(session, policy->ssrc.value);
     if (status) {
@@ -3826,10 +3912,15 @@ static srtp_err_status_t stream_update(srtp_t session,
         return srtp_err_status_fail;
     }
 
-    /* restore old extended seq */
+    /*
+     * Restore the live index and replay bits. A starting index on the update
+     * policy is not applied.
+     */
     stream->rtp_rdbx.index = old_index;
     stream->rtcp_rdb = old_rtcp_rdb;
     stream->direction = old_direction;
+    stream->pending_roc = old_pending_roc;
+    srtp_rdbx_restore_bits(&stream->rtp_rdbx, old_bits, old_window);
 
     return srtp_err_status_ok;
 }
@@ -5127,34 +5218,117 @@ srtp_err_status_t srtp_install_log_handler(srtp_log_handler_func_t func,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_stream_set_roc(srtp_t session,
-                                      uint32_t ssrc,
-                                      uint32_t roc)
-{
-    srtp_stream_t stream;
-
-    stream = srtp_get_stream(session, htonl(ssrc));
-    if (stream == NULL) {
-        return srtp_err_status_bad_param;
-    }
-
-    stream->pending_roc = roc;
-
-    return srtp_err_status_ok;
-}
-
 srtp_err_status_t srtp_stream_get_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t *roc)
 {
     srtp_stream_t stream;
 
+    if (session == NULL || roc == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
     stream = srtp_get_stream(session, htonl(ssrc));
     if (stream == NULL) {
         return srtp_err_status_bad_param;
     }
 
-    *roc = srtp_rdbx_get_roc(&stream->rtp_rdbx);
+    if (stream->pending_roc != 0) {
+        *roc = stream->pending_roc;
+    } else {
+        *roc = srtp_rdbx_get_roc(&stream->rtp_rdbx);
+    }
+
+    return srtp_err_status_ok;
+}
+
+static bool srtp_rtcp_highest_bit(const srtp_rdb_t *rdb, uint32_t *bit)
+{
+    for (int i = (int)(8 * sizeof(v128_t)) - 1; i >= 0; i--) {
+        if (v128_get_bit(&rdb->bitmask, i)) {
+            *bit = (uint32_t)i;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+srtp_err_status_t srtp_stream_get_packet_index(srtp_t session,
+                                               uint32_t ssrc,
+                                               uint64_t *index)
+{
+    srtp_stream_t stream;
+
+    if (session == NULL || index == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    stream = srtp_get_stream(session, htonl(ssrc));
+    if (stream == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (stream->rtp_rdbx.index == 0 &&
+        !srtp_rdbx_index_seen(&stream->rtp_rdbx)) {
+        if (stream->pending_roc != 0) {
+            return srtp_err_status_bad_param;
+        }
+        *index = 0;
+        return srtp_err_status_ok;
+    }
+
+    if (stream->rtp_rdbx.index == UINT64_C(0xffffffffffff)) {
+        return srtp_err_status_key_expired;
+    }
+
+    *index = stream->rtp_rdbx.index + 1;
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_stream_get_srtcp_index(srtp_t session,
+                                              uint32_t ssrc,
+                                              uint32_t *index)
+{
+    srtp_stream_t stream;
+    uint32_t bit;
+
+    if (session == NULL || index == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    stream = srtp_get_stream(session, htonl(ssrc));
+    if (stream == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (stream->direction == dir_srtp_receiver) {
+        if (!srtp_rtcp_highest_bit(&stream->rtcp_rdb, &bit)) {
+            *index = stream->rtcp_rdb.window_start;
+            return srtp_err_status_ok;
+        }
+
+        if ((uint64_t)stream->rtcp_rdb.window_start + bit + 1 >
+            SRTCP_INDEX_MASK) {
+            return srtp_err_status_key_expired;
+        }
+
+        *index = stream->rtcp_rdb.window_start + bit + 1;
+        return srtp_err_status_ok;
+    }
+
+    if (stream->direction == dir_srtp_sender &&
+        stream->rtcp_rdb.sender_initialized) {
+        if (stream->rtcp_rdb.window_start >= SRTCP_INDEX_MASK) {
+            return srtp_err_status_key_expired;
+        }
+
+        *index = stream->rtcp_rdb.window_start + 1;
+        return srtp_err_status_ok;
+    }
+
+    *index = stream->rtcp_rdb.window_start;
 
     return srtp_err_status_ok;
 }

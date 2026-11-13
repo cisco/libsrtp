@@ -556,6 +556,69 @@ srtp_err_status_t srtp_policy_set_allow_repeat_tx(srtp_policy_t policy,
                                                   bool allow);
 
 /**
+ * @brief Set the initial RTP rollover counter.
+ *
+ * @param policy policy handle.
+ * @param roc initial rollover counter.
+ *
+ * The value is combined with the sequence number of the first packet. It is
+ * not a failover checkpoint; use srtp_policy_set_packet_index() when the
+ * extended sequence number is already known. roc 0 is the default. A policy
+ * cannot have both a ROC and a packet index: this call fails while a packet
+ * index is set, including when roc is 0. Set the packet index back to 0
+ * before setting a ROC. A template policy (ssrc_any_inbound or
+ * ssrc_any_outbound) rejects a non-zero ROC.
+ *
+ * @return
+ *    - srtp_err_status_ok if value was accepted.
+ *    - srtp_err_status_bad_param if policy is NULL, a packet index is set, or
+ *      a non-zero roc is set on a template policy.
+ */
+srtp_err_status_t srtp_policy_set_roc(srtp_policy_t policy, uint32_t roc);
+
+/**
+ * @brief Set the next RTP packet index.
+ *
+ * @param policy policy handle.
+ * @param index next 48-bit packet index. The ROC is the high 32 bits and the
+ *              RTP sequence number is the low 16 bits.
+ *
+ * index 0 is the default and is the same as not calling this function. A
+ * non-zero index is the next packet index a sender will accept from the
+ * application, and the lowest index a receiver will accept. Every index below
+ * it is already seen. The value must be at most 2^48-1. A policy cannot have
+ * both a ROC and a packet index: this call fails while a ROC is set, including
+ * when index is 0. Set the ROC back to 0 before setting a packet index. A
+ * template policy rejects a non-zero index.
+ *
+ * @return
+ *    - srtp_err_status_ok if value was accepted.
+ *    - srtp_err_status_bad_param if policy is NULL, index does not fit in 48
+ *      bits, a ROC is set, or a non-zero index is set on a template policy.
+ */
+srtp_err_status_t srtp_policy_set_packet_index(srtp_policy_t policy,
+                                               uint64_t index);
+
+/**
+ * @brief Set the next SRTCP index.
+ *
+ * @param policy policy handle.
+ * @param index next 31-bit SRTCP index.
+ *
+ * index 0 is the default: the first packet a sender transmits carries 0, and
+ * a receiver accepts from 0. A sender transmits this index next. A receiver
+ * rejects every index below it. index must be at most 2^31-1. A template
+ * policy rejects a non-zero index.
+ *
+ * @return
+ *    - srtp_err_status_ok if value was accepted.
+ *    - srtp_err_status_bad_param if policy is NULL, index does not fit in
+ *      31 bits, or a non-zero index is set on a template policy.
+ */
+srtp_err_status_t srtp_policy_set_srtcp_index(srtp_policy_t policy,
+                                              uint32_t index);
+
+/**
  * @brief Enable or disable cryptex for this policy.
  *
  * @param policy policy handle.
@@ -826,8 +889,8 @@ srtp_err_status_t srtp_stream_remove(srtp_t session, uint32_t ssrc);
  *
  * The function call srtp_update(session, policy) updates
  * all the streams in the session applying the given policy
- * and key. The existing ROC value of all streams will be
- * preserved.
+ * and key. The existing ROC value and RTP replay state of all
+ * streams will be preserved.
  *
  * @param session is the SRTP session that contains the streams
  *        to be updated.
@@ -849,8 +912,8 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t policy);
  *
  * The function call srtp_stream_update(session, policy) updates
  * the stream(s) in the session that match applying the given
- * policy and key. The existing ROC value of all stream(s) will
- * be preserved.
+ * policy and key. The existing ROC value and RTP replay state of
+ * all stream(s) will be preserved.
  *
  * @param session is the SRTP session that contains the streams
  *        to be updated.
@@ -1285,22 +1348,14 @@ srtp_err_status_t srtp_get_protect_rtcp_trailer_length(srtp_t session,
                                                        size_t *length);
 
 /**
- * @brief srtp_stream_set_roc(session, ssrc, roc)
- *
- * Set the roll-over-counter on a session for a given SSRC
- *
- * returns err_status_ok on success, srtp_err_status_bad_param if there is no
- * stream found
- *
- */
-srtp_err_status_t srtp_stream_set_roc(srtp_t session,
-                                      uint32_t ssrc,
-                                      uint32_t roc);
-
-/**
  * @brief srtp_stream_get_roc(session, ssrc, roc)
  *
- * Get the roll-over-counter on a session for a given SSRC
+ * Get the roll-over-counter on a session for a given SSRC.
+ *
+ * Before any packet has committed an index, this returns the ROC of the
+ * configured start: the ROC set on the policy, or the high 32 bits of a
+ * configured packet index. After that it returns the ROC of the highest
+ * packet index.
  *
  * returns err_status_ok on success, srtp_err_status_bad_param if there is no
  * stream found
@@ -1309,6 +1364,44 @@ srtp_err_status_t srtp_stream_set_roc(srtp_t session,
 srtp_err_status_t srtp_stream_get_roc(srtp_t session,
                                       uint32_t ssrc,
                                       uint32_t *roc);
+
+/**
+ * @brief srtp_stream_get_packet_index(session, ssrc, index)
+ *
+ * Get the next 48-bit RTP packet index for a stream.
+ *
+ * The value is one past the highest committed packet index. Before any packet
+ * and with no pending ROC, it is 0. When a ROC was configured and no sequence
+ * number has been seen yet, the extended index is not known and the function
+ * returns srtp_err_status_bad_param; srtp_stream_get_roc() reports that ROC.
+ *
+ * returns err_status_ok on success, srtp_err_status_bad_param if there is no
+ * stream or the index is not yet known, srtp_err_status_key_expired if the
+ * next index does not fit in 48 bits
+ *
+ */
+srtp_err_status_t srtp_stream_get_packet_index(srtp_t session,
+                                               uint32_t ssrc,
+                                               uint64_t *index);
+
+/**
+ * @brief srtp_stream_get_srtcp_index(session, ssrc, index)
+ *
+ * Get the next 31-bit SRTCP index for a stream.
+ *
+ * A sender returns the index its next packet will carry. A receiver returns
+ * one past the highest accepted index, or the configured floor when nothing
+ * has been accepted. Before the direction is known, both answers are the
+ * configured floor.
+ *
+ * returns err_status_ok on success, srtp_err_status_bad_param if there is no
+ * stream, srtp_err_status_key_expired if the next index does not fit in 31
+ * bits
+ *
+ */
+srtp_err_status_t srtp_stream_get_srtcp_index(srtp_t session,
+                                              uint32_t ssrc,
+                                              uint32_t *index);
 
 /**
  * @}

@@ -722,6 +722,11 @@ static void srtp_policy_all_functions_null_policy(void)
                  srtp_err_status_bad_param);
     CHECK_RETURN(srtp_policy_set_allow_repeat_tx(NULL, true),
                  srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_roc(NULL, 0), srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_packet_index(NULL, 0),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_srtcp_index(NULL, 0),
+                 srtp_err_status_bad_param);
     CHECK_RETURN(srtp_policy_set_cryptex(NULL, true),
                  srtp_err_status_bad_param);
     CHECK_RETURN(srtp_policy_add_enc_hdr_xtnd_id(NULL, hdr_id),
@@ -731,6 +736,80 @@ static void srtp_policy_all_functions_null_policy(void)
 
     /* void API should be no-op on NULL */
     srtp_policy_destroy(NULL);
+}
+
+static void srtp_policy_roc_and_packet_index_are_exclusive(void)
+{
+    srtp_policy_t policy;
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_specific, 1 }));
+
+    CHECK_OK(srtp_policy_set_roc(policy, 0));
+    CHECK_OK(srtp_policy_set_roc(policy, 0xffffffffu));
+    CHECK_RETURN(srtp_policy_set_packet_index(policy, 0),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_packet_index(policy, 1),
+                 srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_set_roc(policy, 0));
+    CHECK_OK(srtp_policy_set_packet_index(policy, 1));
+    CHECK_RETURN(srtp_policy_set_roc(policy, 0), srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_roc(policy, 1), srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_set_packet_index(policy, 0));
+    CHECK_OK(srtp_policy_set_roc(policy, 2));
+
+    CHECK_OK(srtp_policy_set_roc(policy, 0));
+    CHECK_OK(srtp_policy_set_packet_index(policy, 0));
+    CHECK_OK(srtp_policy_set_packet_index(policy, UINT64_C(0xffffffffffff)));
+    CHECK_RETURN(
+        srtp_policy_set_packet_index(policy, UINT64_C(0x1000000000000)),
+        srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_set_packet_index(policy, 0));
+
+    CHECK_OK(srtp_policy_set_srtcp_index(policy, 0));
+    CHECK_OK(srtp_policy_set_srtcp_index(policy, 0x7fffffffu));
+    CHECK_RETURN(srtp_policy_set_srtcp_index(policy, 0x80000000u),
+                 srtp_err_status_bad_param);
+
+    srtp_policy_destroy(policy);
+}
+
+static void srtp_policy_initial_index_rejected_on_template(void)
+{
+    srtp_policy_t policy;
+
+    create_valid_policy(&policy);
+    CHECK_RETURN(srtp_policy_set_roc(policy, 1), srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_packet_index(policy, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_srtcp_index(policy, 1),
+                 srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_set_roc(policy, 0));
+    CHECK_OK(srtp_policy_set_packet_index(policy, 0));
+    CHECK_OK(srtp_policy_set_srtcp_index(policy, 0));
+    CHECK_OK(srtp_policy_validate(policy));
+    srtp_policy_destroy(policy);
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_roc(policy, 4));
+    CHECK_RETURN(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_any_inbound, 0 }),
+        srtp_err_status_bad_param);
+    CHECK_RETURN(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_any_outbound, 0 }),
+        srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_specific, 7 }));
+    CHECK_OK(srtp_policy_set_roc(policy, 0));
+    CHECK_OK(srtp_policy_set_packet_index(policy, 9));
+    CHECK_RETURN(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_any_outbound, 0 }),
+        srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_set_packet_index(policy, 0));
+    CHECK_OK(srtp_policy_set_srtcp_index(policy, 3));
+    CHECK_RETURN(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_any_inbound, 0 }),
+        srtp_err_status_bad_param);
+    srtp_policy_destroy(policy);
 }
 
 TEST_LIST = {
@@ -792,5 +871,9 @@ TEST_LIST = {
       srtp_profile_supported_matches_create },
     { "srtp_policy_all_functions_null_policy()",
       srtp_policy_all_functions_null_policy },
+    { "srtp_policy_roc_and_packet_index_are_exclusive()",
+      srtp_policy_roc_and_packet_index_are_exclusive },
+    { "srtp_policy_initial_index_rejected_on_template()",
+      srtp_policy_initial_index_rejected_on_template },
     { 0 }
 };

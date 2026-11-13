@@ -903,6 +903,17 @@ srtp_err_status_t srtp_policy_validate(srtp_policy_t policy)
         return srtp_err_status_bad_param;
     }
 
+    if (policy->roc != 0 && policy->packet_index != 0) {
+        return srtp_err_status_bad_param;
+    }
+
+    if ((policy->ssrc.type == ssrc_any_inbound ||
+         policy->ssrc.type == ssrc_any_outbound) &&
+        (policy->roc != 0 || policy->packet_index != 0 ||
+         policy->srtcp_index != 0)) {
+        return srtp_err_status_bad_param;
+    }
+
     // Not a valid combination
     if (policy->enc_xtn_hdr_count > 0 && policy->use_cryptex) {
         return srtp_err_status_bad_param;
@@ -966,6 +977,12 @@ srtp_err_status_t srtp_policy_set_ssrc(srtp_policy_t policy, srtp_ssrc_t ssrc)
 
     if (ssrc.type != ssrc_any_inbound && ssrc.type != ssrc_any_outbound &&
         ssrc.type != ssrc_specific) {
+        return srtp_err_status_bad_param;
+    }
+
+    if ((ssrc.type == ssrc_any_inbound || ssrc.type == ssrc_any_outbound) &&
+        (policy->roc != 0 || policy->packet_index != 0 ||
+         policy->srtcp_index != 0)) {
         return srtp_err_status_bad_param;
     }
 
@@ -1183,6 +1200,79 @@ srtp_err_status_t srtp_policy_set_allow_repeat_tx(srtp_policy_t policy,
     }
 
     policy->allow_repeat_tx = allow;
+
+    return srtp_err_status_ok;
+}
+
+#define SRTP_MAX_PACKET_INDEX UINT64_C(0xffffffffffff)
+
+static bool srtp_policy_is_template(const srtp_policy_ctx_t_ *policy)
+{
+    return policy->ssrc.type == ssrc_any_inbound ||
+           policy->ssrc.type == ssrc_any_outbound;
+}
+
+srtp_err_status_t srtp_policy_set_roc(srtp_policy_t policy, uint32_t roc)
+{
+    if (policy == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    /* A packet index already names the ROC. The two cannot both be set. */
+    if (policy->packet_index != 0) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (roc != 0 && srtp_policy_is_template(policy)) {
+        return srtp_err_status_bad_param;
+    }
+
+    policy->roc = roc;
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_policy_set_packet_index(srtp_policy_t policy,
+                                               uint64_t index)
+{
+    if (policy == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (index > SRTP_MAX_PACKET_INDEX) {
+        return srtp_err_status_bad_param;
+    }
+
+    /* A ROC is already set. Clear it before setting a packet index. */
+    if (policy->roc != 0) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (index != 0 && srtp_policy_is_template(policy)) {
+        return srtp_err_status_bad_param;
+    }
+
+    policy->packet_index = index;
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_policy_set_srtcp_index(srtp_policy_t policy,
+                                              uint32_t index)
+{
+    if (policy == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (index > SRTCP_INDEX_MASK) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (index != 0 && srtp_policy_is_template(policy)) {
+        return srtp_err_status_bad_param;
+    }
+
+    policy->srtcp_index = index;
 
     return srtp_err_status_ok;
 }

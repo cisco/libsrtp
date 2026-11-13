@@ -23,6 +23,9 @@ srtp_policy_add_key
 srtp_policy_remove_keys
 srtp_policy_set_window_size
 srtp_policy_set_allow_repeat_tx
+srtp_policy_set_roc
+srtp_policy_set_packet_index
+srtp_policy_set_srtcp_index
 srtp_policy_set_cryptex
 srtp_policy_add_enc_hdr_xtnd_id
 srtp_policy_remove_enc_hdr_xtnd_ids
@@ -35,9 +38,10 @@ srtp_get_protect_trailer_length
 srtp_get_protect_rtcp_trailer_length
 srtp_protect_rtcp
 srtp_unprotect_rtcp
-srtp_stream_set_roc
 srtp_set_user_data
 srtp_stream_get_roc
+srtp_stream_get_packet_index
+srtp_stream_get_srtcp_index
 srtp_get_user_data
 srtp_install_event_handler
 srtp_get_version_string
