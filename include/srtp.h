@@ -516,6 +516,72 @@ srtp_err_status_t srtp_policy_add_key(srtp_policy_t policy,
                                       size_t mki_len);
 
 /**
+ * @brief Set master-key packet lifetimes.
+ *
+ * @param policy policy handle.
+ * @param mki pointer to the MKI bytes identifying the configured master key.
+ *        Use NULL when MKI is disabled.
+ * @param mki_len MKI length in octets. Use 0 when MKI is disabled.
+ * @param rtp_lifetime maximum number of SRTP packets for this key. Use 0 for
+ *        the RFC 3711 default, 2^48.
+ * @param rtcp_lifetime maximum number of SRTCP packets for this key. Use 0 for
+ *        the RFC 3711 default, 2^31.
+ *
+ * This must be called after the corresponding key has been added with
+ * srtp_policy_add_key(). When MKI is enabled, mki_len must match the configured
+ * MKI length and mki must identify an existing entry. When MKI is disabled,
+ * NULL and 0 select the single configured key.
+ *
+ * Setting the lifetimes replaces both values for the selected key, including
+ * values of 0 that restore the RFC defaults. Separate policies keep their
+ * own lifetimes. These settings take effect when the policy is used to create
+ * or update a session.
+ *
+ * Lifetimes are consumed only by srtp_protect() and srtp_protect_rtcp() calls
+ * returning srtp_err_status_ok. Each successful call consumes one count,
+ * including repeated RTP indices. Failed calls do not count, even if
+ * encryption or authentication was attempted. Packet-index and replay state
+ * are not rolled back. The caller must discard all output from a failed call.
+ * The null cipher is not counted.
+ *
+ * As in RFC 3711 section 9.2 each SSRC has separate SRTP and SRTCP counts.
+ * Reaching either limit expires that master key for both protocols.
+ * Streams in the same session whose derived salts match share that expiry,
+ * whichever MKI selects the key, including streams that were not cloned from
+ * the template. The first stream to exhaust its own count expires the others.
+ * A stream in another session is not affected.
+ *
+ * The successful protect call that exhausts a count reports
+ * event_key_hard_limit once and returns srtp_err_status_ok.
+ * A later protect returns srtp_err_status_key_expired and does not report
+ * the event again. An expired key is rejected before anything is written.
+ *
+ * event_key_soft_limit is reported once per count, on the successful protect
+ * that reduces the remaining budget below a tenth of the lifetime. When that
+ * packet also exhausts the count, which is the case for a lifetime below 20
+ * packets, only event_key_hard_limit is reported.
+ *
+ * srtp_update() only grants a fresh budget when the master key actually
+ * changes. Changing only the MKI does not. Re-keying with the same key
+ * carries the usage over, so the newly configured lifetime bounds the total
+ * usage of that master key and a stream may already be expired when the
+ * update returns. An update that leaves the count at zero does not report
+ * the hard limit by itself. The next protect writes nothing, reports
+ * event_key_hard_limit once, and returns srtp_err_status_key_expired.
+ *
+ * @return
+ *    - srtp_err_status_ok if lifetimes were accepted.
+ *    - srtp_err_status_bad_param if policy is NULL, no key is configured,
+ *      MKI arguments do not match the policy or identify a configured key,
+ *      or a lifetime exceeds the RFC 3711 maximum.
+ */
+srtp_err_status_t srtp_policy_set_key_lifetime(srtp_policy_t policy,
+                                               const uint8_t *mki,
+                                               size_t mki_len,
+                                               uint64_t rtp_lifetime,
+                                               uint64_t rtcp_lifetime);
+
+/**
  * @brief Remove all configured master keys from a policy.
  *
  * @param policy policy handle.
@@ -762,6 +828,8 @@ srtp_err_status_t srtp_shutdown(void);
  *    - srtp_err_status_buffer_small  the srtp buffer is too small for the SRTP
  * packet
  *    - srtp_err_status_direction_mismatch the stream is not a sender stream
+ *    - srtp_err_status_key_expired the master key reached its packet lifetime
+ * and was not used, see srtp_policy_set_key_lifetime()
  *    - @e other                 failure in cryptographic mechanisms
  */
 srtp_err_status_t srtp_protect(srtp_t ctx,
@@ -1049,6 +1117,9 @@ void srtp_append_salt_to_key(uint8_t *key,
  *    - srtp_err_status_buffer_small  the srtcp buffer is too small for the
  * SRTCP packet
  *    - srtp_err_status_direction_mismatch the stream is not a sender stream
+ *    - srtp_err_status_key_expired the selected master key reached its packet
+ * lifetime (see srtp_policy_set_key_lifetime()), or the next SRTCP index does
+ * not fit in 31 bits.
  *    - [other]                  if there was a failure in
  *                               the cryptographic mechanisms.
  */
@@ -1186,15 +1257,10 @@ void *srtp_get_user_data(srtp_t ctx);
  * outside the `data plane', such as SSRC collisions and
  * key expirations.
  *
- * When a key expires or the maximum number of packets has been
- * reached, an SRTP stream will enter an `expired' state in which no
- * more packets can be protected or unprotected.  When this happens,
- * it is likely that you will want to either deallocate the stream
- * (using srtp_stream_remove()), and possibly allocate a new one.
+ * See srtp_policy_set_key_lifetime() for packet accounting, shared expiry
+ * and the timing of key-limit events.
  *
- * When an SRTP stream expires, the other streams in the same session
- * are unaffected, unless key sharing is used by that stream.  In the
- * latter case, all of the streams in the session will expire.
+ * Use srtp_event_get_mki() inside the handler to identify the master key.
  */
 typedef enum {
     event_ssrc_collision,    /**< An SSRC collision occurred.           */
@@ -1229,6 +1295,11 @@ typedef struct srtp_event_data_t {
  * srtp_event_data_t which describes the event that needs to be handled.
  * There can only be a single, global handler for all events in
  * libSRTP.
+ *
+ * Handlers run synchronously inside libSRTP calls. They must not rekey,
+ * remove streams, deallocate the session, or otherwise mutate the session.
+ * Record the event and copy any needed MKI bytes, then defer session changes
+ * until the calling libSRTP function returns.
  */
 typedef void(srtp_event_handler_func_t)(srtp_event_data_t *data);
 
@@ -1245,6 +1316,29 @@ typedef void(srtp_event_handler_func_t)(srtp_event_data_t *data);
  *             will be used by libSRTP to handle events.
  */
 srtp_err_status_t srtp_install_event_handler(srtp_event_handler_func_t func);
+
+/**
+ * @brief Read the MKI from a key-limit event.
+ *
+ * @param data the pointer passed into the event handler.
+ * @param mki receives the MKI bytes. May be NULL when len is 0.
+ * @param len receives the MKI length. 0 when MKI is not in use.
+ *
+ * The pointer and length are valid only until the handler returns. Do not
+ * retain them. Call this only inside the handler, with the pointer that
+ * libSRTP passed to it. A copy of the structure is rejected. The pointer
+ * itself must not be used after the handler returns. An SSRC-collision
+ * event has no master key and returns srtp_err_status_bad_param.
+ *
+ * @return
+ *    - srtp_err_status_ok if the event carries master-key info.
+ *    - srtp_err_status_bad_param if an argument is NULL, data is a copy
+ *      rather than the pointer passed to the running handler, or the event
+ *      is not a key-limit event.
+ */
+srtp_err_status_t srtp_event_get_mki(const srtp_event_data_t *data,
+                                     const uint8_t **mki,
+                                     size_t *len);
 
 /**
  * @brief Returns the version string of the library.

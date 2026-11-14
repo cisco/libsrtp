@@ -45,6 +45,8 @@
 #ifndef KEY_H
 #define KEY_H
 
+#include <stdbool.h>
+
 #include "rdbx.h" /* for srtp_xtd_seq_num_t */
 #include "err.h"
 
@@ -63,20 +65,23 @@ typedef enum {
 srtp_err_status_t srtp_key_limit_set(srtp_key_limit_t key,
                                      const srtp_xtd_seq_num_t s);
 
-srtp_err_status_t srtp_key_limit_clone(srtp_key_limit_t original,
-                                       srtp_key_limit_t *new_key);
+bool srtp_key_limit_is_expired(srtp_key_limit_t key);
 
 srtp_key_event_t srtp_key_limit_update(srtp_key_limit_t key);
 
-typedef enum {
-    srtp_key_state_normal,
-    srtp_key_state_past_soft_limit,
-    srtp_key_state_expired
-} srtp_key_state_t;
+/*
+ * copy usage and soft-warning state from `from`, retaining the limit configured
+ * for `to`, so that re-keying with an unchanged master key does not hand out a
+ * new packet budget. The configured limit bounds total usage of the master key
+ * rather than usage since the last re-key.
+ */
+void srtp_key_limit_carry_over(srtp_key_limit_t to,
+                               const struct srtp_key_limit_ctx_t *from);
 
 typedef struct srtp_key_limit_ctx_t {
-    srtp_xtd_seq_num_t num_left;
-    srtp_key_state_t state;
+    srtp_xtd_seq_num_t limit;
+    srtp_xtd_seq_num_t used;
+    bool soft_warned;
 } srtp_key_limit_ctx_t;
 
 #ifdef __cplusplus

@@ -371,6 +371,57 @@ unsigned int srtp_get_version(void)
     return rv;
 }
 
+static bool srtp_key_expiry_group_is_expired(
+    const srtp_key_expiry_group_t *group)
+{
+    return group == NULL || group->state == srtp_key_expiry_group_expired;
+}
+
+/* returns true if this call moved the group to expired */
+static bool srtp_key_expiry_group_expire(srtp_key_expiry_group_t *group)
+{
+    if (srtp_key_expiry_group_is_expired(group)) {
+        return false;
+    }
+
+    group->state = srtp_key_expiry_group_expired;
+    return true;
+}
+
+static void srtp_key_expiry_group_mark_pending(srtp_key_expiry_group_t *group)
+{
+    if (group != NULL && group->state == srtp_key_expiry_group_active) {
+        group->state = srtp_key_expiry_group_pending_expiry;
+    }
+}
+
+static void srtp_key_expiry_group_retain(srtp_key_expiry_group_t *group)
+{
+    if (group != NULL) {
+        group->ref_count += 1;
+    }
+}
+
+/* drops one reference, and unlinks and frees the group at zero */
+static void srtp_key_expiry_group_release(srtp_key_expiry_group_t *group)
+{
+    if (group == NULL) {
+        return;
+    }
+
+    if (group->ref_count > 1) {
+        group->ref_count -= 1;
+        return;
+    }
+
+    *group->pprev = group->next;
+    if (group->next != NULL) {
+        group->next->pprev = group->pprev;
+    }
+    octet_string_set_to_zero(group, sizeof(*group));
+    srtp_crypto_free(group);
+}
+
 static srtp_err_status_t srtp_stream_dealloc(
     srtp_stream_ctx_t *stream,
     const srtp_stream_ctx_t *stream_template)
@@ -475,16 +526,8 @@ static srtp_err_status_t srtp_stream_dealloc(
                 session_keys->mki_id = NULL;
             }
 
-            /*
-             * deallocate key usage limit, if it is not the same as that in
-             * template
-             */
-            if (template_session_keys &&
-                session_keys->limit == template_session_keys->limit) {
-                /* do nothing */
-            } else if (session_keys->limit) {
-                srtp_crypto_free(session_keys->limit);
-            }
+            srtp_key_expiry_group_release(session_keys->expiry_group);
+            session_keys->expiry_group = NULL;
         }
         srtp_crypto_free(stream->session_keys);
     }
@@ -557,8 +600,8 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
     srtp_session_keys_t *session_keys = NULL;
 
     /*
-     * This function allocates the stream context, rtp and rtcp ciphers
-     * and auth functions, and key limit structure.  If there is a
+     * This function allocates the stream context, rtp and rtcp ciphers,
+     * auth functions, and key limit group.  If there is a
      * failure during allocation, we free all previously allocated
      * memory and return a failure code.  The code could probably
      * be improved, but it works and should be clear.
@@ -638,14 +681,7 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
         }
 
         session_keys->mki_id = NULL;
-
-        /* allocate key limit structure */
-        session_keys->limit = (srtp_key_limit_ctx_t *)srtp_crypto_alloc(
-            sizeof(srtp_key_limit_ctx_t));
-        if (session_keys->limit == NULL) {
-            srtp_stream_dealloc(str, NULL);
-            return srtp_err_status_alloc_fail;
-        }
+        session_keys->expiry_group = NULL;
     }
 
     if (p->enc_xtn_hdr_count > 0) {
@@ -712,8 +748,8 @@ static srtp_err_status_t srtp_stream_alloc(srtp_stream_ctx_t **str_ptr,
  * srtp_stream_clone(stream_template, new) allocates a new stream and
  * initializes it using the cipher and auth of the stream_template
  *
- * the only unique data in a cloned stream is the replay database and
- * the SSRC
+ * the unique data in a cloned stream is the replay database, SSRC, and
+ * key usage counters. the expiry flag is shared with the template.
  */
 
 static size_t srtp_replay_word_count(size_t bit_length)
@@ -817,14 +853,10 @@ static srtp_err_status_t srtp_stream_clone(
         memcpy(session_keys->c_salt, template_session_keys->c_salt,
                SRTP_AEAD_SALT_LEN);
 
-        /* set key limit to point to that of the template */
-        status = srtp_key_limit_clone(template_session_keys->limit,
-                                      &session_keys->limit);
-        if (status) {
-            srtp_stream_dealloc(*str_ptr, stream_template);
-            *str_ptr = NULL;
-            return status;
-        }
+        session_keys->rtp_limit = template_session_keys->rtp_limit;
+        session_keys->rtcp_limit = template_session_keys->rtcp_limit;
+        session_keys->expiry_group = template_session_keys->expiry_group;
+        srtp_key_expiry_group_retain(session_keys->expiry_group);
     }
 
     str->use_mki = stream_template->use_mki;
@@ -1252,8 +1284,21 @@ srtp_err_status_t srtp_stream_init_keys(srtp_session_keys_t *session_keys,
      * be part of srtp_policy_t.
      */
 
-    /* initialize key limit to maximum value */
-    srtp_key_limit_set(session_keys->limit, 0xffffffffffffLL);
+    /* initialize key limits */
+    stat = srtp_key_limit_set(&session_keys->rtp_limit,
+                              master_key->rtp_lifetime == 0
+                                  ? srtp_default_rtp_key_lifetime()
+                                  : master_key->rtp_lifetime);
+    if (stat) {
+        return stat;
+    }
+    stat = srtp_key_limit_set(&session_keys->rtcp_limit,
+                              master_key->rtcp_lifetime == 0
+                                  ? srtp_default_rtcp_key_lifetime()
+                                  : master_key->rtcp_lifetime);
+    if (stat) {
+        return stat;
+    }
 
     if (mki_size != 0) {
         if (master_key->mki_id_len == 0 || master_key->mki_id_len != mki_size) {
@@ -1633,7 +1678,6 @@ srtp_err_status_t srtp_stream_init_all_master_keys(srtp_stream_ctx_t *srtp,
         }
 
         session_keys = &srtp->session_keys[0];
-        srtp_key_limit_set(session_keys->limit, 0xffffffffffffLL);
 
         status = srtp_cipher_init(session_keys->rtp_cipher, NULL);
         if (status) {
@@ -1803,24 +1847,260 @@ srtp_err_status_t srtp_install_event_handler(srtp_event_handler_func_t func)
     return srtp_err_status_ok;
 }
 
-/*
- * srtp_handle_event(ctx, stream, event) calls the event handling function,
- * if there is one.
- */
+typedef struct {
+    srtp_event_data_t pub;
+    bool has_key_info;
+    const uint8_t *mki;
+    size_t mki_len;
+} srtp_event_data_internal_t;
+
+srtp_err_status_t srtp_event_get_mki(const srtp_event_data_t *data,
+                                     const uint8_t **mki,
+                                     size_t *len)
+{
+    const srtp_event_data_internal_t *internal;
+
+    if (data == NULL || mki == NULL || len == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    /*
+     * only the record that the session is dispatching has the private tail.
+     * A copy of the public structure, or a pointer kept after the handler
+     * returned, is never dereferenced beyond the public fields.
+     */
+    if (data->session == NULL || data->session->active_event != data) {
+        return srtp_err_status_bad_param;
+    }
+
+    internal = (const srtp_event_data_internal_t *)data;
+    if (!internal->has_key_info) {
+        return srtp_err_status_bad_param;
+    }
+
+    *mki = internal->mki;
+    *len = internal->mki_len;
+    return srtp_err_status_ok;
+}
+
 static void srtp_handle_event(srtp_ctx_t *ctx,
                               srtp_stream_ctx_t *stream,
-                              srtp_event_t event)
+                              srtp_event_t event,
+                              const srtp_session_keys_t *keys)
 {
-    srtp_event_data_t data;
+    srtp_event_data_internal_t data;
 
     if (srtp_event_handler == NULL) {
         return;
     }
 
-    data.session = ctx;
-    data.ssrc = ntohl(stream->ssrc);
-    data.event = event;
-    srtp_event_handler(&data);
+    data.pub.session = ctx;
+    data.pub.ssrc = ntohl(stream->ssrc);
+    data.pub.event = event;
+    data.has_key_info = keys != NULL;
+    data.mki = NULL;
+    data.mki_len = 0;
+    if (keys != NULL && stream->use_mki && stream->mki_size > 0 &&
+        keys->mki_id != NULL) {
+        data.mki = keys->mki_id;
+        data.mki_len = stream->mki_size;
+    }
+
+    const srtp_event_data_t *outer_event = ctx->active_event;
+    ctx->active_event = &data.pub;
+    srtp_event_handler(&data.pub);
+    ctx->active_event = outer_event;
+}
+
+/*
+ * the hard limit event marks the transition to an expired key, so it is
+ * signalled once, by the operation that expires the group, rather than by
+ * every later operation that is rejected because of it
+ */
+static void srtp_expire_key_group(srtp_ctx_t *ctx,
+                                  srtp_stream_ctx_t *stream,
+                                  srtp_session_keys_t *session_keys)
+{
+    if (srtp_key_expiry_group_expire(session_keys->expiry_group)) {
+        srtp_handle_event(ctx, stream, event_key_hard_limit, session_keys);
+    }
+}
+
+/*
+ * runs before anything is written to the output, so that an expired key never
+ * produces a packet. A count can be zero while the group is still active when
+ * srtp_update() carried the usage over, in which case this call expires it.
+ */
+static srtp_err_status_t srtp_check_key_limits(
+    srtp_ctx_t *ctx,
+    srtp_stream_ctx_t *stream,
+    srtp_session_keys_t *session_keys,
+    srtp_key_limit_t current_limit)
+{
+    if (session_keys->expiry_group == NULL) {
+        return srtp_err_status_ok;
+    }
+
+    if (srtp_key_expiry_group_is_expired(session_keys->expiry_group)) {
+        return srtp_err_status_key_expired;
+    }
+
+    if (session_keys->expiry_group->state ==
+            srtp_key_expiry_group_pending_expiry ||
+        srtp_key_limit_is_expired(current_limit)) {
+        srtp_expire_key_group(ctx, stream, session_keys);
+        return srtp_err_status_key_expired;
+    }
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * Count each successful protect once. Failed calls retain their error and
+ * do not consume the budget.
+ */
+static srtp_err_status_t srtp_finish_protect(srtp_ctx_t *ctx,
+                                             srtp_stream_ctx_t *stream,
+                                             srtp_session_keys_t *session_keys,
+                                             srtp_key_limit_t current_limit,
+                                             srtp_err_status_t status)
+{
+    if (status != srtp_err_status_ok || session_keys->expiry_group == NULL) {
+        return status;
+    }
+
+    switch (srtp_key_limit_update(current_limit)) {
+    case srtp_key_event_normal:
+        break;
+    case srtp_key_event_soft_limit:
+        srtp_handle_event(ctx, stream, event_key_soft_limit, session_keys);
+        break;
+    case srtp_key_event_hard_limit:
+        srtp_expire_key_group(ctx, stream, session_keys);
+        break;
+    }
+    return status;
+}
+
+/*
+ * The master key itself is not retained once it has been run through the KDF,
+ * so the derived salts stand in for it. The MKI is a selector, not part of
+ * the identity. Only SRTP_AEAD_SALT_LEN bytes of each salt are kept, which is
+ * ample to tell two master keys apart.
+ */
+static bool srtp_key_expiry_group_matches(const srtp_key_expiry_group_t *group,
+                                          const srtp_session_keys_t *keys)
+{
+    return srtp_octet_string_equal(group->salt, keys->salt,
+                                   SRTP_AEAD_SALT_LEN) &&
+           srtp_octet_string_equal(group->c_salt, keys->c_salt,
+                                   SRTP_AEAD_SALT_LEN);
+}
+
+/*
+ * joins every key of the stream to the session group for its master key,
+ * creating the group on first use.  The null cipher gets no group: it has no
+ * counter, and its zero salts would otherwise match every other null cipher.
+ */
+static srtp_err_status_t srtp_session_attach_key_limits(srtp_t session,
+                                                        srtp_stream_t stream)
+{
+    for (size_t i = 0; i < stream->num_master_keys; i++) {
+        srtp_session_keys_t *keys = &stream->session_keys[i];
+        srtp_key_expiry_group_t *group;
+
+        if (keys->rtp_cipher->type->id == SRTP_NULL_CIPHER &&
+            keys->rtcp_cipher->type->id == SRTP_NULL_CIPHER) {
+            continue;
+        }
+
+        for (group = session->expiry_groups; group != NULL;
+             group = group->next) {
+            if (srtp_key_expiry_group_matches(group, keys)) {
+                break;
+            }
+        }
+
+        if (group != NULL) {
+            srtp_key_expiry_group_retain(group);
+        } else {
+            group = (srtp_key_expiry_group_t *)srtp_crypto_alloc(
+                sizeof(srtp_key_expiry_group_t));
+            if (group == NULL) {
+                return srtp_err_status_alloc_fail;
+            }
+            group->ref_count = 1;
+            group->state = srtp_key_expiry_group_active;
+            memcpy(group->salt, keys->salt, SRTP_AEAD_SALT_LEN);
+            memcpy(group->c_salt, keys->c_salt, SRTP_AEAD_SALT_LEN);
+
+            group->next = session->expiry_groups;
+            if (group->next != NULL) {
+                group->next->pprev = &group->next;
+            }
+            group->pprev = &session->expiry_groups;
+            session->expiry_groups = group;
+        }
+        keys->expiry_group = group;
+    }
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * RFC 3711 section 9.2 bounds key usage per master key, so re-keying with an
+ * unchanged master key must continue from the usage already accounted for
+ * instead of starting over.  Both streams are attached to the session, so an
+ * unchanged master key shares its group with the old stream.  Keys are matched
+ * that way rather than by position, because an update may drop, add or
+ * reorder the keys of an MKI stream while retaining some of them.
+ */
+static void srtp_stream_carry_over_key_limits(
+    srtp_stream_ctx_t *stream,
+    const srtp_stream_ctx_t *old_stream)
+{
+    for (size_t i = 0; i < stream->num_master_keys; i++) {
+        srtp_session_keys_t *session_keys = &stream->session_keys[i];
+
+        if (session_keys->expiry_group == NULL) {
+            continue;
+        }
+
+        for (size_t j = 0; j < old_stream->num_master_keys; j++) {
+            const srtp_session_keys_t *old_session_keys =
+                &old_stream->session_keys[j];
+
+            if (old_session_keys->expiry_group == session_keys->expiry_group) {
+                srtp_key_limit_carry_over(&session_keys->rtp_limit,
+                                          &old_session_keys->rtp_limit);
+                srtp_key_limit_carry_over(&session_keys->rtcp_limit,
+                                          &old_session_keys->rtcp_limit);
+                break;
+            }
+        }
+    }
+}
+
+static void srtp_stream_mark_exhausted_key_expiry_groups(
+    srtp_stream_ctx_t *stream)
+{
+    for (size_t i = 0; i < stream->num_master_keys; i++) {
+        srtp_session_keys_t *session_keys = &stream->session_keys[i];
+
+        if (srtp_key_limit_is_expired(&session_keys->rtp_limit) ||
+            srtp_key_limit_is_expired(&session_keys->rtcp_limit)) {
+            srtp_key_expiry_group_mark_pending(session_keys->expiry_group);
+        }
+    }
+}
+
+static bool srtp_stream_mark_exhausted_key_expiry_groups_cb(
+    srtp_stream_t stream,
+    void *data)
+{
+    (void)data;
+    srtp_stream_mark_exhausted_key_expiry_groups(stream);
+    return true;
 }
 
 /*
@@ -2163,8 +2443,7 @@ static srtp_err_status_t srtp_get_est_pkt_index(const srtp_hdr_t *hdr,
  * which currently supports AES-GCM encryption.  All packets are
  * encrypted and authenticated.
  */
-static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
-                                           srtp_stream_ctx_t *stream,
+static srtp_err_status_t srtp_protect_aead(srtp_stream_ctx_t *stream,
                                            const uint8_t *rtp,
                                            size_t rtp_len,
                                            uint8_t *srtp,
@@ -2184,23 +2463,6 @@ static srtp_err_status_t srtp_protect_aead(srtp_ctx_t *ctx,
     uint32_t rcc_roc = 0; /* sender's ROC carried on ROC-carrying packets */
 
     debug_print0(mod_srtp, "function srtp_protect_aead");
-
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit, and call
-     * the event handler if we hit either.
-     */
-    switch (srtp_key_limit_update(session_keys->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    case srtp_key_event_soft_limit:
-    default:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    }
 
     /* get tag length from stream */
     tag_len = srtp_auth_get_tag_length(session_keys->rtp_auth);
@@ -2533,24 +2795,6 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
         memcpy(rtp, srtp, enc_start);
     }
 
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit, and call
-     * the event handler if we hit either.
-     */
-    switch (srtp_key_limit_update(session_keys->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_soft_limit:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    default:
-        break;
-    }
-
     if (cryptex_inuse) {
         status = srtp_cryptex_unprotect(cryptex_inplace, hdr, rtp,
                                         session_keys->rtp_cipher);
@@ -2655,7 +2899,6 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
 }
 
 static srtp_err_status_t srtp_protect_internal(
-    srtp_ctx_t *ctx,
     srtp_stream_ctx_t *stream,
     const uint8_t *rtp,
     size_t rtp_len,
@@ -2682,26 +2925,8 @@ static srtp_err_status_t srtp_protect_internal(
      */
     if (session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_128 ||
         session_keys->rtp_cipher->algorithm == SRTP_AES_GCM_256) {
-        return srtp_protect_aead(ctx, stream, rtp, rtp_len, srtp, srtp_len,
+        return srtp_protect_aead(stream, rtp, rtp_len, srtp, srtp_len,
                                  session_keys);
-    }
-
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit, and call
-     * the event handler if we hit either.
-     */
-    switch (srtp_key_limit_update(session_keys->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_soft_limit:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    default:
-        break;
     }
 
     /* get tag length from stream */
@@ -3017,7 +3242,7 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
         if (stream->direction == dir_unknown) {
             stream->direction = dir_srtp_sender;
         } else {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
+            srtp_handle_event(ctx, stream, event_ssrc_collision, NULL);
             return srtp_err_status_direction_mismatch;
         }
     }
@@ -3027,8 +3252,15 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
         return status;
     }
 
-    return srtp_protect_internal(ctx, stream, rtp, rtp_len, srtp, srtp_len,
-                                 session_keys);
+    srtp_key_limit_t rtp_limit = &session_keys->rtp_limit;
+    status = srtp_check_key_limits(ctx, stream, session_keys, rtp_limit);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_protect_internal(stream, rtp, rtp_len, srtp, srtp_len,
+                                   session_keys);
+    return srtp_finish_protect(ctx, stream, session_keys, rtp_limit, status);
 }
 
 srtp_err_status_t srtp_unprotect(srtp_t ctx,
@@ -3120,7 +3352,7 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
      * mode 3) packets must not also skip collision detection.
      */
     if (!from_template && stream->direction == dir_srtp_sender) {
-        srtp_handle_event(ctx, stream, event_ssrc_collision);
+        srtp_handle_event(ctx, stream, event_ssrc_collision, NULL);
         return srtp_err_status_direction_mismatch;
     }
 
@@ -3356,24 +3588,6 @@ srtp_err_status_t srtp_unprotect(srtp_t ctx,
         }
     }
 
-    /*
-     * update the key usage limit, and check it to make sure that we
-     * didn't just hit either the soft limit or the hard limit, and call
-     * the event handler if we hit either.
-     */
-    switch (srtp_key_limit_update(session_keys->limit)) {
-    case srtp_key_event_normal:
-        break;
-    case srtp_key_event_soft_limit:
-        srtp_handle_event(ctx, stream, event_key_soft_limit);
-        break;
-    case srtp_key_event_hard_limit:
-        srtp_handle_event(ctx, stream, event_key_hard_limit);
-        return srtp_err_status_key_expired;
-    default:
-        break;
-    }
-
     if (hdr->x == 1 && session_keys->rtp_xtn_hdr_cipher) {
         /* extensions header encryption RFC 6904 */
         status = srtp_process_header_encryption(
@@ -3571,6 +3785,12 @@ srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t policy)
         return status;
     }
 
+    status = srtp_session_attach_key_limits(session, tmp);
+    if (status) {
+        srtp_stream_dealloc(tmp, NULL);
+        return status;
+    }
+
     /*
      * set the head of the stream list or the template to point to the
      * stream that we've just alloced and init'ed, depending on whether
@@ -3639,6 +3859,8 @@ srtp_err_status_t srtp_create(srtp_t *session, /* handle for session     */
 
     ctx->stream_template = NULL;
     ctx->stream_list = NULL;
+    ctx->expiry_groups = NULL;
+    ctx->active_event = NULL;
     ctx->user_data = NULL;
 
     /* allocate stream list */
@@ -3728,6 +3950,7 @@ static void srtp_stream_carry_over_state(srtp_stream_ctx_t *stream,
     stream->rtcp_rdb = old_stream->rtcp_rdb;
     stream->direction = old_stream->direction;
     stream->pending_roc = old_stream->pending_roc;
+    srtp_stream_carry_over_key_limits(stream, old_stream);
 }
 
 struct update_template_stream_data {
@@ -3859,6 +4082,16 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     }
     new_stream_template->direction = session->stream_template->direction;
 
+    /*
+     * an unchanged master key joins the group of the old template, so the
+     * expiry of that key survives the update
+     */
+    status = srtp_session_attach_key_limits(session, new_stream_template);
+    if (status) {
+        srtp_stream_dealloc(new_stream_template, NULL);
+        return status;
+    }
+
     /* allocate new stream list */
     status = srtp_stream_list_alloc(&new_stream_list);
     if (status) {
@@ -3889,6 +4122,9 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     /* set new list / template */
     session->stream_template = new_stream_template;
     session->stream_list = new_stream_list;
+    srtp_stream_list_for_each(session->stream_list,
+                              srtp_stream_mark_exhausted_key_expiry_groups_cb,
+                              NULL);
     return srtp_err_status_ok;
 }
 
@@ -3932,6 +4168,8 @@ static srtp_err_status_t stream_update(srtp_t session,
     if (status) {
         return status;
     }
+
+    srtp_stream_mark_exhausted_key_expiry_groups(stream);
 
     return srtp_err_status_ok;
 }
@@ -4649,7 +4887,7 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
         if (stream->direction == dir_unknown) {
             stream->direction = dir_srtp_sender;
         } else {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
+            srtp_handle_event(ctx, stream, event_ssrc_collision, NULL);
             return srtp_err_status_direction_mismatch;
         }
     }
@@ -4659,8 +4897,15 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
         return status;
     }
 
-    return srtp_protect_rtcp_internal(stream, rtcp, rtcp_len, srtcp, srtcp_len,
-                                      session_keys);
+    srtp_key_limit_t rtcp_limit = &session_keys->rtcp_limit;
+    status = srtp_check_key_limits(ctx, stream, session_keys, rtcp_limit);
+    if (status) {
+        return status;
+    }
+
+    status = srtp_protect_rtcp_internal(stream, rtcp, rtcp_len, srtcp,
+                                        srtcp_len, session_keys);
+    return srtp_finish_protect(ctx, stream, session_keys, rtcp_limit, status);
 }
 
 srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
@@ -4728,7 +4973,7 @@ srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
      * those functions.
      */
     if (stream->direction == dir_srtp_sender) {
-        srtp_handle_event(ctx, stream, event_ssrc_collision);
+        srtp_handle_event(ctx, stream, event_ssrc_collision, NULL);
         return srtp_err_status_direction_mismatch;
     }
 

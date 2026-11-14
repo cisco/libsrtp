@@ -527,6 +527,73 @@ static void srtp_policy_remove_keys_simple(void)
     srtp_policy_destroy(policy);
 }
 
+static void srtp_policy_set_key_lifetime_values(void)
+{
+    srtp_policy_t policy;
+
+    create_valid_policy(&policy);
+
+    CHECK_OK(srtp_policy_set_key_lifetime(policy, NULL, 0, 1, 1));
+    CHECK_OK(srtp_policy_set_key_lifetime(policy, NULL, 0, 0, 0));
+    CHECK_OK(srtp_policy_set_key_lifetime(policy, NULL, 0, (uint64_t)1 << 48,
+                                          (uint64_t)1 << 31));
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, mki4, sizeof(mki4), 1, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, NULL, 0,
+                                              ((uint64_t)1 << 48) + 1, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, NULL, 0, 1,
+                                              ((uint64_t)1 << 31) + 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_key_lifetime(NULL, NULL, 0, 1, 1),
+                 srtp_err_status_bad_param);
+
+    CHECK_OK(srtp_policy_remove_keys(policy));
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, NULL, 0, 1, 1),
+                 srtp_err_status_bad_param);
+
+    srtp_policy_destroy(policy);
+}
+
+static void srtp_policy_set_key_lifetime_mki_values(void)
+{
+    srtp_policy_t policy;
+    const uint8_t other_mki[4] = { 0x01, 0x02, 0x03, 0x05 };
+    const uint8_t missing_mki[4] = { 0x01, 0x02, 0x03, 0x06 };
+
+    create_policy_with_profile(&policy, srtp_profile_aes128_cm_sha1_80);
+    CHECK_OK(srtp_policy_use_mki(policy, sizeof(mki4)));
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, mki4, sizeof(mki4), 2, 3),
+                 srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_add_key(policy, base_master_key,
+                                 sizeof(base_master_key), base_master_salt,
+                                 sizeof(base_master_salt), mki4, sizeof(mki4)));
+    CHECK_OK(srtp_policy_add_key(policy, alt_master_key, sizeof(alt_master_key),
+                                 alt_master_salt, sizeof(alt_master_salt),
+                                 other_mki, sizeof(other_mki)));
+    CHECK_OK(srtp_policy_set_key_lifetime(policy, mki4, sizeof(mki4), 2, 3));
+    CHECK_OK(srtp_policy_set_key_lifetime(policy, other_mki, sizeof(other_mki),
+                                          4, 5));
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, missing_mki,
+                                              sizeof(missing_mki), 1, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, NULL, sizeof(mki4), 1, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, NULL, 0, 1, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(srtp_policy_set_key_lifetime(policy, mki4, 0, 1, 1),
+                 srtp_err_status_bad_param);
+    CHECK_RETURN(
+        srtp_policy_set_key_lifetime(policy, mki4, sizeof(mki4) - 1, 1, 1),
+        srtp_err_status_bad_param);
+    CHECK_RETURN(
+        srtp_policy_set_key_lifetime(policy, mki4, sizeof(mki4) + 1, 1, 1),
+        srtp_err_status_bad_param);
+    CHECK_OK(srtp_policy_validate(policy));
+
+    srtp_policy_destroy(policy);
+}
+
 static void srtp_policy_set_window_size_invalid_values_fail(void)
 {
     srtp_policy_t policy;
@@ -921,6 +988,10 @@ TEST_LIST = {
     { "srtp_policy_add_key_distinct_material_succeeds()",
       srtp_policy_add_key_distinct_material_succeeds },
     { "srtp_policy_remove_keys_simple()", srtp_policy_remove_keys_simple },
+    { "srtp_policy_set_key_lifetime_values()",
+      srtp_policy_set_key_lifetime_values },
+    { "srtp_policy_set_key_lifetime_mki_values()",
+      srtp_policy_set_key_lifetime_mki_values },
     { "srtp_policy_set_window_size_invalid_values_fail()",
       srtp_policy_set_window_size_invalid_values_fail },
     { "srtp_policy_set_window_size_valid_values_ok()",
