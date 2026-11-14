@@ -1804,6 +1804,26 @@ srtp_err_status_t srtp_install_event_handler(srtp_event_handler_func_t func)
 }
 
 /*
+ * srtp_handle_event(ctx, stream, event) calls the event handling function,
+ * if there is one.
+ */
+static void srtp_handle_event(srtp_ctx_t *ctx,
+                              srtp_stream_ctx_t *stream,
+                              srtp_event_t event)
+{
+    srtp_event_data_t data;
+
+    if (srtp_event_handler == NULL) {
+        return;
+    }
+
+    data.session = ctx;
+    data.ssrc = ntohl(stream->ssrc);
+    data.event = event;
+    srtp_event_handler(&data);
+}
+
+/*
  * Check if the given extension header id is / should be encrypted.
  * Returns true if yes, otherwise false.
  */

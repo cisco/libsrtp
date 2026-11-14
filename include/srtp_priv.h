@@ -306,23 +306,6 @@ typedef struct {
 
 #endif
 
-/*
- * srtp_handle_event(srtp, srtm, evnt) calls the event handling
- * function, if there is one.
- *
- * This macro is not included in the documentation as it is
- * an internal-only function.
- */
-
-#define srtp_handle_event(srtp, strm, evnt)                                    \
-    if (srtp_event_handler) {                                                  \
-        srtp_event_data_t data;                                                \
-        data.session = srtp;                                                   \
-        data.ssrc = ntohl(strm->ssrc);                                         \
-        data.event = evnt;                                                     \
-        srtp_event_handler(&data);                                             \
-    }
-
 #ifdef __cplusplus
 }
 #endif
