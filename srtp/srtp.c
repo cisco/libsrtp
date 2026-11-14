@@ -2644,12 +2644,14 @@ static srtp_err_status_t srtp_unprotect_aead(srtp_ctx_t *ctx,
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_protect(srtp_t ctx,
-                               const uint8_t *rtp,
-                               size_t rtp_len,
-                               uint8_t *srtp,
-                               size_t *srtp_len,
-                               size_t mki_index)
+static srtp_err_status_t srtp_protect_internal(
+    srtp_ctx_t *ctx,
+    srtp_stream_ctx_t *stream,
+    const uint8_t *rtp,
+    size_t rtp_len,
+    uint8_t *srtp,
+    size_t *srtp_len,
+    srtp_session_keys_t *session_keys)
 {
     const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp;
     size_t enc_start;         /* offset to start of encrypted portion   */
@@ -2660,86 +2662,9 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     srtp_err_status_t status;
     size_t tag_len;
-    srtp_stream_ctx_t *stream;
     size_t prefix_len;
-    srtp_session_keys_t *session_keys = NULL;
     bool rcc_carry;     /* whether this packet carries the ROC (RFC 4771) */
     size_t rcc_tag_len; /* number of tag octets actually appended         */
-
-    debug_print0(mod_srtp, "function srtp_protect");
-
-    /* Verify RTP header */
-    status = srtp_validate_rtp_header(rtp, rtp_len);
-    if (status) {
-        return status;
-    }
-
-    /* check the packet length - it must at least contain a full header */
-    if (rtp_len < octets_in_rtp_header) {
-        return srtp_err_status_bad_param;
-    }
-
-    /*
-     * look up ssrc in srtp_stream list, and process the packet with
-     * the appropriate stream.  if we haven't seen this stream before,
-     * there's a template key for this srtp_session, and the cipher
-     * supports key-sharing, then we assume that a new stream using
-     * that key has just started up
-     */
-    stream = srtp_get_stream(ctx, hdr->ssrc);
-    if (stream == NULL) {
-        if (ctx->stream_template != NULL) {
-            if (ctx->stream_template->direction == dir_srtp_receiver) {
-                return srtp_err_status_no_ctx;
-            }
-
-            srtp_stream_ctx_t *new_stream;
-
-            /* allocate and initialize a new stream */
-            status =
-                srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
-            if (status) {
-                return status;
-            }
-
-            /* add new stream to the list */
-            status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
-                                                   ctx->stream_template);
-            if (status) {
-                return status;
-            }
-
-            /* set direction to outbound */
-            new_stream->direction = dir_srtp_sender;
-
-            /* set stream (the pointer used in this function) */
-            stream = new_stream;
-        } else {
-            /* no template stream, so we return an error */
-            return srtp_err_status_no_ctx;
-        }
-    }
-
-    /*
-     * verify that stream is for sending traffic - this check will
-     * detect SSRC collisions, since a stream that appears in both
-     * srtp_protect() and srtp_unprotect() will fail this test in one of
-     * those functions.
-     */
-
-    if (stream->direction != dir_srtp_sender) {
-        if (stream->direction == dir_unknown) {
-            stream->direction = dir_srtp_sender;
-        } else {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
-            return srtp_err_status_direction_mismatch;
-        }
-    }
-
-    status = srtp_get_session_keys(stream, mki_index, &session_keys);
-    if (status) {
-        return status;
-    }
 
     /*
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
@@ -3003,6 +2928,97 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     *srtp_len += stream->mki_size;
 
     return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_protect(srtp_t ctx,
+                               const uint8_t *rtp,
+                               size_t rtp_len,
+                               uint8_t *srtp,
+                               size_t *srtp_len,
+                               size_t mki_index)
+{
+    const srtp_hdr_t *hdr = (const srtp_hdr_t *)rtp;
+    srtp_err_status_t status;
+    srtp_stream_ctx_t *stream;
+    srtp_session_keys_t *session_keys = NULL;
+
+    debug_print0(mod_srtp, "function srtp_protect");
+
+    /* Verify RTP header */
+    status = srtp_validate_rtp_header(rtp, rtp_len);
+    if (status) {
+        return status;
+    }
+
+    /* check the packet length - it must at least contain a full header */
+    if (rtp_len < octets_in_rtp_header) {
+        return srtp_err_status_bad_param;
+    }
+
+    /*
+     * look up ssrc in srtp_stream list, and process the packet with
+     * the appropriate stream.  if we haven't seen this stream before,
+     * there's a template key for this srtp_session, and the cipher
+     * supports key-sharing, then we assume that a new stream using
+     * that key has just started up
+     */
+    stream = srtp_get_stream(ctx, hdr->ssrc);
+    if (stream == NULL) {
+        if (ctx->stream_template != NULL) {
+            if (ctx->stream_template->direction == dir_srtp_receiver) {
+                return srtp_err_status_no_ctx;
+            }
+
+            srtp_stream_ctx_t *new_stream;
+
+            /* allocate and initialize a new stream */
+            status =
+                srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
+            if (status) {
+                return status;
+            }
+
+            /* add new stream to the list */
+            status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
+                                                   ctx->stream_template);
+            if (status) {
+                return status;
+            }
+
+            /* set direction to outbound */
+            new_stream->direction = dir_srtp_sender;
+
+            /* set stream (the pointer used in this function) */
+            stream = new_stream;
+        } else {
+            /* no template stream, so we return an error */
+            return srtp_err_status_no_ctx;
+        }
+    }
+
+    /*
+     * verify that stream is for sending traffic - this check will
+     * detect SSRC collisions, since a stream that appears in both
+     * srtp_protect() and srtp_unprotect() will fail this test in one of
+     * those functions.
+     */
+
+    if (stream->direction != dir_srtp_sender) {
+        if (stream->direction == dir_unknown) {
+            stream->direction = dir_srtp_sender;
+        } else {
+            srtp_handle_event(ctx, stream, event_ssrc_collision);
+            return srtp_err_status_direction_mismatch;
+        }
+    }
+
+    status = srtp_get_session_keys(stream, mki_index, &session_keys);
+    if (status) {
+        return status;
+    }
+
+    return srtp_protect_internal(ctx, stream, rtp, rtp_len, srtp, srtp_len,
+                                 session_keys);
 }
 
 srtp_err_status_t srtp_unprotect(srtp_t ctx,
@@ -4390,12 +4406,13 @@ static srtp_err_status_t srtp_unprotect_rtcp_aead(
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
-                                    const uint8_t *rtcp,
-                                    size_t rtcp_len,
-                                    uint8_t *srtcp,
-                                    size_t *srtcp_len,
-                                    size_t mki_index)
+static srtp_err_status_t srtp_protect_rtcp_internal(
+    srtp_stream_ctx_t *stream,
+    const uint8_t *rtcp,
+    size_t rtcp_len,
+    uint8_t *srtcp,
+    size_t *srtcp_len,
+    srtp_session_keys_t *session_keys)
 {
     const srtcp_hdr_t *hdr = (const srtcp_hdr_t *)rtcp;
     size_t enc_start;         /* pointer to start of encrypted portion  */
@@ -4406,73 +4423,8 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     uint8_t *auth_tag = NULL; /* location of auth_tag within packet     */
     srtp_err_status_t status;
     size_t tag_len;
-    srtp_stream_ctx_t *stream;
     size_t prefix_len;
     uint32_t seq_num;
-    srtp_session_keys_t *session_keys = NULL;
-
-    /* check the packet length - it must at least contain a full header */
-    if (rtcp_len < octets_in_rtcp_header) {
-        return srtp_err_status_bad_param;
-    }
-
-    /*
-     * look up ssrc in srtp_stream list, and process the packet with
-     * the appropriate stream.  if we haven't seen this stream before,
-     * there's only one key for this srtp_session, and the cipher
-     * supports key-sharing, then we assume that a new stream using
-     * that key has just started up
-     */
-    stream = srtp_get_stream(ctx, hdr->ssrc);
-    if (stream == NULL) {
-        if (ctx->stream_template != NULL) {
-            if (ctx->stream_template->direction == dir_srtp_receiver) {
-                return srtp_err_status_no_ctx;
-            }
-
-            srtp_stream_ctx_t *new_stream;
-
-            /* allocate and initialize a new stream */
-            status =
-                srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
-            if (status) {
-                return status;
-            }
-
-            /* add new stream to the list */
-            status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
-                                                   ctx->stream_template);
-            if (status) {
-                return status;
-            }
-
-            /* set stream (the pointer used in this function) */
-            stream = new_stream;
-        } else {
-            /* no template stream, so we return an error */
-            return srtp_err_status_no_ctx;
-        }
-    }
-
-    /*
-     * verify that stream is for sending traffic - this check will
-     * detect SSRC collisions, since a stream that appears in both
-     * srtp_protect() and srtp_unprotect() will fail this test in one of
-     * those functions.
-     */
-    if (stream->direction != dir_srtp_sender) {
-        if (stream->direction == dir_unknown) {
-            stream->direction = dir_srtp_sender;
-        } else {
-            srtp_handle_event(ctx, stream, event_ssrc_collision);
-            return srtp_err_status_direction_mismatch;
-        }
-    }
-
-    status = srtp_get_session_keys(stream, mki_index, &session_keys);
-    if (status) {
-        return status;
-    }
 
     /*
      * Check if this is an AEAD stream (GCM mode).  If so, then dispatch
@@ -4635,6 +4587,85 @@ srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
     *srtcp_len += stream->mki_size;
 
     return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_protect_rtcp(srtp_t ctx,
+                                    const uint8_t *rtcp,
+                                    size_t rtcp_len,
+                                    uint8_t *srtcp,
+                                    size_t *srtcp_len,
+                                    size_t mki_index)
+{
+    const srtcp_hdr_t *hdr = (const srtcp_hdr_t *)rtcp;
+    srtp_err_status_t status;
+    srtp_stream_ctx_t *stream;
+    srtp_session_keys_t *session_keys = NULL;
+
+    /* check the packet length - it must at least contain a full header */
+    if (rtcp_len < octets_in_rtcp_header) {
+        return srtp_err_status_bad_param;
+    }
+
+    /*
+     * look up ssrc in srtp_stream list, and process the packet with
+     * the appropriate stream.  if we haven't seen this stream before,
+     * there's only one key for this srtp_session, and the cipher
+     * supports key-sharing, then we assume that a new stream using
+     * that key has just started up
+     */
+    stream = srtp_get_stream(ctx, hdr->ssrc);
+    if (stream == NULL) {
+        if (ctx->stream_template != NULL) {
+            if (ctx->stream_template->direction == dir_srtp_receiver) {
+                return srtp_err_status_no_ctx;
+            }
+
+            srtp_stream_ctx_t *new_stream;
+
+            /* allocate and initialize a new stream */
+            status =
+                srtp_stream_clone(ctx->stream_template, hdr->ssrc, &new_stream);
+            if (status) {
+                return status;
+            }
+
+            /* add new stream to the list */
+            status = srtp_insert_or_dealloc_stream(ctx->stream_list, new_stream,
+                                                   ctx->stream_template);
+            if (status) {
+                return status;
+            }
+
+            /* set stream (the pointer used in this function) */
+            stream = new_stream;
+        } else {
+            /* no template stream, so we return an error */
+            return srtp_err_status_no_ctx;
+        }
+    }
+
+    /*
+     * verify that stream is for sending traffic - this check will
+     * detect SSRC collisions, since a stream that appears in both
+     * srtp_protect() and srtp_unprotect() will fail this test in one of
+     * those functions.
+     */
+    if (stream->direction != dir_srtp_sender) {
+        if (stream->direction == dir_unknown) {
+            stream->direction = dir_srtp_sender;
+        } else {
+            srtp_handle_event(ctx, stream, event_ssrc_collision);
+            return srtp_err_status_direction_mismatch;
+        }
+    }
+
+    status = srtp_get_session_keys(stream, mki_index, &session_keys);
+    if (status) {
+        return status;
+    }
+
+    return srtp_protect_rtcp_internal(stream, rtcp, rtcp_len, srtcp, srtcp_len,
+                                      session_keys);
 }
 
 srtp_err_status_t srtp_unprotect_rtcp(srtp_t ctx,
