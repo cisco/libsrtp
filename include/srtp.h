@@ -497,12 +497,15 @@ srtp_err_status_t srtp_policy_set_rcc_mode_tx_rate(srtp_policy_t policy,
  * The key and salt are stored separately in the policy. Validation requires
  * their lengths to exactly match the configured profile. The null/null profile
  * is valid only without keys and without MKI.
+ * Each MKI and each key-and-salt pair must be unique within a policy.
+ * The same key bytes with a different salt are allowed.
  *
  * @return
  *    - srtp_err_status_ok if key was added.
  *    - srtp_err_status_bad_param if policy is NULL, key/salt/MKI arguments are
  *      invalid, MKI state does not match mki_len, the non-MKI single-key limit
- *      or key limit is exceeded, or key/salt/MKI sizes exceed supported limits.
+ *      or key limit is exceeded, key/salt/MKI sizes exceed supported limits,
+ *      or the MKI or key-and-salt pair is already configured.
  */
 srtp_err_status_t srtp_policy_add_key(srtp_policy_t policy,
                                       const uint8_t *key,
