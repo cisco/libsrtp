@@ -737,32 +737,22 @@ static bool srtp_rdbx_index_seen(const srtp_rdbx_t *rdbx)
                              bitvector_get_length(&rdbx->bitmask) - 1) != 0;
 }
 
-/* largest replay window is below 0x8000 bits */
-#define SRTP_RDBX_MAX_WORDS (0x8000 / 32)
-
-static void srtp_rdbx_save_bits(const srtp_rdbx_t *rdbx,
-                                uint32_t saved[SRTP_RDBX_MAX_WORDS])
-{
-    size_t words = srtp_replay_word_count(bitvector_get_length(&rdbx->bitmask));
-
-    memcpy(saved, rdbx->bitmask.word, words * sizeof(uint32_t));
-}
-
 /*
- * Carry the replay bits of a replaced stream over to its successor. The
+ * Carry the replay state of a replaced stream over to its successor. The
  * windows end at the current index, so they align at the top. Bits older than
  * the previous window are treated as seen.
  */
-static void srtp_rdbx_restore_bits(srtp_rdbx_t *rdbx,
-                                   const uint32_t saved[SRTP_RDBX_MAX_WORDS],
-                                   size_t saved_window)
+static void srtp_rdbx_carry_over(srtp_rdbx_t *rdbx, const srtp_rdbx_t *old_rdbx)
 {
     size_t words = srtp_replay_word_count(bitvector_get_length(&rdbx->bitmask));
-    size_t saved_words = srtp_replay_word_count(saved_window);
+    size_t old_words =
+        srtp_replay_word_count(bitvector_get_length(&old_rdbx->bitmask));
 
+    rdbx->index = old_rdbx->index;
     for (size_t i = 1; i <= words; i++) {
         rdbx->bitmask.word[words - i] =
-            i <= saved_words ? saved[saved_words - i] : 0xffffffffu;
+            i <= old_words ? old_rdbx->bitmask.word[old_words - i]
+                           : 0xffffffffu;
     }
 }
 
@@ -3707,6 +3697,19 @@ srtp_err_status_t srtp_update(srtp_t session, const srtp_policy_t policy)
     return srtp_err_status_ok;
 }
 
+/*
+ * Preserve live state when replacing a stream. Starting indices on the update
+ * policy are not applied.
+ */
+static void srtp_stream_carry_over_state(srtp_stream_ctx_t *stream,
+                                         const srtp_stream_ctx_t *old_stream)
+{
+    srtp_rdbx_carry_over(&stream->rtp_rdbx, &old_stream->rtp_rdbx);
+    stream->rtcp_rdb = old_stream->rtcp_rdb;
+    stream->direction = old_stream->direction;
+    stream->pending_roc = old_stream->pending_roc;
+}
+
 struct update_template_stream_data {
     srtp_err_status_t status;
     srtp_t session;
@@ -3720,11 +3723,7 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
         (struct update_template_stream_data *)raw_data;
     srtp_t session = data->session;
     uint32_t ssrc = stream->ssrc;
-    srtp_xtd_seq_num_t old_index;
-    srtp_rdb_t old_rtcp_rdb;
-    uint32_t old_pending_roc;
-    uint32_t old_bits[SRTP_RDBX_MAX_WORDS];
-    size_t old_window;
+    srtp_stream_t old_stream = stream;
 
     /* old / non-template streams are copied unchanged */
     if (stream->session_keys[0].rtp_auth !=
@@ -3738,22 +3737,21 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
         return true;
     }
 
-    /* save the live index before the stream is rebuilt */
-    old_index = stream->rtp_rdbx.index;
-    old_rtcp_rdb = stream->rtcp_rdb;
-    old_pending_roc = stream->pending_roc;
-    old_window = srtp_rdbx_get_window_size(&stream->rtp_rdbx);
-    srtp_rdbx_save_bits(&stream->rtp_rdbx, old_bits);
-
-    /* remove stream */
-    data->status = srtp_stream_remove(session, ntohl(ssrc));
-    if (data->status) {
-        return false;
-    }
+    /* detach the old stream, but keep it alive for the state transfer */
+    srtp_stream_list_remove(session->stream_list, old_stream);
 
     /* allocate and initialize a new stream */
     data->status = srtp_stream_clone(data->new_stream_template, ssrc, &stream);
     if (data->status) {
+        srtp_stream_dealloc(old_stream, session->stream_template);
+        return false;
+    }
+
+    srtp_stream_carry_over_state(stream, old_stream);
+
+    data->status = srtp_stream_dealloc(old_stream, session->stream_template);
+    if (data->status) {
+        srtp_stream_dealloc(stream, data->new_stream_template);
         return false;
     }
 
@@ -3763,15 +3761,6 @@ static bool update_template_stream_cb(srtp_stream_t stream, void *raw_data)
     if (data->status) {
         return false;
     }
-
-    /*
-     * Restore the live index and replay bits. A starting index on the update
-     * policy is not applied.
-     */
-    stream->rtp_rdbx.index = old_index;
-    stream->rtcp_rdb = old_rtcp_rdb;
-    stream->pending_roc = old_pending_roc;
-    srtp_rdbx_restore_bits(&stream->rtp_rdbx, old_bits, old_window);
 
     return true;
 }
@@ -3845,7 +3834,7 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     /* initialize new template stream  */
     status = srtp_stream_init(new_stream_template, policy);
     if (status) {
-        srtp_crypto_free(new_stream_template);
+        srtp_stream_dealloc(new_stream_template, NULL);
         return status;
     }
     new_stream_template->direction = session->stream_template->direction;
@@ -3853,7 +3842,7 @@ static srtp_err_status_t update_template_streams(srtp_t session,
     /* allocate new stream list */
     status = srtp_stream_list_alloc(&new_stream_list);
     if (status) {
-        srtp_crypto_free(new_stream_template);
+        srtp_stream_dealloc(new_stream_template, NULL);
         return status;
     }
 
@@ -3887,56 +3876,42 @@ static srtp_err_status_t stream_update(srtp_t session,
                                        const srtp_policy_t policy)
 {
     srtp_err_status_t status;
-    srtp_xtd_seq_num_t old_index;
-    srtp_rdb_t old_rtcp_rdb;
-    direction_t old_direction;
-    uint32_t old_pending_roc;
-    uint32_t old_bits[SRTP_RDBX_MAX_WORDS];
-    size_t old_window;
     srtp_stream_t stream;
+    srtp_stream_t old_stream;
 
-    stream = srtp_get_stream(session, htonl(policy->ssrc.value));
-    if (stream == NULL) {
+    old_stream = srtp_get_stream(session, htonl(policy->ssrc.value));
+    if (old_stream == NULL) {
         return srtp_err_status_bad_param;
     }
 
-    status = is_update_policy_compatable(stream, policy);
+    status = is_update_policy_compatable(old_stream, policy);
     if (status != srtp_err_status_ok) {
         return status;
     }
 
-    /* save the live index before the stream is rebuilt */
-    old_index = stream->rtp_rdbx.index;
-    old_rtcp_rdb = stream->rtcp_rdb;
-    old_direction = stream->direction;
-    old_pending_roc = stream->pending_roc;
-    old_window = srtp_rdbx_get_window_size(&stream->rtp_rdbx);
-    srtp_rdbx_save_bits(&stream->rtp_rdbx, old_bits);
-
-    status = srtp_stream_remove(session, policy->ssrc.value);
-    if (status) {
-        return status;
-    }
+    /* detach the old stream, but keep it alive for the state transfer */
+    srtp_stream_list_remove(session->stream_list, old_stream);
 
     status = srtp_stream_add(session, policy);
     if (status) {
+        /* put the old stream back so that the session is left unchanged */
+        srtp_insert_or_dealloc_stream(session->stream_list, old_stream,
+                                      session->stream_template);
         return status;
     }
 
     stream = srtp_get_stream(session, htonl(policy->ssrc.value));
     if (stream == NULL) {
+        srtp_stream_dealloc(old_stream, session->stream_template);
         return srtp_err_status_fail;
     }
 
-    /*
-     * Restore the live index and replay bits. A starting index on the update
-     * policy is not applied.
-     */
-    stream->rtp_rdbx.index = old_index;
-    stream->rtcp_rdb = old_rtcp_rdb;
-    stream->direction = old_direction;
-    stream->pending_roc = old_pending_roc;
-    srtp_rdbx_restore_bits(&stream->rtp_rdbx, old_bits, old_window);
+    srtp_stream_carry_over_state(stream, old_stream);
+
+    status = srtp_stream_dealloc(old_stream, session->stream_template);
+    if (status) {
+        return status;
+    }
 
     return srtp_err_status_ok;
 }
