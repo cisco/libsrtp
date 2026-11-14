@@ -62,6 +62,26 @@ int ut_compar(const void *a, const void *b)
     return r > (UINT8_MAX / 2) ? -1 : 1;
 }
 
+/*
+ * Shuffle the buffer with a Fisher-Yates pass driven by the test random
+ * source. (A qsort() with a comparator that answers at random is undefined
+ * behaviour in C, and some C libraries write outside the array when it
+ * happens.)
+ */
+static void ut_shuffle(uint32_t *buf, int n)
+{
+    int i;
+    for (i = n - 1; i > 0; i--) {
+        uint32_t r, tmp;
+        int j;
+        srtp_cipher_rand_for_tests((uint8_t *)&r, sizeof(r));
+        j = (int)(r % (uint32_t)(i + 1));
+        tmp = buf[i];
+        buf[i] = buf[j];
+        buf[j] = tmp;
+    }
+}
+
 void ut_init(ut_connection *utc)
 {
     int i;
@@ -71,7 +91,7 @@ void ut_init(ut_connection *utc)
         utc->buffer[i] = i;
     }
 
-    qsort(utc->buffer, UT_BUF, sizeof(uint32_t), ut_compar);
+    ut_shuffle(utc->buffer, UT_BUF);
 
     utc->index = UT_BUF - 1;
 }
@@ -84,7 +104,7 @@ uint32_t ut_next_index(ut_connection *utc)
     utc->index++;
     utc->buffer[0] = utc->index;
 
-    qsort(utc->buffer, UT_BUF, sizeof(uint32_t), ut_compar);
+    ut_shuffle(utc->buffer, UT_BUF);
 
     return tmp;
 }
