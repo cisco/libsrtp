@@ -143,7 +143,15 @@ ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
                                                     : "");
         return -1;
     }
-    strncpy(msg, receiver->message.body, octets_recvd);
+
+    /*
+     * octets_recvd includes the RTP header, so the body is shorter by
+     * RTP_HEADER_LEN. Since at most *len octets were received this also
+     * leaves room in msg for the terminating null.
+     */
+    octets_recvd -= RTP_HEADER_LEN;
+    memcpy(msg, receiver->message.body, octets_recvd);
+    ((char *)msg)[octets_recvd] = '\0';
 
     return octets_recvd;
 }
