@@ -920,6 +920,19 @@ srtp_err_status_t srtp_policy_validate(srtp_policy_t policy)
     }
 
     /*
+     * The authentication tag is written into fixed SRTP_MAX_TAG_LEN buffers on
+     * the receive paths (tmp_tag in srtp_unprotect() and
+     * srtp_unprotect_rtcp()), so a longer tag overflows them. HMAC-SHA1 can be
+     * configured for a tag of up to SHA1_DIGEST_SIZE (20) octets, which is
+     * larger than SRTP_MAX_TAG_LEN, so reject any tag over the supported
+     * maximum here rather than let it reach those buffers.
+     */
+    if (policy->rtp.auth_tag_len > SRTP_MAX_TAG_LEN ||
+        policy->rtcp.auth_tag_len > SRTP_MAX_TAG_LEN) {
+        return srtp_err_status_bad_param;
+    }
+
+    /*
      * RFC 4771 RCC: validate the mode against the configured cipher.  When RCC
      * is enabled the four-octet ROC is carried inside the SRTP authentication
      * tag, so for the HMAC modes the tag must be able to hold the ROC plus at
