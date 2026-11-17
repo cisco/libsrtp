@@ -155,6 +155,8 @@ srtp_err_status_t srtp_test_cryptex_not_in_place_distinct_buffer(void);
 
 srtp_err_status_t srtp_test_missing_session_keys(void);
 
+srtp_err_status_t srtp_test_conf_only_tag_cleared(void);
+
 double srtp_bits_per_second(size_t msg_len_octets,
                             const test_policy_t *test_policy);
 
@@ -1028,6 +1030,14 @@ int main(int argc, char *argv[])
 
         printf("testing missing session keys handling()...");
         if (srtp_test_missing_session_keys() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_protect tag field without authentication...");
+        if (srtp_test_conf_only_tag_cleared() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -3664,6 +3674,48 @@ srtp_err_status_t srtp_test_missing_session_keys(void)
 
     free(packet);
     CHECK_OK(srtp_dealloc(srtp_receiver));
+    srtp_policy_destroy(policy);
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * With confidentiality only, srtp_protect() still appends a tag field of
+ * auth_tag_len octets. It must not carry over what the buffer held there.
+ */
+srtp_err_status_t srtp_test_conf_only_tag_cleared(void)
+{
+    srtp_t srtp_snd;
+    srtp_policy_t policy;
+    uint8_t packet[64];
+    size_t rtp_len = 12 + 20;
+    size_t srtp_len = sizeof(packet);
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80));
+    CHECK_OK(srtp_policy_set_sec_serv(policy, sec_serv_conf,
+                                      sec_serv_conf_and_auth));
+    CHECK_OK(srtp_policy_set_ssrc(policy,
+                                  (srtp_ssrc_t){ ssrc_specific, 0xcafebabe }));
+    CHECK_OK(policy_set_key(policy, test_key));
+    CHECK_OK(srtp_create(&srtp_snd, policy));
+
+    /* stale data from an earlier, longer packet */
+    memset(packet, 0x5a, sizeof(packet));
+    memset(packet, 0, 12);
+    packet[0] = 0x80;
+    packet[8] = 0xca;
+    packet[9] = 0xfe;
+    packet[10] = 0xba;
+    packet[11] = 0xbe;
+
+    CHECK_OK(srtp_protect(srtp_snd, packet, rtp_len, packet, &srtp_len, 0));
+    CHECK(srtp_len == rtp_len + 10);
+    for (size_t i = rtp_len; i < srtp_len; i++) {
+        CHECK(packet[i] == 0);
+    }
+
+    CHECK_OK(srtp_dealloc(srtp_snd));
     srtp_policy_destroy(policy);
 
     return srtp_err_status_ok;
