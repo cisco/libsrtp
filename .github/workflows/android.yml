@@ -2,9 +2,9 @@ name: Android CI
 
 on:
   push:
-    branches: [ 2_x_dev ]
+    branches: [ 2_x_dev, '2_*_x_throttle' ]
   pull_request:
-    branches: [ 2_x_dev ]
+    branches: [ 2_x_dev, '2_*_x_throttle' ]
 
 jobs:
   build:
