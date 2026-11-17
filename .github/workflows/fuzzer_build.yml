@@ -3,14 +3,14 @@ name: Fuzzer build check
 
 on:
   push:
-    branches: [ 2_x_dev ]
+    branches: [ 2_x_dev, '2_*_x_throttle' ]
   pull_request:
-    branches: [ 2_x_dev ]
+    branches: [ 2_x_dev, '2_*_x_throttle' ]
   workflow_dispatch:
 
 jobs:
   fuzz:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v2
 
