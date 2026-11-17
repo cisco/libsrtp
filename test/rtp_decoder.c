@@ -219,6 +219,11 @@ int main(int argc, char *argv[])
             input_key = optarg_s;
             break;
         case 'i':
+            if (strlen(optarg_s) > SRTP_MAX_MKI_LEN * 2) {
+                fprintf(stderr, "error: mki bigger than %d hex characters\n",
+                        SRTP_MAX_MKI_LEN * 2);
+                exit(1);
+            }
             mki_size =
                 hex_string_to_octet_string(mki, optarg_s, strlen(optarg_s)) / 2;
             break;
@@ -255,9 +260,9 @@ int main(int argc, char *argv[])
             }
             break;
         case 'f':
-            if (strlen(optarg_s) > MAX_FILTER) {
+            if (strlen(optarg_s) >= MAX_FILTER) {
                 fprintf(stderr, "error: filter bigger than %d characters\n",
-                        MAX_FILTER);
+                        MAX_FILTER - 1);
                 exit(1);
             }
             fprintf(stderr, "Setting filter as %s\n", optarg_s);
@@ -297,10 +302,10 @@ int main(int argc, char *argv[])
             }
             break;
         case 'p':
-            if (strlen(optarg_s) > MAX_FILE) {
+            if (strlen(optarg_s) >= MAX_FILE) {
                 fprintf(stderr,
                         "error: pcap file path bigger than %d characters\n",
-                        MAX_FILE);
+                        MAX_FILE - 1);
                 exit(1);
             }
             strcpy(pcap_file, optarg_s);
@@ -405,6 +410,15 @@ int main(int argc, char *argv[])
 
         size_t input_key_len = key_len + salt_len;
 
+        /* reject long input before it is decoded into key[] */
+        if (strlen(input_key) > input_key_len * 2) {
+            fprintf(stderr,
+                    "error: too many digits in key/salt "
+                    "(should be %zu hexadecimal digits, found %zu)\n",
+                    input_key_len * 2, strlen(input_key));
+            exit(1);
+        }
+
         /*
          * read key from hexadecimal or base64 on command line into an octet
          * string
@@ -424,13 +438,6 @@ int main(int argc, char *argv[])
                     "error: too few digits in key/salt "
                     "(should be %d digits, found %d)\n",
                     expected_len, len);
-            exit(1);
-        }
-        if (strlen(input_key) > input_key_len * 2) {
-            fprintf(stderr,
-                    "error: too many digits in key/salt "
-                    "(should be %zu hexadecimal digits, found %zu)\n",
-                    input_key_len * 2, strlen(input_key));
             exit(1);
         }
 
