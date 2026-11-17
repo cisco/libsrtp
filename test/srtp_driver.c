@@ -91,8 +91,14 @@ srtp_err_status_t srtp_dealloc_big_policy(srtp_policy_t *list);
 
 srtp_err_status_t srtp_test_empty_payload(void);
 
+srtp_err_status_t srtp_test_unprotect_short_packet_auth_only(void);
+
 #ifdef GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void);
+
+srtp_err_status_t srtp_test_unprotect_short_packet_gcm_mki(void);
+
+srtp_err_status_t srtp_test_unprotect_short_packet_gcm_mki_sweep(void);
 #endif
 
 srtp_err_status_t srtp_test_remove_stream(void);
@@ -587,10 +593,37 @@ int main(int argc, char *argv[])
             printf("failed\n");
             exit(1);
         }
+
+        printf("testing srtp_unprotect on short packet with auth only\n");
+        if (srtp_test_unprotect_short_packet_auth_only() ==
+            srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
 #ifdef GCM
         printf("testing srtp_protect and srtp_unprotect against "
                "packet with empty payload (GCM)\n");
         if (srtp_test_empty_payload_gcm() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_unprotect_mki on short packet with GCM and MKI\n");
+        if (srtp_test_unprotect_short_packet_gcm_mki() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_unprotect_mki on all short packet lengths with "
+               "GCM and MKI\n");
+        if (srtp_test_unprotect_short_packet_gcm_mki_sweep() ==
+            srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -3861,6 +3894,49 @@ srtp_err_status_t srtp_test_empty_payload(void)
     return srtp_err_status_ok;
 }
 
+srtp_err_status_t srtp_test_unprotect_short_packet_auth_only(void)
+{
+    srtp_t srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+    srtp_hdr_t *mesg;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtp);
+    srtp_crypto_policy_set_null_cipher_hmac_sha1_80(&policy.rtcp);
+    policy.rtp.auth_tag_len = 20;
+    policy.ssrc.type = ssrc_any_inbound;
+    policy.key = test_key;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    mesg = srtp_create_test_packet(0, 0xcafebabe, &len);
+    if (mesg == NULL) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_unprotect(srtp_recv, mesg, &len);
+    if (status != srtp_err_status_parse_err) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+
 #ifdef GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void)
 {
@@ -3933,6 +4009,171 @@ srtp_err_status_t srtp_test_empty_payload_gcm(void)
     }
 
     free(mesg);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_unprotect_short_packet_gcm_mki(void)
+{
+    srtp_t srtp_recv;
+    srtp_err_status_t status;
+    int len;
+    srtp_policy_t policy;
+    srtp_hdr_t *mesg;
+
+    memset(&policy, 0, sizeof(policy));
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+    srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+    policy.ssrc.type = ssrc_any_inbound;
+    policy.key = NULL;
+    policy.keys = test_keys;
+    policy.num_master_keys = 2;
+    policy.window_size = 128;
+    policy.allow_repeat_tx = 0;
+    policy.next = NULL;
+
+    status = srtp_create(&srtp_recv, &policy);
+    if (status) {
+        return status;
+    }
+
+    mesg = srtp_create_test_packet(0, 0xcafebabe, &len);
+    if (mesg == NULL) {
+        return srtp_err_status_fail;
+    }
+    memcpy((uint8_t *)mesg + len - TEST_MKI_ID_SIZE, test_mki_id,
+           TEST_MKI_ID_SIZE);
+
+    status = srtp_unprotect_mki(srtp_recv, mesg, &len, 1);
+    if (status != srtp_err_status_parse_err) {
+        return srtp_err_status_fail;
+    }
+
+    status = srtp_dealloc(srtp_recv);
+    if (status) {
+        return status;
+    }
+
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * Sweep over every packet length from the smallest valid RTP header up to
+ * one header plus tag plus MKI, for GCM with 16 and 8 octet tags, several MKI
+ * sizes, 0 to 2 CSRCs and with and without a header extension.  Each packet
+ * is allocated with exactly the length given so an out of bounds read is
+ * detected by a sanitizer.  A packet shorter than tag + MKI must be rejected,
+ * no packet may be accepted since none carries a valid tag.
+ */
+srtp_err_status_t srtp_test_unprotect_short_packet_gcm_mki_sweep(void)
+{
+    static const int tag_lens[] = { 16, 8 };
+    static const unsigned int mki_sizes[] = { 2, 4, 8, 16 };
+    uint8_t mki_id_1[SRTP_MAX_MKI_LEN];
+    uint8_t mki_id_2[SRTP_MAX_MKI_LEN];
+    size_t t, m;
+    int cc, x;
+
+    /*
+     * an all zero MKI is used for the first key so a short packet whose MKI
+     * overlaps the header (for example the length field of a header extension)
+     * is still a well formed RTP packet
+     */
+    memset(mki_id_1, 0x00, sizeof(mki_id_1));
+    memset(mki_id_2, 0xff, sizeof(mki_id_2));
+
+    for (t = 0; t < sizeof(tag_lens) / sizeof(tag_lens[0]); t++) {
+        for (m = 0; m < sizeof(mki_sizes) / sizeof(mki_sizes[0]); m++) {
+            srtp_t srtp_recv;
+            srtp_policy_t policy;
+            srtp_master_key_t key_1;
+            srtp_master_key_t key_2;
+            srtp_master_key_t *keys[2];
+            srtp_err_status_t status;
+            unsigned int mki_size = mki_sizes[m];
+
+            memset(&policy, 0, sizeof(policy));
+            if (tag_lens[t] == 16) {
+                srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtp);
+                srtp_crypto_policy_set_aes_gcm_128_16_auth(&policy.rtcp);
+            } else {
+                srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtp);
+                srtp_crypto_policy_set_aes_gcm_128_8_auth(&policy.rtcp);
+            }
+
+            key_1.key = test_key;
+            key_1.mki_id = mki_id_1;
+            key_1.mki_size = mki_size;
+            key_2.key = test_key_2;
+            key_2.mki_id = mki_id_2;
+            key_2.mki_size = mki_size;
+            keys[0] = &key_1;
+            keys[1] = &key_2;
+
+            policy.ssrc.type = ssrc_any_inbound;
+            policy.keys = keys;
+            policy.num_master_keys = 2;
+            policy.window_size = 128;
+            policy.allow_repeat_tx = 0;
+            policy.next = NULL;
+
+            status = srtp_create(&srtp_recv, &policy);
+            if (status) {
+                return status;
+            }
+
+            for (cc = 0; cc <= 2; cc++) {
+                for (x = 0; x <= 1; x++) {
+                    int hdr_len = 12 + 4 * cc + (x ? 4 : 0);
+                    int trailer_len = tag_lens[t] + (int)mki_size;
+                    int len;
+
+                    for (len = hdr_len; len <= hdr_len + trailer_len; len++) {
+                        uint8_t *pkt = (uint8_t *)calloc(1, len);
+                        int pkt_len = len;
+
+                        if (pkt == NULL) {
+                            return srtp_err_status_alloc_fail;
+                        }
+
+                        pkt[0] = (uint8_t)(0x80 | (x ? 0x10 : 0) | cc);
+                        pkt[1] = 0x0f;
+                        pkt[2] = 0x12;
+                        pkt[3] = 0x34;
+                        if (x) {
+                            /* extension header with no extension words */
+                            pkt[12 + 4 * cc] = 0xbe;
+                            pkt[12 + 4 * cc + 1] = 0xde;
+                        }
+                        if (len >= (int)mki_size) {
+                            memcpy(pkt + len - mki_size, mki_id_1, mki_size);
+                        }
+
+                        status =
+                            srtp_unprotect_mki(srtp_recv, pkt, &pkt_len, 1);
+                        free(pkt);
+
+                        if (status == srtp_err_status_ok) {
+                            return srtp_err_status_fail;
+                        }
+                        if (len < trailer_len &&
+                            status != srtp_err_status_parse_err &&
+                            status != srtp_err_status_bad_mki &&
+                            status != srtp_err_status_bad_param) {
+                            return srtp_err_status_fail;
+                        }
+                    }
+                }
+            }
+
+            status = srtp_dealloc(srtp_recv);
+            if (status) {
+                return status;
+            }
+        }
+    }
 
     return srtp_err_status_ok;
 }
