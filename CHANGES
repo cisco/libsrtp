@@ -1,5 +1,11 @@
 Changelog
 
+2.8.2
+
+#845 - Check tag and MKI length before RTP unprotect bounds (backport of #827)
+
+#829 - Add missing public cryptex functions to def file
+
 2.8.1
 
 #811 - cryptex and enc xtn hdr is not a valid combination
