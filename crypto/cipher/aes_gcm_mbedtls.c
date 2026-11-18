@@ -337,6 +337,7 @@ static srtp_err_status_t srtp_aes_gcm_mbedtls_set_iv(
                 srtp_octet_string_hex_string(iv, GCM_IV_LEN));
     c->iv_len = GCM_IV_LEN;
     memcpy(c->iv, iv, c->iv_len);
+    c->aad_size = 0;
     return (srtp_err_status_ok);
 }
 
