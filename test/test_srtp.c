@@ -68,6 +68,7 @@
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output(void);
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param(void);
 void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void);
+void srtp_policy_validate_rejects_oversized_auth_tag(void);
 #ifdef MBEDTLS
 void srtp_hmac_mbedtls_reinit_does_not_leak_key(void);
 void srtp_hmac_mbedtls_init_failure_returns_srtp_status(void);
@@ -87,6 +88,8 @@ TEST_LIST = { { "srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
                 srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param },
               { "srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()",
                 srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number },
+              { "srtp_policy_validate_rejects_oversized_auth_tag()",
+                srtp_policy_validate_rejects_oversized_auth_tag },
 #ifdef MBEDTLS
               { "srtp_hmac_mbedtls_reinit_does_not_leak_key()",
                 srtp_hmac_mbedtls_reinit_does_not_leak_key },
@@ -198,6 +201,38 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void)
         TEST_CHECK(memcmp(&final_iv[i], &output_iv[i], sizeof(v128_t)) == 0);
     }
 #undef SAMPLE_COUNT
+}
+
+void srtp_policy_validate_rejects_oversized_auth_tag(void)
+{
+    srtp_policy_t policy;
+    uint8_t key[30] = { 0 };
+
+    TEST_CHECK(srtp_policy_create(&policy) == srtp_err_status_ok);
+    TEST_CHECK(
+        srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80) ==
+        srtp_err_status_ok);
+    TEST_CHECK(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_any_inbound, 0 }) ==
+        srtp_err_status_ok);
+    TEST_CHECK(srtp_policy_add_key(policy, key, 16, key + 16, 14, NULL, 0) ==
+               srtp_err_status_ok);
+
+    // A tag at the supported maximum is fine
+    policy->rtp.auth_tag_len = SRTP_MAX_TAG_LEN;
+    policy->rtcp.auth_tag_len = SRTP_MAX_TAG_LEN;
+    TEST_CHECK(srtp_policy_validate(policy) == srtp_err_status_ok);
+
+    // An RTP tag past the maximum would overflow tmp_tag in srtp_unprotect()
+    policy->rtp.auth_tag_len = SRTP_MAX_TAG_LEN + 1;
+    TEST_CHECK(srtp_policy_validate(policy) == srtp_err_status_bad_param);
+
+    // Same for the RTCP tag and srtp_unprotect_rtcp()
+    policy->rtp.auth_tag_len = SRTP_MAX_TAG_LEN;
+    policy->rtcp.auth_tag_len = SRTP_MAX_TAG_LEN + 1;
+    TEST_CHECK(srtp_policy_validate(policy) == srtp_err_status_bad_param);
+
+    srtp_policy_destroy(policy);
 }
 
 #ifdef MBEDTLS
