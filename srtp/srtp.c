@@ -2992,6 +2992,17 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
         }
         debug_print(mod_srtp, "srtp auth tag:    %s",
                     srtp_octet_string_hex_string(auth_tag, tag_len));
+    } else if (rcc_tag_len > 0) {
+        /*
+         * no authentication, but the tag field is still appended, so it
+         * must not carry whatever the caller's buffer held at that offset;
+         * a ROC-carrying packet still needs its ROC there
+         */
+        uint8_t *tag = srtp + rtp_len + stream->mki_size;
+        octet_string_set_to_zero(tag, rcc_tag_len);
+        if (rcc_carry) {
+            memcpy(tag, (uint8_t *)&est, 4);
+        }
     }
 
     *srtp_len = enc_start + enc_octet_len;

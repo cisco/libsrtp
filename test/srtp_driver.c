@@ -105,6 +105,8 @@ srtp_err_status_t srtp_validate_aes_192(void);
 
 srtp_err_status_t srtp_test_empty_payload(void);
 
+srtp_err_status_t srtp_test_protect_no_auth_trailer(void);
+
 #ifdef HAVE_GCM
 srtp_err_status_t srtp_test_empty_payload_gcm(void);
 
@@ -835,6 +837,14 @@ int main(int argc, char *argv[])
         printf("testing srtp_protect and srtp_unprotect against "
                "packet with empty payload\n");
         if (srtp_test_empty_payload() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_protect trailer without authentication\n");
+        if (srtp_test_protect_no_auth_trailer() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -4822,6 +4832,52 @@ srtp_err_status_t srtp_test_empty_payload(void)
 
     srtp_policy_destroy(policy);
 
+    free(mesg);
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_test_protect_no_auth_trailer(void)
+{
+    srtp_t srtp_snd, srtp_recv;
+    srtp_policy_t policy;
+    uint8_t *mesg;
+    uint8_t output[1400];
+    size_t len, out_len;
+
+    /*
+     * Confidentiality only on an HMAC profile still appends a tag_len
+     * trailer. It must not hold whatever the output buffer contained.
+     */
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80));
+    CHECK_OK(srtp_policy_set_sec_serv(policy, sec_serv_conf,
+                                      sec_serv_conf_and_auth));
+    CHECK_OK(srtp_policy_set_ssrc(policy,
+                                  (srtp_ssrc_t){ ssrc_specific, 0xcafebabe }));
+    CHECK_OK(policy_set_key(policy, test_key));
+
+    CHECK_OK(srtp_create(&srtp_snd, policy));
+    CHECK_OK(srtp_create(&srtp_recv, policy));
+
+    mesg = create_rtp_test_packet(16, 0xcafebabe, 1, 1, false, &len, NULL);
+    CHECK(mesg != NULL);
+
+    memset(output, 0xaa, sizeof(output));
+    out_len = sizeof(output);
+    CHECK_OK(srtp_protect(srtp_snd, mesg, len, output, &out_len, 0));
+    CHECK(out_len == len + 10);
+    for (size_t i = len; i < out_len; i++) {
+        CHECK(output[i] == 0);
+    }
+
+    CHECK_OK(call_srtp_unprotect(srtp_recv, output, &out_len));
+    CHECK(out_len == len);
+    CHECK_BUFFER_EQUAL(output, mesg, len);
+
+    CHECK_OK(srtp_dealloc(srtp_snd));
+    CHECK_OK(srtp_dealloc(srtp_recv));
+    srtp_policy_destroy(policy);
     free(mesg);
 
     return srtp_err_status_ok;
