@@ -73,6 +73,10 @@ srtp_err_status_t srtp_key_limit_clone(srtp_key_limit_t original,
 
 srtp_key_event_t srtp_key_limit_update(srtp_key_limit_t key)
 {
+    if (key->state == srtp_key_state_expired) {
+        /* stay expired, num_left would wrap around */
+        return srtp_key_event_hard_limit;
+    }
     key->num_left--;
     if (key->num_left >= soft_limit) {
         return srtp_key_event_normal; /* we're above the soft limit */

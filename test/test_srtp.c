@@ -68,6 +68,7 @@
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output(void);
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param(void);
 void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void);
+void srtp_protect_key_hard_limit_stays_expired(void);
 #ifdef MBEDTLS
 void srtp_hmac_mbedtls_reinit_does_not_leak_key(void);
 void srtp_hmac_mbedtls_init_failure_returns_srtp_status(void);
@@ -87,6 +88,8 @@ TEST_LIST = { { "srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
                 srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param },
               { "srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()",
                 srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number },
+              { "srtp_protect_key_hard_limit_stays_expired()",
+                srtp_protect_key_hard_limit_stays_expired },
 #ifdef MBEDTLS
               { "srtp_hmac_mbedtls_reinit_does_not_leak_key()",
                 srtp_hmac_mbedtls_reinit_does_not_leak_key },
@@ -198,6 +201,59 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void)
         TEST_CHECK(memcmp(&final_iv[i], &output_iv[i], sizeof(v128_t)) == 0);
     }
 #undef SAMPLE_COUNT
+}
+
+/*
+ * Once a master key reaches its hard limit it must not be used again, so
+ * srtp_protect() has to keep failing rather than only failing once.
+ */
+void srtp_protect_key_hard_limit_stays_expired(void)
+{
+    // Preconditions
+    const uint32_t ssrc_value = 0xcafebabe;
+    const uint8_t key[SRTP_AES_ICM_128_KEY_LEN_WSALT] = { 0 };
+    const srtp_ssrc_t ssrc = { ssrc_specific, ssrc_value };
+    srtp_policy_t policy = NULL;
+    srtp_t session = NULL;
+    srtp_stream_ctx_t *stream;
+    uint8_t packet[64];
+    srtp_hdr_t *hdr = (srtp_hdr_t *)packet;
+    size_t len;
+
+    // Given a stream whose key has one packet left
+    TEST_CHECK(srtp_init() == srtp_err_status_ok);
+    TEST_CHECK(srtp_policy_create(&policy) == srtp_err_status_ok);
+    TEST_CHECK(
+        srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80) ==
+        srtp_err_status_ok);
+    TEST_CHECK(srtp_policy_set_ssrc(policy, ssrc) == srtp_err_status_ok);
+    TEST_CHECK(srtp_policy_add_key(policy, key, SRTP_AES_128_KEY_LEN,
+                                   key + SRTP_AES_128_KEY_LEN, SRTP_SALT_LEN,
+                                   NULL, 0) == srtp_err_status_ok);
+    TEST_CHECK(srtp_create(&session, policy) == srtp_err_status_ok);
+    stream = srtp_get_stream(session, htonl(ssrc_value));
+    TEST_ASSERT(stream != NULL);
+    stream->session_keys[0].limit->num_left = 1;
+
+    memset(packet, 0, sizeof(packet));
+    hdr->version = 2;
+    hdr->ssrc = htonl(ssrc_value);
+
+    // When the last packet is protected
+    hdr->seq = htons(1);
+    len = sizeof(packet);
+    TEST_CHECK(srtp_protect(session, packet, 32, packet, &len, 0) ==
+               srtp_err_status_key_expired);
+
+    // Then the key stays expired for the following packets
+    hdr->seq = htons(2);
+    len = sizeof(packet);
+    TEST_CHECK(srtp_protect(session, packet, 32, packet, &len, 0) ==
+               srtp_err_status_key_expired);
+
+    TEST_CHECK(srtp_dealloc(session) == srtp_err_status_ok);
+    srtp_policy_destroy(policy);
+    TEST_CHECK(srtp_shutdown() == srtp_err_status_ok);
 }
 
 #ifdef MBEDTLS
