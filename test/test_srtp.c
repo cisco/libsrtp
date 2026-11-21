@@ -68,6 +68,9 @@
 void srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output(void);
 void srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param(void);
 void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void);
+#ifdef HAVE_GCM
+void srtp_unprotect_rtcp_aead_rejected_aad_is_not_carried_over(void);
+#endif
 #ifdef MBEDTLS
 void srtp_hmac_mbedtls_reinit_does_not_leak_key(void);
 void srtp_hmac_mbedtls_init_failure_returns_srtp_status(void);
@@ -87,6 +90,10 @@ TEST_LIST = { { "srtp_calc_aead_iv_srtcp_all_zero_input_yield_zero_output()",
                 srtp_calc_aead_iv_srtcp_seq_num_over_0x7FFFFFFF_bad_param },
               { "srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number()",
                 srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number },
+#ifdef HAVE_GCM
+              { "srtp_unprotect_rtcp_aead_rejected_aad_is_not_carried_over()",
+                srtp_unprotect_rtcp_aead_rejected_aad_is_not_carried_over },
+#endif
 #ifdef MBEDTLS
               { "srtp_hmac_mbedtls_reinit_does_not_leak_key()",
                 srtp_hmac_mbedtls_reinit_does_not_leak_key },
@@ -199,6 +206,75 @@ void srtp_calc_aead_iv_srtcp_distinct_iv_per_sequence_number(void)
     }
 #undef SAMPLE_COUNT
 }
+
+#ifdef HAVE_GCM
+static void create_rtcp_aead_session(srtp_t *session, uint32_t ssrc)
+{
+    static const uint8_t key[SRTP_AES_128_KEY_LEN] = { 0 };
+    static const uint8_t salt[SRTP_AEAD_SALT_LEN] = { 0 };
+    srtp_policy_t policy;
+
+    TEST_CHECK(srtp_policy_create(&policy) == srtp_err_status_ok);
+    TEST_CHECK(srtp_policy_set_profile(policy, srtp_profile_aead_aes_128_gcm) ==
+               srtp_err_status_ok);
+    TEST_CHECK(
+        srtp_policy_set_ssrc(policy, (srtp_ssrc_t){ ssrc_specific, ssrc }) ==
+        srtp_err_status_ok);
+    TEST_CHECK(srtp_policy_add_key(policy, key, sizeof(key), salt, sizeof(salt),
+                                   NULL, 0) == srtp_err_status_ok);
+    TEST_CHECK(srtp_create(session, policy) == srtp_err_status_ok);
+    srtp_policy_destroy(policy);
+}
+
+void srtp_unprotect_rtcp_aead_rejected_aad_is_not_carried_over(void)
+{
+    // Preconditions
+    const uint32_t ssrc = 0xcafebabe;
+    srtp_t sender = NULL;
+    srtp_t receiver = NULL;
+    uint8_t rtcp[64] = { 0 };
+    size_t rtcp_len;
+    uint8_t srtcp[64] = { 0 };
+    size_t srtcp_len = sizeof(srtcp);
+    uint8_t forged[2065] = { 0 };
+    uint8_t out[sizeof(forged)];
+    size_t out_len = sizeof(out);
+    uint32_t value;
+
+    TEST_CHECK(srtp_init() == srtp_err_status_ok);
+    create_rtcp_aead_session(&sender, ssrc);
+    create_rtcp_aead_session(&receiver, ssrc);
+
+    // A sender report protected by the sender
+    rtcp[0] = 0x80;
+    rtcp[1] = 200;
+    rtcp[3] = 6;
+    value = htonl(ssrc);
+    memcpy(rtcp + 4, &value, sizeof(value));
+    TEST_CHECK(srtp_protect_rtcp(sender, rtcp, 28, srtcp, &srtcp_len, 0) ==
+               srtp_err_status_ok);
+
+    // An unauthenticated packet with the E bit clear, sized so that its
+    // header and payload fit the AAD buffer but the trailer does not
+    memcpy(forged, rtcp, 8);
+    value = htonl(5);
+    memcpy(forged + sizeof(forged) - 16 - 4, &value, sizeof(value));
+
+    // When the receiver rejects it
+    TEST_CHECK(srtp_unprotect_rtcp(receiver, forged, sizeof(forged), out,
+                                   &out_len) != srtp_err_status_ok);
+
+    // Then the next genuine packet still authenticates
+    rtcp_len = sizeof(rtcp);
+    TEST_CHECK(srtp_unprotect_rtcp(receiver, srtcp, srtcp_len, rtcp,
+                                   &rtcp_len) == srtp_err_status_ok);
+    TEST_CHECK(rtcp_len == 28);
+
+    TEST_CHECK(srtp_dealloc(sender) == srtp_err_status_ok);
+    TEST_CHECK(srtp_dealloc(receiver) == srtp_err_status_ok);
+    TEST_CHECK(srtp_shutdown() == srtp_err_status_ok);
+}
+#endif
 
 #ifdef MBEDTLS
 static size_t psa_volatile_key_count(void)

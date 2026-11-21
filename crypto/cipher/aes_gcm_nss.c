@@ -239,6 +239,7 @@ static srtp_err_status_t srtp_aes_gcm_nss_set_iv(
                 srtp_octet_string_hex_string(iv, GCM_IV_LEN));
 
     memcpy(c->iv, iv, GCM_IV_LEN);
+    c->aad_size = 0;
 
     return (srtp_err_status_ok);
 }
