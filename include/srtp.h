@@ -852,6 +852,8 @@ srtp_err_status_t srtp_create(srtp_t *session, const srtp_policy_t policy);
  *
  * @return values:
  *    - srtp_err_status_ok           if stream creation succeeded.
+ *    - srtp_err_status_bad_param    if the policy is invalid or the session
+ *                                   already has a stream for its SSRC.
  *    - srtp_err_status_alloc_fail   if stream allocation failed
  *    - srtp_err_status_init_fail    if stream initialization failed.
  */
