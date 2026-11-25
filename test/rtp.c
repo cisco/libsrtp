@@ -143,7 +143,15 @@ ssize_t rtp_recvfrom(rtp_receiver_t receiver, void *msg, size_t *len)
                                                     : "");
         return -1;
     }
-    strncpy(msg, receiver->message.body, octets_recvd);
+
+    /*
+     * octets_recvd includes the RTP header, so only the remainder is payload.
+     * recvfrom() was limited to *len octets, which leaves room in msg for a
+     * terminating null; callers print the payload as a string.
+     */
+    octets_recvd -= RTP_HEADER_LEN;
+    memcpy(msg, receiver->message.body, octets_recvd);
+    ((char *)msg)[octets_recvd] = '\0';
 
     return octets_recvd;
 }
