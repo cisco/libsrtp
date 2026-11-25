@@ -119,6 +119,8 @@ srtp_err_status_t srtp_test_rtcp_gcm_unprotect_not_in_place(void);
 
 srtp_err_status_t srtp_test_remove_stream(void);
 
+srtp_err_status_t srtp_test_add_stream_existing_ssrc(void);
+
 srtp_err_status_t srtp_test_update(void);
 
 srtp_err_status_t srtp_test_update_preserves_direction(void);
@@ -864,6 +866,14 @@ int main(int argc, char *argv[])
          */
         printf("testing srtp_stream_remove()...");
         if (srtp_test_remove_stream() == srtp_err_status_ok) {
+            printf("passed\n");
+        } else {
+            printf("failed\n");
+            exit(1);
+        }
+
+        printf("testing srtp_stream_add() with an existing SSRC...");
+        if (srtp_test_add_stream_existing_ssrc() == srtp_err_status_ok) {
             printf("passed\n");
         } else {
             printf("failed\n");
@@ -5192,6 +5202,38 @@ srtp_err_status_t srtp_test_update(void)
         return status;
     }
 
+    srtp_policy_destroy(policy);
+
+    return srtp_err_status_ok;
+}
+
+/*
+ * srtp_test_add_stream_existing_ssrc() verifies that srtp_stream_add()
+ * refuses a specific SSRC that already has a stream in the session, so a
+ * second policy for that SSRC cannot be accepted and then never used
+ */
+srtp_err_status_t srtp_test_add_stream_existing_ssrc(void)
+{
+    srtp_policy_t policy;
+    srtp_t session;
+
+    CHECK_OK(srtp_policy_create(&policy));
+    CHECK_OK(srtp_policy_set_profile(policy, srtp_profile_aes128_cm_sha1_80));
+    CHECK_OK(policy_set_key(policy, test_key));
+    CHECK_OK(srtp_policy_set_ssrc(policy,
+                                  (srtp_ssrc_t){ ssrc_specific, 0xcafebabe }));
+
+    CHECK_OK(srtp_create(&session, policy));
+
+    /* the same SSRC with a different key is not a new stream */
+    CHECK_OK(policy_set_key(policy, test_alt_key));
+    CHECK_RETURN(srtp_stream_add(session, policy), srtp_err_status_bad_param);
+
+    /* once the existing stream is removed the SSRC can be added again */
+    CHECK_OK(srtp_stream_remove(session, 0xcafebabe));
+    CHECK_OK(srtp_stream_add(session, policy));
+
+    CHECK_OK(srtp_dealloc(session));
     srtp_policy_destroy(policy);
 
     return srtp_err_status_ok;

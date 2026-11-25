@@ -3532,6 +3532,15 @@ srtp_err_status_t srtp_stream_add(srtp_t session, const srtp_policy_t policy)
         return status;
     }
 
+    /*
+     * a specific SSRC can only have one stream in the session; a second
+     * one would be inserted behind the existing stream and never be used
+     */
+    if (policy->ssrc.type == ssrc_specific &&
+        srtp_get_stream(session, htonl(policy->ssrc.value)) != NULL) {
+        return srtp_err_status_bad_param;
+    }
+
     /* allocate stream  */
     status = srtp_stream_alloc(&tmp, policy);
     if (status) {
