@@ -125,7 +125,7 @@ state associated with an SRTP stream, including the keys and
 parameters for cipher and message authentication functions and the
 anti-replay data. A particular `srtp_stream_t` holds the information
 needed to protect a particular RTP and RTCP stream. This datatype
-is intentionally opaque in order to better seperate the libSRTP
+is intentionally opaque in order to better separate the libSRTP
 API from its implementation.
 
 Within an SRTP session, there can be multiple streams, each
