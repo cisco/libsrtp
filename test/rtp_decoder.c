@@ -238,7 +238,6 @@ int main(int argc, char *argv[])
                         policy_params.key_size);
                 exit(1);
             }
-            input_key = malloc(policy_params.key_size);
             policy_params.sec_servs |= sec_serv_conf;
             break;
         case 't':
@@ -284,7 +283,6 @@ int main(int argc, char *argv[])
                 exit(1);
             }
             policy_params.key_size = i_scsp->key_size;
-            input_key = malloc(policy_params.key_size);
             policy_params.tag_size = i_scsp->tag_size;
             policy_params.sec_servs |= sec_serv_conf | sec_serv_auth;
             policy_params.gcm_on = i_scsp->gcm_on;
