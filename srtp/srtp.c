@@ -2831,6 +2831,13 @@ srtp_err_status_t srtp_protect(srtp_t ctx,
     } else {
         auth_start = NULL;
         auth_tag = NULL;
+        /*
+         * the tag field is still part of the packet even when it is not
+         * computed, so do not send whatever the buffer held there
+         */
+        if (rcc_tag_len > 0) {
+            memset(srtp + rtp_len + stream->mki_size, 0, rcc_tag_len);
+        }
     }
 
     /*
