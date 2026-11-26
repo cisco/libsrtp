@@ -48,43 +48,52 @@
 
 #include "key.h"
 
-#define soft_limit 0x10000
-
 srtp_err_status_t srtp_key_limit_set(srtp_key_limit_t key,
                                      const srtp_xtd_seq_num_t s)
 {
-    if (s < soft_limit) {
+    if (key == NULL || s == 0) {
         return srtp_err_status_bad_param;
     }
-    key->num_left = s;
-    key->state = srtp_key_state_normal;
+    key->limit = s;
+    key->used = 0;
+    key->soft_warned = false;
     return srtp_err_status_ok;
 }
 
-srtp_err_status_t srtp_key_limit_clone(srtp_key_limit_t original,
-                                       srtp_key_limit_t *new_key)
+bool srtp_key_limit_is_expired(srtp_key_limit_t key)
 {
-    if (original == NULL) {
-        return srtp_err_status_bad_param;
-    }
-    *new_key = original;
-    return srtp_err_status_ok;
+    return key == NULL || key->used >= key->limit;
 }
 
+/*
+ * callers reject an expired key before encrypting; the check also prevents
+ * incrementing an exhausted count. When the soft limit and expiry fall on
+ * the same packet only the hard limit is reported.
+ */
 srtp_key_event_t srtp_key_limit_update(srtp_key_limit_t key)
 {
-    key->num_left--;
-    if (key->num_left >= soft_limit) {
-        return srtp_key_event_normal; /* we're above the soft limit */
+    if (key->used >= key->limit) {
+        return srtp_key_event_normal;
     }
-    if (key->state == srtp_key_state_normal) {
-        /* we just passed the soft limit, so change the state */
-        key->state = srtp_key_state_past_soft_limit;
-    }
-    if (key->num_left < 1) {
-        /* we just hit the hard limit */
-        key->state = srtp_key_state_expired;
+
+    key->used++;
+    if (key->used == key->limit) {
         return srtp_key_event_hard_limit;
     }
-    return srtp_key_event_soft_limit;
+    if (!key->soft_warned && key->limit - key->used < key->limit / 10) {
+        key->soft_warned = true;
+        return srtp_key_event_soft_limit;
+    }
+    return srtp_key_event_normal;
+}
+
+void srtp_key_limit_carry_over(srtp_key_limit_t to,
+                               const struct srtp_key_limit_ctx_t *from)
+{
+    if (to == NULL || from == NULL) {
+        return;
+    }
+
+    to->used = from->used;
+    to->soft_warned = from->soft_warned;
 }

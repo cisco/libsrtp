@@ -20,6 +20,7 @@ srtp_policy_set_sec_serv
 srtp_policy_use_mki
 srtp_policy_get_mki_length
 srtp_policy_add_key
+srtp_policy_set_key_lifetime
 srtp_policy_remove_keys
 srtp_policy_set_window_size
 srtp_policy_set_allow_repeat_tx
@@ -44,6 +45,7 @@ srtp_stream_get_packet_index
 srtp_stream_get_srtcp_index
 srtp_get_user_data
 srtp_install_event_handler
+srtp_event_get_mki
 srtp_get_version_string
 srtp_get_version
 srtp_set_debug_module

@@ -836,6 +836,18 @@ void srtp_policy_destroy(srtp_policy_t policy)
     srtp_crypto_free(policy);
 }
 
+static bool srtp_master_key_matches_material(
+    const srtp_master_key_t *master_key,
+    const uint8_t *key,
+    size_t key_len,
+    const uint8_t *salt,
+    size_t salt_len)
+{
+    return master_key->key_len == key_len && master_key->salt_len == salt_len &&
+           srtp_octet_string_equal(master_key->key, key, key_len) &&
+           srtp_octet_string_equal(master_key->key + key_len, salt, salt_len);
+}
+
 srtp_err_status_t srtp_policy_validate(srtp_policy_t policy)
 {
     if (policy == NULL) {
@@ -1150,16 +1162,72 @@ srtp_err_status_t srtp_policy_add_key(srtp_policy_t policy,
         return srtp_err_status_bad_param;
     }
 
-    size_t key_index = policy->num_master_keys;
-    memcpy(policy->master_keys[key_index].key, key, key_len);
-    policy->master_keys[key_index].key_len = key_len;
-    memcpy(policy->master_keys[key_index].key + key_len, salt, salt_len);
-    policy->master_keys[key_index].salt_len = salt_len;
-    if (mki_len > 0) {
-        memcpy(policy->master_keys[key_index].mki_id, mki, mki_len);
+    for (size_t i = 0; i < policy->num_master_keys; i++) {
+        if ((mki_len > 0 && srtp_octet_string_equal(
+                                policy->master_keys[i].mki_id, mki, mki_len)) ||
+            srtp_master_key_matches_material(&policy->master_keys[i], key,
+                                             key_len, salt, salt_len)) {
+            return srtp_err_status_bad_param;
+        }
     }
-    policy->master_keys[key_index].mki_id_len = mki_len;
+
+    srtp_master_key_t *master_key =
+        &policy->master_keys[policy->num_master_keys];
+    memcpy(master_key->key, key, key_len);
+    master_key->key_len = key_len;
+    memcpy(master_key->key + key_len, salt, salt_len);
+    master_key->salt_len = salt_len;
+    if (mki_len > 0) {
+        memcpy(master_key->mki_id, mki, mki_len);
+    }
+    master_key->mki_id_len = mki_len;
+    master_key->rtp_lifetime = 0;
+    master_key->rtcp_lifetime = 0;
     policy->num_master_keys++;
+
+    return srtp_err_status_ok;
+}
+
+srtp_err_status_t srtp_policy_set_key_lifetime(srtp_policy_t policy,
+                                               const uint8_t *mki,
+                                               size_t mki_len,
+                                               uint64_t rtp_lifetime,
+                                               uint64_t rtcp_lifetime)
+{
+    if (policy == NULL || policy->num_master_keys == 0) {
+        return srtp_err_status_bad_param;
+    }
+
+    if (rtp_lifetime > srtp_default_rtp_key_lifetime() ||
+        rtcp_lifetime > srtp_default_rtcp_key_lifetime()) {
+        return srtp_err_status_bad_param;
+    }
+
+    srtp_master_key_t *selected = NULL;
+    if (policy->use_mki) {
+        if (mki == NULL || mki_len == 0 || mki_len != policy->mki_size) {
+            return srtp_err_status_bad_param;
+        }
+        for (size_t i = 0; i < policy->num_master_keys; i++) {
+            srtp_master_key_t *key = &policy->master_keys[i];
+            if (key->mki_id_len == mki_len &&
+                srtp_octet_string_equal(key->mki_id, mki, mki_len)) {
+                selected = key;
+                break;
+            }
+        }
+    } else {
+        if (mki != NULL || mki_len != 0) {
+            return srtp_err_status_bad_param;
+        }
+        selected = &policy->master_keys[0];
+    }
+    if (selected == NULL) {
+        return srtp_err_status_bad_param;
+    }
+
+    selected->rtp_lifetime = rtp_lifetime;
+    selected->rtcp_lifetime = rtcp_lifetime;
 
     return srtp_err_status_ok;
 }

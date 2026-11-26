@@ -84,6 +84,8 @@ typedef struct srtp_master_key_t {
     size_t salt_len;
     uint8_t mki_id[SRTP_MAX_MKI_LEN];
     size_t mki_id_len;
+    uint64_t rtp_lifetime;
+    uint64_t rtcp_lifetime;
 } srtp_master_key_t;
 
 typedef struct srtp_policy_ctx_t_ {
@@ -141,6 +143,16 @@ static inline bool srtp_policy_is_valid_window_size(size_t window_size)
     return window_size == 0 || (window_size >= 64 && window_size < 0x8000);
 }
 
+static inline uint64_t srtp_default_rtp_key_lifetime(void)
+{
+    return (uint64_t)1 << 48;
+}
+
+static inline uint64_t srtp_default_rtcp_key_lifetime(void)
+{
+    return (uint64_t)1 << 31;
+}
+
 /*
  * the following declarations are libSRTP internal functions
  */
@@ -160,6 +172,28 @@ typedef enum direction_t {
     dir_srtp_receiver = 2
 } direction_t;
 
+typedef enum {
+    srtp_key_expiry_group_active,
+    srtp_key_expiry_group_pending_expiry,
+    srtp_key_expiry_group_expired
+} srtp_key_expiry_group_state_t;
+
+/*
+ * a key expiry group is the expiry state shared by every stream in a session
+ * that uses the same master key, recognized by the derived salts. The MKI
+ * selects a key and is not part of this identity. The session keeps the
+ * groups in a list, and a group unlinks itself through pprev when its last
+ * reference is released.
+ */
+typedef struct srtp_key_expiry_group_t {
+    struct srtp_key_expiry_group_t *next;
+    struct srtp_key_expiry_group_t **pprev;
+    unsigned int ref_count;
+    srtp_key_expiry_group_state_t state;
+    uint8_t salt[SRTP_AEAD_SALT_LEN];
+    uint8_t c_salt[SRTP_AEAD_SALT_LEN];
+} srtp_key_expiry_group_t;
+
 /*
  * srtp_session_keys_t will contain the encryption, hmac, salt keys
  * for both SRTP and SRTCP.  The session keys will also contain the
@@ -174,7 +208,9 @@ typedef struct srtp_session_keys_t {
     uint8_t salt[SRTP_AEAD_SALT_LEN];
     uint8_t c_salt[SRTP_AEAD_SALT_LEN];
     uint8_t *mki_id;
-    srtp_key_limit_ctx_t *limit;
+    srtp_key_limit_ctx_t rtp_limit;
+    srtp_key_limit_ctx_t rtcp_limit;
+    srtp_key_expiry_group_t *expiry_group; /* NULL for the null cipher */
 } srtp_session_keys_t;
 
 /*
@@ -211,6 +247,8 @@ typedef struct srtp_ctx_t_ {
     srtp_stream_list_t stream_list;             /* linked list of streams     */
     struct srtp_stream_ctx_t_ *stream_template; /* act as template for other  */
                                                 /* streams                    */
+    srtp_key_expiry_group_t *expiry_groups;     /* shared key expiry flags    */
+    const srtp_event_data_t *active_event;      /* event being dispatched     */
     void *user_data;                            /* user custom data           */
 } srtp_ctx_t_;
 
@@ -305,23 +343,6 @@ typedef struct {
 } srtcp_trailer_t;
 
 #endif
-
-/*
- * srtp_handle_event(srtp, srtm, evnt) calls the event handling
- * function, if there is one.
- *
- * This macro is not included in the documentation as it is
- * an internal-only function.
- */
-
-#define srtp_handle_event(srtp, strm, evnt)                                    \
-    if (srtp_event_handler) {                                                  \
-        srtp_event_data_t data;                                                \
-        data.session = srtp;                                                   \
-        data.ssrc = ntohl(strm->ssrc);                                         \
-        data.event = evnt;                                                     \
-        srtp_event_handler(&data);                                             \
-    }
 
 #ifdef __cplusplus
 }
